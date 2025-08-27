@@ -1,0 +1,158 @@
+[gd_scene load_steps=2 format=3 uid="uid://rtls33j2jr4q"]
+
+[ext_resource type="Script" uid="uid://bhvruqf68yix4" path="res://script/intro.gd" id="1_intro"]
+
+[node name="intro" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_intro")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.15, 0.2, 1)
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 80.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Spacer" type="Control" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DrillHistoryButton" type="Button" parent="TopBar"]
+custom_minimum_size = Vector2(150, 50)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+text = "Drill History"
+
+[node name="RightMargin" type="Control" parent="TopBar"]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GameRuleContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CenterContainer/GameRuleContainer"]
+layout_mode = 2
+text = "IPSC Target Training"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/GameRuleContainer"]
+layout_mode = 2
+
+[node name="GameRuleImage" type="TextureRect" parent="CenterContainer/GameRuleContainer"]
+custom_minimum_size = Vector2(500, 300)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GameRuleBackground" type="ColorRect" parent="CenterContainer/GameRuleContainer/GameRuleImage"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.2, 0.25, 0.3, 1)
+
+[node name="RuleContent" type="VBoxContainer" parent="CenterContainer/GameRuleContainer/GameRuleImage"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RuleTitle" type="Label" parent="CenterContainer/GameRuleContainer/GameRuleImage/RuleContent"]
+layout_mode = 2
+text = "Game Rules"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="CenterContainer/GameRuleContainer/GameRuleImage/RuleContent"]
+layout_mode = 2
+
+[node name="RuleText" type="RichTextLabel" parent="CenterContainer/GameRuleContainer/GameRuleImage/RuleContent"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[center][b]IPSC Shooting Rules[/b]
+
+[color=yellow]• Accuracy:[/color] Hit targets in scoring zones
+[color=yellow]• Speed:[/color] Complete course as fast as possible
+[color=yellow]• Power:[/color] Use sufficient caliber ammunition
+
+[color=cyan]Scoring Zones:[/color]
+• Alpha Zone (A): 5 points
+• Charlie Zone (C): 4 points
+• Delta Zone (D): 2 points
+• Miss: 0 points
+
+[color=orange]Time Penalties:[/color]
+• Miss: +10 seconds
+• No Shoot Hit: +10 seconds
+
+[b]Your Score = (Points ÷ Time) × Power Factor[/b][/center]"
+fit_content = true
+scroll_active = false
+
+[node name="BottomContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -100.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="LeftSpacer" type="Control" parent="BottomContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StartButton" type="Button" parent="BottomContainer"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+text = "START"
+
+[node name="RightSpacer" type="Control" parent="BottomContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[connection signal="mouse_entered" from="TopBar/DrillHistoryButton" to="." method="_on_drill_history_button_mouse_entered"]
+[connection signal="mouse_exited" from="TopBar/DrillHistoryButton" to="." method="_on_drill_history_button_mouse_exited"]
+[connection signal="mouse_entered" from="BottomContainer/StartButton" to="." method="_on_start_button_mouse_entered"]
+[connection signal="mouse_exited" from="BottomContainer/StartButton" to="." method="_on_start_button_mouse_exited"]

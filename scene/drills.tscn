@@ -1,0 +1,90 @@
+[gd_scene format=3 uid="uid://5w6j4130dlpu"]
+
+[node name="drills" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BackgroundImage" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch_mode = 6
+
+[node name="TopContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 150.0
+grow_horizontal = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="TopLayout" type="VBoxContainer" parent="TopContainer"]
+layout_mode = 2
+
+[node name="HeaderContainer" type="HBoxContainer" parent="TopContainer/TopLayout"]
+layout_mode = 2
+
+[node name="Spacer1" type="Control" parent="TopContainer/TopLayout/HeaderContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TargetTypeTitle" type="Label" parent="TopContainer/TopLayout/HeaderContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "A-Zone Target"
+horizontal_alignment = 1
+
+[node name="FastestContainer" type="HBoxContainer" parent="TopContainer/TopLayout/HeaderContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Spacer2" type="Control" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ThunderIcon" type="Label" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
+layout_mode = 2
+text = "⚡"
+
+[node name="FastestInterval" type="Label" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
+layout_mode = 2
+text = "0.87s"
+
+[node name="TimerContainer" type="CenterContainer" parent="TopContainer/TopLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Timer" type="Label" parent="TopContainer/TopLayout/TimerContainer"]
+layout_mode = 2
+text = "00:12.34"
+horizontal_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -200.0
+offset_right = 250.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TargetImage" type="TextureRect" parent="CenterContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+stretch_mode = 4

@@ -1,0 +1,891 @@
+[gd_scene load_steps=2 format=3 uid="uid://ekpvobk5ubws"]
+
+[ext_resource type="Script" uid="uid://b4jmt6ldumens" path="res://script/history.gd" id="1_history"]
+
+[node name="history" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_history")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Drill History"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HeaderContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="NoLabel" type="Label" parent="MarginContainer/VBoxContainer/HeaderContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "No"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/HeaderContainer"]
+layout_mode = 2
+
+[node name="TotalTimeLabel" type="Label" parent="MarginContainer/VBoxContainer/HeaderContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Total Time"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/HeaderContainer"]
+layout_mode = 2
+
+[node name="FastShotLabel" type="Label" parent="MarginContainer/VBoxContainer/HeaderContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Fast Shot Interval"
+horizontal_alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ListContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Item1" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No1" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item1"]
+layout_mode = 2
+
+[node name="TotalTime1" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "12.34s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item1"]
+layout_mode = 2
+
+[node name="FastShot1" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.87s"
+horizontal_alignment = 1
+
+[node name="Item2" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No2" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "2"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item2"]
+layout_mode = 2
+
+[node name="TotalTime2" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "11.89s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item2"]
+layout_mode = 2
+
+[node name="FastShot2" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.92s"
+horizontal_alignment = 1
+
+[node name="Item3" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No3" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item3"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "3"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item3"]
+layout_mode = 2
+
+[node name="TotalTime3" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item3"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "13.21s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item3"]
+layout_mode = 2
+
+[node name="FastShot3" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item3"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.76s"
+horizontal_alignment = 1
+
+[node name="Item4" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No4" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item4"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "4"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item4"]
+layout_mode = 2
+
+[node name="TotalTime4" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item4"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "14.56s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item4"]
+layout_mode = 2
+
+[node name="FastShot4" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item4"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.02s"
+horizontal_alignment = 1
+
+[node name="Item5" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No5" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item5"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "5"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item5"]
+layout_mode = 2
+
+[node name="TotalTime5" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item5"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "10.78s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item5"]
+layout_mode = 2
+
+[node name="FastShot5" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item5"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.68s"
+horizontal_alignment = 1
+
+[node name="Item6" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No6" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item6"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "6"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item6"]
+layout_mode = 2
+
+[node name="TotalTime6" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item6"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "15.43s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item6"]
+layout_mode = 2
+
+[node name="FastShot6" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item6"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.15s"
+horizontal_alignment = 1
+
+[node name="Item7" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No7" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item7"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "7"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item7"]
+layout_mode = 2
+
+[node name="TotalTime7" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item7"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "9.87s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item7"]
+layout_mode = 2
+
+[node name="FastShot7" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item7"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.59s"
+horizontal_alignment = 1
+
+[node name="Item8" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No8" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item8"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "8"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item8"]
+layout_mode = 2
+
+[node name="TotalTime8" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item8"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "16.92s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item8"]
+layout_mode = 2
+
+[node name="FastShot8" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item8"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.28s"
+horizontal_alignment = 1
+
+[node name="Item9" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No9" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item9"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "9"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item9"]
+layout_mode = 2
+
+[node name="TotalTime9" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item9"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "11.34s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item9"]
+layout_mode = 2
+
+[node name="FastShot9" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item9"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.83s"
+horizontal_alignment = 1
+
+[node name="Item10" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No10" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item10"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "10"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item10"]
+layout_mode = 2
+
+[node name="TotalTime10" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item10"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "8.76s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item10"]
+layout_mode = 2
+
+[node name="FastShot10" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item10"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.52s"
+horizontal_alignment = 1
+
+[node name="Item11" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No11" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item11"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "11"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item11"]
+layout_mode = 2
+
+[node name="TotalTime11" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item11"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "17.65s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item11"]
+layout_mode = 2
+
+[node name="FastShot11" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item11"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.34s"
+horizontal_alignment = 1
+
+[node name="Item12" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No12" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item12"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "12"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item12"]
+layout_mode = 2
+
+[node name="TotalTime12" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item12"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "13.89s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item12"]
+layout_mode = 2
+
+[node name="FastShot12" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item12"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.94s"
+horizontal_alignment = 1
+
+[node name="Item13" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No13" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item13"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "13"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item13"]
+layout_mode = 2
+
+[node name="TotalTime13" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item13"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "10.12s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item13"]
+layout_mode = 2
+
+[node name="FastShot13" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item13"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.71s"
+horizontal_alignment = 1
+
+[node name="Item14" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No14" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item14"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "14"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item14"]
+layout_mode = 2
+
+[node name="TotalTime14" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item14"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "18.43s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item14"]
+layout_mode = 2
+
+[node name="FastShot14" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item14"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.47s"
+horizontal_alignment = 1
+
+[node name="Item15" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No15" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item15"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "15"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item15"]
+layout_mode = 2
+
+[node name="TotalTime15" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item15"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "9.23s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item15"]
+layout_mode = 2
+
+[node name="FastShot15" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item15"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.48s"
+horizontal_alignment = 1
+
+[node name="Item16" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No16" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item16"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "16"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item16"]
+layout_mode = 2
+
+[node name="TotalTime16" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item16"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "14.78s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item16"]
+layout_mode = 2
+
+[node name="FastShot16" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item16"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.08s"
+horizontal_alignment = 1
+
+[node name="Item17" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No17" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item17"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "17"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item17"]
+layout_mode = 2
+
+[node name="TotalTime17" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item17"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "12.56s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item17"]
+layout_mode = 2
+
+[node name="FastShot17" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item17"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.89s"
+horizontal_alignment = 1
+
+[node name="Item18" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No18" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item18"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "18"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item18"]
+layout_mode = 2
+
+[node name="TotalTime18" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item18"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "19.87s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item18"]
+layout_mode = 2
+
+[node name="FastShot18" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item18"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.56s"
+horizontal_alignment = 1
+
+[node name="Item19" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No19" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item19"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "19"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item19"]
+layout_mode = 2
+
+[node name="TotalTime19" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item19"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "11.67s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item19"]
+layout_mode = 2
+
+[node name="FastShot19" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item19"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.78s"
+horizontal_alignment = 1
+
+[node name="Item20" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No20" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item20"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "20"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item20"]
+layout_mode = 2
+
+[node name="TotalTime20" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item20"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "8.94s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item20"]
+layout_mode = 2
+
+[node name="FastShot20" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item20"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.43s"
+horizontal_alignment = 1
+
+[node name="Item21" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No21" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item21"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "21"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item21"]
+layout_mode = 2
+
+[node name="TotalTime21" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item21"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "16.34s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item21"]
+layout_mode = 2
+
+[node name="FastShot21" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item21"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.23s"
+horizontal_alignment = 1
+
+[node name="Item22" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No22" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item22"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "22"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item22"]
+layout_mode = 2
+
+[node name="TotalTime22" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item22"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "13.67s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item22"]
+layout_mode = 2
+
+[node name="FastShot22" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item22"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.96s"
+horizontal_alignment = 1
+
+[node name="Item23" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No23" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item23"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "23"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item23"]
+layout_mode = 2
+
+[node name="TotalTime23" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item23"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "10.45s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item23"]
+layout_mode = 2
+
+[node name="FastShot23" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item23"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.67s"
+horizontal_alignment = 1
+
+[node name="Item24" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No24" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item24"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "24"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item24"]
+layout_mode = 2
+
+[node name="TotalTime24" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item24"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "20.12s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item24"]
+layout_mode = 2
+
+[node name="FastShot24" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item24"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.67s"
+horizontal_alignment = 1
+
+[node name="Item25" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No25" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item25"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "25"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item25"]
+layout_mode = 2
+
+[node name="TotalTime25" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item25"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "12.89s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item25"]
+layout_mode = 2
+
+[node name="FastShot25" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item25"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.84s"
+horizontal_alignment = 1
+
+[node name="Item26" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No26" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item26"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "26"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item26"]
+layout_mode = 2
+
+[node name="TotalTime26" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item26"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "9.56s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item26"]
+layout_mode = 2
+
+[node name="FastShot26" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item26"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.54s"
+horizontal_alignment = 1
+
+[node name="Item27" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No27" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item27"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "27"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item27"]
+layout_mode = 2
+
+[node name="TotalTime27" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item27"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "18.76s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item27"]
+layout_mode = 2
+
+[node name="FastShot27" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item27"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.45s"
+horizontal_alignment = 1
+
+[node name="Item28" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No28" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item28"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "28"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item28"]
+layout_mode = 2
+
+[node name="TotalTime28" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item28"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "11.23s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item28"]
+layout_mode = 2
+
+[node name="FastShot28" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item28"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.72s"
+horizontal_alignment = 1
+
+[node name="Item29" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No29" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item29"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "29"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item29"]
+layout_mode = 2
+
+[node name="TotalTime29" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item29"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "15.67s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item29"]
+layout_mode = 2
+
+[node name="FastShot29" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item29"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1.18s"
+horizontal_alignment = 1
+
+[node name="Item30" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer"]
+layout_mode = 2
+
+[node name="No30" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item30"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "30"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item30"]
+layout_mode = 2
+
+[node name="TotalTime30" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item30"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "7.89s"
+horizontal_alignment = 1
+
+[node name="VSeparator2" type="VSeparator" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item30"]
+layout_mode = 2
+
+[node name="FastShot30" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ListContainer/Item30"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0.39s"
+horizontal_alignment = 1
+
+[node name="HSeparator3" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Back"

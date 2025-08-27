@@ -1,0 +1,114 @@
+[gd_scene load_steps=0 format=3 uid="uid://dmciy24fnm8cw"]
+
+[node name="bootcamp" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TargetImageContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -80.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TargetImage" type="TextureRect" parent="TargetImageContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+stretch_mode = 4
+
+[node name="ShotIntervalsOverlay" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -400.0
+offset_right = -20.0
+offset_bottom = -80.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="IntervalsLabel" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "Shot Intervals"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+
+[node name="Shot1" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.2s"
+horizontal_alignment = 2
+
+[node name="Shot2" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.3s"
+horizontal_alignment = 2
+
+[node name="Shot3" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.1s"
+horizontal_alignment = 2
+
+[node name="Shot4" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.4s"
+horizontal_alignment = 2
+
+[node name="Shot5" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.2s"
+horizontal_alignment = 2
+
+[node name="Shot6" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.5s"
+horizontal_alignment = 2
+
+[node name="Shot7" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.3s"
+horizontal_alignment = 2
+
+[node name="Shot8" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.1s"
+horizontal_alignment = 2
+
+[node name="Shot9" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.6s"
+horizontal_alignment = 2
+
+[node name="Shot10" type="Label" parent="ShotIntervalsOverlay"]
+layout_mode = 2
+text = "+0.2s"
+horizontal_alignment = 2
+
+[node name="BottomContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -80.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="EndClearButton" type="Button" parent="BottomContainer"]
+layout_mode = 2
+text = "End / Clear"
