@@ -1,15 +1,17 @@
-[gd_scene load_steps=5 format=3 uid="uid://n7jidx87dpdq"]
+[gd_scene load_steps=7 format=3 uid="uid://n7jidx87dpdq"]
 
 [ext_resource type="Script" uid="uid://fd0v7htq8iv" path="res://script/bullet.gd" id="1_7t3yn"]
 [ext_resource type="PackedScene" uid="uid://cc24anctnijxh" path="res://scene/bullet_smoke.tscn" id="2_fud7i"]
 [ext_resource type="PackedScene" uid="uid://bxe8x68iqdudd" path="res://scene/bullet_impact.tscn" id="3_fud7i"]
 [ext_resource type="Texture2D" uid="uid://cywdquisabreu" path="res://asset/bullet.png" id="3_tpcvc"]
+[ext_resource type="AudioStream" uid="uid://dik1osar3f5pr" path="res://audio/rifle_steel_plate_multiple_ricochettes.mp3" id="4_4wfq1"]
 [ext_resource type="Texture2D" uid="uid://vekex1nym2md" path="res://asset/lights1.png" id="5_tpcvc"]
 
 [node name="bullet" type="Node2D"]
 script = ExtResource("1_7t3yn")
 bullet_smoke_scene = ExtResource("2_fud7i")
 bullet_impact_scene = ExtResource("3_fud7i")
+impact_sound = ExtResource("4_4wfq1")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("3_tpcvc")

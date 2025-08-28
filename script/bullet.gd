@@ -2,6 +2,7 @@ extends Node2D
 
 @export var bullet_smoke_scene: PackedScene
 @export var bullet_impact_scene: PackedScene
+@export var impact_sound: AudioStream  # Steel impact sound effect
 var impact_duration = 1  # How long the impact effect lasts
 var show_bullet_sprite = false  # Set to true if you want to see the bullet sprite for debugging
 var spawn_position: Vector2  # Store the actual spawn position
@@ -28,6 +29,9 @@ func trigger_impact():
 
 func on_impact():
 	print("Bullet impact at position: ", global_position)
+	
+	# Play steel impact sound effect
+	play_impact_sound()
 	
 	# Use the bullet's exact global position for effects
 	# This should match exactly where the bullet was spawned
@@ -60,3 +64,23 @@ func on_impact():
 func _on_impact_finished():
 	print("Bullet impact finished, removing bullet")
 	queue_free()
+
+func play_impact_sound():
+	"""Play realistic steel target impact sound effect"""
+	if impact_sound:
+		# Create AudioStreamPlayer2D for positional audio
+		var audio_player = AudioStreamPlayer2D.new()
+		audio_player.stream = impact_sound
+		audio_player.volume_db = -5  # Adjust volume as needed
+		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
+		
+		# Add to scene and play
+		get_parent().add_child(audio_player)
+		audio_player.global_position = global_position
+		audio_player.play()
+		
+		# Clean up audio player after sound finishes
+		audio_player.finished.connect(func(): audio_player.queue_free())
+		print("Steel impact sound played at: ", global_position)
+	else:
+		print("No impact sound assigned - add steel impact audio file to bullet scene!")
