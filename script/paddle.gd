@@ -81,7 +81,15 @@ func spawn_bullet_at_position(world_pos: Vector2):
 	
 	if BulletScene:
 		var bullet = BulletScene.instantiate()
-		get_parent().add_child(bullet)
+		
+		# Find the top-level scene node to add bullet effects
+		# This ensures effects don't get rotated with rotating targets
+		var scene_root = get_tree().current_scene
+		if scene_root:
+			scene_root.add_child(bullet)
+		else:
+			# Fallback to immediate parent if scene_root not found
+			get_parent().add_child(bullet)
 		
 		# Use the new set_spawn_position method to ensure proper positioning
 		bullet.set_spawn_position(world_pos)

@@ -1,10 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://ykv01kvvgiax"]
+[gd_scene load_steps=3 format=3 uid="uid://ykv01kvvgiax"]
 
+[ext_resource type="Script" path="res://script/ipsc_white.gd" id="1_ipsc_white"]
 [ext_resource type="Texture2D" uid="uid://cvudnr4qxxsw" path="res://asset/ipsc-white.png" id="2_vcewe"]
 
 [node name="IPSCWhite" type="Area2D"]
 collision_layer = 7
 collision_mask = 0
+script = ExtResource("1_ipsc_white")
 
 [node name="TargetSprite" type="Sprite2D" parent="."]
 texture = ExtResource("2_vcewe")

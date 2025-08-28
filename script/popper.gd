@@ -5,6 +5,9 @@ var is_fallen = false
 @onready var animation_player = $AnimationPlayer
 @onready var sprite = $PopperSprite
 
+# Bullet system
+const BulletScene = preload("res://scene/bullet.tscn")
+
 func _ready():
 	# Connect the input_event signal to handle mouse clicks
 	input_event.connect(_on_input_event)
@@ -13,6 +16,13 @@ func _ready():
 	test_shader_material()
 
 func _input(event):
+	# Handle mouse clicks for bullet spawning
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		var mouse_screen_pos = event.position
+		var world_pos = get_global_mouse_position()
+		print("Mouse screen pos: ", mouse_screen_pos, " -> World pos: ", world_pos)
+		spawn_bullet_at_position(world_pos)
+	
 	# Debug: Press T to test popper shader effects manually
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_T:
@@ -142,3 +152,23 @@ func reset_popper():
 	if animation_player:
 		animation_player.stop()
 		animation_player.seek(0.0)
+
+func spawn_bullet_at_position(world_pos: Vector2):
+	print("Spawning bullet at world position: ", world_pos)
+	
+	if BulletScene:
+		var bullet = BulletScene.instantiate()
+		
+		# Find the top-level scene node to add bullet effects
+		# This ensures effects don't get rotated with rotating targets
+		var scene_root = get_tree().current_scene
+		if scene_root:
+			scene_root.add_child(bullet)
+		else:
+			# Fallback to immediate parent if scene_root not found
+			get_parent().add_child(bullet)
+		
+		# Use the new set_spawn_position method to ensure proper positioning
+		bullet.set_spawn_position(world_pos)
+		
+		print("Bullet spawned and position set to: ", world_pos)

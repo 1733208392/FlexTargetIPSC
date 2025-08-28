@@ -29,23 +29,12 @@ func _on_input_event(_viewport, event, _shape_idx):
 		# Get the click position in local coordinates
 		var local_pos = to_local(event.global_position)
 		
-		# Check zones in priority order (highest score first)
-		# A-Zone has highest priority (5 points)
-		if is_point_in_zone("AZone", local_pos):
-			print("Zone A clicked - 5 points!")
-			return
-		
-		# C-Zone has medium priority (3 points)
-		if is_point_in_zone("CZone", local_pos):
-			print("Zone C clicked - 3 points!")
-			return
-		
-		# D-Zone has lowest priority (1 point)
+		# Check if hit is in the target zone (ipsc_white only has D-Zone)
 		if is_point_in_zone("DZone", local_pos):
-			print("Zone D clicked - 1 point!")
+			print("IPSC White target hit - 1 point!")
 			return
 		
-		print("Clicked outside target zones")
+		print("Clicked outside target zone")
 
 func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 	# Find the collision shape by name
