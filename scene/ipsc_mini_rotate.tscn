@@ -44,7 +44,6 @@ _data = {
 [node name="IPSCMiniRotate" type="Node2D"]
 
 [node name="RotationCenter" type="Node2D" parent="."]
-position = Vector2(360, 1200)
 
 [node name="IPSCMini" parent="RotationCenter" instance=ExtResource("1_ipsc_mini")]
 position = Vector2(0, -540)

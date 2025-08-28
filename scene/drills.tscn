@@ -1,4 +1,7 @@
-[gd_scene format=3 uid="uid://5w6j4130dlpu"]
+[gd_scene load_steps=3 format=3 uid="uid://5w6j4130dlpu"]
+
+[ext_resource type="PackedScene" uid="uid://pxoma10oooh5" path="res://scene/ipsc_mini.tscn" id="1_abc123"]
+[ext_resource type="Script" uid="uid://f358eipnuwpm" path="res://script/drills.gd" id="2_abc123"]
 
 [node name="drills" type="Control"]
 layout_mode = 3
@@ -7,6 +10,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("2_abc123")
 
 [node name="BackgroundImage" type="TextureRect" parent="."]
 layout_mode = 1
@@ -76,15 +80,8 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -250.0
-offset_top = -200.0
-offset_right = 250.0
-offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TargetImage" type="TextureRect" parent="CenterContainer"]
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-stretch_mode = 4
+[node name="TargetMini" parent="CenterContainer" instance=ExtResource("1_abc123")]
+scale = Vector2(0.9, 0.9)

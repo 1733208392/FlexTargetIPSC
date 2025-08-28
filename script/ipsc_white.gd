@@ -5,9 +5,17 @@ var last_click_frame = -1
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 
+# Scoring system
+var total_score: int = 0
+signal target_hit(zone: String, points: int)
+
 func _ready():
 	# Connect the input_event signal to detect mouse clicks
 	input_event.connect(_on_input_event)
+	
+	# Set up collision detection for bullets
+	collision_layer = 7  # Target layer
+	collision_mask = 0   # Don't detect other targets
 
 func _input(event):
 	# Handle mouse clicks for bullet spawning
@@ -63,3 +71,39 @@ func spawn_bullet_at_position(world_pos: Vector2):
 		bullet.set_spawn_position(world_pos)
 		
 		print("Bullet spawned and position set to: ", world_pos)
+
+func handle_bullet_collision(bullet_position: Vector2):
+	"""Handle collision detection when a bullet hits this target"""
+	print("Bullet collision detected at position: ", bullet_position)
+	
+	# Convert bullet world position to local coordinates for zone checking
+	var local_pos = to_local(bullet_position)
+	
+	var zone_hit = ""
+	var points = 0
+	
+	# Check if hit is in the target zone (ipsc_white only has D-Zone)
+	if is_point_in_zone("DZone", local_pos):
+		zone_hit = "DZone"
+		points = 1
+		print("COLLISION: IPSC White target hit - 1 point!")
+	else:
+		zone_hit = "miss"
+		points = 0
+		print("COLLISION: Bullet hit target but outside scoring zone")
+	
+	# Update score and emit signal
+	total_score += points
+	target_hit.emit(zone_hit, points)
+	print("Total score: ", total_score)
+	
+	return zone_hit
+
+func get_total_score() -> int:
+	"""Get the current total score for this target"""
+	return total_score
+
+func reset_score():
+	"""Reset the score to zero"""
+	total_score = 0
+	print("Score reset to 0")

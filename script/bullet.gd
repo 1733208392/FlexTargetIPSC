@@ -1,4 +1,4 @@
-extends Node2D
+extends Area2D
 
 @export var bullet_smoke_scene: PackedScene
 @export var bullet_impact_scene: PackedScene
@@ -6,6 +6,7 @@ extends Node2D
 var impact_duration = 1  # How long the impact effect lasts
 var show_bullet_sprite = false  # Set to true if you want to see the bullet sprite for debugging
 var spawn_position: Vector2  # Store the actual spawn position
+var has_collided: bool = false  # Prevent multiple collision detections
 
 func set_spawn_position(pos: Vector2):
 	spawn_position = pos
@@ -13,6 +14,13 @@ func set_spawn_position(pos: Vector2):
 	print("Bullet spawn position set to: ", spawn_position)
 
 func _ready():
+	# Set up collision detection
+	collision_layer = 8  # Bullet layer
+	collision_mask = 7   # Target layer (same as ipsc_mini)
+	
+	# Connect area_entered signal for collision detection
+	area_entered.connect(_on_area_entered)
+	
 	# Hide bullet sprite if not needed (since it's instant impact)
 	var sprite = $Sprite2D
 	if sprite and not show_bullet_sprite:
@@ -21,11 +29,25 @@ func _ready():
 	# Wait a frame to ensure position is set, then trigger impact
 	call_deferred("trigger_impact")
 
+func _on_area_entered(area: Area2D):
+	# Handle collision with target areas
+	if not has_collided and area.has_method("handle_bullet_collision"):
+		has_collided = true
+		print("Bullet collided with target: ", area.name)
+		# Let the target handle the collision detection
+		area.handle_bullet_collision(global_position)
+		# Still trigger our own impact effects
+		on_impact()
+
 func trigger_impact():
 	# Use spawn_position if it was set, otherwise use current global_position
 	if spawn_position != Vector2.ZERO:
 		global_position = spawn_position
-	on_impact()
+	
+	# Only trigger impact if we haven't collided with a target
+	# (collision will handle impact effects)
+	if not has_collided:
+		on_impact()
 
 func on_impact():
 	print("Bullet impact at position: ", global_position)

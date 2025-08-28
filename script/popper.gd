@@ -8,9 +8,17 @@ var is_fallen = false
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 
+# Scoring system
+var total_score: int = 0
+signal target_hit(zone: String, points: int)
+
 func _ready():
 	# Connect the input_event signal to handle mouse clicks
 	input_event.connect(_on_input_event)
+	
+	# Set up collision detection for bullets
+	collision_layer = 7  # Target layer
+	collision_mask = 0   # Don't detect other targets
 	
 	# Debug: Test if shader material is working
 	test_shader_material()
@@ -172,3 +180,86 @@ func spawn_bullet_at_position(world_pos: Vector2):
 		bullet.set_spawn_position(world_pos)
 		
 		print("Bullet spawned and position set to: ", world_pos)
+
+func handle_bullet_collision(bullet_position: Vector2):
+	"""Handle collision detection when a bullet hits this target"""
+	print("Bullet collision detected at position: ", bullet_position)
+	
+	# Convert bullet world position to local coordinates
+	var local_pos = to_local(bullet_position)
+	
+	var zone_hit = ""
+	var points = 0
+	
+	# Check which collision area the bullet hit by testing point in shapes
+	# We need to check each collision shape manually since we can't get shape_idx from collision
+	if is_point_in_head_area(local_pos):
+		zone_hit = "HeadArea"
+		points = 5
+		print("COLLISION: Popper head hit by bullet - 5 points!")
+		trigger_fall_animation()
+	elif is_point_in_neck_area(local_pos):
+		zone_hit = "NeckArea"
+		points = 3
+		print("COLLISION: Popper neck hit by bullet - 3 points!")
+		trigger_fall_animation()
+	elif is_point_in_body_area(local_pos):
+		zone_hit = "BodyArea"
+		points = 2
+		print("COLLISION: Popper body hit by bullet - 2 points!")
+		trigger_fall_animation()
+	elif is_point_in_stand_area(local_pos):
+		zone_hit = "StandArea"
+		points = 0
+		print("COLLISION: Popper stand hit by bullet - 0 points!")
+		test_shader_effects()
+	else:
+		zone_hit = "miss"
+		points = 0
+		print("COLLISION: Bullet hit popper but outside defined areas")
+	
+	# Update score and emit signal
+	total_score += points
+	target_hit.emit(zone_hit, points)
+	print("Total score: ", total_score)
+	
+	return zone_hit
+
+func is_point_in_head_area(point: Vector2) -> bool:
+	var head_area = get_node("HeadArea")
+	if head_area and head_area is CollisionShape2D:
+		var shape = head_area.shape
+		if shape is CircleShape2D:
+			var distance = point.distance_to(head_area.position)
+			return distance <= shape.radius
+	return false
+
+func is_point_in_neck_area(point: Vector2) -> bool:
+	var neck_area = get_node("NeckArea")
+	if neck_area and neck_area is CollisionPolygon2D:
+		return Geometry2D.is_point_in_polygon(point, neck_area.polygon)
+	return false
+
+func is_point_in_body_area(point: Vector2) -> bool:
+	var body_area = get_node("BodyArea")
+	if body_area and body_area is CollisionShape2D:
+		var shape = body_area.shape
+		if shape is CircleShape2D:
+			var distance = point.distance_to(body_area.position)
+			return distance <= shape.radius
+	return false
+
+func is_point_in_stand_area(point: Vector2) -> bool:
+	var stand_area = get_node("StandArea")
+	if stand_area and stand_area is CollisionPolygon2D:
+		return Geometry2D.is_point_in_polygon(point, stand_area.polygon)
+	return false
+
+func get_total_score() -> int:
+	"""Get the current total score for this target"""
+	return total_score
+
+func reset_score():
+	"""Reset the score to zero"""
+	total_score = 0
+	print("Score reset to 0")

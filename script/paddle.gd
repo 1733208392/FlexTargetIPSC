@@ -9,14 +9,30 @@ var is_fallen = false
 const BulletScene = preload("res://scene/bullet.tscn")
 var debug_markers = true  # Set to false to disable debug markers
 
+# Scoring system
+var total_score: int = 0
+signal target_hit(zone: String, points: int)
+
 func _ready():
 	# Connect the input_event signal to handle mouse clicks
 	input_event.connect(_on_input_event)
+	
+	# Set up collision detection for bullets
+	collision_layer = 7  # Target layer
+	collision_mask = 0   # Don't detect other targets
 	
 	# Debug: Test if shader material is working
 	test_shader_material()
 
 func _input(event):
+	# Handle mouse clicks for bullet spawning
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		print("PADDLE: Mouse click detected!")
+		var mouse_screen_pos = event.position
+		var world_pos = get_global_mouse_position()
+		print("PADDLE: Mouse screen pos: ", mouse_screen_pos, " -> World pos: ", world_pos)
+		spawn_bullet_at_position(world_pos)
+	
 	# Debug: Press SPACE to test shader effects manually
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_SPACE:
@@ -77,24 +93,86 @@ func _on_input_event(_viewport, event, shape_idx):
 				print("Paddle hit!")
 
 func spawn_bullet_at_position(world_pos: Vector2):
-	print("Spawning bullet at world position: ", world_pos)
+	print("PADDLE: Spawning bullet at world position: ", world_pos)
 	
 	if BulletScene:
 		var bullet = BulletScene.instantiate()
+		print("PADDLE: Bullet instantiated: ", bullet)
 		
 		# Find the top-level scene node to add bullet effects
 		# This ensures effects don't get rotated with rotating targets
 		var scene_root = get_tree().current_scene
 		if scene_root:
 			scene_root.add_child(bullet)
+			print("PADDLE: Bullet added to scene root: ", scene_root.name)
 		else:
 			# Fallback to immediate parent if scene_root not found
 			get_parent().add_child(bullet)
+			print("PADDLE: Bullet added to parent (fallback)")
 		
 		# Use the new set_spawn_position method to ensure proper positioning
 		bullet.set_spawn_position(world_pos)
 		
-		print("Bullet spawned and position set to: ", world_pos)
+		print("PADDLE: Bullet spawned and position set to: ", world_pos)
+	else:
+		print("PADDLE ERROR: BulletScene is null!")
+
+func handle_bullet_collision(bullet_position: Vector2):
+	"""Handle collision detection when a bullet hits this target"""
+	print("PADDLE: Bullet collision detected at position: ", bullet_position)
+	
+	# Convert bullet world position to local coordinates
+	var local_pos = to_local(bullet_position)
+	print("PADDLE: Local position: ", local_pos)
+	
+	var zone_hit = ""
+	var points = 0
+	
+	# Check which collision area the bullet hit
+	if is_point_in_circle_area(local_pos):
+		zone_hit = "CircleArea"
+		points = 5
+		print("COLLISION: Paddle circle area hit by bullet - 5 points!")
+		trigger_fall_animation()
+	elif is_point_in_stand_area(local_pos):
+		zone_hit = "StandArea"
+		points = 0
+		print("COLLISION: Paddle stand area hit by bullet - 0 points!")
+	else:
+		zone_hit = "miss"
+		points = 0
+		print("COLLISION: Bullet hit paddle but outside defined areas")
+	
+	# Update score and emit signal
+	total_score += points
+	target_hit.emit(zone_hit, points)
+	print("PADDLE: Total score: ", total_score)
+	
+	return zone_hit
+
+func is_point_in_circle_area(point: Vector2) -> bool:
+	var circle_area = get_node("CircleArea")
+	if circle_area and circle_area is CollisionShape2D:
+		var shape = circle_area.shape
+		if shape is CircleShape2D:
+			var distance = point.distance_to(circle_area.position)
+			return distance <= shape.radius
+	return false
+
+func is_point_in_stand_area(point: Vector2) -> bool:
+	var stand_area = get_node("StandArea")
+	if stand_area and stand_area is CollisionPolygon2D:
+		return Geometry2D.is_point_in_polygon(point, stand_area.polygon)
+	return false
+
+func get_total_score() -> int:
+	"""Get the current total score for this target"""
+	return total_score
+
+func reset_score():
+	"""Reset the score to zero"""
+	total_score = 0
+	print("Score reset to 0")
 
 func create_debug_marker(world_pos: Vector2):
 	# Create a small visual marker to show where the click was detected
