@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://ykv01kvvgiax"]
+
+[ext_resource type="Texture2D" uid="uid://cvudnr4qxxsw" path="res://asset/ipsc-white.png" id="2_vcewe"]
+
+[node name="IPSCWhite" type="Area2D"]
+collision_layer = 7
+collision_mask = 0
+
+[node name="TargetSprite" type="Sprite2D" parent="."]
+texture = ExtResource("2_vcewe")
+
+[node name="DZone" type="CollisionPolygon2D" parent="."]
+polygon = PackedVector2Array(132, -485, 379, -164, 379, 162, 132, 471, -132, 471, -379, 162, -379, -164, -132, -485)

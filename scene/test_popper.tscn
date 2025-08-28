@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://yi8xle0r8556"]
+
+[ext_resource type="PackedScene" uid="uid://dqwy2uf6beqmw" path="res://scene/popper.tscn" id="1_yar5d"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="Popper" parent="." instance=ExtResource("1_yar5d")]
+
+[node name="Camera2D" type="Camera2D" parent="."]

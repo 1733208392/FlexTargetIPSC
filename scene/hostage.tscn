@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3 uid="uid://chsym5rlqsstp"]
+
+[ext_resource type="PackedScene" uid="uid://pxoma10oooh5" path="res://scene/ipsc_mini.tscn" id="1_ipsc_mini"]
+[ext_resource type="PackedScene" uid="uid://ykv01kvvgiax" path="res://scene/ipsc_white.tscn" id="2_ipsc_white"]
+[ext_resource type="Script" uid="uid://iaps4wkkv1nv" path="res://script/hostage.gd" id="3_script"]
+
+[node name="Hostage" type="Node2D"]
+script = ExtResource("3_script")
+
+[node name="IPSCMini" parent="." instance=ExtResource("1_ipsc_mini")]
+position = Vector2(532, 678)
+collision_layer = 1
+
+[node name="IPSCWhite" parent="." instance=ExtResource("2_ipsc_white")]
+position = Vector2(532, 846)
+collision_layer = 2

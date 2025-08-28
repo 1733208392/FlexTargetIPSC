@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://pxoma10oooh5"]
+
+[ext_resource type="Texture2D" uid="uid://dve4iuyjc5x3u" path="res://asset/ipsc.png" id="1_ipsc_texture"]
+[ext_resource type="Script" uid="uid://d052u6s0ikdgy" path="res://script/ipsc_mini.gd" id="2_script"]
+
+[node name="IPSC" type="Area2D"]
+collision_layer = 7
+collision_mask = 0
+script = ExtResource("2_script")
+
+[node name="TargetSprite" type="Sprite2D" parent="."]
+texture = ExtResource("1_ipsc_texture")
+
+[node name="AZone" type="CollisionPolygon2D" parent="."]
+polygon = PackedVector2Array(43, -452, 134, -152, 134, -26, 43, 106, -43, 106, -134, -26, -134, -152, -42, -452)
+
+[node name="CZone" type="CollisionPolygon2D" parent="."]
+polygon = PackedVector2Array(132, -485, 263, -152, 263, 76, 85, 286, -85, 286, -263, 76, -263, -152, -132, -485)
+
+[node name="DZone" type="CollisionPolygon2D" parent="."]
+polygon = PackedVector2Array(132, -485, 379, -164, 379, 162, 132, 471, -132, 471, -379, 162, -379, -164, -132, -485)
