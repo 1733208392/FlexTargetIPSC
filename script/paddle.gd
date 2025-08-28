@@ -5,6 +5,10 @@ var is_fallen = false
 @onready var animation_player = $AnimationPlayer
 @onready var sprite = $PopperSprite
 
+# Bullet spawning
+const BulletScene = preload("res://scene/bullet.tscn")
+var debug_markers = true  # Set to false to disable debug markers
+
 func _ready():
 	# Connect the input_event signal to handle mouse clicks
 	input_event.connect(_on_input_event)
@@ -21,6 +25,9 @@ func _input(event):
 		elif event.keycode == KEY_R:
 			print("R pressed - resetting paddle")
 			reset_paddle()
+		elif event.keycode == KEY_D:
+			debug_markers = !debug_markers
+			print("Debug markers ", "enabled" if debug_markers else "disabled")
 
 func test_shader_material():
 	var shader_material = sprite.material as ShaderMaterial
@@ -40,6 +47,23 @@ func _on_input_event(_viewport, event, shape_idx):
 			return
 		last_click_frame = current_frame
 		
+		# Get the mouse position and convert to world coordinates (accounting for Camera2D)
+		var mouse_screen_pos = event.global_position
+		var camera = get_viewport().get_camera_2d()
+		var mouse_world_pos: Vector2
+		
+		if camera:
+			# Convert screen position to world position using camera transformation
+			mouse_world_pos = camera.get_global_mouse_position()
+			print("Mouse screen pos: ", mouse_screen_pos, " -> World pos: ", mouse_world_pos)
+		else:
+			# Fallback if no camera
+			mouse_world_pos = mouse_screen_pos
+			print("No camera found, using screen position: ", mouse_world_pos)
+		
+		# Spawn bullet at correct world position
+		spawn_bullet_at_position(mouse_world_pos)
+		
 		# Determine which area was clicked based on shape_idx
 		match shape_idx:
 			0:  # CircleArea (index 0) - Main target hit
@@ -51,6 +75,36 @@ func _on_input_event(_viewport, event, shape_idx):
 				test_shader_effects()
 			_:
 				print("Paddle hit!")
+
+func spawn_bullet_at_position(world_pos: Vector2):
+	print("Spawning bullet at world position: ", world_pos)
+	
+	if BulletScene:
+		var bullet = BulletScene.instantiate()
+		get_parent().add_child(bullet)
+		
+		# Use the new set_spawn_position method to ensure proper positioning
+		bullet.set_spawn_position(world_pos)
+		
+		print("Bullet spawned and position set to: ", world_pos)
+
+func create_debug_marker(world_pos: Vector2):
+	# Create a small visual marker to show where the click was detected
+	var marker = ColorRect.new()
+	marker.size = Vector2(10, 10)
+	marker.color = Color.RED
+	marker.global_position = world_pos - Vector2(5, 5)  # Center the marker
+	get_parent().add_child(marker)
+	
+	# Remove marker after 1 second
+	var timer = Timer.new()
+	timer.wait_time = 1.0
+	timer.one_shot = true
+	timer.timeout.connect(func(): marker.queue_free(); timer.queue_free())
+	get_parent().add_child(timer)
+	timer.start()
+	
+	print("Debug marker created at: ", world_pos)
 
 func test_shader_effects():
 	print("Testing shader effects manually...")
