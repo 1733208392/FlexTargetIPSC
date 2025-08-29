@@ -1,8 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://deey2cugkspue"]
+[gd_scene load_steps=3 format=3 uid="uid://deey2cugkspue"]
 
 [ext_resource type="PackedScene" uid="uid://ykv01kvvgiax" path="res://scene/ipsc_white.tscn" id="1_02hpt"]
+[ext_resource type="Script" uid="uid://b63b0lukypcwc" path="res://script/test_ipsc_white.gd" id="1_ylbam"]
 
 [node name="Node2D" type="Node2D"]
+script = ExtResource("1_ylbam")
 
 [node name="IPSCWhite" parent="." instance=ExtResource("1_02hpt")]
 position = Vector2(360, 640)
