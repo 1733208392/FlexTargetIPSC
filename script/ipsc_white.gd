@@ -12,6 +12,7 @@ const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
 # Scoring system
 var total_score: int = 0
 signal target_hit(zone: String, points: int)
+signal target_disappeared
 
 func _ready():
 	# Connect the input_event signal to detect mouse clicks
@@ -166,6 +167,10 @@ func _on_disappear_animation_finished():
 	# Disable collision detection completely
 	set_collision_layer(0)
 	set_collision_mask(0)
+	
+	# Emit signal to notify the drills system that the target has disappeared
+	target_disappeared.emit()
+	print("target_disappeared signal emitted")
 	
 	# Keep the disappearing state active to prevent any further interactions
 	# is_disappearing remains true

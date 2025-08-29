@@ -12,6 +12,7 @@ var debug_markers = true  # Set to false to disable debug markers
 # Scoring system
 var total_score: int = 0
 signal target_hit(zone: String, points: int)
+signal target_disappeared
 
 func _ready():
 	# Connect the input_event signal to handle mouse clicks
@@ -262,6 +263,10 @@ func _on_fall_animation_finished(anim_name: StringName):
 		# Optional: Add scoring, sound effects, or remove the paddle
 		# For now, just disable further interactions
 		input_pickable = false
+		
+		# Emit signal to notify the drills system that the target has disappeared
+		target_disappeared.emit()
+		print("target_disappeared signal emitted")
 
 # Optional: Function to reset the paddle (for testing or game restart)
 func reset_paddle():

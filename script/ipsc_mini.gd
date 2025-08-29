@@ -5,6 +5,10 @@ var last_click_frame = -1
 # Animation state tracking
 var is_disappearing: bool = false
 
+# Shot tracking for disappearing animation
+var shot_count: int = 0
+var max_shots: int = 2
+
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
@@ -12,6 +16,7 @@ const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
 # Scoring system
 var total_score: int = 0
 signal target_hit(zone: String, points: int)
+signal target_disappeared
 
 func _ready():
 	# Connect the input_event signal to detect mouse clicks
@@ -133,6 +138,15 @@ func handle_bullet_collision(bullet_position: Vector2):
 	# Spawn bullet hole at impact position
 	spawn_bullet_hole(local_pos)
 	
+	# Increment shot count and check for disappearing animation
+	shot_count += 1
+	print("Shot count: ", shot_count, "/", max_shots)
+	
+	# Check if we've reached the maximum shots
+	if shot_count >= max_shots:
+		print("Maximum shots reached! Triggering disappearing animation...")
+		play_disappearing_animation()
+	
 	return zone_hit
 
 func spawn_bullet_hole(local_position: Vector2):
@@ -186,6 +200,10 @@ func _on_disappear_animation_finished():
 	set_collision_layer(0)
 	set_collision_mask(0)
 	
+	# Emit signal to notify the drills system that the target has disappeared
+	target_disappeared.emit()
+	print("target_disappeared signal emitted")
+	
 	# Keep the disappearing state active to prevent any further interactions
 	# is_disappearing remains true
 
@@ -193,6 +211,9 @@ func reset_target():
 	"""Reset the target to its original state (useful for restarting)"""
 	# Reset animation state
 	is_disappearing = false
+	
+	# Reset shot count
+	shot_count = 0
 	
 	# Reset visual properties
 	modulate = Color.WHITE
