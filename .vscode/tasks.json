@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Hostage Test Scene",
+			"type": "shell",
+			"command": "cd /Users/kai/FlexTargetIPSC && godot --headless --verbose --script scene/test_hostage.tscn",
+			"group": "test",
+			"isBackground": false
+		}
+	]
+}
