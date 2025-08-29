@@ -53,6 +53,7 @@ _data = {
 }
 
 [node name="Paddle" type="Area2D"]
+scale = Vector2(0.7, 0.7)
 script = ExtResource("1_g2524")
 
 [node name="PopperSprite" type="Sprite2D" parent="."]

@@ -7,6 +7,7 @@ var is_fallen = false
 
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
+const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
 
 # Scoring system
 var total_score: int = 0
@@ -223,7 +224,20 @@ func handle_bullet_collision(bullet_position: Vector2):
 	target_hit.emit(zone_hit, points)
 	print("Total score: ", total_score)
 	
+	# Spawn bullet hole at impact position
+	spawn_bullet_hole(local_pos)
+	
 	return zone_hit
+
+func spawn_bullet_hole(local_position: Vector2):
+	"""Spawn a bullet hole at the specified local position on this target"""
+	if BulletHoleScene:
+		var bullet_hole = BulletHoleScene.instantiate()
+		add_child(bullet_hole)
+		bullet_hole.set_hole_position(local_position)
+		print("Bullet hole spawned on popper at local position: ", local_position)
+	else:
+		print("ERROR: BulletHoleScene not found!")
 
 func is_point_in_head_area(point: Vector2) -> bool:
 	var head_area = get_node("HeadArea")

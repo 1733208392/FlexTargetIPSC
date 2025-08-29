@@ -4,6 +4,7 @@ var last_click_frame = -1
 
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
+const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
 
 # Scoring system
 var total_score: int = 0
@@ -116,7 +117,20 @@ func handle_bullet_collision(bullet_position: Vector2):
 	target_hit.emit(zone_hit, points)
 	print("Total score: ", total_score)
 	
+	# Spawn bullet hole at impact position
+	spawn_bullet_hole(local_pos)
+	
 	return zone_hit
+
+func spawn_bullet_hole(local_position: Vector2):
+	"""Spawn a bullet hole at the specified local position on this target"""
+	if BulletHoleScene:
+		var bullet_hole = BulletHoleScene.instantiate()
+		add_child(bullet_hole)
+		bullet_hole.set_hole_position(local_position)
+		print("Bullet hole spawned on target at local position: ", local_position)
+	else:
+		print("ERROR: BulletHoleScene not found!")
 
 func get_total_score() -> int:
 	"""Get the current total score for this target"""
