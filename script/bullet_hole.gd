@@ -13,7 +13,7 @@ const BULLET_HOLE_TEXTURES = [
 # Configuration
 @export var random_rotation: bool = true   # Randomly rotate the bullet hole
 @export var random_scale: bool = true      # Slightly randomize the scale
-@export var scale_range: Vector2 = Vector2(1.0, 1.5)  # Min and max scale factors
+@export var scale_range: Vector2 = Vector2(0.8, 1)  # Min and max scale factors
 @export var z_index_offset: int = 1       # Render in front of target sprite
 
 func _ready():

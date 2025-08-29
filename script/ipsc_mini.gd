@@ -2,6 +2,9 @@ extends Area2D
 
 var last_click_frame = -1
 
+# Animation state tracking
+var is_disappearing: bool = false
+
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
@@ -27,6 +30,11 @@ func _input(event):
 		spawn_bullet_at_position(world_pos)
 
 func _on_input_event(_viewport, event, _shape_idx):
+	# Don't process input events if target is disappearing
+	if is_disappearing:
+		print("Target is disappearing - ignoring input event")
+		return
+		
 	# Check if it's a left mouse click
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		# Prevent duplicate events in the same frame
@@ -86,6 +94,11 @@ func spawn_bullet_at_position(world_pos: Vector2):
 
 func handle_bullet_collision(bullet_position: Vector2):
 	"""Handle collision detection when a bullet hits this target"""
+	# Don't process bullet collisions if target is disappearing
+	if is_disappearing:
+		print("Target is disappearing - ignoring bullet collision")
+		return "ignored"
+	
 	print("Bullet collision detected at position: ", bullet_position)
 	
 	# Convert bullet world position to local coordinates for zone checking
@@ -140,3 +153,57 @@ func reset_score():
 	"""Reset the score to zero"""
 	total_score = 0
 	print("Score reset to 0")
+
+func play_disappearing_animation():
+	"""Start the disappearing animation and disable collision detection"""
+	print("Starting disappearing animation for ipsc_mini")
+	is_disappearing = true
+	
+	# Get the AnimationPlayer
+	var animation_player = get_node("AnimationPlayer")
+	if animation_player:
+		# Connect to the animation finished signal if not already connected
+		if not animation_player.animation_finished.is_connected(_on_animation_finished):
+			animation_player.animation_finished.connect(_on_animation_finished)
+		
+		# Play the disappear animation
+		animation_player.play("disappear")
+		print("Disappear animation started")
+	else:
+		print("ERROR: AnimationPlayer not found")
+
+func _on_animation_finished(animation_name: String):
+	"""Called when any animation finishes"""
+	if animation_name == "disappear":
+		print("Disappear animation completed")
+		_on_disappear_animation_finished()
+
+func _on_disappear_animation_finished():
+	"""Called when the disappearing animation completes"""
+	print("Target disappearing animation finished")
+	
+	# Disable collision detection completely
+	set_collision_layer(0)
+	set_collision_mask(0)
+	
+	# Keep the disappearing state active to prevent any further interactions
+	# is_disappearing remains true
+
+func reset_target():
+	"""Reset the target to its original state (useful for restarting)"""
+	# Reset animation state
+	is_disappearing = false
+	
+	# Reset visual properties
+	modulate = Color.WHITE
+	rotation = 0.0
+	scale = Vector2.ONE
+	
+	# Re-enable collision detection
+	collision_layer = 7
+	collision_mask = 0
+	
+	# Reset score
+	reset_score()
+	
+	print("Target reset to original state")

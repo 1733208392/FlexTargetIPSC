@@ -7,7 +7,6 @@ var is_fallen = false
 
 # Bullet spawning
 const BulletScene = preload("res://scene/bullet.tscn")
-const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
 var debug_markers = true  # Set to false to disable debug markers
 
 # Scoring system
@@ -149,20 +148,7 @@ func handle_bullet_collision(bullet_position: Vector2):
 	target_hit.emit(zone_hit, points)
 	print("PADDLE: Total score: ", total_score)
 	
-	# Spawn bullet hole at impact position
-	spawn_bullet_hole(local_pos)
-	
 	return zone_hit
-
-func spawn_bullet_hole(local_position: Vector2):
-	"""Spawn a bullet hole at the specified local position on this target"""
-	if BulletHoleScene:
-		var bullet_hole = BulletHoleScene.instantiate()
-		add_child(bullet_hole)
-		bullet_hole.set_hole_position(local_position)
-		print("Bullet hole spawned on paddle at local position: ", local_position)
-	else:
-		print("ERROR: BulletHoleScene not found!")
 
 func is_point_in_circle_area(point: Vector2) -> bool:
 	var circle_area = get_node("CircleArea")
