@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://60qdf27h05et"]
+
+[ext_resource type="PackedScene" uid="uid://uys12flus0u1" path="res://scene/ipsc_mini_rotate.tscn" id="1_hhfo0"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="IPSCMiniRotate" parent="." instance=ExtResource("1_hhfo0")]
+position = Vector2(360, 640)

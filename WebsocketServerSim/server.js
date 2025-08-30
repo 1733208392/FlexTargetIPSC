@@ -6,7 +6,7 @@ const wss = new WebSocket.Server({ port: 8080 });
 const dataPayload = {
   type: 'data',
   data: [
-    { t: 630, x: 250, y: 700, a: 1069 },
+    { t: 630, x: 134, y: 233, a: 1069 },
     ],
 };
 

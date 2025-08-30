@@ -1,21 +1,13 @@
-[gd_scene load_steps=5 format=3 uid="uid://uys12flus0u1"]
+[gd_scene load_steps=7 format=3 uid="uid://uys12flus0u1"]
 
 [ext_resource type="PackedScene" uid="uid://pxoma10oooh5" path="res://scene/ipsc_mini.tscn" id="1_ipsc_mini"]
+[ext_resource type="Texture2D" uid="uid://d0m34j6rbnble" path="res://asset/logo-barrel.png" id="2_fco47"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_barrel"]
+size = Vector2(487.778, 758.889)
 
 [sub_resource type="Animation" id="Animation_do14m"]
 length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("IPSCMini:rotation")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [0.785398]
-}
 
 [sub_resource type="Animation" id="RotateAnimation"]
 resource_name = "rotate_left_right"
@@ -29,10 +21,10 @@ tracks/0/path = NodePath("RotationCenter:rotation")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.03, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4),
-"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"times": PackedFloat32Array(0, 0.03, 2),
+"transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [0.0, 0.0, 0.785398, 1.5708, 0.785398, 0.0, -0.785398, -1.5708, -0.785398, 0.0]
+"values": [0.0, 0.0, 0.785398]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary"]
@@ -45,10 +37,24 @@ _data = {
 scale = Vector2(0.9, 0.9)
 
 [node name="RotationCenter" type="Node2D" parent="."]
+position = Vector2(100, 200)
+scale = Vector2(0.8, 0.8)
 
 [node name="IPSCMini" parent="RotationCenter" instance=ExtResource("1_ipsc_mini")]
 position = Vector2(0, -540)
 scale = Vector2(0.8, 0.8)
+
+[node name="BarrelWall" type="StaticBody2D" parent="."]
+collision_layer = 8
+collision_mask = 0
+
+[node name="Sprite2D" type="Sprite2D" parent="BarrelWall"]
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("2_fco47")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BarrelWall"]
+position = Vector2(-8.33333, -2.77776)
+shape = SubResource("RectangleShape2D_barrel")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {

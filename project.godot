@@ -10,13 +10,24 @@ config_version=5
 
 [application]
 
-config/name="IPSC"
+config/name="GODotTetris"
 run/main_scene="uid://cjkeemu421bdp"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+WebSocketListener="*res://script/WebSocketListener.gd"
+HttpService="*res://script/HttpService.gd"
 
 [display]
 
 window/size/viewport_width=720
 window/size/viewport_height=1280
+window/stretch/mode="viewport"
 window/handheld/orientation=1
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

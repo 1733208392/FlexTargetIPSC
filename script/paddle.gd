@@ -18,6 +18,14 @@ func _ready():
 	# Connect the input_event signal to handle mouse clicks
 	input_event.connect(_on_input_event)
 	
+		# Connect to WebSocket bullet hit signal
+	var ws_listener = get_node("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
+		print("[ipsc_mini] Connected to WebSocketListener bullet_hit signal")
+	else:
+		print("[ipsc_mini] WebSocketListener singleton not found!")
+	
 	# Set up collision detection for bullets
 	collision_layer = 7  # Target layer
 	collision_mask = 0   # Don't detect other targets
@@ -282,3 +290,17 @@ func reset_paddle():
 	if animation_player:
 		animation_player.stop()
 		animation_player.seek(0.0)
+
+func _on_websocket_bullet_hit(pos: Vector2):
+	# Transform pos from WebSocket (268x476.4, origin bottom-left) to game (720x1280, origin top-left)
+	var ws_width = 268.0
+	var ws_height = 476.4
+	var game_width = 720.0
+	var game_height = 1280.0
+	# Flip y and scale
+	var x_new = pos.x * (game_width / ws_width)
+	var y_new = game_height - (pos.y * (game_height / ws_height))
+	var transformed_pos = Vector2(x_new, y_new)
+	print("[BlockSpawner] Received bullet hit at position (ws): ", pos, ", transformed to game: ", transformed_pos)
+	#spawn_bullet_at_position
+	spawn_bullet_at_position(transformed_pos)

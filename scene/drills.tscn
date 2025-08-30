@@ -23,6 +23,15 @@ grow_vertical = 2
 texture = ExtResource("2_6482l")
 stretch_mode = 6
 
+[node name="FPSLabel" type="Label" parent="."]
+layout_mode = 1
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 100.0
+offset_bottom = 30.0
+grow_vertical = 0
+text = "FPS: 60"
+
 [node name="TopContainer" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 10

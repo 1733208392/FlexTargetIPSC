@@ -23,6 +23,7 @@ var drill_completed: bool = false
 # Node references
 @onready var center_container = $CenterContainer
 @onready var target_type_title = $TopContainer/TopLayout/HeaderContainer/TargetTypeTitle
+@onready var fps_label = $FPSLabel
 
 func _ready():
 	"""Initialize the drill with the first target"""
@@ -34,6 +35,11 @@ func _ready():
 	
 	# Start the drill sequence
 	spawn_next_target()
+
+func _process(_delta):
+	"""Update FPS counter every frame"""
+	var fps = Engine.get_frames_per_second()
+	fps_label.text = "FPS: " + str(fps)
 
 func _input(_event):
 	"""Handle input events for theme switching (testing purposes)"""

@@ -16,10 +16,13 @@ func set_spawn_position(pos: Vector2):
 func _ready():
 	# Set up collision detection
 	collision_layer = 8  # Bullet layer
-	collision_mask = 7   # Target layer (same as ipsc_mini)
+	collision_mask = 15  # Target layer (7) + Wall layer (8) = 15 (binary 1111)
 	
-	# Connect area_entered signal for collision detection
+	# Connect area_entered signal for collision detection with targets
 	area_entered.connect(_on_area_entered)
+	
+	# Connect body_entered signal for collision detection with walls/obstacles
+	body_entered.connect(_on_body_entered)
 	
 	# Hide bullet sprite if not needed (since it's instant impact)
 	var sprite = $Sprite2D
@@ -37,6 +40,14 @@ func _on_area_entered(area: Area2D):
 		# Let the target handle the collision detection
 		area.handle_bullet_collision(global_position)
 		# Still trigger our own impact effects
+		on_impact()
+
+func _on_body_entered(body: StaticBody2D):
+	# Handle collision with walls/obstacles (like barrel wall)
+	if not has_collided:
+		has_collided = true
+		print("Bullet collided with wall/obstacle: ", body.name)
+		# Just trigger impact effects without scoring
 		on_impact()
 
 func trigger_impact():
