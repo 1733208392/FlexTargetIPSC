@@ -162,9 +162,9 @@ func spawn_ipsc_mini_rotate():
 	await get_tree().process_frame
 	
 	# Position the rotation center appropriately
-	var screen_height = get_viewport().get_visible_rect().size.y
-	var bottom_offset = screen_height * 0.3
-	target.position.y = bottom_offset
+	#var screen_height = get_viewport().get_visible_rect().size.y
+	#var bottom_offset = screen_height * 0.3
+	#target.position.y = bottom_offset
 	
 	print("IPSC Mini Rotate target spawned and positioned")
 

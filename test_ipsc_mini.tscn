@@ -5,4 +5,4 @@
 [node name="Node2D" type="Node2D"]
 
 [node name="IPSCMiniRotate" parent="." instance=ExtResource("1_hhfo0")]
-position = Vector2(360, 640)
+position = Vector2(206, 686)
