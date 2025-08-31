@@ -5,6 +5,7 @@ signal bullet_hit(pos: Vector2)
 signal menu_control(directive: String)
 
 var socket: WebSocketPeer
+var bullet_spawning_enabled: bool = true
 
 func _ready():
 	socket = WebSocketPeer.new()
@@ -14,7 +15,7 @@ func _ready():
 		print("Unable to connect")
 		set_process(false)
 
-func _process(delta):
+func _process(_delta):
 	socket.poll()
 	var state = socket.get_ready_state()
 	if state == WebSocketPeer.STATE_OPEN:
@@ -57,7 +58,10 @@ func _process_websocket_json(json_string):
 			var x = entry.get("x", null)
 			var y = entry.get("y", null)
 			if x != null and y != null:
-				print("[WebSocket] Emitting bullet_hit at: Vector2(", x, ", ", y, ")")
-				bullet_hit.emit(Vector2(x, y))
+				if bullet_spawning_enabled:
+					print("[WebSocket] Emitting bullet_hit at: Vector2(", x, ", ", y, ")")
+					bullet_hit.emit(Vector2(x, y))
+				else:
+					print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
 			else:
 				print("[WebSocket] Entry missing x or y: ", entry)

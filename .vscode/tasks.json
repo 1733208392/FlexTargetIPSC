@@ -7,6 +7,13 @@
 			"command": "cd /Users/kai/FlexTargetIPSC && godot --headless --verbose --script scene/test_hostage.tscn",
 			"group": "test",
 			"isBackground": false
+		},
+		{
+			"label": "Run Shot Timer Test Scene",
+			"type": "shell",
+			"command": "cd /Users/kai/FlexTargetIPSC && godot --headless --verbose --script scene/test_shot_timer.tscn",
+			"group": "test",
+			"isBackground": false
 		}
 	]
 }

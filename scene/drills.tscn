@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://5w6j4130dlpu"]
+[gd_scene load_steps=5 format=3 uid="uid://5w6j4130dlpu"]
 
 [ext_resource type="Texture2D" uid="uid://gpyjow0hb5mh" path="res://asset/drills_back.jpg" id="2_6482l"]
 [ext_resource type="Script" uid="uid://f358eipnuwpm" path="res://script/drills.gd" id="2_abc123"]
 [ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="4_title_settings"]
+[ext_resource type="PackedScene" uid="uid://bvmw1s06twfav" path="res://scene/shot_timer.tscn" id="5_shot_timer"]
 
 [node name="drills" type="Control"]
 layout_mode = 3
@@ -94,3 +95,7 @@ anchor_right = 0.5
 anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="ShotTimerOverlay" parent="." instance=ExtResource("5_shot_timer")]
+visible = false
+layout_mode = 1

@@ -19,11 +19,13 @@ var current_target_index: int = 0
 var current_target_instance: Node = null
 var total_drill_score: int = 0
 var drill_completed: bool = false
+var bullets_allowed: bool = false  # Track if bullet spawning is allowed
 
 # Node references
 @onready var center_container = $CenterContainer
 @onready var target_type_title = $TopContainer/TopLayout/HeaderContainer/TargetTypeTitle
 @onready var fps_label = $FPSLabel
+@onready var shot_timer_overlay = $ShotTimerOverlay
 
 func _ready():
 	"""Initialize the drill with the first target"""
@@ -33,8 +35,48 @@ func _ready():
 	# Clear any existing targets in the center container
 	clear_current_target()
 	
-	# Start the drill sequence
+	# Connect shot timer signals
+	shot_timer_overlay.timer_ready.connect(_on_shot_timer_ready)
+	shot_timer_overlay.timer_reset.connect(_on_shot_timer_reset)
+	
+	# Show shot timer overlay before starting drill
+	show_shot_timer()
+
+func show_shot_timer():
+	"""Show the shot timer overlay"""
+	print("=== SHOWING SHOT TIMER OVERLAY ===")
+	shot_timer_overlay.visible = true
+	shot_timer_overlay.reset_timer()
+	
+	# Disable bullet spawning during shot timer
+	bullets_allowed = false
+	if WebSocketListener:
+		WebSocketListener.bullet_spawning_enabled = false
+	
+	# No target should be visible during shot timer phase
+	clear_current_target()
+
+func hide_shot_timer():
+	"""Hide the shot timer overlay"""
+	print("=== HIDING SHOT TIMER OVERLAY ===")
+	shot_timer_overlay.visible = false
+
+func _on_shot_timer_ready():
+	"""Handle when shot timer beep occurs - start the drill"""
+	print("=== SHOT TIMER READY - STARTING DRILL ===")
+	# Hide the shot timer overlay
+	hide_shot_timer()
+	# Enable bullet spawning now that target will appear
+	bullets_allowed = true
+	if WebSocketListener:
+		WebSocketListener.bullet_spawning_enabled = true
+	# Now spawn the target normally
 	spawn_next_target()
+
+func _on_shot_timer_reset():
+	"""Handle when shot timer is reset"""
+	print("=== SHOT TIMER RESET ===")
+	# Could add additional logic here if needed
 
 func _process(_delta):
 	"""Update FPS counter every frame"""
@@ -258,6 +300,15 @@ func complete_drill():
 	print("Targets completed: ", current_target_index, "/", target_sequence.size())
 	drill_completed = true
 	
+	# Reset for next run
+	current_target_index = 0
+	total_drill_score = 0
+	drill_completed = false
+	
+	# Show shot timer overlay again for next run after a brief delay
+	await get_tree().create_timer(2.0).timeout  # Wait 2 seconds before showing timer
+	show_shot_timer()
+	
 	# You can add additional completion logic here
 	# For example: show results screen, save score, transition to next drill, etc.
 
@@ -273,7 +324,15 @@ func restart_drill():
 	# Clear the current target
 	clear_current_target()
 	
-	# Start the drill again
-	spawn_next_target()
+	# Show shot timer overlay again (which will spawn inactive target)
+	show_shot_timer()
 	
 	print("Drill restarted!")
+
+func is_bullet_spawning_allowed() -> bool:
+	"""Check if bullet spawning is currently allowed"""
+	return bullets_allowed
+
+func get_drills_manager():
+	"""Return reference to this drills manager for targets to use"""
+	return self

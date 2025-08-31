@@ -36,6 +36,11 @@ func _ready():
 func _input(event):
 	# Handle mouse clicks for bullet spawning
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		# Check if bullet spawning is enabled
+		if not WebSocketListener.bullet_spawning_enabled:
+			print("[popper] Bullet spawning disabled during shot timer")
+			return
+			
 		var mouse_screen_pos = event.position
 		var world_pos = get_global_mouse_position()
 		print("Mouse screen pos: ", mouse_screen_pos, " -> World pos: ", world_pos)
@@ -279,6 +284,11 @@ func reset_score():
 	print("Score reset to 0")
 
 func _on_websocket_bullet_hit(pos: Vector2):
+	# Check if bullet spawning is enabled
+	if not WebSocketListener.bullet_spawning_enabled:
+		print("[popper] WebSocket bullet spawning disabled during shot timer")
+		return
+		
 	# Transform pos from WebSocket (268x476.4, origin bottom-left) to game (720x1280, origin top-left)
 	var ws_width = 268.0
 	var ws_height = 476.4

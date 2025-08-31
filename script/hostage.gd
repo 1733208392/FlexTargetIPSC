@@ -18,7 +18,21 @@ var total_score: int = 0
 signal target_hit(zone: String, points: int)
 signal target_disappeared
 
+# Reference to drills manager
+var drills_manager = null
+
 func _ready():
+	# Try to find the drills manager
+	drills_manager = get_node("/root/drills") if get_node_or_null("/root/drills") else null
+	if not drills_manager:
+		# Try to find it in the scene tree
+		var current = get_parent()
+		while current and not drills_manager:
+			if current.has_method("is_bullet_spawning_allowed"):
+				drills_manager = current
+				break
+			current = current.get_parent()
+	
 	# Connect the input_event signal to detect mouse clicks
 	input_event.connect(_on_input_event)
 	
@@ -26,9 +40,9 @@ func _ready():
 	var ws_listener = get_node("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
-		print("[ipsc_mini] Connected to WebSocketListener bullet_hit signal")
+		print("[hostage] Connected to WebSocketListener bullet_hit signal")
 	else:
-		print("[ipsc_mini] WebSocketListener singleton not found!")
+		print("[hostage] WebSocketListener singleton not found!")
 	
 	# Set up collision detection for bullets
 	collision_layer = 7  # Target layer
@@ -37,6 +51,11 @@ func _ready():
 func _input(event):
 	# Handle mouse clicks for bullet spawning
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		# Check if bullet spawning is enabled
+		if not WebSocketListener.bullet_spawning_enabled:
+			print("[hostage] Bullet spawning disabled during shot timer")
+			return
+			
 		var mouse_screen_pos = event.position
 		var world_pos = get_global_mouse_position()
 		print("Mouse screen pos: ", mouse_screen_pos, " -> World pos: ", world_pos)
@@ -246,6 +265,11 @@ func reset_target():
 	print("Target reset to original state")
 
 func _on_websocket_bullet_hit(pos: Vector2):
+	# Check if bullet spawning is enabled
+	if not WebSocketListener.bullet_spawning_enabled:
+		print("[hostage] WebSocket bullet spawning disabled during shot timer")
+		return
+		
 	# Transform pos from WebSocket (268x476.4, origin bottom-left) to game (720x1280, origin top-left)
 	var ws_width = 268.0
 	var ws_height = 476.4
