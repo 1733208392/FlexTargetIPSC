@@ -28,6 +28,11 @@ var bullets_allowed: bool = false  # Track if bullet spawning is allowed
 @onready var fps_label = $FPSLabel
 @onready var shot_timer_overlay = $ShotTimerOverlay
 
+# Performance tracking
+signal target_hit(target_type: String, hit_position: Vector2, hit_area: String)
+signal drills_finished
+@onready var performance_tracker = preload("res://script/performance_tracker.gd").new()
+
 func _ready():
 	"""Initialize the drill with the first target"""
 	print("=== STARTING DRILL ===")
@@ -42,6 +47,11 @@ func _ready():
 	# Connect shot timer signals
 	shot_timer_overlay.timer_ready.connect(_on_shot_timer_ready)
 	shot_timer_overlay.timer_reset.connect(_on_shot_timer_reset)
+	
+	# Instantiate and add performance tracker
+	add_child(performance_tracker)
+	target_hit.connect(performance_tracker._on_target_hit)
+	drills_finished.connect(performance_tracker._on_drills_finished)
 	
 	# Show shot timer overlay before starting drill
 	show_shot_timer()
@@ -336,33 +346,44 @@ func connect_2poppers_signals():
 	else:
 		print("WARNING: 2poppers target doesn't have expected signals!")
 
-func _on_target_hit(zone_or_paddle_id: String, points_or_zone: Variant = null, points: int = 0):
+func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 	"""Handle when a target is hit - supports both simple targets and composite targets"""
 	var current_target_type = target_sequence[current_target_index]
+	var hit_area = ""
+	var hit_position = Vector2.ZERO
 	
 	# Handle different signal signatures
 	if current_target_type == "3paddles":
-		# 3paddles sends: paddle_id, zone, points
-		var paddle_id = zone_or_paddle_id
-		var zone = str(points_or_zone)
-		var actual_points = points
-		print("Target hit: ", current_target_type, " paddle: ", paddle_id, " in zone: ", zone, " for ", actual_points, " points")
+		# 3paddles sends: paddle_id, zone, points, hit_position
+		var paddle_id = param1
+		var zone = str(param2)
+		var actual_points = param3
+		hit_position = param4
+		hit_area = "Paddle"
+		print("Target hit: ", current_target_type, " paddle: ", paddle_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 		total_drill_score += actual_points
 	elif current_target_type == "2poppers":
-		# 2poppers sends: popper_id, zone, points
-		var popper_id = zone_or_paddle_id
-		var zone = str(points_or_zone)
-		var actual_points = points
-		print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points")
+		# 2poppers sends: popper_id, zone, points, hit_position
+		var popper_id = param1
+		var zone = str(param2)
+		var actual_points = param3
+		hit_position = param4
+		hit_area = "Popper"
+		print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 		total_drill_score += actual_points
 	else:
-		# Simple targets send: zone, points
-		var zone = zone_or_paddle_id
-		var actual_points = int(points_or_zone) if points_or_zone != null else points
-		print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points")
+		# Simple targets send: zone, points, hit_position
+		var zone = param1
+		var actual_points = param2
+		hit_position = param3
+		hit_area = zone
+		print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 		total_drill_score += actual_points
 	
 	print("Total drill score: ", total_drill_score)
+	
+	# Emit the enhanced target_hit signal for performance tracking
+	emit_signal("target_hit", current_target_type, hit_position, hit_area)
 	
 	# The target will handle its own disappearing logic and emit target_disappeared when ready
 
@@ -372,6 +393,9 @@ func complete_drill():
 	print("Final score: ", total_drill_score)
 	print("Targets completed: ", current_target_index, "/", target_sequence.size())
 	drill_completed = true
+	
+	# Emit drills finished signal for performance tracking
+	emit_signal("drills_finished")
 	
 	# Reset for next run
 	current_target_index = 0

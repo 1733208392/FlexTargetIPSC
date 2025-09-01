@@ -11,7 +11,7 @@ const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
 
 # Scoring system
 var total_score: int = 0
-signal target_hit(zone: String, points: int)
+signal target_hit(zone: String, points: int, hit_position: Vector2)
 signal target_disappeared
 
 func _ready():
@@ -109,7 +109,7 @@ func handle_bullet_collision(bullet_position: Vector2):
 	
 	# Update score and emit signal
 	total_score += points
-	target_hit.emit(zone_hit, points)
+	target_hit.emit(zone_hit, points, bullet_position)
 	print("Total score: ", total_score)
 	
 	# Spawn bullet hole at impact position

@@ -1,6 +1,6 @@
 extends Node2D
 
-signal target_hit(popper_id: String, zone: String, points: int)
+signal target_hit(popper_id: String, zone: String, points: int, hit_position: Vector2)
 signal target_disappeared(popper_id: String)
 
 var poppers_hit = []
@@ -27,22 +27,22 @@ func connect_popper_signals():
 		if child.has_signal("target_hit") and child.has_signal("target_disappeared"):
 			print("Connecting to popper: ", child.name)
 			# Use a lambda/callable to pass the popper_id
-			child.target_hit.connect(func(zone: String, points: int): _on_popper_hit(child.name, zone, points))
+			child.target_hit.connect(func(zone: String, points: int, hit_position: Vector2): _on_popper_hit(child.name, zone, points, hit_position))
 			child.target_disappeared.connect(func(): _on_popper_disappeared(child.name))
 		else:
 			print("Child ", child.name, " doesn't have expected signals")
 
-func _on_popper_hit(popper_id: String, zone: String, points: int):
+func _on_popper_hit(popper_id: String, zone: String, points: int, hit_position: Vector2):
 	"""Handle when a popper is hit"""
 	print("=== POPPER HIT IN 2POPPERS ===")
-	print("Popper ID: ", popper_id, " Zone: ", zone, " Points: ", points)
+	print("Popper ID: ", popper_id, " Zone: ", zone, " Points: ", points, " Position: ", hit_position)
 	
 	# Track which poppers have been hit
 	if popper_id not in poppers_hit:
 		poppers_hit.append(popper_id)
 	
 	# Emit the signal up to the drills manager
-	target_hit.emit(popper_id, zone, points)
+	target_hit.emit(popper_id, zone, points, hit_position)
 
 func _on_popper_disappeared(popper_id: String):
 	"""Handle when a popper disappears"""

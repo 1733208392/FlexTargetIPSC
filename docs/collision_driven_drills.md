@@ -8,8 +8,8 @@ The drills system has been updated to use the new bullet collision detection mec
 ### Drill Progression
 1. **Initial Target**: ipsc_mini (standard IPSC target)
 2. **After 2 hits**: Hostage scenario (ipsc_mini + ipsc_white)
-3. **After 2 hits**: Popper target (falling metal target)
-4. **After 2 hits**: Paddle target (reactive steel paddle)
+3. **After 2 hits**: 2 Popper target (falling metal target)
+4. **After 2 hits**: 3 Paddle target (reactive steel paddle)
 5. **After 2 hits**: ipsc_mini_rotate (rotating IPSC target)
 6. **Drill Complete**: Show final results
 
@@ -22,18 +22,15 @@ The drills system has been updated to use the new bullet collision detection mec
 
 #### Simple Targets
 - **ipsc_mini**: Direct collision detection with A/C/D zones
-- **popper**: Collision detection for Head/Neck/Body/Stand areas
-- **paddle**: Collision detection for Circle/Stand areas
-
-#### Composite Targets  
-- **hostage**: Contains both ipsc_mini and ipsc_white as children
+- **hostage**: Direct collision detection with A/C/D/White zones
 - **ipsc_mini_rotate**: Contains rotating ipsc_mini as child
+- **2 poppers**: Collision detection for Head/Neck/Body/Stand areas for each poppers
+- **3 paddles**: Collision detection for Circle/Stand areas for each paddles
 
 ## Key Features
 
 ### Automatic Hit Detection
 ```gdscript
-# No more manual hit radius checking!
 # Collision system handles all hit detection automatically
 func _on_target_hit(zone: String, points: int):
     total_drill_score += points
@@ -62,11 +59,7 @@ The system automatically connects to appropriate targets:
 ```gdscript
 # For simple targets
 target.target_hit.connect(_on_target_hit)
-
-# For composite targets (hostage)
-ipsc_mini.target_hit.connect(_on_target_hit)
-ipsc_white.target_hit.connect(_on_target_hit)
-
+hostage.target_hit.connect(_on_target_hit)
 # For contained targets (ipsc_mini_rotate)
 child_target.target_hit.connect(_on_target_hit)
 ```
@@ -77,7 +70,7 @@ child_target.target_hit.connect(_on_target_hit)
 1. Load the drills scene
 2. Click anywhere to spawn bullets
 3. Hit targets to progress through the drill
-4. Each target requires exactly 2 hits to advance
+4. Each target requires exactly 2/3 hits to advance
 5. Complete all 5 targets to finish the drill
 
 ### Restarting the Drill

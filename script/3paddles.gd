@@ -1,6 +1,6 @@
 extends Node2D
 
-signal target_hit(paddle_id: String, zone: String, points: int)
+signal target_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2)
 signal target_disappeared(paddle_id: String)
 
 var paddles_hit = []
@@ -22,17 +22,17 @@ func connect_paddle_signals():
 		else:
 			print("Child ", child.name, " doesn't have expected signals")
 
-func _on_paddle_hit(paddle_id: String, zone: String, points: int):
+func _on_paddle_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2):
 	"""Handle when a paddle is hit"""
 	print("=== PADDLE HIT IN 3PADDLES ===")
-	print("Paddle ID: ", paddle_id, " Zone: ", zone, " Points: ", points)
+	print("Paddle ID: ", paddle_id, " Zone: ", zone, " Points: ", points, " Position: ", hit_position)
 	
 	# Track which paddles have been hit
 	if paddle_id not in paddles_hit:
 		paddles_hit.append(paddle_id)
 	
 	# Emit the signal up to the drills manager
-	target_hit.emit(paddle_id, zone, points)
+	target_hit.emit(paddle_id, zone, points, hit_position)
 
 func _on_paddle_disappeared(paddle_id: String):
 	"""Handle when a paddle disappears"""

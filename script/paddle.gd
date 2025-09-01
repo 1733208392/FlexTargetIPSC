@@ -15,7 +15,7 @@ var debug_markers = true  # Set to false to disable debug markers
 
 # Scoring system
 var total_score: int = 0
-signal target_hit(paddle_id: String, zone: String, points: int)
+signal target_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2)
 signal target_disappeared(paddle_id: String)
 
 func _ready():
@@ -242,7 +242,7 @@ func handle_bullet_collision(bullet_position: Vector2):
 	
 	# Update score and emit signal
 	total_score += points
-	target_hit.emit(paddle_id, zone_hit, points)
+	target_hit.emit(paddle_id, zone_hit, points, bullet_position)
 	print("PADDLE %s: Total score: %d" % [paddle_id, total_score])
 	
 	return zone_hit
