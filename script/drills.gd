@@ -3,7 +3,7 @@ extends Control
 # Preload the scenes for the drill sequence
 @export var ipsc_mini_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
 @export var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
-@export var popper_scene: PackedScene = preload("res://scene/popper.tscn")
+@export var two_poppers_scene: PackedScene = preload("res://scene/2poppers.tscn")
 #@export var paddle_scene: PackedScene = preload("res://scene/paddle.tscn")
 @export var three_paddles_scene: PackedScene = preload("res://scene/3paddles.tscn")
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
@@ -15,7 +15,7 @@ extends Control
 var current_theme_style: String = "golden"
 
 # Drill sequence and progress tracking
-var target_sequence: Array[String] = ["ipsc_mini","hostage", "popper", "3paddles", "ipsc_mini_rotate"]
+var target_sequence: Array[String] = ["ipsc_mini","hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
 var current_target_index: int = 0
 var current_target_instance: Node = null
 var total_drill_score: int = 0
@@ -145,8 +145,8 @@ func spawn_next_target():
 			spawn_ipsc_mini()
 		"hostage":
 			await spawn_hostage()
-		"popper":
-			spawn_popper()
+		"2poppers":
+			spawn_2poppers()
 		"3paddles":
 			spawn_3paddles()
 		"ipsc_mini_rotate":
@@ -190,12 +190,12 @@ func spawn_hostage():
 	# Wait for the target to be fully ready before proceeding
 	await get_tree().process_frame
 
-func spawn_popper():
-	"""Spawn a popper target"""
-	var target = popper_scene.instantiate()
+func spawn_2poppers():
+	"""Spawn a 2poppers composite target"""
+	var target = two_poppers_scene.instantiate()
 	center_container.add_child(target)
 	current_target_instance = target
-	print("Popper target spawned")
+	print("2poppers target spawned")
 
 func spawn_3paddles():
 	"""Spawn a 3paddles composite target"""
@@ -232,6 +232,8 @@ func connect_target_signals():
 	
 	# Handle composite targets that contain child targets
 	match current_target_type:
+		"2poppers":
+			connect_2poppers_signals()
 		"3paddles":
 			connect_paddle_signals()
 		"ipsc_mini_rotate":
@@ -316,8 +318,26 @@ func connect_paddle_signals():
 	else:
 		print("WARNING: 3paddles target doesn't have expected signals!")
 
+func connect_2poppers_signals():
+	"""Connect signals for popper targets (2poppers composite target)"""
+	print("=== CONNECTING TO 2POPPERS SIGNALS ===")
+	if current_target_instance and current_target_instance.has_signal("target_hit"):
+		if current_target_instance.target_hit.is_connected(_on_target_hit):
+			current_target_instance.target_hit.disconnect(_on_target_hit)
+		current_target_instance.target_hit.connect(_on_target_hit)
+		print("Connected to 2poppers target_hit signal")
+		
+		# Connect disappear signal
+		if current_target_instance.has_signal("target_disappeared"):
+			if current_target_instance.target_disappeared.is_connected(_on_target_disappeared):
+				current_target_instance.target_disappeared.disconnect(_on_target_disappeared)
+			current_target_instance.target_disappeared.connect(_on_target_disappeared)
+			print("Connected to 2poppers target_disappeared signal")
+	else:
+		print("WARNING: 2poppers target doesn't have expected signals!")
+
 func _on_target_hit(zone_or_paddle_id: String, points_or_zone: Variant = null, points: int = 0):
-	"""Handle when a target is hit - supports both simple targets and 3paddles"""
+	"""Handle when a target is hit - supports both simple targets and composite targets"""
 	var current_target_type = target_sequence[current_target_index]
 	
 	# Handle different signal signatures
@@ -327,6 +347,13 @@ func _on_target_hit(zone_or_paddle_id: String, points_or_zone: Variant = null, p
 		var zone = str(points_or_zone)
 		var actual_points = points
 		print("Target hit: ", current_target_type, " paddle: ", paddle_id, " in zone: ", zone, " for ", actual_points, " points")
+		total_drill_score += actual_points
+	elif current_target_type == "2poppers":
+		# 2poppers sends: popper_id, zone, points
+		var popper_id = zone_or_paddle_id
+		var zone = str(points_or_zone)
+		var actual_points = points
+		print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points")
 		total_drill_score += actual_points
 	else:
 		# Simple targets send: zone, points

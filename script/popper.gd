@@ -2,8 +2,12 @@ extends Area2D
 
 var last_click_frame = -1
 var is_fallen = false
+var initial_position: Vector2  # Store the popper's starting position
 @onready var animation_player = $AnimationPlayer
 @onready var sprite = $PopperSprite
+
+# Popper identification
+var popper_id: String = ""  # Unique identifier for this popper
 
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
@@ -14,16 +18,33 @@ signal target_hit(zone: String, points: int)
 signal target_disappeared
 
 func _ready():
+	# Store the initial position for relative animation
+	initial_position = position
+	print("[popper %s] Initial position stored: %s" % [popper_id, initial_position])
+	
+	# Set default popper ID if not already set
+	if popper_id == "":
+		popper_id = name  # Use node name as default ID
+	
 	# Connect the input_event signal to handle mouse clicks
 	input_event.connect(_on_input_event)
+	
+	# Create unique material instance to prevent shared shader parameters
+	# This ensures each popper has its own shader state
+	if sprite.material:
+		sprite.material = sprite.material.duplicate()
+		print("[popper %s] Created unique shader material instance" % popper_id)
+		
+		# Create unique animation with correct starting position
+		create_relative_animation()
 	
 		# Connect to WebSocket bullet hit signal
 	var ws_listener = get_node("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
-		print("[ipsc_mini] Connected to WebSocketListener bullet_hit signal")
+		print("[popper %s] Connected to WebSocketListener bullet_hit signal" % popper_id)
 	else:
-		print("[ipsc_mini] WebSocketListener singleton not found!")
+		print("[popper %s] WebSocketListener singleton not found!" % popper_id)
 	
 	
 	# Set up collision detection for bullets
@@ -63,6 +84,59 @@ func test_shader_material():
 		print("Fall progress: ", shader_material.get_shader_parameter("fall_progress"))
 	else:
 		print("ERROR: No shader material found on popper sprite!")
+
+func create_relative_animation():
+	"""Create a unique animation that starts from the popper's actual position"""
+	if not animation_player:
+		print("WARNING: Popper %s: No AnimationPlayer found" % popper_id)
+		return
+	
+	if not animation_player.has_animation("fall_down"):
+		print("WARNING: Popper %s: Animation 'fall_down' not found" % popper_id)
+		return
+	
+	# Get the original animation
+	var original_animation = animation_player.get_animation("fall_down")
+	if not original_animation:
+		print("ERROR: Popper %s: Could not get 'fall_down' animation" % popper_id)
+		return
+	
+	# Create a duplicate animation
+	var new_animation = original_animation.duplicate()
+	
+	# Find and update the position track
+	for i in range(new_animation.get_track_count()):
+		var track_path = new_animation.track_get_path(i)
+		
+		# Look for the position track
+		if str(track_path) == ".:position":
+			print("Popper %s: Updating position track %d" % [popper_id, i])
+			
+			# Get the original end position offset (0, 0) - poppers typically don't move position much
+			var original_keys = new_animation.track_get_key_value(i, 1)  # Get the end position
+			var fall_offset = original_keys  # This should be Vector2(0, 0) or similar for poppers
+			
+			# Calculate new positions relative to initial position
+			var start_pos = initial_position
+			var end_pos = initial_position + fall_offset
+			
+			print("Popper %s: Position animation - Start: %s, End: %s" % [popper_id, start_pos, end_pos])
+			
+			# Update the track keys
+			new_animation.track_set_key_value(i, 0, start_pos)  # Start position
+			new_animation.track_set_key_value(i, 1, end_pos)    # End position
+			
+			break
+	
+	# Create a new animation library with our updated animation
+	var new_library = AnimationLibrary.new()
+	new_library.add_animation("fall_down", new_animation)
+	
+	# Replace the animation library
+	animation_player.remove_animation_library("")
+	animation_player.add_animation_library("", new_library)
+	
+	print("Popper %s: Created relative animation starting from %s" % [popper_id, initial_position])
 
 func _on_input_event(_viewport, event, shape_idx):
 	# Check for left mouse button click and if popper hasn't fallen yet
