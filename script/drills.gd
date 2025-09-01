@@ -4,7 +4,8 @@ extends Control
 @export var ipsc_mini_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
 @export var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
 @export var popper_scene: PackedScene = preload("res://scene/popper.tscn")
-@export var paddle_scene: PackedScene = preload("res://scene/paddle.tscn")
+#@export var paddle_scene: PackedScene = preload("res://scene/paddle.tscn")
+@export var three_paddles_scene: PackedScene = preload("res://scene/3paddles.tscn")
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
 # Theme styles for title
@@ -14,7 +15,7 @@ extends Control
 var current_theme_style: String = "golden"
 
 # Drill sequence and progress tracking
-var target_sequence: Array[String] = ["ipsc_mini","hostage", "popper", "paddle", "ipsc_mini_rotate"]
+var target_sequence: Array[String] = ["ipsc_mini","hostage", "popper", "3paddles", "ipsc_mini_rotate"]
 var current_target_index: int = 0
 var current_target_instance: Node = null
 var total_drill_score: int = 0
@@ -34,6 +35,9 @@ func _ready():
 	
 	# Clear any existing targets in the center container
 	clear_current_target()
+	
+	# Ensure the center container doesn't block mouse input
+	center_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
 	# Connect shot timer signals
 	shot_timer_overlay.timer_ready.connect(_on_shot_timer_ready)
@@ -83,8 +87,13 @@ func _process(_delta):
 	var fps = Engine.get_frames_per_second()
 	fps_label.text = "FPS: " + str(fps)
 
-func _input(_event):
+func _unhandled_input(_event):
 	"""Handle input events for theme switching (testing purposes)"""
+	if _event is InputEventMouseButton and _event.pressed:
+		print("=== DRILLS.GD received unhandled mouse click ===")
+		print("Position: ", _event.global_position)
+		print("Button: ", _event.button_index)
+	
 	if _event is InputEventKey and _event.pressed:
 		match _event.keycode:
 			KEY_1:
@@ -138,8 +147,8 @@ func spawn_next_target():
 			await spawn_hostage()
 		"popper":
 			spawn_popper()
-		"paddle":
-			spawn_paddle()
+		"3paddles":
+			spawn_3paddles()
 		"ipsc_mini_rotate":
 			await spawn_ipsc_mini_rotate()
 		_:
@@ -172,6 +181,7 @@ func spawn_hostage():
 	print("=== SPAWNING HOSTAGE TARGET ===")
 	var target = hostage_scene.instantiate()
 	center_container.add_child(target)
+	
 	current_target_instance = target
 	print("Hostage target spawned successfully")
 	print("Hostage target has target_hit signal: ", target.has_signal("target_hit"))
@@ -187,18 +197,20 @@ func spawn_popper():
 	current_target_instance = target
 	print("Popper target spawned")
 
-func spawn_paddle():
-	"""Spawn a paddle target"""
-	var target = paddle_scene.instantiate()
+func spawn_3paddles():
+	"""Spawn a 3paddles composite target"""
+	var target = three_paddles_scene.instantiate()
 	center_container.add_child(target)
 	current_target_instance = target
-	print("Paddle target spawned")
+	print("3paddles target spawned")
 
 func spawn_ipsc_mini_rotate():
 	"""Spawn an IPSC mini rotating target"""
 	var target = ipsc_mini_rotate_scene.instantiate()
 	center_container.add_child(target)
 	current_target_instance = target
+	
+	target.position = Vector2(-200, 200)
 	
 	# Wait for the node to be fully added to the scene
 	await get_tree().process_frame
@@ -220,6 +232,8 @@ func connect_target_signals():
 	
 	# Handle composite targets that contain child targets
 	match current_target_type:
+		"3paddles":
+			connect_paddle_signals()
 		"ipsc_mini_rotate":
 			connect_ipsc_mini_rotate_signals()
 		_:
@@ -257,11 +271,12 @@ func connect_simple_target_signals():
 	
 	print("=== SIGNAL CONNECTION COMPLETE ===")
 
-func _on_target_disappeared():
+func _on_target_disappeared(target_id: String = ""):
 	"""Handle when a target has completed its disappear animation"""
 	var current_target_type = target_sequence[current_target_index]
 	print("=== TARGET DISAPPEARED ===")
 	print("Target type: ", current_target_type)
+	print("Target ID: ", target_id)
 	print("Target index: ", current_target_index)
 	print("Moving to next target...")
 	
@@ -283,12 +298,43 @@ func connect_ipsc_mini_rotate_signals():
 				ipsc_mini.target_disappeared.disconnect(_on_target_disappeared)
 			ipsc_mini.target_disappeared.connect(_on_target_disappeared)
 
-func _on_target_hit(zone: String, points: int):
-	"""Handle when a target is hit"""
+func connect_paddle_signals():
+	"""Connect signals for paddle targets (3paddles composite target)"""
+	print("=== CONNECTING TO 3PADDLES SIGNALS ===")
+	if current_target_instance and current_target_instance.has_signal("target_hit"):
+		if current_target_instance.target_hit.is_connected(_on_target_hit):
+			current_target_instance.target_hit.disconnect(_on_target_hit)
+		current_target_instance.target_hit.connect(_on_target_hit)
+		print("Connected to 3paddles target_hit signal")
+		
+		# Connect disappear signal
+		if current_target_instance.has_signal("target_disappeared"):
+			if current_target_instance.target_disappeared.is_connected(_on_target_disappeared):
+				current_target_instance.target_disappeared.disconnect(_on_target_disappeared)
+			current_target_instance.target_disappeared.connect(_on_target_disappeared)
+			print("Connected to 3paddles target_disappeared signal")
+	else:
+		print("WARNING: 3paddles target doesn't have expected signals!")
+
+func _on_target_hit(zone_or_paddle_id: String, points_or_zone: Variant = null, points: int = 0):
+	"""Handle when a target is hit - supports both simple targets and 3paddles"""
 	var current_target_type = target_sequence[current_target_index]
-	print("Target hit: ", current_target_type, " in zone: ", zone, " for ", points, " points")
 	
-	total_drill_score += points
+	# Handle different signal signatures
+	if current_target_type == "3paddles":
+		# 3paddles sends: paddle_id, zone, points
+		var paddle_id = zone_or_paddle_id
+		var zone = str(points_or_zone)
+		var actual_points = points
+		print("Target hit: ", current_target_type, " paddle: ", paddle_id, " in zone: ", zone, " for ", actual_points, " points")
+		total_drill_score += actual_points
+	else:
+		# Simple targets send: zone, points
+		var zone = zone_or_paddle_id
+		var actual_points = int(points_or_zone) if points_or_zone != null else points
+		print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points")
+		total_drill_score += actual_points
+	
 	print("Total drill score: ", total_drill_score)
 	
 	# The target will handle its own disappearing logic and emit target_disappeared when ready

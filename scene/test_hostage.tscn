@@ -5,4 +5,4 @@
 [node name="Node2D" type="Node2D"]
 
 [node name="Hostage" parent="." instance=ExtResource("1_sciy6")]
-position = Vector2(358, 473)
+position = Vector2(300, 520)

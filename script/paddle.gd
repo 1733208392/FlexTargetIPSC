@@ -2,8 +2,12 @@ extends Area2D
 
 var last_click_frame = -1
 var is_fallen = false
+var initial_position: Vector2  # Store the paddle's starting position
 @onready var animation_player = $AnimationPlayer
 @onready var sprite = $PopperSprite
+
+# Paddle identification
+var paddle_id: String = ""  # Unique identifier for this paddle
 
 # Bullet spawning
 const BulletScene = preload("res://scene/bullet.tscn")
@@ -11,20 +15,41 @@ var debug_markers = true  # Set to false to disable debug markers
 
 # Scoring system
 var total_score: int = 0
-signal target_hit(zone: String, points: int)
-signal target_disappeared
+signal target_hit(paddle_id: String, zone: String, points: int)
+signal target_disappeared(paddle_id: String)
 
 func _ready():
+	# Store the initial position for relative animation
+	initial_position = position
+	print("[paddle %s] Initial position stored: %s" % [paddle_id, initial_position])
+	
+	# Ensure input is enabled for mouse clicks
+	input_pickable = true
+	print("[paddle %s] Input pickable enabled" % paddle_id)
+	
 	# Connect the input_event signal to handle mouse clicks
 	input_event.connect(_on_input_event)
+	
+	# Set default paddle ID if not already set
+	if paddle_id == "":
+		paddle_id = name  # Use node name as default ID
+	
+	# Create unique material instance to prevent shared shader parameters
+	# This ensures each paddle has its own shader state
+	if sprite.material:
+		sprite.material = sprite.material.duplicate()
+		print("[paddle %s] Created unique shader material instance" % paddle_id)
+		
+		# Create unique animation with correct starting position
+		create_relative_animation()
 	
 		# Connect to WebSocket bullet hit signal
 	var ws_listener = get_node("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
-		print("[ipsc_mini] Connected to WebSocketListener bullet_hit signal")
+		print("[paddle %s] Connected to WebSocketListener bullet_hit signal" % paddle_id)
 	else:
-		print("[ipsc_mini] WebSocketListener singleton not found!")
+		print("[paddle %s] WebSocketListener singleton not found!" % paddle_id)
 	
 	# Set up collision detection for bullets
 	collision_layer = 7  # Target layer
@@ -33,20 +58,69 @@ func _ready():
 	# Debug: Test if shader material is working
 	test_shader_material()
 
-func _input(event):
-	# Handle mouse clicks for bullet spawning
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		# Check if bullet spawning is enabled
-		if not WebSocketListener.bullet_spawning_enabled:
-			print("[paddle] Bullet spawning disabled during shot timer")
-			return
-			
-		print("PADDLE: Mouse click detected!")
-		var mouse_screen_pos = event.position
-		var world_pos = get_global_mouse_position()
-		print("PADDLE: Mouse screen pos: ", mouse_screen_pos, " -> World pos: ", world_pos)
-		spawn_bullet_at_position(world_pos)
+func set_paddle_id(id: String):
+	"""Set the unique identifier for this paddle"""
+	paddle_id = id
+	print("Paddle ID set to: %s" % paddle_id)
+
+func get_paddle_id() -> String:
+	"""Get the unique identifier for this paddle"""
+	return paddle_id
+
+func create_relative_animation():
+	"""Create a unique animation that starts from the paddle's actual position"""
+	if not animation_player:
+		print("WARNING: Paddle %s: No AnimationPlayer found" % paddle_id)
+		return
 	
+	if not animation_player.has_animation("fall_down"):
+		print("WARNING: Paddle %s: Animation 'fall_down' not found" % paddle_id)
+		return
+	
+	# Get the original animation
+	var original_animation = animation_player.get_animation("fall_down")
+	if not original_animation:
+		print("ERROR: Paddle %s: Could not get 'fall_down' animation" % paddle_id)
+		return
+	
+	# Create a duplicate animation
+	var new_animation = original_animation.duplicate()
+	
+	# Find and update the position track
+	for i in range(new_animation.get_track_count()):
+		var track_path = new_animation.track_get_path(i)
+		
+		# Look for the position track
+		if str(track_path) == ".:position":
+			print("Paddle %s: Updating position track %d" % [paddle_id, i])
+			
+			# Get the original end position offset (0, 120)
+			var original_keys = new_animation.track_get_key_value(i, 1)  # Get the end position
+			var fall_offset = original_keys  # This should be Vector2(0, 120)
+			
+			# Calculate new positions relative to initial position
+			var start_pos = initial_position
+			var end_pos = initial_position + fall_offset
+			
+			print("Paddle %s: Position animation - Start: %s, End: %s" % [paddle_id, start_pos, end_pos])
+			
+			# Update the track keys
+			new_animation.track_set_key_value(i, 0, start_pos)  # Start position
+			new_animation.track_set_key_value(i, 1, end_pos)    # End position
+			
+			break
+	
+	# Create a new animation library with our updated animation
+	var new_library = AnimationLibrary.new()
+	new_library.add_animation("fall_down", new_animation)
+	
+	# Replace the animation library
+	animation_player.remove_animation_library("")
+	animation_player.add_animation_library("", new_library)
+	
+	print("Paddle %s: Created relative animation starting from %s" % [paddle_id, initial_position])
+
+func _input(event):
 	# Debug: Press SPACE to test shader effects manually
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_SPACE:
@@ -62,11 +136,11 @@ func _input(event):
 func test_shader_material():
 	var shader_material = sprite.material as ShaderMaterial
 	if shader_material:
-		print("Shader material found!")
-		print("Shader: ", shader_material.shader)
-		print("Fall progress: ", shader_material.get_shader_parameter("fall_progress"))
+		print("Paddle %s: Shader material found! Resource ID: %s" % [paddle_id, shader_material.get_instance_id()])
+		print("Paddle %s: Shader: %s" % [paddle_id, shader_material.shader])
+		print("Paddle %s: Fall progress: %s" % [paddle_id, shader_material.get_shader_parameter("fall_progress")])
 	else:
-		print("ERROR: No shader material found on sprite!")
+		print("ERROR: Paddle %s: No shader material found on sprite!" % paddle_id)
 
 func _on_input_event(_viewport, event, shape_idx):
 	# Check for left mouse button click and if paddle hasn't fallen yet
@@ -97,14 +171,23 @@ func _on_input_event(_viewport, event, shape_idx):
 		# Determine which area was clicked based on shape_idx
 		match shape_idx:
 			0:  # CircleArea (index 0) - Main target hit
-				print("Paddle circle area hit! Starting fall animation...")
+				print("Paddle %s circle area hit! Starting fall animation..." % paddle_id)
+				var points = 5
+				total_score += points
+				target_hit.emit(paddle_id, "CircleArea", points)
 				trigger_fall_animation()
 			1:  # StandArea (index 1) 
-				print("Paddle stand area hit!")
+				print("Paddle %s stand area hit!" % paddle_id)
+				var points = 0
+				total_score += points
+				target_hit.emit(paddle_id, "StandArea", points)
 				# Debug: Test shader manually
 				test_shader_effects()
 			_:
-				print("Paddle hit!")
+				print("Paddle %s hit!" % paddle_id)
+				var points = 1  # Default points for general hit
+				total_score += points
+				target_hit.emit(paddle_id, "GeneralHit", points)
 
 func spawn_bullet_at_position(world_pos: Vector2):
 	print("PADDLE: Spawning bullet at world position: ", world_pos)
@@ -133,11 +216,11 @@ func spawn_bullet_at_position(world_pos: Vector2):
 
 func handle_bullet_collision(bullet_position: Vector2):
 	"""Handle collision detection when a bullet hits this target"""
-	print("PADDLE: Bullet collision detected at position: ", bullet_position)
+	print("PADDLE %s: Bullet collision detected at position: %s" % [paddle_id, bullet_position])
 	
 	# Convert bullet world position to local coordinates
 	var local_pos = to_local(bullet_position)
-	print("PADDLE: Local position: ", local_pos)
+	print("PADDLE %s: Local position: %s" % [paddle_id, local_pos])
 	
 	var zone_hit = ""
 	var points = 0
@@ -146,21 +229,21 @@ func handle_bullet_collision(bullet_position: Vector2):
 	if is_point_in_circle_area(local_pos):
 		zone_hit = "CircleArea"
 		points = 5
-		print("COLLISION: Paddle circle area hit by bullet - 5 points!")
+		print("COLLISION: Paddle %s circle area hit by bullet - %d points!" % [paddle_id, points])
 		trigger_fall_animation()
 	elif is_point_in_stand_area(local_pos):
 		zone_hit = "StandArea"
 		points = 0
-		print("COLLISION: Paddle stand area hit by bullet - 0 points!")
+		print("COLLISION: Paddle %s stand area hit by bullet - %d points!" % [paddle_id, points])
 	else:
 		zone_hit = "miss"
 		points = 0
-		print("COLLISION: Bullet hit paddle but outside defined areas")
+		print("COLLISION: Bullet hit paddle %s but outside defined areas" % paddle_id)
 	
 	# Update score and emit signal
 	total_score += points
-	target_hit.emit(zone_hit, points)
-	print("PADDLE: Total score: ", total_score)
+	target_hit.emit(paddle_id, zone_hit, points)
+	print("PADDLE %s: Total score: %d" % [paddle_id, total_score])
 	
 	return zone_hit
 
@@ -186,7 +269,7 @@ func get_total_score() -> int:
 func reset_score():
 	"""Reset the score to zero"""
 	total_score = 0
-	print("Score reset to 0")
+	print("Paddle %s score reset to 0" % paddle_id)
 
 func create_debug_marker(world_pos: Vector2):
 	# Create a small visual marker to show where the click was detected
@@ -220,19 +303,19 @@ func test_shader_effects():
 
 func trigger_fall_animation():
 	if is_fallen:
-		print("Paddle already fallen, ignoring trigger")
+		print("Paddle %s already fallen, ignoring trigger" % paddle_id)
 		return
 		
-	print("=== TRIGGERING FALL ANIMATION ===")
+	print("=== TRIGGERING FALL ANIMATION FOR PADDLE %s ===" % paddle_id)
 	is_fallen = true
 	
 	# Debug: Check if we have the material
 	var shader_material = sprite.material as ShaderMaterial
 	if not shader_material:
-		print("ERROR: No shader material found!")
+		print("ERROR: Paddle %s: No shader material found!" % paddle_id)
 		return
 	
-	print("Shader material found, setting parameters...")
+	print("Paddle %s: Shader material found, setting parameters... (Resource ID: %s)" % [paddle_id, shader_material.get_instance_id()])
 	
 	# Add some randomization to the fall
 	var random_rotation = randf_range(-120.0, 120.0)
@@ -268,38 +351,45 @@ func trigger_fall_animation():
 	if not animation_player.animation_finished.is_connected(_on_fall_animation_finished):
 		animation_player.animation_finished.connect(_on_fall_animation_finished)
 	
-	print("=== FALL ANIMATION TRIGGERED ===")
+	print("=== FALL ANIMATION TRIGGERED FOR PADDLE %s ===" % paddle_id)
 
 func _on_fall_animation_finished(anim_name: StringName):
 	if anim_name == "fall_down":
-		print("Paddle fall animation completed!")
+		print("Paddle %s fall animation completed!" % paddle_id)
 		# Optional: Add scoring, sound effects, or remove the paddle
 		# For now, just disable further interactions
 		input_pickable = false
 		
 		# Emit signal to notify the drills system that the target has disappeared
-		target_disappeared.emit()
-		print("target_disappeared signal emitted")
+		target_disappeared.emit(paddle_id)
+		print("target_disappeared signal emitted for paddle %s" % paddle_id)
 
 # Optional: Function to reset the paddle (for testing or game restart)
 func reset_paddle():
 	is_fallen = false
 	input_pickable = true
-	position = Vector2.ZERO
+	position = initial_position  # Reset to initial position, not (0,0)
 	
 	var shader_material = sprite.material as ShaderMaterial
 	if shader_material:
 		shader_material.set_shader_parameter("fall_progress", 0.0)
 		shader_material.set_shader_parameter("rotation_angle", 0.0)
+		print("Paddle %s: Shader parameters reset (Resource ID: %s)" % [paddle_id, shader_material.get_instance_id()])
+	else:
+		print("WARNING: Paddle %s: No shader material to reset!" % paddle_id)
 	
 	if animation_player:
 		animation_player.stop()
 		animation_player.seek(0.0)
+	
+	print("Paddle %s reset to initial position %s" % [paddle_id, initial_position])
+	
+	print("Paddle %s reset" % paddle_id)
 
 func _on_websocket_bullet_hit(pos: Vector2):
 	# Check if bullet spawning is enabled
 	if not WebSocketListener.bullet_spawning_enabled:
-		print("[paddle] WebSocket bullet spawning disabled during shot timer")
+		print("[paddle %s] WebSocket bullet spawning disabled during shot timer" % paddle_id)
 		return
 		
 	# Transform pos from WebSocket (268x476.4, origin bottom-left) to game (720x1280, origin top-left)
@@ -311,6 +401,6 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	var x_new = pos.x * (game_width / ws_width)
 	var y_new = game_height - (pos.y * (game_height / ws_height))
 	var transformed_pos = Vector2(x_new, y_new)
-	print("[BlockSpawner] Received bullet hit at position (ws): ", pos, ", transformed to game: ", transformed_pos)
+	print("[Paddle %s] Received bullet hit at position (ws): %s, transformed to game: %s" % [paddle_id, pos, transformed_pos])
 	#spawn_bullet_at_position
 	spawn_bullet_at_position(transformed_pos)
