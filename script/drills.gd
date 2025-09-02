@@ -437,6 +437,9 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 	
 	print("Total drill score: ", total_drill_score)
 	
+	# Emit the enhanced target_hit signal for performance tracking
+	emit_signal("target_hit", current_target_type, hit_position, hit_area)
+	
 	# Special handling for rotating target
 	if current_target_type == "ipsc_mini_rotate":
 		rotating_target_hits += 1
@@ -446,10 +449,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		if rotating_target_hits >= 2:
 			print("2 hits on rotating target reached! Finishing drill immediately.")
 			finish_drill_immediately()
-			return
-	
-	# Emit the enhanced target_hit signal for performance tracking
-	emit_signal("target_hit", current_target_type, hit_position, hit_area)
+			# Don't return here - let the performance tracking signal be emitted
 	
 	# Update the fastest interval display
 	update_fastest_interval_display()
