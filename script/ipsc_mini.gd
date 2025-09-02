@@ -23,7 +23,7 @@ func _ready():
 	input_event.connect(_on_input_event)
 	
 	# Connect to WebSocket bullet hit signal
-	var ws_listener = get_node("/root/WebSocketListener")
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
 		print("[ipsc_mini] Connected to WebSocketListener bullet_hit signal")

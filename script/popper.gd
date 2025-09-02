@@ -39,7 +39,7 @@ func _ready():
 		create_relative_animation()
 	
 		# Connect to WebSocket bullet hit signal
-	var ws_listener = get_node("/root/WebSocketListener")
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
 		print("[popper %s] Connected to WebSocketListener bullet_hit signal" % popper_id)
@@ -58,7 +58,8 @@ func _input(event):
 	# Handle mouse clicks for bullet spawning
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		# Check if bullet spawning is enabled
-		if not WebSocketListener.bullet_spawning_enabled:
+		var ws_listener = get_node_or_null("/root/WebSocketListener")
+		if ws_listener and not ws_listener.bullet_spawning_enabled:
 			print("[popper] Bullet spawning disabled during shot timer")
 			return
 			
@@ -359,7 +360,8 @@ func reset_score():
 
 func _on_websocket_bullet_hit(pos: Vector2):
 	# Check if bullet spawning is enabled
-	if not WebSocketListener.bullet_spawning_enabled:
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener and not ws_listener.bullet_spawning_enabled:
 		print("[popper] WebSocket bullet spawning disabled during shot timer")
 		return
 		

@@ -18,10 +18,10 @@ func _ready():
 	buttons[focused_index].grab_focus()
 
 		# Use get_node instead of Engine.has_singleton
-	var ws_listener = get_node("/root/WebSocketListener")
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
-		print("[Menu] Connecting to WebSocketListener.menu_control signal")
 		ws_listener.menu_control.connect(_on_menu_control)
+		print("[Menu] Connecting to WebSocketListener.menu_control signal")
 	else:
 		print("[Menu] WebSocketListener singleton not found!")
 

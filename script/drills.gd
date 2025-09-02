@@ -21,12 +21,14 @@ var current_target_instance: Node = null
 var total_drill_score: int = 0
 var drill_completed: bool = false
 var bullets_allowed: bool = false  # Track if bullet spawning is allowed
+var rotating_target_hits: int = 0  # Track hits on the rotating target
 
 # Node references
 @onready var center_container = $CenterContainer
 @onready var target_type_title = $TopContainer/TopLayout/HeaderContainer/TargetTypeTitle
 @onready var fps_label = $FPSLabel
 @onready var shot_timer_overlay = $ShotTimerOverlay
+@onready var drill_complete_overlay = $DrillCompleteOverlay
 
 # Performance tracking
 signal target_hit(target_type: String, hit_position: Vector2, hit_area: String)
@@ -62,10 +64,14 @@ func show_shot_timer():
 	shot_timer_overlay.visible = true
 	shot_timer_overlay.reset_timer()
 	
+	# Hide the completion overlay if visible
+	drill_complete_overlay.visible = false
+	
 	# Disable bullet spawning during shot timer
 	bullets_allowed = false
-	if WebSocketListener:
-		WebSocketListener.bullet_spawning_enabled = false
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.bullet_spawning_enabled = false
 	
 	# No target should be visible during shot timer phase
 	clear_current_target()
@@ -82,8 +88,9 @@ func _on_shot_timer_ready():
 	hide_shot_timer()
 	# Enable bullet spawning now that target will appear
 	bullets_allowed = true
-	if WebSocketListener:
-		WebSocketListener.bullet_spawning_enabled = true
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.bullet_spawning_enabled = true
 	# Now spawn the target normally
 	spawn_next_target()
 
@@ -222,6 +229,10 @@ func spawn_ipsc_mini_rotate():
 	
 	target.position = Vector2(-200, 200)
 	
+	# Reset rotating target hit counter
+	rotating_target_hits = 0
+	print("Rotating target hit counter reset to 0")
+	
 	# Wait for the node to be fully added to the scene
 	await get_tree().process_frame
 	
@@ -297,7 +308,7 @@ func _on_target_disappeared(target_id: String = ""):
 
 func connect_ipsc_mini_rotate_signals():
 	"""Connect signals for ipsc_mini_rotate target (has child ipsc_mini)"""
-	var ipsc_mini = current_target_instance.get_node("IPSCMini")
+	var ipsc_mini = current_target_instance.get_node("RotationCenter/IPSCMini")
 	if ipsc_mini and ipsc_mini.has_signal("target_hit"):
 		if ipsc_mini.target_hit.is_connected(_on_target_hit):
 			ipsc_mini.target_hit.disconnect(_on_target_hit)
@@ -382,6 +393,17 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 	
 	print("Total drill score: ", total_drill_score)
 	
+	# Special handling for rotating target
+	if current_target_type == "ipsc_mini_rotate":
+		rotating_target_hits += 1
+		print("Rotating target hit count: ", rotating_target_hits)
+		
+		# Check if we've reached 2 hits on the rotating target
+		if rotating_target_hits >= 2:
+			print("2 hits on rotating target reached! Finishing drill immediately.")
+			finish_drill_immediately()
+			return
+	
 	# Emit the enhanced target_hit signal for performance tracking
 	emit_signal("target_hit", current_target_type, hit_position, hit_area)
 	
@@ -401,6 +423,7 @@ func complete_drill():
 	current_target_index = 0
 	total_drill_score = 0
 	drill_completed = false
+	rotating_target_hits = 0
 	
 	# Show shot timer overlay again for next run after a brief delay
 	await get_tree().create_timer(2.0).timeout  # Wait 2 seconds before showing timer
@@ -408,6 +431,40 @@ func complete_drill():
 	
 	# You can add additional completion logic here
 	# For example: show results screen, save score, transition to next drill, etc.
+
+func finish_drill_immediately():
+	"""Finish the drill immediately after 2 hits on rotating target"""
+	print("=== DRILL FINISHED IMMEDIATELY! ===")
+	print("Final score: ", total_drill_score)
+	print("Targets completed: ", current_target_index, "/", target_sequence.size())
+	drill_completed = true
+	
+	# Emit drills finished signal for performance tracking
+	emit_signal("drills_finished")
+	
+	# Freeze the screen by disabling bullet spawning
+	bullets_allowed = false
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.bullet_spawning_enabled = false
+	
+	# Show the completion overlay
+	show_completion_overlay()
+	
+	# Clear the current target to prevent further interactions
+	clear_current_target()
+	
+	# Reset tracking variables for next run
+	current_target_index = 0
+	total_drill_score = 0
+	drill_completed = false
+	rotating_target_hits = 0
+
+func show_completion_overlay():
+	"""Show the completion overlay with the time"""
+	print("Showing completion overlay")
+	drill_complete_overlay.visible = true
+	drill_complete_overlay.text = "05:00:32"
 
 func restart_drill():
 	"""Restart the drill from the beginning"""
@@ -417,6 +474,7 @@ func restart_drill():
 	current_target_index = 0
 	total_drill_score = 0
 	drill_completed = false
+	rotating_target_hits = 0
 	
 	# Clear the current target
 	clear_current_target()

@@ -44,7 +44,7 @@ func _ready():
 		create_relative_animation()
 	
 		# Connect to WebSocket bullet hit signal
-	var ws_listener = get_node("/root/WebSocketListener")
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
 		print("[paddle %s] Connected to WebSocketListener bullet_hit signal" % paddle_id)
@@ -388,7 +388,8 @@ func reset_paddle():
 
 func _on_websocket_bullet_hit(pos: Vector2):
 	# Check if bullet spawning is enabled
-	if not WebSocketListener.bullet_spawning_enabled:
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener and not ws_listener.bullet_spawning_enabled:
 		print("[paddle %s] WebSocket bullet spawning disabled during shot timer" % paddle_id)
 		return
 		
