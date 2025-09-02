@@ -4,8 +4,6 @@ var records = []
 var current_index = 0
 var current_target_type = ""
 var loaded_targets = {}
-var labels = []
-var bullet_holes = []
 
 var target_scenes = {
 	"ipsc_mini": "res://scene/ipsc_mini.tscn",
@@ -113,17 +111,27 @@ func load_record(index):
 				
 				# Disable input for target and its children
 				disable_target_input(target_scene)
-				loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos}
+				loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": [], "labels": []}
 			else:
 				print("Unknown target type: ", target_type)
 				return
 		# Show current target
 		loaded_targets[target_type]["scene"].visible = true
 	
+	add_bullet_hole_for_record(index)
+
+func add_bullet_hole_for_record(index):
+	var record = records[index]
+	var target_type = record.get("target_type", "")
+	if not loaded_targets.has(target_type):
+		return
+	
+	var target_data = loaded_targets[target_type]
+	
 	# Set rotation angle for rotating targets
 	if target_type == "ipsc_mini_rotate":
 		var rotation_angle = record.get("rotation_angle", 0.0)
-		var target_scene = loaded_targets[target_type]["scene"]
+		var target_scene = target_data["scene"]
 		var rotation_center = target_scene.get_node("RotationCenter")
 		if rotation_center:
 			rotation_center.rotation = rotation_angle
@@ -131,13 +139,12 @@ func load_record(index):
 	
 	# Add bullet hole
 	var hit_pos = record["hit_position"]
-	var target_data = loaded_targets[target_type]
 	var pos = target_data["pos"]
 	var bullet_hole = load("res://scene/bullet_hole.tscn").instantiate()
-	bullet_hole.position = Vector2(hit_pos["x"], hit_pos["y"]) -pos - Vector2(360, 720)
+	bullet_hole.position = Vector2(hit_pos["x"], hit_pos["y"]) - pos - Vector2(360, 720)
 	bullet_hole.z_index = 5  # Ensure it's above the target
 	target_data["scene"].add_child(bullet_hole)
-	bullet_holes.append(bullet_hole)
+	target_data["bullet_holes"].append(bullet_hole)
 	
 	# Add time_diff label
 	var time_diff = record.get("time_diff", 0.0)
@@ -153,17 +160,61 @@ func load_record(index):
 		var rotation_angle = record.get("rotation_angle", 0.0)
 		label.text += "\n%.1f°" % rad_to_deg(rotation_angle)
 	
-	loaded_targets[target_type]["scene"].add_child(label)
-	labels.append(label)
+	target_data["scene"].add_child(label)
+	target_data["labels"].append(label)
 
 func _input(event):
 	if event is InputEventKey and event.keycode == KEY_N and event.pressed:
 		if current_index < records.size() - 1:
 			# Make previous label 0.3 transparent
-			if labels.size() > 0:
-				labels.back().modulate.a = 0.3
+			if loaded_targets.has(current_target_type) and loaded_targets[current_target_type]["labels"].size() > 0:
+				loaded_targets[current_target_type]["labels"].back().modulate.a = 0.3
 			current_index += 1
 			load_record(current_index)
+	elif event is InputEventKey and event.keycode == KEY_P and event.pressed:
+		if current_index > 0:
+			# Remove current bullet hole and label from current target
+			if loaded_targets.has(current_target_type):
+				var target_data = loaded_targets[current_target_type]
+				if target_data["bullet_holes"].size() > 0:
+					var last_bullet_hole = target_data["bullet_holes"].back()
+					last_bullet_hole.queue_free()
+					target_data["bullet_holes"].pop_back()
+				if target_data["labels"].size() > 0:
+					var last_label = target_data["labels"].back()
+					last_label.queue_free()
+					target_data["labels"].pop_back()
+					# Make the new last label fully visible
+					if target_data["labels"].size() > 0:
+						target_data["labels"].back().modulate.a = 1.0
+			current_index -= 1
+			
+			# Check if target changed
+			var new_record = records[current_index]
+			var new_target_type = new_record.get("target_type", "")
+			if new_target_type != current_target_type:
+				# Hide current target
+				if loaded_targets.has(current_target_type):
+					loaded_targets[current_target_type]["scene"].visible = false
+				current_target_type = new_target_type
+				# Load new target if not loaded
+				if not loaded_targets.has(current_target_type):
+					if target_scenes.has(current_target_type):
+						var scene_path = target_scenes[current_target_type]
+						var target_scene = load(scene_path).instantiate()
+						var target_pos = Vector2(-200, 200) if current_target_type == "ipsc_mini_rotate" else Vector2(0, 0)
+						target_scene.position = target_pos
+						add_child(target_scene)
+						if current_target_type == "ipsc_mini_rotate":
+							var animation_player = target_scene.get_node("AnimationPlayer")
+							if animation_player:
+								animation_player.stop()
+						disable_target_input(target_scene)
+						loaded_targets[current_target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": [], "labels": []}
+				loaded_targets[current_target_type]["scene"].visible = true
+				# Set the last label of the new target to fully visible
+				if loaded_targets[current_target_type]["labels"].size() > 0:
+					loaded_targets[current_target_type]["labels"].back().modulate.a = 1.0
 
 func disable_target_input(node: Node):
 	"""Recursively disable input for a node and its children"""
