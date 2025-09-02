@@ -85,29 +85,33 @@ func load_record(index):
 		if current_target_type != "":
 			# Hide previous target
 			if loaded_targets.has(current_target_type):
-				loaded_targets[current_target_type].visible = false
+				loaded_targets[current_target_type]["scene"].visible = false
 		current_target_type = target_type
 		if not loaded_targets.has(target_type):
 			# Load new target
 			if target_scenes.has(target_type):
 				var scene_path = target_scenes[target_type]
 				var target_scene = load(scene_path).instantiate()
-				target_scene.position = Vector2(0, 0)
+				var target_pos = Vector2(-200, 200) if target_type == "ipsc_mini_rotate" else Vector2(0, 0)
+				target_scene.position = target_pos
 				add_child(target_scene)
 				# Disable input for target and its children
 				disable_target_input(target_scene)
-				loaded_targets[target_type] = target_scene
+				loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos}
 			else:
 				print("Unknown target type: ", target_type)
 				return
 		# Show current target
-		loaded_targets[target_type].visible = true
+		loaded_targets[target_type]["scene"].visible = true
 	
 	# Add bullet hole
 	var hit_pos = record["hit_position"]
+	var target_data = loaded_targets[target_type]
+	var pos = target_data["pos"]
 	var bullet_hole = load("res://scene/bullet_hole.tscn").instantiate()
-	bullet_hole.position = Vector2(hit_pos["x"], hit_pos["y"]) - Vector2(360, 640)
-	loaded_targets[target_type].add_child(bullet_hole)
+	bullet_hole.position = Vector2(hit_pos["x"], hit_pos["y"]) -pos - Vector2(360, 720)
+	bullet_hole.z_index = 5  # Ensure it's above the target
+	target_data["scene"].add_child(bullet_hole)
 	bullet_holes.append(bullet_hole)
 	
 	# Add time_diff label
@@ -118,7 +122,7 @@ func load_record(index):
 	label.modulate = Color(0, 0, 0)
 	label.z_index = 10
 	label.add_theme_font_size_override("font_size", 40)
-	loaded_targets[target_type].add_child(label)
+	loaded_targets[target_type]["scene"].add_child(label)
 	labels.append(label)
 
 func _input(event):

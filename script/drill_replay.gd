@@ -9,7 +9,7 @@ var bullet_holes = []
 
 var target_scenes = {
 	"ipsc_mini": "res://scene/ipsc_mini.tscn",
-	"ipsc_white": "res://scene/ipsc_white.tscn",
+	"hostage": "res://scene/hostage.tscn",
 	"ipsc_mini_rotate": "res://scene/ipsc_mini_rotate.tscn",
 	"3paddles": "res://scene/3paddles.tscn",
 	"2poppers": "res://scene/2poppers.tscn",
@@ -92,7 +92,10 @@ func load_record(index):
 			if target_scenes.has(target_type):
 				var scene_path = target_scenes[target_type]
 				var target_scene = load(scene_path).instantiate()
-				target_scene.position = Vector2(0, 0)
+				if target_type == "ipsc_mini_rotate":
+					target_scene.position = Vector2(-200, 200)
+				else:
+					target_scene.position = Vector2(0, 0)
 				add_child(target_scene)
 				# Disable input for target and its children
 				disable_target_input(target_scene)
@@ -106,7 +109,7 @@ func load_record(index):
 	# Add bullet hole
 	var hit_pos = record["hit_position"]
 	var bullet_hole = load("res://scene/bullet_hole.tscn").instantiate()
-	bullet_hole.position = Vector2(hit_pos["x"], hit_pos["y"]) - Vector2(360, 640)
+	bullet_hole.position = Vector2(hit_pos["x"], hit_pos["y"])
 	loaded_targets[target_type].add_child(bullet_hole)
 	bullet_holes.append(bullet_hole)
 	
