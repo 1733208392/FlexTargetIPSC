@@ -15,6 +15,7 @@ const SCORES = {
 var records = []
 var last_shot_time = 0
 var current_index = 1
+var fastest_time_diff = 999.0  # Initialize with a large value
 
 func _ready():
     # Initialize last_shot_time
@@ -25,6 +26,10 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
     var current_time = Time.get_ticks_msec()
     var time_diff = (current_time - last_shot_time) / 1000.0  # in seconds
     last_shot_time = current_time
+    
+    # Update fastest time if this is faster
+    if time_diff < fastest_time_diff:
+        fastest_time_diff = time_diff
     
     var score = SCORES.get(hit_area, 0)  # Default to 0 if not found
     
@@ -60,3 +65,12 @@ func _on_drills_finished():
     
     records.clear()
     current_index += 1
+    fastest_time_diff = 999.0  # Reset for next drill
+
+# Get the fastest time difference recorded
+func get_fastest_time_diff() -> float:
+    return fastest_time_diff
+
+# Reset the fastest time for a new drill
+func reset_fastest_time():
+    fastest_time_diff = 999.0

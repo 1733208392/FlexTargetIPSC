@@ -148,22 +148,44 @@ func _on_input_event(_viewport, event, shape_idx):
 			return
 		last_click_frame = current_frame
 		
-		# Determine which area was clicked based on shape_idx
+		# Get the click position in local coordinates
+		var _local_pos = to_local(event.position)
+		
+		# Determine which area was clicked based on shape_idx and emit signal
+		var zone_hit = ""
+		var points = 0
+		
 		match shape_idx:
 			0:  # StandArea (index 0)
+				zone_hit = "StandArea"
+				points = 0
 				print("Popper stand hit!")
 				test_shader_effects()
 			1:  # BodyArea (index 1) - Main scoring hit
+				zone_hit = "BodyArea"
+				points = 2
 				print("Popper body hit! Starting fall animation...")
 				trigger_fall_animation()
 			2:  # NeckArea (index 2) - Medium scoring hit
+				zone_hit = "NeckArea"
+				points = 3
 				print("Popper neck hit! Starting fall animation...")
 				trigger_fall_animation()
 			3:  # HeadArea (index 3) - High scoring hit
+				zone_hit = "HeadArea"
+				points = 5
 				print("Popper head hit! Starting fall animation...")
 				trigger_fall_animation()
 			_:
+				zone_hit = "unknown"
+				points = 0
 				print("Popper hit!")
+		
+		# Emit the target_hit signal for mouse clicks too
+		if zone_hit != "":
+			total_score += points
+			target_hit.emit(zone_hit, points, event.position)
+			print("Mouse click target_hit emitted: ", zone_hit, " for ", points, " points at ", event.position)
 
 func test_shader_effects():
 	print("Testing popper shader effects manually...")
@@ -278,6 +300,11 @@ func spawn_bullet_at_position(world_pos: Vector2):
 func handle_bullet_collision(bullet_position: Vector2):
 	"""Handle collision detection when a bullet hits this target"""
 	print("Bullet collision detected at position: ", bullet_position)
+	
+	# If popper has already fallen, ignore further collisions
+	if is_fallen:
+		print("Popper already fallen, ignoring collision")
+		return "already_fallen"
 	
 	# Convert bullet world position to local coordinates
 	var local_pos = to_local(bullet_position)

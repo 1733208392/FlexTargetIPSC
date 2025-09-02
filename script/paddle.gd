@@ -174,20 +174,20 @@ func _on_input_event(_viewport, event, shape_idx):
 				print("Paddle %s circle area hit! Starting fall animation..." % paddle_id)
 				var points = 5
 				total_score += points
-				target_hit.emit(paddle_id, "CircleArea", points)
+				target_hit.emit(paddle_id, "CircleArea", points, event.position)
 				trigger_fall_animation()
 			1:  # StandArea (index 1) 
 				print("Paddle %s stand area hit!" % paddle_id)
 				var points = 0
 				total_score += points
-				target_hit.emit(paddle_id, "StandArea", points)
+				target_hit.emit(paddle_id, "StandArea", points, event.position)
 				# Debug: Test shader manually
 				test_shader_effects()
 			_:
 				print("Paddle %s hit!" % paddle_id)
 				var points = 1  # Default points for general hit
 				total_score += points
-				target_hit.emit(paddle_id, "GeneralHit", points)
+				target_hit.emit(paddle_id, "GeneralHit", points, event.position)
 
 func spawn_bullet_at_position(world_pos: Vector2):
 	print("PADDLE: Spawning bullet at world position: ", world_pos)
@@ -217,6 +217,11 @@ func spawn_bullet_at_position(world_pos: Vector2):
 func handle_bullet_collision(bullet_position: Vector2):
 	"""Handle collision detection when a bullet hits this target"""
 	print("PADDLE %s: Bullet collision detected at position: %s" % [paddle_id, bullet_position])
+	
+	# If paddle has already fallen, ignore further collisions
+	if is_fallen:
+		print("PADDLE %s: Already fallen, ignoring collision" % paddle_id)
+		return "already_fallen"
 	
 	# Convert bullet world position to local coordinates
 	var local_pos = to_local(bullet_position)
