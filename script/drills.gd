@@ -508,6 +508,9 @@ func finish_drill_immediately():
 	# Show the completion overlay
 	show_completion_overlay()
 	
+	# Set the total elapsed time in performance tracker before finishing
+	performance_tracker.set_total_elapsed_time(elapsed_seconds)
+	
 	# Wait a moment to ensure the overlay is visible before resetting
 	await get_tree().create_timer(0.5).timeout
 	

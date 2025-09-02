@@ -17,6 +17,7 @@ var last_shot_time = 0
 var current_index = 1
 var fastest_time_diff = 999.0  # Initialize with a large value
 var first_shot = true  # Track if this is the first shot of the drill
+var total_elapsed_time = 0.0  # Store the total elapsed time for the drill
 
 func _ready():
     # Don't initialize last_shot_time here - let reset_shot_timer handle it
@@ -63,15 +64,37 @@ func _on_drills_finished():
     
     print("Performance records for this drill: ", records)
     
+    # Create the summary data
+    var fastest_value = null
+    if fastest_time_diff < 999.0:
+        fastest_value = fastest_time_diff
+    
+    var drill_summary = {
+        "total_elapsed_time": total_elapsed_time,
+        "fastest_shot_interval": fastest_value,
+        "total_shots": records.size(),
+        "timestamp": Time.get_unix_time_from_system()
+    }
+    
+    # Create the final data structure
+    var drill_data = {
+        "drill_summary": drill_summary,
+        "records": records.duplicate()  # Copy the records array
+    }
+    
     var file_name = "performance_%03d.json" % current_index
     var file_path = "user://" + file_name
     
     var file = FileAccess.open(file_path, FileAccess.WRITE)
     if file:
-        var json_string = JSON.stringify(records)
+        var json_string = JSON.stringify(drill_data)
         file.store_string(json_string)
         file.close()
         print("Performance data saved to: ", file_path)
+        var fastest_display = "N/A"
+        if fastest_time_diff < 999.0:
+            fastest_display = "%.2f" % fastest_time_diff
+        print("Drill summary - Total time:", total_elapsed_time, "seconds, Fastest shot:", fastest_display)
     else:
         print("Failed to save performance data")
     
@@ -90,3 +113,8 @@ func reset_fastest_time():
 # Reset the shot timer for accurate first shot measurement
 func reset_shot_timer():
     last_shot_time = Time.get_ticks_msec()
+
+# Set the total elapsed time for the drill
+func set_total_elapsed_time(time_seconds: float):
+    total_elapsed_time = time_seconds
+    print("PERFORMANCE TRACKER: Total elapsed time set to:", total_elapsed_time, "seconds")

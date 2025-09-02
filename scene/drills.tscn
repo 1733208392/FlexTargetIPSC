@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://5w6j4130dlpu"]
+[gd_scene load_steps=6 format=3 uid="uid://5w6j4130dlpu"]
 
 [ext_resource type="Texture2D" uid="uid://gpyjow0hb5mh" path="res://asset/drills_back.jpg" id="2_6482l"]
 [ext_resource type="Script" uid="uid://f358eipnuwpm" path="res://script/drills.gd" id="2_abc123"]
 [ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="4_title_settings"]
 [ext_resource type="PackedScene" uid="uid://bvmw1s06twfav" path="res://scene/shot_timer.tscn" id="5_shot_timer"]
+[ext_resource type="LabelSettings" uid="uid://deg7d40rl6o81" path="res://theme/big_bold_timer_font.tres" id="6_big_bold"]
 
 [node name="drills" type="Control"]
 layout_mode = 3
@@ -84,10 +85,12 @@ size_flags_horizontal = 3
 [node name="ThunderIcon" type="Label" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
 layout_mode = 2
 text = "⚡"
+label_settings = ExtResource("4_title_settings")
 
 [node name="FastestInterval" type="Label" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
 layout_mode = 2
 text = "0.87s"
+label_settings = ExtResource("4_title_settings")
 
 [node name="TimerContainer" type="CenterContainer" parent="TopContainer/TopLayout"]
 layout_mode = 2
@@ -96,6 +99,7 @@ size_flags_vertical = 3
 [node name="Timer" type="Label" parent="TopContainer/TopLayout/TimerContainer"]
 layout_mode = 2
 text = "00:00:00"
+label_settings = ExtResource("6_big_bold")
 horizontal_alignment = 1
 
 [node name="DrillTimer" type="Timer" parent="."]

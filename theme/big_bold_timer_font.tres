@@ -1,0 +1,12 @@
+[gd_resource type="LabelSettings" load_steps=2 format=3 uid="uid://deg7d40rl6o81"]
+
+[sub_resource type="SystemFont" id="SystemFont_bold"]
+font_names = PackedStringArray("Arial", "Helvetica", "Sans-Serif")
+font_weight = 500
+msdf_size = 36
+
+[resource]
+font = SubResource("SystemFont_bold")
+font_size = 64
+outline_size = 2
+outline_color = Color(0, 0, 0, 1)
