@@ -67,6 +67,14 @@ func _ready():
 		print("  Total Shots: ", summary.get("total_shots", 0))
 		print("  Timestamp: ", summary.get("timestamp", "N/A"))
 	
+	# Check if records contain rotation angle data
+	if records.size() > 0:
+		var first_record = records[0]
+		if first_record.has("rotation_angle"):
+			print("Rotation angle data found in records - will display target at recorded angles during replay")
+		else:
+			print("No rotation angle data found in records")
+	
 	# Load the first record
 	load_record(current_index)
 	
@@ -85,32 +93,50 @@ func load_record(index):
 		if current_target_type != "":
 			# Hide previous target
 			if loaded_targets.has(current_target_type):
-				loaded_targets[current_target_type].visible = false
+				loaded_targets[current_target_type]["scene"].visible = false
 		current_target_type = target_type
 		if not loaded_targets.has(target_type):
 			# Load new target
 			if target_scenes.has(target_type):
 				var scene_path = target_scenes[target_type]
 				var target_scene = load(scene_path).instantiate()
-				if target_type == "ipsc_mini_rotate":
-					target_scene.position = Vector2(-200, 200)
-				else:
-					target_scene.position = Vector2(0, 0)
+				var target_pos = Vector2(-200, 200) if target_type == "ipsc_mini_rotate" else Vector2(0, 0)
+				target_scene.position = target_pos
 				add_child(target_scene)
+				
+				# Stop the rotation animation for replay if it's a rotating target
+				if target_type == "ipsc_mini_rotate":
+					var animation_player = target_scene.get_node("AnimationPlayer")
+					if animation_player:
+						animation_player.stop()
+						print("Drill Replay New: Stopped rotation animation for replay")
+				
 				# Disable input for target and its children
 				disable_target_input(target_scene)
-				loaded_targets[target_type] = target_scene
+				loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos}
 			else:
 				print("Unknown target type: ", target_type)
 				return
 		# Show current target
-		loaded_targets[target_type].visible = true
+		loaded_targets[target_type]["scene"].visible = true
+	
+	# Set rotation angle for rotating targets
+	if target_type == "ipsc_mini_rotate":
+		var rotation_angle = record.get("rotation_angle", 0.0)
+		var target_scene = loaded_targets[target_type]["scene"]
+		var rotation_center = target_scene.get_node("RotationCenter")
+		if rotation_center:
+			rotation_center.rotation = rotation_angle
+			print("Drill Replay New: Set target rotation to: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", index + 1)
 	
 	# Add bullet hole
 	var hit_pos = record["hit_position"]
+	var target_data = loaded_targets[target_type]
+	var pos = target_data["pos"]
 	var bullet_hole = load("res://scene/bullet_hole.tscn").instantiate()
-	bullet_hole.position = Vector2(hit_pos["x"], hit_pos["y"])
-	loaded_targets[target_type].add_child(bullet_hole)
+	bullet_hole.position = Vector2(hit_pos["x"], hit_pos["y"]) -pos - Vector2(360, 720)
+	bullet_hole.z_index = 5  # Ensure it's above the target
+	target_data["scene"].add_child(bullet_hole)
 	bullet_holes.append(bullet_hole)
 	
 	# Add time_diff label
@@ -121,7 +147,13 @@ func load_record(index):
 	label.modulate = Color(0, 0, 0)
 	label.z_index = 10
 	label.add_theme_font_size_override("font_size", 40)
-	loaded_targets[target_type].add_child(label)
+	
+	# Add rotation angle info for rotating targets
+	if target_type == "ipsc_mini_rotate":
+		var rotation_angle = record.get("rotation_angle", 0.0)
+		label.text += "\n%.1f°" % rad_to_deg(rotation_angle)
+	
+	loaded_targets[target_type]["scene"].add_child(label)
 	labels.append(label)
 
 func _input(event):
@@ -142,6 +174,11 @@ func disable_target_input(node: Node):
 	if ws_listener:
 		if node.has_method("_on_websocket_bullet_hit"):
 			ws_listener.bullet_hit.disconnect(node._on_websocket_bullet_hit)
+	
+	# Stop any animations for replay mode
+	if node is AnimationPlayer:
+		node.stop()
+	
 	for child in node.get_children():
 		disable_target_input(child)
 

@@ -24,7 +24,7 @@ func _ready():
     pass
 
 # Signal handler for target_hit
-func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String):
+func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float = 0.0):
     var current_time = Time.get_ticks_msec()
     var time_diff = 0.0  # Initialize to 0 for first shot
     
@@ -51,7 +51,8 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
         "time_diff": time_diff,
         "hit_position": {"x": hit_position.x, "y": hit_position.y},
         "hit_area": hit_area,
-        "score": score
+        "score": score,
+        "rotation_angle": rotation_angle
     }
     
     records.append(record)

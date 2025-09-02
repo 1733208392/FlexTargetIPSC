@@ -38,7 +38,7 @@ var drill_start_time: float = 0.0
 @onready var timer_label = $TopContainer/TopLayout/TimerContainer/Timer
 
 # Performance tracking
-signal target_hit(target_type: String, hit_position: Vector2, hit_area: String)
+signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float)
 signal drills_finished
 @onready var performance_tracker = preload("res://script/performance_tracker.gd").new()
 
@@ -437,8 +437,16 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 	
 	print("Total drill score: ", total_drill_score)
 	
+	# Get rotation angle for rotating targets
+	var rotation_angle = 0.0
+	if current_target_type == "ipsc_mini_rotate" and current_target_instance:
+		var rotation_center = current_target_instance.get_node("RotationCenter")
+		if rotation_center:
+			rotation_angle = rotation_center.rotation
+			print("Rotating target hit at rotation angle: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees)")
+	
 	# Emit the enhanced target_hit signal for performance tracking
-	emit_signal("target_hit", current_target_type, hit_position, hit_area)
+	emit_signal("target_hit", current_target_type, hit_position, hit_area, rotation_angle)
 	
 	# Special handling for rotating target
 	if current_target_type == "ipsc_mini_rotate":
