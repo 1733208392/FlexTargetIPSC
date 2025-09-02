@@ -16,20 +16,32 @@ var records = []
 var last_shot_time = 0
 var current_index = 1
 var fastest_time_diff = 999.0  # Initialize with a large value
+var first_shot = true  # Track if this is the first shot of the drill
 
 func _ready():
-    # Initialize last_shot_time
-    last_shot_time = Time.get_ticks_msec()
+    # Don't initialize last_shot_time here - let reset_shot_timer handle it
+    pass
 
 # Signal handler for target_hit
 func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String):
     var current_time = Time.get_ticks_msec()
-    var time_diff = (current_time - last_shot_time) / 1000.0  # in seconds
-    last_shot_time = current_time
+    var time_diff = 0.0  # Initialize to 0 for first shot
     
-    # Update fastest time if this is faster
-    if time_diff < fastest_time_diff:
-        fastest_time_diff = time_diff
+    if first_shot:
+        # First shot of the drill - just record the time, don't calculate interval
+        last_shot_time = current_time
+        first_shot = false
+        print("PERFORMANCE TRACKER: First shot recorded at time:", current_time)
+    else:
+        # Subsequent shots - calculate interval
+        time_diff = (current_time - last_shot_time) / 1000.0  # in seconds
+        last_shot_time = current_time
+        
+        # Update fastest time if this is faster
+        if time_diff < fastest_time_diff:
+            fastest_time_diff = time_diff
+        
+        print("PERFORMANCE TRACKER: Shot interval:", time_diff, "seconds, fastest:", fastest_time_diff)
     
     var score = SCORES.get(hit_area, 0)  # Default to 0 if not found
     
@@ -65,7 +77,7 @@ func _on_drills_finished():
     
     records.clear()
     current_index += 1
-    fastest_time_diff = 999.0  # Reset for next drill
+    # Removed: fastest_time_diff = 999.0  # Reset for next drill
 
 # Get the fastest time difference recorded
 func get_fastest_time_diff() -> float:
@@ -74,3 +86,7 @@ func get_fastest_time_diff() -> float:
 # Reset the fastest time for a new drill
 func reset_fastest_time():
     fastest_time_diff = 999.0
+
+# Reset the shot timer for accurate first shot measurement
+func reset_shot_timer():
+    last_shot_time = Time.get_ticks_msec()

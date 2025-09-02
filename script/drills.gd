@@ -23,6 +23,10 @@ var drill_completed: bool = false
 var bullets_allowed: bool = false  # Track if bullet spawning is allowed
 var rotating_target_hits: int = 0  # Track hits on the rotating target
 
+# Elapsed time tracking
+var elapsed_seconds: float = 0.0
+var drill_start_time: float = 0.0
+
 # Node references
 @onready var center_container = $CenterContainer
 @onready var target_type_title = $TopContainer/TopLayout/HeaderContainer/TargetTypeTitle
@@ -30,6 +34,8 @@ var rotating_target_hits: int = 0  # Track hits on the rotating target
 @onready var shot_timer_overlay = $ShotTimerOverlay
 @onready var drill_complete_overlay = $DrillCompleteOverlay
 @onready var fastest_interval_label = $TopContainer/TopLayout/HeaderContainer/FastestContainer/FastestInterval
+@onready var drill_timer = $DrillTimer
+@onready var timer_label = $TopContainer/TopLayout/TimerContainer/Timer
 
 # Performance tracking
 signal target_hit(target_type: String, hit_position: Vector2, hit_area: String)
@@ -51,6 +57,9 @@ func _ready():
 	shot_timer_overlay.timer_ready.connect(_on_shot_timer_ready)
 	shot_timer_overlay.timer_reset.connect(_on_shot_timer_reset)
 	
+	# Connect drill timer signal
+	drill_timer.timeout.connect(_on_drill_timer_timeout)
+	
 	# Instantiate and add performance tracker
 	add_child(performance_tracker)
 	target_hit.connect(performance_tracker._on_target_hit)
@@ -67,10 +76,6 @@ func show_shot_timer():
 	
 	# Hide the completion overlay if visible
 	drill_complete_overlay.visible = false
-	
-	# Reset the fastest time for the new drill
-	performance_tracker.reset_fastest_time()
-	update_fastest_interval_display()
 	
 	# Disable bullet spawning during shot timer
 	bullets_allowed = false
@@ -96,6 +101,8 @@ func _on_shot_timer_ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_spawning_enabled = true
+	# Start the drill timer
+	start_drill_timer()
 	# Now spawn the target normally
 	spawn_next_target()
 
@@ -103,6 +110,43 @@ func _on_shot_timer_reset():
 	"""Handle when shot timer is reset"""
 	print("=== SHOT TIMER RESET ===")
 	# Could add additional logic here if needed
+
+func _on_drill_timer_timeout():
+	"""Handle drill timer timeout - update elapsed time display"""
+	elapsed_seconds += 0.1
+	update_timer_display()
+
+func start_drill_timer():
+	"""Start the drill elapsed time timer"""
+	elapsed_seconds = 0.0
+	drill_start_time = Time.get_unix_time_from_system()
+	update_timer_display()
+	drill_timer.start()
+	
+	# Reset performance tracker timing for accurate first shot measurement
+	performance_tracker.reset_shot_timer()
+	
+	# Reset fastest time for the new drill
+	performance_tracker.reset_fastest_time()
+	update_fastest_interval_display()
+	
+	print("=== DRILL TIMER STARTED ===")
+
+func stop_drill_timer():
+	"""Stop the drill elapsed time timer"""
+	drill_timer.stop()
+	print("=== DRILL TIMER STOPPED ===")
+
+func update_timer_display():
+	"""Update the timer label with formatted elapsed time in MM:SS:MS format"""
+	var total_seconds = int(elapsed_seconds)
+	var milliseconds = int((elapsed_seconds - total_seconds) * 100)
+	
+	var minutes = total_seconds / 60
+	var seconds = total_seconds % 60
+	
+	var time_string = "%02d:%02d:%02d" % [minutes, seconds, milliseconds]
+	timer_label.text = time_string
 
 func _process(_delta):
 	"""Update FPS counter every frame"""
@@ -422,6 +466,9 @@ func complete_drill():
 	print("Targets completed: ", current_target_index, "/", target_sequence.size())
 	drill_completed = true
 	
+	# Stop the drill timer
+	stop_drill_timer()
+	
 	# Emit drills finished signal for performance tracking
 	emit_signal("drills_finished")
 	
@@ -431,9 +478,9 @@ func complete_drill():
 	drill_completed = false
 	rotating_target_hits = 0
 	
-	# Reset performance tracker for next drill
-	performance_tracker.reset_fastest_time()
-	update_fastest_interval_display()
+	# Reset timer
+	elapsed_seconds = 0.0
+	update_timer_display()
 	
 	# Show shot timer overlay again for next run after a brief delay
 	await get_tree().create_timer(2.0).timeout  # Wait 2 seconds before showing timer
@@ -449,8 +496,8 @@ func finish_drill_immediately():
 	print("Targets completed: ", current_target_index, "/", target_sequence.size())
 	drill_completed = true
 	
-	# Emit drills finished signal for performance tracking
-	emit_signal("drills_finished")
+	# Stop the drill timer
+	stop_drill_timer()
 	
 	# Freeze the screen by disabling bullet spawning
 	bullets_allowed = false
@@ -461,6 +508,12 @@ func finish_drill_immediately():
 	# Show the completion overlay
 	show_completion_overlay()
 	
+	# Wait a moment to ensure the overlay is visible before resetting
+	await get_tree().create_timer(0.5).timeout
+	
+	# Emit drills finished signal for performance tracking (after overlay is shown)
+	emit_signal("drills_finished")
+	
 	# Clear the current target to prevent further interactions
 	clear_current_target()
 	
@@ -470,15 +523,46 @@ func finish_drill_immediately():
 	drill_completed = false
 	rotating_target_hits = 0
 	
+	# Reset timer
+	elapsed_seconds = 0.0
+	update_timer_display()
+	
 	# Reset performance tracker for next drill
 	performance_tracker.reset_fastest_time()
 	update_fastest_interval_display()
 
 func show_completion_overlay():
-	"""Show the completion overlay with the time"""
+	"""Show the completion overlay with drill statistics"""
 	print("Showing completion overlay")
+	
+	# Get the final statistics
+	var final_time = elapsed_seconds
+	var fastest_time = performance_tracker.get_fastest_time_diff()
+	var final_score = total_drill_score
+	
+	# Format the time display
+	var total_seconds = int(final_time)
+	var milliseconds = int((final_time - total_seconds) * 100)
+	var minutes = total_seconds / 60
+	var seconds = total_seconds % 60
+	var time_string = "%02d:%02d:%02d" % [minutes, seconds, milliseconds]
+	
+	# Format the fastest time
+	var fastest_string = "--"
+	if fastest_time < 999.0:
+		fastest_string = "%.2fs" % fastest_time
+	
+	# Create the completion message
+	var completion_text = """DRILL COMPLETE!
+
+Total Time: %s
+Fastest Shot: %s
+Final Score: %d
+
+Press R to restart""" % [time_string, fastest_string, final_score]
+	
+	drill_complete_overlay.text = completion_text
 	drill_complete_overlay.visible = true
-	drill_complete_overlay.text = "05:00:32"
 
 func update_fastest_interval_display():
 	"""Update the fastest interval label with the current fastest time"""
@@ -500,6 +584,7 @@ func restart_drill():
 	
 	# Reset performance tracker
 	performance_tracker.reset_fastest_time()
+	performance_tracker.reset_shot_timer()
 	update_fastest_interval_display()
 	
 	# Clear the current target
