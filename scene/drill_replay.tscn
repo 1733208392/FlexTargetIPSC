@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://g1hey1dxkxon"]
+
+[ext_resource type="Script" uid="uid://bgcupok6hsabd" path="res://script/drill_replay_new.gd" id="1_m5ot1"]
+
+[node name="DrillReplay" type="Node"]
+script = ExtResource("1_m5ot1")
+
+[node name="Camera2D" type="Camera2D" parent="."]
