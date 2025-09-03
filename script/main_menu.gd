@@ -25,7 +25,7 @@ func _ready():
 	else:
 		print("[Menu] WebSocketListener singleton not found!")
 
-	start_button.pressed.connect(on_StartButton_pressed)
+	start_button.pressed.connect(_on_start_pressed)
 	bootcamp_button.pressed.connect(_on_bootcamp_pressed)
 	option_button.pressed.connect(_on_option_pressed)
 

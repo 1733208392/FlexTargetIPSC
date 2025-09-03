@@ -1,42 +1,140 @@
-[gd_scene load_steps=2 format=3 uid="uid://cjkeemu421bdp"]
+[gd_scene load_steps=12 format=3 uid="uid://cjkeemu421bdp"]
 
 [ext_resource type="Script" uid="uid://dthf7l17t1uuo" path="res://script/main_menu.gd" id="1_main_menu"]
+[ext_resource type="Texture2D" uid="uid://ct7bcimjuqusa" path="res://asset/mini_map.png" id="2_0iwki"]
+[ext_resource type="Texture2D" uid="uid://d3jnypy7bx42r" path="res://asset/largeCntnrs.png" id="2_2atga"]
+[ext_resource type="Texture2D" uid="uid://jkn5ynck2gk5" path="res://asset/start_button_back.png" id="2_hxu56"]
+[ext_resource type="Texture2D" uid="uid://d34m0mqmlp1qq" path="res://asset/crosshair.png" id="3_crosshair"]
+[ext_resource type="FontFile" uid="uid://cth4t0ug4hwm8" path="res://asset/font/Inter/static/Inter_24pt-Black.ttf" id="4_sepwh"]
+[ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://asset/font/Inter/Inter-VariableFont_opsz,wght.ttf" id="6_14wem"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_0iwki"]
+texture = ExtResource("2_hxu56")
+modulate_color = Color(1, 1, 1, 0.9)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_hxu56"]
+texture = ExtResource("2_hxu56")
+modulate_color = Color(1, 1, 1, 0.9)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_sepwh"]
+texture = ExtResource("2_hxu56")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_2fwvj"]
+texture = ExtResource("2_hxu56")
+modulate_color = Color(1, 1, 1, 0.8)
 
 [node name="main_menu" type="Control"]
 layout_mode = 3
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main_menu")
 
+[node name="background" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 720.0
+offset_bottom = 1280.0
+color = Color(0.0901961, 0.129412, 0.141176, 1)
+
+[node name="container" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_2atga")
+expand_mode = 1
+
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -47.0
-offset_top = -50.5
-offset_right = 47.0
-offset_bottom = 50.5
+offset_left = -225.0
+offset_top = -150.0
+offset_right = 225.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="ipsc" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-size_flags_vertical = 4
-size_flags_stretch_ratio = 0.0
+size_flags_vertical = 3
+theme_override_fonts/font = ExtResource("4_sepwh")
+theme_override_font_sizes/font_size = 32
+theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
+theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_sepwh")
+theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
 text = "Start"
 
 [node name="boot_camp" type="Button" parent="VBoxContainer"]
 layout_mode = 2
-text = "Boot Camp"
+size_flags_vertical = 3
+theme_override_fonts/font = ExtResource("4_sepwh")
+theme_override_font_sizes/font_size = 32
+theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
+theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_sepwh")
+theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
+text = "Bootcamp"
 
 [node name="option" type="Button" parent="VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_fonts/font = ExtResource("4_sepwh")
+theme_override_font_sizes/font_size = 32
+theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
+theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_sepwh")
+theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
 text = "Option"
+
+[node name="minimap" type="TextureRect" parent="."]
+modulate = Color(1, 1, 1, 0.533333)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.833
+anchor_top = 0.5
+anchor_right = 0.833
+anchor_bottom = 0.5
+offset_left = -201.76
+offset_top = 186.0
+offset_right = 211.24
+offset_bottom = 533.0
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0iwki")
+
+[node name="Crosshair" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.833
+anchor_top = 0.5
+anchor_right = 0.833
+anchor_bottom = 0.5
+offset_left = -570.76
+offset_top = -460.0
+offset_right = -170.76
+offset_bottom = -158.0
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("3_crosshair")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -50.0
+offset_right = 200.0
+theme_override_fonts/font = ExtResource("6_14wem")
+text = "© 2025 Grwolf.com. All Rights Reserved."
+horizontal_alignment = 1
+vertical_alignment = 2

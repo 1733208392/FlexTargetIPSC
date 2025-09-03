@@ -1,6 +1,33 @@
-[gd_scene load_steps=2 format=3 uid="uid://rtls33j2jr4q"]
+[gd_scene load_steps=15 format=3 uid="uid://rtls33j2jr4q"]
 
 [ext_resource type="Script" uid="uid://bhvruqf68yix4" path="res://script/intro.gd" id="1_intro"]
+[ext_resource type="FontFile" uid="uid://plipxs2shsey" path="res://asset/font/Inter/static/Inter_18pt-Bold.ttf" id="2_yv8ol"]
+[ext_resource type="Texture2D" uid="uid://gk17ni6p470s" path="res://asset/SmallCntnrs.png" id="3_srnjo"]
+[ext_resource type="Texture2D" uid="uid://cxgfbk1um5rac" path="res://asset/SmallCntnrs1.png" id="4_lf28b"]
+[ext_resource type="Texture2D" uid="uid://beqbg7e01j16p" path="res://asset/dialog_cntnrs.png" id="4_nc68o"]
+[ext_resource type="FontFile" uid="uid://w674bdq23bld" path="res://asset/font/Inter/static/Inter_24pt-Bold.ttf" id="4_wk1th"]
+[ext_resource type="LabelSettings" uid="uid://bw22f0mtic4xe" path="res://theme/target_title_tactical.tres" id="5_cm5so"]
+[ext_resource type="FontFile" uid="uid://3xb1ix508yk1" path="res://asset/font/Inter/static/Inter_24pt-Italic.ttf" id="6_b5vnh"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_lf28b"]
+texture = ExtResource("3_srnjo")
+modulate_color = Color(1, 1, 1, 0.784314)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_wk1th"]
+texture = ExtResource("3_srnjo")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_nc68o"]
+texture = ExtResource("3_srnjo")
+modulate_color = Color(1, 1, 1, 0.784314)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_tdcom"]
+texture = ExtResource("4_lf28b")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_cm5so"]
+texture = ExtResource("4_lf28b")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_b5vnh"]
+texture = ExtResource("4_lf28b")
 
 [node name="intro" type="Control"]
 layout_mode = 3
@@ -18,7 +45,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.15, 0.2, 1)
+color = Color(0.0901961, 0.129412, 0.141176, 1)
 
 [node name="TopBar" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -37,7 +64,12 @@ custom_minimum_size = Vector2(150, 50)
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 4
-text = "Drill History"
+theme_override_fonts/font = ExtResource("2_yv8ol")
+theme_override_font_sizes/font_size = 32
+theme_override_styles/hover = SubResource("StyleBoxTexture_lf28b")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_wk1th")
+theme_override_styles/normal = SubResource("StyleBoxTexture_nc68o")
+text = "History"
 
 [node name="RightMargin" type="Control" parent="TopBar"]
 custom_minimum_size = Vector2(20, 0)
@@ -57,74 +89,121 @@ offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="GameRuleContainer" type="VBoxContainer" parent="CenterContainer"]
+[node name="GameRuleContainer" type="Panel" parent="CenterContainer"]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="CenterContainer/GameRuleContainer"]
+[node name="BackgroundImage" type="TextureRect" parent="CenterContainer/GameRuleContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -293.0
+offset_top = -199.0
+offset_right = 428.0
+offset_bottom = 441.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("4_nc68o")
+stretch_mode = 4
+
+[node name="ContentVBox" type="VBoxContainer" parent="CenterContainer/GameRuleContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="CenterContainer/GameRuleContainer/ContentVBox"]
 layout_mode = 2
 text = "IPSC Target Training"
+label_settings = ExtResource("5_cm5so")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="CenterContainer/GameRuleContainer"]
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/GameRuleContainer/ContentVBox"]
 layout_mode = 2
 
-[node name="GameRuleImage" type="TextureRect" parent="CenterContainer/GameRuleContainer"]
-custom_minimum_size = Vector2(500, 300)
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
-expand_mode = 1
-stretch_mode = 5
-
-[node name="GameRuleBackground" type="ColorRect" parent="CenterContainer/GameRuleContainer/GameRuleImage"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.2, 0.25, 0.3, 1)
-
-[node name="RuleContent" type="VBoxContainer" parent="CenterContainer/GameRuleContainer/GameRuleImage"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="RuleTitle" type="Label" parent="CenterContainer/GameRuleContainer/GameRuleImage/RuleContent"]
-layout_mode = 2
-text = "Game Rules"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="HSeparator2" type="HSeparator" parent="CenterContainer/GameRuleContainer/GameRuleImage/RuleContent"]
-layout_mode = 2
-
-[node name="RuleText" type="RichTextLabel" parent="CenterContainer/GameRuleContainer/GameRuleImage/RuleContent"]
+[node name="RuleContent" type="HBoxContainer" parent="CenterContainer/GameRuleContainer/ContentVBox"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="ScoringContent" type="VBoxContainer" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScoringTitle" type="Label" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent/ScoringContent"]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="ScoringText" type="RichTextLabel" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent/ScoringContent"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_fonts/normal_font = ExtResource("6_b5vnh")
 bbcode_enabled = true
-text = "[center][b]IPSC Shooting Rules[/b]
+text = "[color=cyan][b]Target Zones:[/b][/color]
+• [color=yellow]Alpha (A): 5 pts[/color]
+• [color=orange]Charlie (C): 4 pts[/color]
+• [color=red]Delta (D): 2 pts[/color]
+• [color=gray]Miss: 0 pts[/color]
 
-[color=yellow]• Accuracy:[/color] Hit targets in scoring zones
-[color=yellow]• Speed:[/color] Complete course as fast as possible
-[color=yellow]• Power:[/color] Use sufficient caliber ammunition
-
-[color=cyan]Scoring Zones:[/color]
-• Alpha Zone (A): 5 points
-• Charlie Zone (C): 4 points
-• Delta Zone (D): 2 points
-• Miss: 0 points
-
-[color=orange]Time Penalties:[/color]
-• Miss: +10 seconds
-• No Shoot Hit: +10 seconds
-
-[b]Your Score = (Points ÷ Time) × Power Factor[/b][/center]"
+[color=cyan][b]Special:[/b][/color]
+• [color=green]Steel: 5 pts[/color]
+• [color=red]No-Shoot: -10 pts[/color]"
 fit_content = true
+scroll_active = false
+
+[node name="VSeparator1" type="VSeparator" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent"]
+layout_mode = 2
+
+[node name="PenaltyContent" type="VBoxContainer" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PenaltyTitle" type="Label" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent/PenaltyContent"]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="PenaltyText" type="RichTextLabel" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent/PenaltyContent"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_fonts/normal_font = ExtResource("6_b5vnh")
+bbcode_enabled = true
+text = "[color=orange][b]Time Penalties:[/b][/color]
+• [color=red]Miss: +10 sec[/color]
+• [color=red]No-Shoot Hit: +10 sec[/color]
+• [color=yellow]Procedural: +10 sec[/color]
+
+[color=orange][b]Score Penalties:[/b][/color]
+• [color=red]Disqualification: 0 pts[/color]"
+scroll_active = false
+
+[node name="VSeparator2" type="VSeparator" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent"]
+layout_mode = 2
+
+[node name="FormulaContent" type="VBoxContainer" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FormulaTitle" type="Label" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent/FormulaContent"]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="FormulaText" type="RichTextLabel" parent="CenterContainer/GameRuleContainer/ContentVBox/RuleContent/FormulaContent"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_fonts/normal_font = ExtResource("6_b5vnh")
+bbcode_enabled = true
+text = "[color=cyan][b]Hit Factor Formula:[/b][/color]
+
+[center][color=white][b]HF = Points ÷ Time[/b][/color][/center]
+
+[color=gray]Where:[/color]
+• Points = Target points earned
+• Time = Stage time + penalties
+
+[center][color=green][b]Higher HF = Better Score[/b][/color][/center]"
 scroll_active = false
 
 [node name="BottomContainer" type="HBoxContainer" parent="."]
@@ -146,6 +225,11 @@ custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 4
+theme_override_fonts/font = ExtResource("4_wk1th")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/hover = SubResource("StyleBoxTexture_tdcom")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_cm5so")
+theme_override_styles/normal = SubResource("StyleBoxTexture_b5vnh")
 text = "START"
 
 [node name="RightSpacer" type="Control" parent="BottomContainer"]
