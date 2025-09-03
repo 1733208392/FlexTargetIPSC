@@ -34,7 +34,7 @@ func _ready():
 	collision_layer = 7  # Target layer
 	collision_mask = 0   # Don't detect other targets
 
-func _input(event):
+func _unhandled_input(event):
 	# Handle mouse clicks for bullet spawning
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		var mouse_screen_pos = event.position
