@@ -11,45 +11,139 @@ func _ready():
 	if back_button:
 		back_button.pressed.connect(_on_back_pressed)
 	
-	# Initialize history data with pseudo data
-	initialize_history_data()
+	# Load history data from saved files
+	load_history_data()
+	
+	# Populate the list with data
+	populate_list()
 	
 	# Make list items clickable
 	setup_clickable_items()
 
-func initialize_history_data():
-	# Create pseudo data for the 30 history items
-	for i in range(1, 31):
-		var drill_data = {
-			"drill_number": i,
-			"total_time": get_random_time(8.0, 25.0),
-			"fastest_shot": get_random_time(0.3, 1.8),
-			"total_score": randf_range(65.0, 95.0),
-			"targets": generate_target_data()
-		}
-		history_data.append(drill_data)
+func load_history_data():
+	history_data.clear()
+	var dir = DirAccess.open("user://")
+	if dir:
+		var files = dir.get_files()
+		var performance_files = []
+		for file in files:
+			if file.begins_with("performance_") and file.ends_with(".json"):
+				performance_files.append(file)
+		
+		# Sort by index
+		performance_files.sort_custom(func(a, b): return int(a.substr(12, 3)) < int(b.substr(12, 3)))
+		
+		for file_name in performance_files:
+			var file = FileAccess.open("user://" + file_name, FileAccess.READ)
+			if file:
+				var json_string = file.get_as_text()
+				file.close()
+				var json = JSON.new()
+				var error = json.parse(json_string)
+				if error == OK:
+					var data = json.data
+					var drill_summary = data["drill_summary"]
+					var records = data["records"]
+					
+					var total_score = 0
+					for record in records:
+						total_score += record["score"]
+					
+					var hf = 0.0
+					if drill_summary["total_elapsed_time"] > 0:
+						hf = total_score / drill_summary["total_elapsed_time"]
+					
+					var drill_data = {
+						"drill_number": int(file_name.substr(12, 3)),
+						"total_time": "%.2fs" % drill_summary["total_elapsed_time"],
+						"fastest_shot": "%.2fs" % (drill_summary["fastest_shot_interval"] if drill_summary["fastest_shot_interval"] != null else 0.0),
+						"total_score": "%.1f" % total_score,
+						"hf": "%.2f" % hf,
+						"targets": records
+					}
+					history_data.append(drill_data)
+				else:
+					print("Failed to parse JSON in ", file_name)
+			else:
+				print("Failed to open ", file_name)
+	else:
+		print("Failed to access user directory")
 
-func generate_target_data() -> Array:
-	# Generate pseudo target data for each drill
-	var targets = []
-	var target_types = ["A-Zone Target", "C-Zone Target", "D-Zone Target", "Steel Target", "Popper Target", "Paper Target"]
+func populate_list():
+	if not list_container:
+		return
 	
-	for i in range(6):
-		var target_data = {
-			"name": target_types[i],
-			"fastest_shot": "%.1fs" % randf_range(0.5, 1.5),
-			"total_time": "%.1fs" % randf_range(10.0, 25.0),
-			"shots_count": randi_range(3, 8),
-			"average_time": "%.1fs" % randf_range(2.0, 4.0),
-			"accuracy": "%d%%" % randi_range(65, 95),
-			"points": "%d/%d" % [randi_range(15, 30), randi_range(25, 35)]
-		}
-		targets.append(target_data)
+	# Clear existing items
+	for child in list_container.get_children():
+		child.queue_free()
 	
-	return targets
-
-func get_random_time(min_val: float, max_val: float) -> String:
-	return "%.2fs" % randf_range(min_val, max_val)
+	# Create items dynamically
+	for i in range(history_data.size()):
+		var data = history_data[i]
+		var item = HBoxContainer.new()
+		item.layout_mode = 2
+		
+		# No label
+		var no_label = Label.new()
+		no_label.layout_mode = 2
+		no_label.size_flags_horizontal = 3
+		no_label.text = str(data["drill_number"])
+		no_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		item.add_child(no_label)
+		
+		# VSeparator
+		var sep1 = VSeparator.new()
+		sep1.layout_mode = 2
+		item.add_child(sep1)
+		
+		# TotalTime label
+		var time_label = Label.new()
+		time_label.layout_mode = 2
+		time_label.size_flags_horizontal = 3
+		time_label.text = data["total_time"]
+		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		item.add_child(time_label)
+		
+		# VSeparator
+		var sep2 = VSeparator.new()
+		sep2.layout_mode = 2
+		item.add_child(sep2)
+		
+		# FastShot label
+		var fast_label = Label.new()
+		fast_label.layout_mode = 2
+		fast_label.size_flags_horizontal = 3
+		fast_label.text = data["fastest_shot"]
+		fast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		item.add_child(fast_label)
+		
+		# VSeparator
+		var sep3 = VSeparator.new()
+		sep3.layout_mode = 2
+		item.add_child(sep3)
+		
+		# Score label
+		var score_label = Label.new()
+		score_label.layout_mode = 2
+		score_label.size_flags_horizontal = 3
+		score_label.text = data["total_score"]
+		score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		item.add_child(score_label)
+		
+		# VSeparator
+		var sep4 = VSeparator.new()
+		sep4.layout_mode = 2
+		item.add_child(sep4)
+		
+		# HF label
+		var hf_label = Label.new()
+		hf_label.layout_mode = 2
+		hf_label.size_flags_horizontal = 3
+		hf_label.text = data["hf"]
+		hf_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		item.add_child(hf_label)
+		
+		list_container.add_child(item)
 
 func setup_clickable_items():
 	# Convert each HBoxContainer item to clickable buttons

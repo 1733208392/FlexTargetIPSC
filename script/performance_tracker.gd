@@ -20,8 +20,21 @@ var first_shot = true  # Track if this is the first shot of the drill
 var total_elapsed_time = 0.0  # Store the total elapsed time for the drill
 
 func _ready():
-    # Don't initialize last_shot_time here - let reset_shot_timer handle it
-    pass
+    # Scan existing performance files to set current_index to the next available number
+    var dir = DirAccess.open("user://")
+    if dir:
+        var files = dir.get_files()
+        var max_index = 0
+        for file in files:
+            if file.begins_with("performance_") and file.ends_with(".json"):
+                var num_str = file.substr(12, 3)  # Extract the 3-digit number after "performance_"
+                var num = int(num_str)
+                if num > max_index:
+                    max_index = num
+        current_index = max_index + 1
+        print("PERFORMANCE TRACKER: Starting with index", current_index)
+    else:
+        print("PERFORMANCE TRACKER: Failed to access user directory")
 
 # Signal handler for target_hit
 func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float = 0.0):

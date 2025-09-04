@@ -6,10 +6,6 @@ font_weight = 700
 
 [resource]
 font = SubResource("SystemFont_tactical")
-font_size = 38
-font_color = Color(0, 1, 0.2, 1)
-outline_size = 3
+font_size = 32
+outline_size = 2
 outline_color = Color(0, 0, 0, 1)
-shadow_size = 2
-shadow_color = Color(0, 0.5, 0, 0.8)
-shadow_offset = Vector2(2, 2)
