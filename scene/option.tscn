@@ -1,10 +1,37 @@
-[gd_scene load_steps=4 format=3 uid="uid://dus614khw11h2"]
+[gd_scene load_steps=13 format=3 uid="uid://dus614khw11h2"]
 
 [ext_resource type="Script" uid="uid://crika1mdfvjsw" path="res://script/option.gd" id="1_jx2e8"]
+[ext_resource type="FontFile" uid="uid://cth4t0ug4hwm8" path="res://asset/font/Inter/static/Inter_24pt-Black.ttf" id="2_font"]
+[ext_resource type="Texture2D" uid="uid://btbmgtdbgtpkm" path="res://asset/largeCntnrs1.png" id="2_i838a"]
+[ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://asset/font/Inter/Inter-VariableFont_opsz,wght.ttf" id="3_i838a"]
+[ext_resource type="Texture2D" uid="uid://c2l6gc1ro012y" path="res://asset/SmallCntnrs3.png" id="6_70qle"]
+[ext_resource type="Texture2D" uid="uid://bphdbktqgumws" path="res://asset/contact.png" id="7_fyn3v"]
 
-[sub_resource type="ButtonGroup" id="ButtonGroup_difficulty"]
+[sub_resource type="StyleBoxFlat" id="StyleBox_tab_selected"]
+bg_color = Color(0.2, 0.2, 0.2, 0.5)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.956863, 0.521569, 0.007843, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
 
-[sub_resource type="ButtonGroup" id="ButtonGroup_controls"]
+[sub_resource type="StyleBoxFlat" id="StyleBox_tab_unselected"]
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_language"]
+
+[sub_resource type="SystemFont" id="SystemFont_lkh8f"]
+font_names = PackedStringArray("SF Pro")
+
+[sub_resource type="SystemFont" id="SFPro"]
+font_names = PackedStringArray("SF Pro")
+
+[sub_resource type="SystemFont" id="SystemFont_i838a"]
+font_names = PackedStringArray("SF Pro")
 
 [node name="option" type="Control"]
 layout_mode = 3
@@ -15,212 +42,145 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_jx2e8")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="background" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 720.0
+offset_bottom = 1280.0
+color = Color(0.0901961, 0.129412, 0.141176, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_bottom = -256.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 20
 
-[node name="tab_container" type="TabContainer" parent="MarginContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_constants/margin_top = 100
+
+[node name="border" type="TextureRect" parent="VBoxContainer/MarginContainer"]
+layout_mode = 2
+texture = ExtResource("2_i838a")
+stretch_mode = 2
+
+[node name="tab_container" type="TabContainer" parent="VBoxContainer/MarginContainer"]
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_constants/side_margin = 100
+theme_override_fonts/font = ExtResource("3_i838a")
+theme_override_font_sizes/font_size = 32
+theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
+theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 current_tab = 0
 
-[node name="Game Settings" type="VBoxContainer" parent="MarginContainer/tab_container"]
+[node name="Languages" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 layout_mode = 2
 metadata/_tab_index = 0
 
-[node name="DifficultyLabel" type="Label" parent="MarginContainer/tab_container/Game Settings"]
+[node name="Language" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Languages"]
 layout_mode = 2
-text = "Difficulty Level:"
+theme_override_fonts/font = ExtResource("2_font")
+text = "
+"
 horizontal_alignment = 1
 
-[node name="DifficultyContainer" type="HBoxContainer" parent="MarginContainer/tab_container/Game Settings"]
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/Languages"]
 layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_right = 50
 
-[node name="EasyButton" type="Button" parent="MarginContainer/tab_container/Game Settings/DifficultyContainer"]
+[node name="LanguageContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer"]
 layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
+theme_override_constants/separation = 12
+
+[node name="ChineseButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
 button_pressed = true
-button_group = SubResource("ButtonGroup_difficulty")
-text = "Easy"
+button_group = SubResource("ButtonGroup_language")
+text = "中文"
 
-[node name="MediumButton" type="Button" parent="MarginContainer/tab_container/Game Settings/DifficultyContainer"]
+[node name="JapaneseButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer"]
 layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-button_group = SubResource("ButtonGroup_difficulty")
-text = "Medium"
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
+button_group = SubResource("ButtonGroup_language")
+text = "日本語"
 
-[node name="HardButton" type="Button" parent="MarginContainer/tab_container/Game Settings/DifficultyContainer"]
+[node name="EnglishButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer"]
 layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-button_group = SubResource("ButtonGroup_difficulty")
-text = "Hard"
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
+button_group = SubResource("ButtonGroup_language")
+text = "English"
 
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/tab_container/Game Settings"]
-layout_mode = 2
-
-[node name="TargetLabel" type="Label" parent="MarginContainer/tab_container/Game Settings"]
-layout_mode = 2
-text = "Target Count:"
-horizontal_alignment = 1
-
-[node name="TargetSpinBox" type="SpinBox" parent="MarginContainer/tab_container/Game Settings"]
-layout_mode = 2
-min_value = 5.0
-max_value = 50.0
-value = 20.0
-alignment = 1
-
-[node name="HSeparator2" type="HSeparator" parent="MarginContainer/tab_container/Game Settings"]
-layout_mode = 2
-
-[node name="TimerLabel" type="Label" parent="MarginContainer/tab_container/Game Settings"]
-layout_mode = 2
-text = "Time Limit (seconds):"
-horizontal_alignment = 1
-
-[node name="TimerSpinBox" type="SpinBox" parent="MarginContainer/tab_container/Game Settings"]
-layout_mode = 2
-min_value = 30.0
-max_value = 300.0
-step = 10.0
-value = 120.0
-alignment = 1
-
-[node name="Audio Settings" type="VBoxContainer" parent="MarginContainer/tab_container"]
+[node name="About" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="MasterVolumeLabel" type="Label" parent="MarginContainer/tab_container/Audio Settings"]
+[node name="Right" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
 layout_mode = 2
-text = "Master Volume:"
-horizontal_alignment = 1
+size_flags_horizontal = 3
 
-[node name="MasterVolumeSlider" type="HSlider" parent="MarginContainer/tab_container/Audio Settings"]
+[node name="top" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/Right"]
 layout_mode = 2
-value = 75.0
+theme_override_constants/margin_left = 80
+theme_override_constants/margin_top = 200
+theme_override_constants/margin_right = 20
 
-[node name="MasterVolumeValue" type="Label" parent="MarginContainer/tab_container/Audio Settings"]
+[node name="Contact" type="TextureRect" parent="VBoxContainer/MarginContainer/tab_container/About/Right/top"]
 layout_mode = 2
-text = "75%"
-horizontal_alignment = 1
+texture = ExtResource("7_fyn3v")
 
-[node name="HSeparator3" type="HSeparator" parent="MarginContainer/tab_container/Audio Settings"]
+[node name="Bottom" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/Right"]
 layout_mode = 2
+theme_override_constants/margin_left = 80
+theme_override_constants/margin_right = 20
 
-[node name="SFXVolumeLabel" type="Label" parent="MarginContainer/tab_container/Audio Settings"]
+[node name="SmallCntnrs3" type="TextureRect" parent="VBoxContainer/MarginContainer/tab_container/About/Right/Bottom"]
 layout_mode = 2
-text = "Sound Effects Volume:"
-horizontal_alignment = 1
+texture = ExtResource("6_70qle")
 
-[node name="SFXVolumeSlider" type="HSlider" parent="MarginContainer/tab_container/Audio Settings"]
+[node name="EmailLabel" type="Label" parent="VBoxContainer/MarginContainer/tab_container/About/Right/Bottom"]
 layout_mode = 2
-value = 80.0
-
-[node name="SFXVolumeValue" type="Label" parent="MarginContainer/tab_container/Audio Settings"]
-layout_mode = 2
-text = "80%"
-horizontal_alignment = 1
-
-[node name="HSeparator4" type="HSeparator" parent="MarginContainer/tab_container/Audio Settings"]
-layout_mode = 2
-
-[node name="MuteCheckBox" type="CheckBox" parent="MarginContainer/tab_container/Audio Settings"]
-layout_mode = 2
-text = "Mute All Sounds"
-
-[node name="Controls" type="VBoxContainer" parent="MarginContainer/tab_container"]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 2
-
-[node name="ControlsLabel" type="Label" parent="MarginContainer/tab_container/Controls"]
-layout_mode = 2
-text = "Control Scheme:"
-horizontal_alignment = 1
-
-[node name="ControlContainer" type="VBoxContainer" parent="MarginContainer/tab_container/Controls"]
-visible = false
-layout_mode = 2
-
-[node name="TouchControlsButton" type="Button" parent="MarginContainer/tab_container/Controls/ControlContainer"]
-layout_mode = 2
-toggle_mode = true
-button_pressed = true
-button_group = SubResource("ButtonGroup_controls")
-text = "Touch Controls"
-
-[node name="AccelerometerButton" type="Button" parent="MarginContainer/tab_container/Controls/ControlContainer"]
-layout_mode = 2
-toggle_mode = true
-button_group = SubResource("ButtonGroup_controls")
-text = "Accelerometer"
-
-[node name="HSeparator5" type="HSeparator" parent="MarginContainer/tab_container/Controls"]
-layout_mode = 2
-
-[node name="SensitivityLabel" type="Label" parent="MarginContainer/tab_container/Controls"]
-layout_mode = 2
-text = "Sensitivity:"
-horizontal_alignment = 1
-
-[node name="SensitivitySlider" type="HSlider" parent="MarginContainer/tab_container/Controls"]
-layout_mode = 2
-min_value = 0.1
-max_value = 2.0
-step = 0.1
-value = 1.0
-
-[node name="SensitivityValue" type="Label" parent="MarginContainer/tab_container/Controls"]
-layout_mode = 2
-text = "1.0x"
-horizontal_alignment = 1
-
-[node name="About" type="VBoxContainer" parent="MarginContainer/tab_container"]
-visible = false
-layout_mode = 2
-metadata/_tab_index = 3
-
-[node name="GameTitle" type="Label" parent="MarginContainer/tab_container/About"]
-layout_mode = 2
-text = "FlexTarget IPSC"
+theme_override_fonts/font = SubResource("SystemFont_lkh8f")
+text = "kai.yang@grwolftactical.com"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HSeparator6" type="HSeparator" parent="MarginContainer/tab_container/About"]
+[node name="Left" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
 layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="VersionLabel" type="Label" parent="MarginContainer/tab_container/About"]
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/Left"]
 layout_mode = 2
-text = "Version: 1.0.0"
-horizontal_alignment = 1
+theme_override_constants/margin_top = 200
+theme_override_constants/margin_right = 50
 
-[node name="HSeparator7" type="HSeparator" parent="MarginContainer/tab_container/About"]
-layout_mode = 2
-
-[node name="DescriptionLabel" type="RichTextLabel" parent="MarginContainer/tab_container/About"]
+[node name="DescriptionLabel" type="RichTextLabel" parent="VBoxContainer/MarginContainer/tab_container/About/Left/MarginContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_fonts/normal_font = SubResource("SFPro")
+theme_override_font_sizes/normal_font_size = 18
 bbcode_enabled = true
-text = "[center]A flexible target training game for IPSC shooting practice.
-
-Improve your accuracy and speed with customizable training scenarios.[/center]"
+text = "[center]A training game for IPSC shooting practice. Improve your accuracy and speed with customizable training scenarios.[/center]
+"
 fit_content = true
 
-[node name="HSeparator8" type="HSeparator" parent="MarginContainer/tab_container/About"]
-layout_mode = 2
-
-[node name="CopyrightLabel" type="Label" parent="MarginContainer/tab_container/About"]
-layout_mode = 2
-text = "© 2025 FlexTarget IPSC"
+[node name="CopyrightLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_fonts/font = SubResource("SystemFont_i838a")
+text = "© 2025 FlexTarget IPSC@Grwolf.com"
 horizontal_alignment = 1
