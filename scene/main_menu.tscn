@@ -1,12 +1,14 @@
-[gd_scene load_steps=12 format=3 uid="uid://cjkeemu421bdp"]
+[gd_scene load_steps=14 format=3 uid="uid://cjkeemu421bdp"]
 
 [ext_resource type="Script" uid="uid://dthf7l17t1uuo" path="res://script/main_menu.gd" id="1_main_menu"]
 [ext_resource type="Texture2D" uid="uid://ct7bcimjuqusa" path="res://asset/mini_map.png" id="2_0iwki"]
 [ext_resource type="Texture2D" uid="uid://d3jnypy7bx42r" path="res://asset/largeCntnrs.png" id="2_2atga"]
 [ext_resource type="Texture2D" uid="uid://jkn5ynck2gk5" path="res://asset/start_button_back.png" id="2_hxu56"]
 [ext_resource type="Texture2D" uid="uid://d34m0mqmlp1qq" path="res://asset/crosshair.png" id="3_crosshair"]
-[ext_resource type="FontFile" uid="uid://cth4t0ug4hwm8" path="res://asset/font/Inter/static/Inter_24pt-Black.ttf" id="4_sepwh"]
 [ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://asset/font/Inter/Inter-VariableFont_opsz,wght.ttf" id="6_14wem"]
+
+[sub_resource type="SystemFont" id="SystemFont_14wem"]
+font_names = PackedStringArray("SF Pro")
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_0iwki"]
 texture = ExtResource("2_hxu56")
@@ -22,6 +24,12 @@ texture = ExtResource("2_hxu56")
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_2fwvj"]
 texture = ExtResource("2_hxu56")
 modulate_color = Color(1, 1, 1, 0.8)
+
+[sub_resource type="SystemFont" id="SystemFont_2atga"]
+font_names = PackedStringArray("SF Pro")
+
+[sub_resource type="SystemFont" id="SystemFont_by01r"]
+font_names = PackedStringArray("SF Pro")
 
 [node name="main_menu" type="Control"]
 layout_mode = 3
@@ -65,7 +73,7 @@ grow_vertical = 2
 [node name="ipsc" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_fonts/font = ExtResource("4_sepwh")
+theme_override_fonts/font = SubResource("SystemFont_14wem")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
@@ -76,7 +84,7 @@ text = "Start"
 [node name="boot_camp" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_fonts/font = ExtResource("4_sepwh")
+theme_override_fonts/font = SubResource("SystemFont_2atga")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
@@ -87,7 +95,7 @@ text = "Bootcamp"
 [node name="option" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_fonts/font = ExtResource("4_sepwh")
+theme_override_fonts/font = SubResource("SystemFont_by01r")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")

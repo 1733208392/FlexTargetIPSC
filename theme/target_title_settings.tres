@@ -1,7 +1,7 @@
 [gd_resource type="LabelSettings" load_steps=2 format=3 uid="uid://bm81ecgqnn8cv"]
 
 [sub_resource type="SystemFont" id="SystemFont_military"]
-font_names = PackedStringArray("Impact", "Arial Black", "Liberation Sans", "DejaVu Sans")
+font_names = PackedStringArray("SF Pro", "Arial Black", "Liberation Sans", "DejaVu Sans")
 font_weight = 900
 
 [resource]

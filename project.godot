@@ -11,9 +11,11 @@ config_version=5
 [application]
 
 config/name="GODotTetris"
+config/version="1.0"
 run/main_scene="uid://cjkeemu421bdp"
 config/features=PackedStringArray("4.4", "GL Compatibility")
-config/icon="res://icon.svg"
+boot_splash/image="uid://cipq0m36i6v83"
+config/icon="uid://df7hy2vqfeny8"
 
 [autoload]
 
@@ -24,7 +26,9 @@ HttpService="*res://script/HttpService.gd"
 
 window/size/viewport_width=720
 window/size/viewport_height=1280
-window/stretch/mode="viewport"
+window/size/mode=3
+window/size/resizable=false
+window/stretch/mode="canvas_items"
 window/handheld/orientation=1
 
 [gui]

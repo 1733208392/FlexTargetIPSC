@@ -29,8 +29,50 @@ func stop_game(callback: Callable):
 	http.request_completed.connect(callback)
 	http.request(url, [], HTTPClient.METHOD_POST)
 
+func shutdown(callback: Callable, mode: String = "free"):
+	var url = base_url + "/system/shutdown"
+	var data = {"mode": mode}
+	http.request_completed.connect(callback)
+	var json_data = JSON.stringify(data)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
+
+func volume_up(callback: Callable, mode: String = "free"):
+	var url = base_url + "/system/volume/increase"
+	var data = {"mode": mode}
+	http.request_completed.connect(callback)
+	var json_data = JSON.stringify(data)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
+
+func volume_down(callback: Callable, mode: String = "free"):
+	var url = base_url + "/system/volume/decrease"
+	var data = {"mode": mode}
+	http.request_completed.connect(callback)
+	var json_data = JSON.stringify(data)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
+
 func post(url: String, data: Dictionary, callback: Callable):
 	print("[HttpService] POST ", url, " data: ", data)
+	http.request_completed.connect(callback)
+	var json_data = JSON.stringify(data)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
+
+func save_game(callback: Callable, data_id: String, content: String, namespace: String = "default"):
+	var url = base_url + "/game/save"
+	var data = {
+		"data_id": data_id,
+		"content": content,
+		"namespace": namespace
+	}
+	http.request_completed.connect(callback)
+	var json_data = JSON.stringify(data)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
+
+func load_game(callback: Callable, data_id: String, namespace: String = "default"):
+	var url = base_url + "/game/load"
+	var data = {
+		"data_id": data_id,
+		"namespace": namespace
+	}
 	http.request_completed.connect(callback)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)

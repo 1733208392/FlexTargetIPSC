@@ -25,7 +25,7 @@ func _ready():
 	else:
 		print("[Menu] WebSocketListener singleton not found!")
 
-	start_button.pressed.connect(_on_start_pressed)
+	start_button.pressed.connect(on_start_pressed)
 	bootcamp_button.pressed.connect(_on_bootcamp_pressed)
 	option_button.pressed.connect(_on_option_pressed)
 
@@ -44,48 +44,101 @@ func _on_menu_control(directive: String):
 			print("[Menu] Simulating button press")
 			buttons[focused_index].pressed.emit()
 		"volume_up":
-			print("[Menu] Volume up (TBD)")
+			print("[Menu] Volume up")
+			volume_up()
 		"volume_down":
-			print("[Menu] Volume down (TBD)")
+			print("[Menu] Volume down")
+			volume_down()
 		"power":
-			print("[Menu] Power off (TBD)")
+			print("[Menu] Power off")
+			power_off()
 		_:
 			print("[Menu] Unknown directive: ", directive)
 
-func on_StartButton_pressed():
-	
+func _on_shutdown_response(result, response_code, headers, body):
+	var body_str = body.get_string_from_utf8()
+	print("[Menu] Start game HTTP response:", result, response_code, body_str)
+
+func on_start_pressed():
 	# Call the HTTP service to start the game
 	var http_service = get_node("/root/HttpService")
 	if http_service:
 		print("[Menu] Sending start game HTTP request...")
-		http_service.start_game(_on_start_game_response)
+		http_service.start_game(_on_start_response)
 	else:
 		print("[Menu] HttpService singleton not found!")
+		get_tree().change_scene_to_file("res://scene/intro.tscn")
 
-func _on_start_game_response(result, response_code, headers, body):
+func _on_start_response(result, response_code, headers, body):
 	var body_str = body.get_string_from_utf8()
 	print("[Menu] Start game HTTP response:", result, response_code, body_str)
 	var json = JSON.parse_string(body_str)
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
 		print("[Menu] Start game success, changing scene.")
-		get_tree().change_scene_to_file("res://scene/drills.tscn")
+		get_tree().change_scene_to_file("res://scene/intro.tscn")
 	else:
 		print("[Menu] Start game failed or invalid response.")
 
-func _on_start_pressed():
-	print("Start button pressed - Load main game")
-	get_tree().change_scene_to_file("res://scene/intro.tscn")
-
 func _on_bootcamp_pressed():
-	# TODO: Load the boot camp/training scene
+	# Call the HTTP service to start the game
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Menu] Sending start game HTTP request...")
+		http_service.start_game(_on_bootcamp_response)
+	else:
+		print("[Menu] HttpService singleton not found!")
 	print("Boot Camp button pressed - Load training mode")
-	get_tree().change_scene_to_file("res://scene/bootcamp.tscn")
+
+func _on_bootcamp_response(result, response_code, headers, body):
+	var body_str = body.get_string_from_utf8()
+	print("[Menu] Start game HTTP response:", result, response_code, body_str)
+	var json = JSON.parse_string(body_str)
+	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
+		print("[Menu] Bootcamp Start game success, changing scene.")
+		get_tree().change_scene_to_file("res://scene/bootcamp.tscn")
+	else:
+		print("[Menu] Start bootcamp failed or invalid response.")
 
 func _on_option_pressed():
 	# Load the options scene
 	get_tree().change_scene_to_file("res://scene/option.tscn")
 
 
-func _on_ipsc_pressed() -> void:
-	print("Start button pressed - Load main game")
-	get_tree().change_scene_to_file("res://scene/drills.tscn")
+func volume_up():
+	# Call the HTTP service to increase the volume
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Menu] Sending volume up HTTP request...")
+		http_service.volume_up(_on_volume_up_response)
+	else:
+		print("[Menu] HttpService singleton not found!")
+
+func _on_volume_up_response(result, response_code, headers, body):
+	var body_str = body.get_string_from_utf8()
+	print("[Menu] Volume up HTTP response:", result, response_code, body_str)
+
+func volume_down():
+	# Call the HTTP service to decrease the volume
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Menu] Sending volume down HTTP request...")
+		http_service.volume_down(_on_volume_down_response)
+	else:
+		print("[Menu] HttpService singleton not found!")
+
+func _on_volume_down_response(result, response_code, headers, body):
+	var body_str = body.get_string_from_utf8()
+	print("[Menu] Volume down HTTP response:", result, response_code, body_str)
+
+func power_off():
+	# Call the HTTP service to power off the system
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Menu] Sending power off HTTP request...")
+		http_service.shutdown(_on_shutdown_response)
+	else:
+		print("[Menu] HttpService singleton not found!")
+
+func _on_shutdown_response(result, response_code, headers, body):
+	var body_str = body.get_string_from_utf8()
+	print("[Menu] Shutdown HTTP response:", result, response_code, body_str)
