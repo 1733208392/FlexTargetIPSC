@@ -92,20 +92,51 @@ func update_ui_texts():
 		copyright_label.text = tr("copyright")
 
 func save_settings():
-	var config = ConfigFile.new()
-	config.set_value("settings", "language", current_language)
-	var err = config.save("user://settings.cfg")
-	if err != OK:
-		print("Failed to save settings: ", err)
+	var data = {"language": current_language}
+	var content = JSON.stringify(data)
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		http_service.save_game(_on_save_settings_callback, "settings", content)
+	else:
+		print("HttpService not found!")
+
+func _on_save_settings_callback(result, response_code, headers, body):
+	if response_code == 200:
+		print("Settings saved successfully")
+	else:
+		print("Failed to save settings: ", response_code)
 
 func load_settings():
-	var config = ConfigFile.new()
-	var err = config.load("user://settings.cfg")
-	if err == OK:
-		current_language = config.get_value("settings", "language", "English")
-		set_locale_from_language(current_language)
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		http_service.load_game(_on_load_settings_callback, "settings")
 	else:
-		print("No saved settings found, using default")
+		print("HttpService not found, using default")
+		set_locale_from_language(current_language)
+
+func _on_load_settings_callback(result, response_code, headers, body):
+	if response_code == 200:
+		var body_str = body.get_string_from_utf8()
+		var json = JSON.new()
+		var error = json.parse(body_str)
+		if error == OK:
+			var data = json.data
+			var settings = data.get("content", "{}")
+			var settings_json = JSON.new()
+			var settings_error = settings_json.parse(settings)
+			if settings_error == OK:
+				var settings_data = settings_json.data
+				current_language = settings_data.get("language", "English")
+				set_locale_from_language(current_language)
+				print("Loaded language: ", current_language)
+			else:
+				print("Failed to parse settings JSON")
+				set_locale_from_language(current_language)
+		else:
+			print("Failed to parse response JSON")
+			set_locale_from_language(current_language)
+	else:
+		print("Failed to load settings: ", response_code)
 		set_locale_from_language(current_language)
 
 # Function to get current language (can be called from other scripts)
