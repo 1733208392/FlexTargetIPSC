@@ -2,6 +2,7 @@ extends Node
 
 # Global data storage for sharing information between scenes
 var selected_drill_data: Dictionary = {}
+var upper_level_scene: String = "res://scene/drills.tscn"
 
 # Current game settings
 var current_settings: Dictionary = {

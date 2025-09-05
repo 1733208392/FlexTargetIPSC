@@ -26,18 +26,72 @@ func _ready():
 	else:
 		print("[Drill Replay] WebSocketListener singleton not found!")
 	
-	# Find the latest performance file
-	var latest_file = find_latest_performance_file()
-	if latest_file == "":
-		print("No performance files found.")
+	# Get upper level scene from GlobalData
+	var global_data = get_node("/root/GlobalData")
+	if global_data:
+		upper_level_scene = global_data.upper_level_scene
+		print("[Drill Replay] Upper level scene set to: ", upper_level_scene)
+	
+	# Check for selected drill data first
+	var selected_file = "user://selected_drill.dat"
+	var file = FileAccess.open(selected_file, FileAccess.READ)
+	if file:
+		print("Found selected drill data file")
+		var json_string = file.get_as_text()
+		file.close()
+		
+		var json = JSON.parse_string(json_string)
+		if json:
+			print("Loaded selected drill data")
+			load_selected_drill_data(json)
+		else:
+			print("Failed to parse selected drill data")
+			# Fallback to latest performance file
+			var latest_file = find_latest_performance_file()
+			if latest_file == "":
+				print("No performance files found.")
+				return
+			load_performance_file(latest_file)
+	else:
+		print("No selected drill data found, loading latest performance file")
+		# Find the latest performance file
+		var latest_file = find_latest_performance_file()
+		if latest_file == "":
+			print("No performance files found.")
+			return
+		load_performance_file(latest_file)
+
+func load_selected_drill_data(data: Dictionary):
+	"""Load drill data from the selected drill format"""
+	print("Loading selected drill data")
+	records = data["targets"]
+	
+	if records.size() == 0:
+		print("No records found in selected drill data")
 		return
 	
-	print("Latest file found: ", latest_file)
+	# Check if records contain rotation angle data
+	if records.size() > 0:
+		var first_record = records[0]
+		if first_record.has("rotation_angle"):
+			print("Rotation angle data found in records - will display target at recorded angles during replay")
+		else:
+			print("No rotation angle data found in records")
+	
+	# Load the first record
+	load_record(current_index)
+	
+	# Enable input for this node
+	set_process_input(true)
+
+func load_performance_file(file_path: String):
+	"""Load drill data from a performance file"""
+	print("Loading performance file: ", file_path)
 	
 	# Load the data
-	var file = FileAccess.open(latest_file, FileAccess.READ)
+	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
-		print("Failed to open file: ", latest_file)
+		print("Failed to open file: ", file_path)
 		return
 	
 	var json_string = file.get_as_text()
@@ -47,7 +101,7 @@ func _ready():
 	
 	var json = JSON.parse_string(json_string)
 	if json == null:
-		print("Failed to parse JSON from: ", latest_file)
+		print("Failed to parse JSON from: ", file_path)
 		return
 	
 	print("Parsed JSON type: ", typeof(json))

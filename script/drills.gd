@@ -65,6 +65,14 @@ func _ready():
 	target_hit.connect(performance_tracker._on_target_hit)
 	drills_finished.connect(performance_tracker._on_drills_finished)
 	
+	# Connect to WebSocketListener
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.menu_control.connect(_on_menu_control)
+		print("[Drills] Connecting to WebSocketListener.menu_control signal")
+	else:
+		print("[Drills] WebSocketListener singleton not found!")
+	
 	# Show shot timer overlay before starting drill
 	show_shot_timer()
 
@@ -608,3 +616,53 @@ func is_bullet_spawning_allowed() -> bool:
 func get_drills_manager():
 	"""Return reference to this drills manager for targets to use"""
 	return self
+
+func _on_menu_control(directive: String):
+	print("[Drills] Received menu_control signal with directive: ", directive)
+	match directive:
+		"volume_up":
+			print("[Drills] Volume up")
+			volume_up()
+		"volume_down":
+			print("[Drills] Volume down")
+			volume_down()
+		"power":
+			print("[Drills] Power off")
+			power_off()
+		"back", "homepage":
+			print("[Drills] ", directive, " - navigating to main menu")
+			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+		_:
+			print("[Drills] Unknown directive: ", directive)
+
+func volume_up():
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Drills] Sending volume up HTTP request...")
+		http_service.volume_up(_on_volume_response)
+	else:
+		print("[Drills] HttpService singleton not found!")
+
+func volume_down():
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Drills] Sending volume down HTTP request...")
+		http_service.volume_down(_on_volume_response)
+	else:
+		print("[Drills] HttpService singleton not found!")
+
+func _on_volume_response(result, response_code, headers, body):
+	var body_str = body.get_string_from_utf8()
+	print("[Drills] Volume HTTP response:", result, response_code, body_str)
+
+func power_off():
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Drills] Sending power off HTTP request...")
+		http_service.shutdown(_on_shutdown_response)
+	else:
+		print("[Drills] HttpService singleton not found!")
+
+func _on_shutdown_response(result, response_code, headers, body):
+	var body_str = body.get_string_from_utf8()
+	print("[Drills] Shutdown HTTP response:", result, response_code, body_str)
