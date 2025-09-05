@@ -17,7 +17,7 @@ func _ready():
 		
 	buttons[focused_index].grab_focus()
 
-		# Use get_node instead of Engine.has_singleton
+	# Use get_node instead of Engine.has_singleton
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
@@ -54,10 +54,6 @@ func _on_menu_control(directive: String):
 			power_off()
 		_:
 			print("[Menu] Unknown directive: ", directive)
-
-func _on_shutdown_response(result, response_code, headers, body):
-	var body_str = body.get_string_from_utf8()
-	print("[Menu] Start game HTTP response:", result, response_code, body_str)
 
 func on_start_pressed():
 	# Call the HTTP service to start the game

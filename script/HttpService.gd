@@ -56,22 +56,22 @@ func post(url: String, data: Dictionary, callback: Callable):
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
 
-func save_game(callback: Callable, data_id: String, content: String, namespace: String = "default"):
+func save_game(callback: Callable, data_id: String, content: String, ns: String = "default"):
 	var url = base_url + "/game/save"
 	var data = {
 		"data_id": data_id,
 		"content": content,
-		"namespace": namespace
+		"namespace": ns
 	}
 	http.request_completed.connect(callback)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
 
-func load_game(callback: Callable, data_id: String, namespace: String = "default"):
+func load_game(callback: Callable, data_id: String, ns: String = "default"):
 	var url = base_url + "/game/load"
 	var data = {
 		"data_id": data_id,
-		"namespace": namespace
+		"namespace": ns
 	}
 	http.request_completed.connect(callback)
 	var json_data = JSON.stringify(data)
