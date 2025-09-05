@@ -100,7 +100,6 @@ theme_override_constants/separation = 12
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 24
-button_pressed = true
 button_group = SubResource("ButtonGroup_language")
 text = "中文"
 
@@ -115,6 +114,7 @@ text = "日本語"
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 24
+button_pressed = true
 button_group = SubResource("ButtonGroup_language")
 text = "English"
 

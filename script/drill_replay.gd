@@ -4,6 +4,7 @@ var records = []
 var current_index = 0
 var current_target_type = ""
 var loaded_targets = {}
+var upper_level_scene = "res://scene/drills.tscn"  # Default upper level scene
 
 var target_scenes = {
 	"ipsc_mini": "res://scene/ipsc_mini.tscn",
@@ -16,6 +17,14 @@ var target_scenes = {
 
 func _ready():
 	print("Drill Replay: Loading drill records...")
+	
+	# Connect to WebSocketListener
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.menu_control.connect(_on_menu_control)
+		print("[Drill Replay] Connecting to WebSocketListener.menu_control signal")
+	else:
+		print("[Drill Replay] WebSocketListener singleton not found!")
 	
 	# Find the latest performance file
 	var latest_file = find_latest_performance_file()
@@ -232,6 +241,86 @@ func disable_target_input(node: Node):
 	
 	for child in node.get_children():
 		disable_target_input(child)
+
+func _on_menu_control(directive: String):
+	print("[Drill Replay] Received menu_control signal with directive: ", directive)
+	match directive:
+		"volume_up":
+			print("[Drill Replay] Volume up")
+			volume_up()
+		"volume_down":
+			print("[Drill Replay] Volume down")
+			volume_down()
+		"power":
+			print("[Drill Replay] Power off")
+			power_off()
+		"back":
+			print("[Drill Replay] Back to upper level scene")
+			back_to_upper_level()
+		"homepage":
+			print("[Drill Replay] Back to main menu")
+			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+		"left", "up":
+			print("[Drill Replay] Previous bullet/target")
+			navigate_previous()
+		"right", "down":
+			print("[Drill Replay] Next bullet/target")
+			navigate_next()
+		_:
+			print("[Drill Replay] Unknown directive: ", directive)
+
+func volume_up():
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Drill Replay] Sending volume up HTTP request...")
+		http_service.volume_up(_on_volume_response)
+	else:
+		print("[Drill Replay] HttpService singleton not found!")
+
+func volume_down():
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Drill Replay] Sending volume down HTTP request...")
+		http_service.volume_down(_on_volume_response)
+	else:
+		print("[Drill Replay] HttpService singleton not found!")
+
+func _on_volume_response(result, response_code, headers, body):
+	var body_str = body.get_string_from_utf8()
+	print("[Drill Replay] Volume HTTP response:", result, response_code, body_str)
+
+func power_off():
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		print("[Drill Replay] Sending power off HTTP request...")
+		http_service.shutdown(_on_shutdown_response)
+	else:
+		print("[Drill Replay] HttpService singleton not found!")
+
+func _on_shutdown_response(result, response_code, headers, body):
+	var body_str = body.get_string_from_utf8()
+	print("[Drill Replay] Shutdown HTTP response:", result, response_code, body_str)
+
+func back_to_upper_level():
+	# Go back to the recorded upper level scene
+	print("[Drill Replay] Going back to upper level scene: ", upper_level_scene)
+	get_tree().change_scene_to_file(upper_level_scene)
+
+func navigate_previous():
+	if current_index > 0:
+		# Simulate pressing P key
+		var event = InputEventKey.new()
+		event.keycode = KEY_P
+		event.pressed = true
+		_input(event)
+
+func navigate_next():
+	if current_index < records.size() - 1:
+		# Simulate pressing N key
+		var event = InputEventKey.new()
+		event.keycode = KEY_N
+		event.pressed = true
+		_input(event)
 
 func find_latest_performance_file() -> String:
 	var dir = DirAccess.open("user://")
