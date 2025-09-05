@@ -21,6 +21,8 @@ config/icon="uid://df7hy2vqfeny8"
 
 WebSocketListener="*res://script/WebSocketListener.gd"
 HttpService="*res://script/HttpService.gd"
+GlobalData="*res://script/global_data.gd"
+Init="*res://script/init.gd"
 
 [display]
 
