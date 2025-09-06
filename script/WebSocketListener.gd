@@ -9,8 +9,8 @@ var bullet_spawning_enabled: bool = true
 
 func _ready():
 	socket = WebSocketPeer.new()
-	#var err = socket.connect_to_url("ws://127.0.0.1/websocket")
-	var err = socket.connect_to_url("ws://localhost:8080")
+	var err = socket.connect_to_url("ws://127.0.0.1/websocket")
+	#var err = socket.connect_to_url("ws://localhost:8080")
 	if err != OK:
 		print("Unable to connect")
 		set_process(false)
@@ -50,3 +50,18 @@ func _process_websocket_json(json_string):
 		print("[WebSocket] Emitting menu_control with directive: ", parsed["directive"])
 		menu_control.emit(parsed["directive"])
 		return
+	
+	# Handle bullet hit data
+	if parsed and parsed.has("data"):
+		print("[WebSocket] Found data array with ", parsed["data"].size(), " entries")
+		for entry in parsed["data"]:
+			var x = entry.get("x", null)
+			var y = entry.get("y", null)
+			if x != null and y != null:
+				if bullet_spawning_enabled:
+					print("[WebSocket] Emitting bullet_hit at: Vector2(", x, ", ", y, ")")
+					bullet_hit.emit(Vector2(x, y))
+				else:
+					print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
+			else:
+				print("[WebSocket] Entry missing x or y: ", entry)

@@ -6,7 +6,7 @@ const wss = new WebSocket.Server({ port: 8080 });
 const dataPayload = {
   type: 'data',
   data: [
-    { t: 630, x: 134, y: 233, a: 1069 },
+    { t: 630, x: 186, y: 361, a: 1069 },
     ],
 };
 
@@ -16,12 +16,15 @@ wss.on('connection', function connection(ws) {
   console.log('Client connected');
   connectedClients.add(ws);
 
-  // const interval = setInterval(() => {
-  //   ws.send(JSON.stringify(dataPayload));
-  // }, 1000); // send every 1 second
+  // Send initial data immediately
+  ws.send(JSON.stringify(dataPayload));
+
+  const interval = setInterval(() => {
+    ws.send(JSON.stringify(dataPayload));
+  }, 1000); // send every 1 second
 
   ws.on('close', () => {
-    // clearInterval(interval);
+    clearInterval(interval);
     connectedClients.delete(ws);
     console.log('Client disconnected');
   });
