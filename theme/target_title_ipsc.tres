@@ -1,14 +1,10 @@
 [gd_resource type="LabelSettings" load_steps=2 format=3 uid="uid://cuf6m18dwphgd"]
 
-[sub_resource type="SystemFont" id="SystemFont_ipsc"]
-font_names = PackedStringArray("Arial", "Liberation Sans", "DejaVu Sans")
-font_weight = 900
+[ext_resource type="FontFile" uid="uid://v37c3aet13ou" path="res://font/Inter/static/Inter_18pt-BlackItalic.ttf" id="1_8exxp"]
 
 [resource]
-font = SubResource("SystemFont_ipsc")
-font_size = 3
-outline_size = 5
-outline_color = Color(0.8, 0, 0, 1)
-shadow_size = 3
-shadow_color = Color(0, 0, 0, 0.8)
-shadow_offset = Vector2(3, 3)
+font = ExtResource("1_8exxp")
+font_size = 36
+font_color = Color(1, 0.6, 0, 1)
+shadow_color = Color(0.0392157, 0.0862745, 0.0941176, 1)
+shadow_offset = Vector2(2, 2)

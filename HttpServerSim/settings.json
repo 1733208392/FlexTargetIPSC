@@ -1,1 +1,1 @@
-{"max_index":3}
+{"max_index":3, "language": "en", "websocket_url": "ws://127.0.0.1/websocket", "http_service_url": "http://127.0.0.1", "spots":["ipsc_mini","hostage", "2poppers", "3paddles", "ipsc_mini_rotation"], "target_rule":{"AZone":5, "CZone":2, "DZone":1, "miss":1, "WhiteZone":-10, "popper":5, "paddles": 5}}
