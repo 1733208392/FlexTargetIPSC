@@ -105,14 +105,10 @@ func _on_shot_timer_ready():
 	print("=== SHOT TIMER READY - STARTING DRILL ===")
 	# Hide the shot timer overlay
 	hide_shot_timer()
-	# Enable bullet spawning now that target will appear
-	bullets_allowed = true
-	var ws_listener = get_node_or_null("/root/WebSocketListener")
-	if ws_listener:
-		ws_listener.bullet_spawning_enabled = true
+	# Don't enable bullet spawning yet - let spawn_next_target() handle it after target is ready
 	# Start the drill timer
 	start_drill_timer()
-	# Now spawn the target normally
+	# Now spawn the target normally (this will enable bullet spawning when ready)
 	spawn_next_target()
 
 func _on_shot_timer_reset():
@@ -206,6 +202,14 @@ func spawn_next_target():
 	
 	# Connect signals for the new target
 	connect_target_signals()
+	
+	# Re-enable bullet spawning after target is fully ready
+	await get_tree().process_frame  # Ensure target is fully initialized
+	bullets_allowed = true
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.bullet_spawning_enabled = true
+	print("Bullet spawning re-enabled for new target: ", target_type)
 
 func clear_current_target():
 	"""Remove the current target from the scene"""
@@ -326,6 +330,13 @@ func _on_target_disappeared(target_id: String = ""):
 	print("Target ID: ", target_id)
 	print("Target index: ", current_target_index)
 	print("Moving to next target...")
+	
+	# Disable bullet spawning during target transition
+	bullets_allowed = false
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.bullet_spawning_enabled = false
+	print("Bullet spawning disabled during target transition")
 	
 	current_target_index += 1
 	
