@@ -1,10 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://5w6j4130dlpu"]
+[gd_scene load_steps=4 format=3 uid="uid://5w6j4130dlpu"]
 
 [ext_resource type="Texture2D" uid="uid://gpyjow0hb5mh" path="res://asset/drills_back.jpg" id="2_6482l"]
 [ext_resource type="Script" uid="uid://f358eipnuwpm" path="res://script/drills.gd" id="2_abc123"]
-[ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="4_title_settings"]
-[ext_resource type="PackedScene" uid="uid://bvmw1s06twfav" path="res://scene/shot_timer.tscn" id="5_shot_timer"]
-[ext_resource type="LabelSettings" uid="uid://deg7d40rl6o81" path="res://theme/big_bold_timer_font.tres" id="6_big_bold"]
+[ext_resource type="PackedScene" uid="uid://drfnfhdej2kp8" path="res://scene/drill_ui.tscn" id="3_drill_ui"]
 
 [node name="drills" type="Control"]
 layout_mode = 3
@@ -37,87 +35,5 @@ grow_vertical = 2
 texture = ExtResource("2_6482l")
 stretch_mode = 6
 
-[node name="FPSLabel" type="Label" parent="."]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 100.0
-offset_bottom = 30.0
-grow_vertical = 0
-text = "FPS: 60"
-
-[node name="TopContainer" type="MarginContainer" parent="."]
+[node name="DrillUI" parent="." instance=ExtResource("3_drill_ui")]
 layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 150.0
-grow_horizontal = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 20
-
-[node name="TopLayout" type="VBoxContainer" parent="TopContainer"]
-layout_mode = 2
-
-[node name="HeaderContainer" type="HBoxContainer" parent="TopContainer/TopLayout"]
-layout_mode = 2
-
-[node name="Spacer1" type="Control" parent="TopContainer/TopLayout/HeaderContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="TargetTypeTitle" type="Label" parent="TopContainer/TopLayout/HeaderContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Target 1"
-label_settings = ExtResource("4_title_settings")
-horizontal_alignment = 1
-
-[node name="FastestContainer" type="HBoxContainer" parent="TopContainer/TopLayout/HeaderContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Spacer2" type="Control" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ThunderIcon" type="Label" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
-layout_mode = 2
-text = "⚡"
-label_settings = ExtResource("4_title_settings")
-
-[node name="FastestInterval" type="Label" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
-layout_mode = 2
-text = "0.87s"
-label_settings = ExtResource("4_title_settings")
-
-[node name="TimerContainer" type="CenterContainer" parent="TopContainer/TopLayout"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="Timer" type="Label" parent="TopContainer/TopLayout/TimerContainer"]
-layout_mode = 2
-text = "00:00:00"
-label_settings = ExtResource("6_big_bold")
-horizontal_alignment = 1
-
-[node name="DrillTimer" type="Timer" parent="."]
-wait_time = 0.1
-
-[node name="ShotTimerOverlay" parent="." instance=ExtResource("5_shot_timer")]
-layout_mode = 1
-
-[node name="DrillCompleteOverlay" type="Label" parent="."]
-visible = false
-z_index = 10
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_font_sizes/font_size = 48
-text = "05:00:32"
-horizontal_alignment = 1
-vertical_alignment = 1

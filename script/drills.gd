@@ -8,12 +8,6 @@ extends Control
 @export var three_paddles_scene: PackedScene = preload("res://scene/3paddles.tscn")
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
-# Theme styles for title
-@export var golden_title_style: LabelSettings = preload("res://theme/target_title_settings.tres")
-@export var tactical_title_style: LabelSettings = preload("res://theme/target_title_tactical.tres")
-@export var competitive_title_style: LabelSettings = preload("res://theme/target_title_competitive.tres")
-var current_theme_style: String = "golden"
-
 # Drill sequence and progress tracking
 var target_sequence: Array[String] = ["ipsc_mini","hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
 var current_target_index: int = 0
@@ -29,23 +23,28 @@ var drill_start_time: float = 0.0
 
 # Node references
 @onready var center_container = $CenterContainer
-@onready var target_type_title = $TopContainer/TopLayout/HeaderContainer/TargetTypeTitle
-@onready var fps_label = $FPSLabel
-@onready var shot_timer_overlay = $ShotTimerOverlay
-@onready var drill_complete_overlay = $DrillCompleteOverlay
-@onready var fastest_interval_label = $TopContainer/TopLayout/HeaderContainer/FastestContainer/FastestInterval
-@onready var drill_timer = $DrillTimer
-@onready var timer_label = $TopContainer/TopLayout/TimerContainer/Timer
+@onready var drill_timer = $DrillUI/DrillTimer
 
 # Performance tracking
 signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float)
 signal drills_finished
+
+# UI update signals
+signal ui_timer_update(elapsed_seconds: float)
+signal ui_target_title_update(target_index: int, total_targets: int)
+signal ui_fastest_time_update(fastest_time: float)
+signal ui_show_completion(final_time: float, fastest_time: float, final_score: int)
+signal ui_show_shot_timer()
+signal ui_hide_shot_timer()
+signal ui_theme_change(theme_name: String)
+signal ui_score_update(score: int)
+
 @onready var performance_tracker = preload("res://script/performance_tracker.gd").new()
 
 func _ready():
 	"""Initialize the drill with the first target"""
 	print("=== STARTING DRILL ===")
-	apply_title_theme("golden")  # Set default theme
+	emit_signal("ui_theme_change", "golden")  # Set default theme
 	
 	# Clear any existing targets in the center container
 	clear_current_target()
@@ -53,9 +52,13 @@ func _ready():
 	# Ensure the center container doesn't block mouse input
 	center_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
-	# Connect shot timer signals
-	shot_timer_overlay.timer_ready.connect(_on_shot_timer_ready)
-	shot_timer_overlay.timer_reset.connect(_on_shot_timer_reset)
+	# Connect shot timer signals via DrillUI
+	var drill_ui = $DrillUI
+	if drill_ui:
+		var shot_timer_overlay = drill_ui.get_node("ShotTimerOverlay")
+		if shot_timer_overlay:
+			shot_timer_overlay.timer_ready.connect(_on_shot_timer_ready)
+			shot_timer_overlay.timer_reset.connect(_on_shot_timer_reset)
 	
 	# Connect drill timer signal
 	drill_timer.timeout.connect(_on_drill_timer_timeout)
@@ -79,11 +82,7 @@ func _ready():
 func show_shot_timer():
 	"""Show the shot timer overlay"""
 	print("=== SHOWING SHOT TIMER OVERLAY ===")
-	shot_timer_overlay.visible = true
-	shot_timer_overlay.reset_timer()
-	
-	# Hide the completion overlay if visible
-	drill_complete_overlay.visible = false
+	emit_signal("ui_show_shot_timer")
 	
 	# Disable bullet spawning during shot timer
 	bullets_allowed = false
@@ -97,7 +96,7 @@ func show_shot_timer():
 func hide_shot_timer():
 	"""Hide the shot timer overlay"""
 	print("=== HIDING SHOT TIMER OVERLAY ===")
-	shot_timer_overlay.visible = false
+	emit_signal("ui_hide_shot_timer")
 
 func _on_shot_timer_ready():
 	"""Handle when shot timer beep occurs - start the drill"""
@@ -122,13 +121,13 @@ func _on_shot_timer_reset():
 func _on_drill_timer_timeout():
 	"""Handle drill timer timeout - update elapsed time display"""
 	elapsed_seconds += 0.1
-	update_timer_display()
+	emit_signal("ui_timer_update", elapsed_seconds)
 
 func start_drill_timer():
 	"""Start the drill elapsed time timer"""
 	elapsed_seconds = 0.0
 	drill_start_time = Time.get_unix_time_from_system()
-	update_timer_display()
+	emit_signal("ui_timer_update", elapsed_seconds)
 	drill_timer.start()
 	
 	# Reset performance tracker timing for accurate first shot measurement
@@ -136,7 +135,7 @@ func start_drill_timer():
 	
 	# Reset fastest time for the new drill
 	performance_tracker.reset_fastest_time()
-	update_fastest_interval_display()
+	emit_signal("ui_fastest_time_update", 999.0)  # Reset to show "--"
 	
 	print("=== DRILL TIMER STARTED ===")
 
@@ -145,21 +144,9 @@ func stop_drill_timer():
 	drill_timer.stop()
 	print("=== DRILL TIMER STOPPED ===")
 
-func update_timer_display():
-	"""Update the timer label with formatted elapsed time in MM:SS:MS format"""
-	var total_seconds = int(elapsed_seconds)
-	var milliseconds = int((elapsed_seconds - total_seconds) * 100)
-	
-	var minutes = total_seconds / 60
-	var seconds = total_seconds % 60
-	
-	var time_string = "%02d:%02d:%02d" % [minutes, seconds, milliseconds]
-	timer_label.text = time_string
-
 func _process(_delta):
-	"""Update FPS counter every frame"""
-	var fps = Engine.get_frames_per_second()
-	fps_label.text = "FPS: " + str(fps)
+	"""Main process loop - UI updates are handled by drill_ui.gd"""
+	pass
 
 func _unhandled_input(_event):
 	"""Handle input events for theme switching (testing purposes)"""
@@ -171,35 +158,18 @@ func _unhandled_input(_event):
 	if _event is InputEventKey and _event.pressed:
 		match _event.keycode:
 			KEY_1:
-				apply_title_theme("golden")
+				emit_signal("ui_theme_change", "golden")
 			KEY_2:
-				apply_title_theme("tactical")
+				emit_signal("ui_theme_change", "tactical")
 			KEY_3:
-				apply_title_theme("competitive")
+				emit_signal("ui_theme_change", "competitive")
 			KEY_R:
 				restart_drill()
 
 func update_target_title():
 	"""Update the target title based on the current target number"""
-	var target_number = current_target_index + 1
-	target_type_title.text = "Target " + str(target_number)
-	print("Updated title to: Target ", target_number)
-
-func apply_title_theme(theme_name: String):
-	"""Apply a specific theme style to the target title"""
-	match theme_name:
-		"golden":
-			target_type_title.label_settings = golden_title_style
-		"tactical":
-			target_type_title.label_settings = tactical_title_style
-		"competitive":
-			target_type_title.label_settings = competitive_title_style
-		_:
-			print("Unknown theme: ", theme_name)
-			return
-	
-	current_theme_style = theme_name
-	print("Applied theme: ", theme_name)
+	emit_signal("ui_target_title_update", current_target_index, target_sequence.size())
+	print("Updated title to: Target ", current_target_index + 1, "/", target_sequence.size())
 
 func spawn_next_target():
 	"""Spawn the next target in the sequence"""
@@ -444,6 +414,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		total_drill_score += actual_points
 	
 	print("Total drill score: ", total_drill_score)
+	emit_signal("ui_score_update", total_drill_score)
 	
 	# Get rotation angle for rotating targets
 	var rotation_angle = 0.0
@@ -468,7 +439,8 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 			# Don't return here - let the performance tracking signal be emitted
 	
 	# Update the fastest interval display
-	update_fastest_interval_display()
+	var fastest_time = performance_tracker.get_fastest_time_diff()
+	emit_signal("ui_fastest_time_update", fastest_time)
 
 func complete_drill():
 	"""Complete the drill sequence"""
@@ -491,7 +463,7 @@ func complete_drill():
 	
 	# Reset timer
 	elapsed_seconds = 0.0
-	update_timer_display()
+	emit_signal("ui_timer_update", elapsed_seconds)
 	
 	# Show shot timer overlay again for next run after a brief delay
 	await get_tree().create_timer(2.0).timeout  # Wait 2 seconds before showing timer
@@ -517,7 +489,8 @@ func finish_drill_immediately():
 		ws_listener.bullet_spawning_enabled = false
 	
 	# Show the completion overlay
-	show_completion_overlay()
+	var fastest_time = performance_tracker.get_fastest_time_diff()
+	emit_signal("ui_show_completion", elapsed_seconds, fastest_time, total_drill_score)
 	
 	# Set the total elapsed time in performance tracker before finishing
 	performance_tracker.set_total_elapsed_time(elapsed_seconds)
@@ -539,52 +512,11 @@ func finish_drill_immediately():
 	
 	# Reset timer
 	elapsed_seconds = 0.0
-	update_timer_display()
+	emit_signal("ui_timer_update", elapsed_seconds)
 	
 	# Reset performance tracker for next drill
 	performance_tracker.reset_fastest_time()
-	update_fastest_interval_display()
-
-func show_completion_overlay():
-	"""Show the completion overlay with drill statistics"""
-	print("Showing completion overlay")
-	
-	# Get the final statistics
-	var final_time = elapsed_seconds
-	var fastest_time = performance_tracker.get_fastest_time_diff()
-	var final_score = total_drill_score
-	
-	# Format the time display
-	var total_seconds = int(final_time)
-	var milliseconds = int((final_time - total_seconds) * 100)
-	var minutes = total_seconds / 60
-	var seconds = total_seconds % 60
-	var time_string = "%02d:%02d:%02d" % [minutes, seconds, milliseconds]
-	
-	# Format the fastest time
-	var fastest_string = "--"
-	if fastest_time < 999.0:
-		fastest_string = "%.2fs" % fastest_time
-	
-	# Create the completion message
-	var completion_text = """DRILL COMPLETE!
-
-Total Time: %s
-Fastest Shot: %s
-Final Score: %d
-
-Press R to restart""" % [time_string, fastest_string, final_score]
-	
-	drill_complete_overlay.text = completion_text
-	drill_complete_overlay.visible = true
-
-func update_fastest_interval_display():
-	"""Update the fastest interval label with the current fastest time"""
-	var fastest_time = performance_tracker.get_fastest_time_diff()
-	if fastest_time < 999.0:  # Only update if we have a valid time
-		fastest_interval_label.text = "%.2fs" % fastest_time
-	else:
-		fastest_interval_label.text = "--"
+	emit_signal("ui_fastest_time_update", 999.0)  # Reset to show "--"
 
 func restart_drill():
 	"""Restart the drill from the beginning"""
@@ -599,7 +531,7 @@ func restart_drill():
 	# Reset performance tracker
 	performance_tracker.reset_fastest_time()
 	performance_tracker.reset_shot_timer()
-	update_fastest_interval_display()
+	emit_signal("ui_fastest_time_update", 999.0)  # Reset to show "--"
 	
 	# Clear the current target
 	clear_current_target()

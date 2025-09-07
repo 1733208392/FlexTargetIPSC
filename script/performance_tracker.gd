@@ -86,7 +86,8 @@ func _on_drills_finished():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
 		var json_string = JSON.stringify(pending_drill_data)
-		var data_id = str(GlobalData.max_index + 1)
+		var global_data = get_node("/root/GlobalData")
+		var data_id = str(global_data.max_index + 1) if global_data else "1"
 		http_service.save_game(_on_performance_saved, data_id, json_string)
 	else:
 		print("HttpService not found")

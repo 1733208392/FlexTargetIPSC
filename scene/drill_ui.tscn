@@ -1,11 +1,12 @@
-[gd_scene load_steps=7 format=3 uid="uid://drfnfhdej2kp8"]
+[gd_scene load_steps=8 format=3 uid="uid://drfnfhdej2kp8"]
 
-[ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="1_title_settings"]
-[ext_resource type="PackedScene" uid="uid://bvmw1s06twfav" path="res://scene/shot_timer.tscn" id="2_shot_timer"]
-[ext_resource type="LabelSettings" uid="uid://deg7d40rl6o81" path="res://theme/big_bold_timer_font.tres" id="3_big_bold"]
-[ext_resource type="PackedScene" uid="uid://5awavhwtv8op" path="res://scene/custom_progress_bar.tscn" id="4_custom_progress"]
-[ext_resource type="Texture2D" uid="uid://cj5m8qdpg1amv" path="res://asset/coin.png" id="5_coin_texture"]
-[ext_resource type="Texture2D" uid="uid://bhksfu7pulyjs" path="res://asset/thunder.png" id="6_thunder_texture"]
+[ext_resource type="Script" path="res://script/drill_ui.gd" id="1_drill_ui_script"]
+[ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="2_title_settings"]
+[ext_resource type="PackedScene" uid="uid://bvmw1s06twfav" path="res://scene/shot_timer.tscn" id="3_shot_timer"]
+[ext_resource type="LabelSettings" uid="uid://deg7d40rl6o81" path="res://theme/big_bold_timer_font.tres" id="4_big_bold"]
+[ext_resource type="PackedScene" uid="uid://5awavhwtv8op" path="res://scene/custom_progress_bar.tscn" id="5_custom_progress"]
+[ext_resource type="Texture2D" uid="uid://cj5m8qdpg1amv" path="res://asset/coin.png" id="6_coin_texture"]
+[ext_resource type="Texture2D" uid="uid://bhksfu7pulyjs" path="res://asset/thunder.png" id="7_thunder_texture"]
 
 [node name="DrillUI" type="Control"]
 layout_mode = 3
@@ -15,6 +16,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+script = ExtResource("1_drill_ui_script")
 
 [node name="FPSLabel" type="Label" parent="."]
 visible = false
@@ -51,13 +53,13 @@ size_flags_horizontal = 3
 
 [node name="CoinIcon" type="TextureRect" parent="TopContainer/TopLayout/HeaderContainer/ScoreContainer"]
 layout_mode = 2
-texture = ExtResource("5_coin_texture")
+texture = ExtResource("6_coin_texture")
 stretch_mode = 5
 
 [node name="Score" type="Label" parent="TopContainer/TopLayout/HeaderContainer/ScoreContainer"]
 layout_mode = 2
 text = "30"
-label_settings = ExtResource("1_title_settings")
+label_settings = ExtResource("2_title_settings")
 
 [node name="TargetTypeTitle" type="Label" parent="TopContainer/TopLayout/HeaderContainer"]
 layout_mode = 2
@@ -65,7 +67,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_font_sizes/font_size = 24
 text = "Target 1/5"
-label_settings = ExtResource("1_title_settings")
+label_settings = ExtResource("2_title_settings")
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -79,19 +81,19 @@ size_flags_horizontal = 3
 
 [node name="ThunderIcon" type="TextureRect" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
 layout_mode = 2
-texture = ExtResource("6_thunder_texture")
+texture = ExtResource("7_thunder_texture")
 stretch_mode = 5
 
 [node name="FastestInterval" type="Label" parent="TopContainer/TopLayout/HeaderContainer/FastestContainer"]
 layout_mode = 2
 text = "0.87s"
-label_settings = ExtResource("1_title_settings")
+label_settings = ExtResource("2_title_settings")
 
 [node name="ProgressBarContainer" type="CenterContainer" parent="TopContainer/TopLayout"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 
-[node name="CustomProgressBar" parent="TopContainer/TopLayout/ProgressBarContainer" instance=ExtResource("4_custom_progress")]
+[node name="CustomProgressBar" parent="TopContainer/TopLayout/ProgressBarContainer" instance=ExtResource("5_custom_progress")]
 custom_minimum_size = Vector2(280, 30)
 layout_mode = 2
 
@@ -102,13 +104,13 @@ size_flags_vertical = 3
 [node name="Timer" type="Label" parent="TopContainer/TopLayout/TimerContainer"]
 layout_mode = 2
 text = "00:00:00"
-label_settings = ExtResource("3_big_bold")
+label_settings = ExtResource("4_big_bold")
 horizontal_alignment = 1
 
 [node name="DrillTimer" type="Timer" parent="."]
 wait_time = 0.1
 
-[node name="ShotTimerOverlay" parent="." instance=ExtResource("2_shot_timer")]
+[node name="ShotTimerOverlay" parent="." instance=ExtResource("3_shot_timer")]
 layout_mode = 1
 
 [node name="DrillCompleteOverlay" type="Label" parent="."]
