@@ -9,8 +9,8 @@ var bullet_spawning_enabled: bool = true
 
 func _ready():
 	socket = WebSocketPeer.new()
-	var err = socket.connect_to_url("ws://127.0.0.1/websocket")
-	#var err = socket.connect_to_url("ws://localhost:8080")
+	#var err = socket.connect_to_url("ws://127.0.0.1/websocket")
+	var err = socket.connect_to_url("ws://localhost:8080")
 	if err != OK:
 		print("Unable to connect")
 		set_process(false)
