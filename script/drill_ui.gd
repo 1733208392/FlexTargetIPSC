@@ -14,6 +14,7 @@ var current_theme_style: String = "golden"
 @onready var fastest_interval_label = $TopContainer/TopLayout/HeaderContainer/FastestContainer/FastestInterval
 @onready var timer_label = $TopContainer/TopLayout/TimerContainer/Timer
 @onready var score_label = $TopContainer/TopLayout/HeaderContainer/ScoreContainer/Score
+@onready var progress_bar = $TopContainer/TopLayout/ProgressBarContainer/CustomProgressBar
 
 func _ready():
 	"""Initialize the drill UI"""
@@ -40,6 +41,8 @@ func _ready():
 			drills_manager.ui_theme_change.connect(_on_theme_change)
 		if drills_manager.has_signal("ui_score_update"):
 			drills_manager.ui_score_update.connect(_on_score_update)
+		if drills_manager.has_signal("ui_progress_update"):
+			drills_manager.ui_progress_update.connect(_on_progress_update)
 		print("Connected to drills manager UI signals")
 
 func _process(_delta):
@@ -94,6 +97,13 @@ func _on_fastest_time_update(fastest_time: float):
 func _on_score_update(score: int):
 	"""Update the score display"""
 	score_label.text = str(score)
+
+func _on_progress_update(targets_completed: int):
+	"""Update the progress bar based on targets completed"""
+	if progress_bar and progress_bar.has_method("update_progress"):
+		progress_bar.update_progress(targets_completed)
+	else:
+		print("Warning: Progress bar not found or missing update_progress method")
 
 func _on_show_completion(final_time: float, fastest_time: float, final_score: int):
 	"""Show the completion overlay with drill statistics"""

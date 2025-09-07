@@ -38,6 +38,7 @@ signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
 signal ui_theme_change(theme_name: String)
 signal ui_score_update(score: int)
+signal ui_progress_update(targets_completed: int)
 
 @onready var performance_tracker = preload("res://script/performance_tracker.gd").new()
 
@@ -45,6 +46,7 @@ func _ready():
 	"""Initialize the drill with the first target"""
 	print("=== STARTING DRILL ===")
 	emit_signal("ui_theme_change", "golden")  # Set default theme
+	emit_signal("ui_progress_update", 0)  # Initialize progress bar
 	
 	# Clear any existing targets in the center container
 	clear_current_target()
@@ -326,6 +328,10 @@ func _on_target_disappeared(target_id: String = ""):
 	print("Moving to next target...")
 	
 	current_target_index += 1
+	
+	# Update progress bar - current_target_index now represents completed targets
+	emit_signal("ui_progress_update", current_target_index)
+	
 	spawn_next_target()
 
 func connect_ipsc_mini_rotate_signals():
@@ -435,6 +441,9 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		# Check if we've reached 2 hits on the rotating target
 		if rotating_target_hits >= 2:
 			print("2 hits on rotating target reached! Finishing drill immediately.")
+			# Update progress - since this is the last target, set to completed
+			current_target_index += 1  # Mark this target as completed
+			emit_signal("ui_progress_update", current_target_index)
 			finish_drill_immediately()
 			# Don't return here - let the performance tracking signal be emitted
 	
@@ -455,15 +464,16 @@ func complete_drill():
 	# Emit drills finished signal for performance tracking
 	emit_signal("drills_finished")
 	
-	# Reset for next run
+	# Reset for next run - but keep UI state for display
 	current_target_index = 0
 	total_drill_score = 0
 	drill_completed = false
 	rotating_target_hits = 0
 	
-	# Reset timer
-	elapsed_seconds = 0.0
-	emit_signal("ui_timer_update", elapsed_seconds)
+	# DON'T reset progress bar, timer, or fastest time - keep them displayed
+	# elapsed_seconds = 0.0  # Keep final time displayed
+	# emit_signal("ui_timer_update", elapsed_seconds)
+	# emit_signal("ui_progress_update", 0)  # Keep progress at 100%
 	
 	# Show shot timer overlay again for next run after a brief delay
 	await get_tree().create_timer(2.0).timeout  # Wait 2 seconds before showing timer
@@ -504,19 +514,20 @@ func finish_drill_immediately():
 	# Clear the current target to prevent further interactions
 	clear_current_target()
 	
-	# Reset tracking variables for next run
+	# Reset tracking variables for next run - but keep UI state for display
 	current_target_index = 0
 	total_drill_score = 0
 	drill_completed = false
 	rotating_target_hits = 0
 	
-	# Reset timer
-	elapsed_seconds = 0.0
-	emit_signal("ui_timer_update", elapsed_seconds)
+	# DON'T reset progress bar, timer, or fastest time - keep them displayed
+	# elapsed_seconds = 0.0  # Keep final time displayed
+	# emit_signal("ui_timer_update", elapsed_seconds)
+	# emit_signal("ui_progress_update", 0)  # Keep progress at 100%
 	
-	# Reset performance tracker for next drill
+	# Reset performance tracker for next drill - but don't update UI
 	performance_tracker.reset_fastest_time()
-	emit_signal("ui_fastest_time_update", 999.0)  # Reset to show "--"
+	# emit_signal("ui_fastest_time_update", 999.0)  # Don't reset UI display
 
 func restart_drill():
 	"""Restart the drill from the beginning"""
@@ -528,7 +539,13 @@ func restart_drill():
 	drill_completed = false
 	rotating_target_hits = 0
 	
-	# Reset performance tracker
+	# NOW reset all UI displays when restarting
+	emit_signal("ui_progress_update", 0)  # Reset progress bar
+	elapsed_seconds = 0.0
+	emit_signal("ui_timer_update", elapsed_seconds)  # Reset timer display
+	emit_signal("ui_score_update", 0)  # Reset score display
+	
+	# Reset performance tracker and UI
 	performance_tracker.reset_fastest_time()
 	performance_tracker.reset_shot_timer()
 	emit_signal("ui_fastest_time_update", 999.0)  # Reset to show "--"
