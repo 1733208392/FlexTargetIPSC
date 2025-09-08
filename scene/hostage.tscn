@@ -76,3 +76,5 @@ polygon = PackedVector2Array(132, -485, 379, -164, 381, 100, 147, -197, -139, -2
 libraries = {
 &"": SubResource("AnimationLibrary_1")
 }
+
+[node name="Camera2D" type="Camera2D" parent="."]

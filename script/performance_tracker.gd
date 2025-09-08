@@ -1,15 +1,6 @@
 extends Node
 
-# Scoring rule table for performance tracking
-const SCORES = {
-	"AZone": 5,
-	"CZone": 3,
-	"Miss": 0,
-	"WhiteZone": -5,
-	"Paddle": 2,
-	"Popper": 2,
-	# Add more scoring rules as needed
-}
+# Scoring rules are now loaded dynamically from settings_dict.target_rule
 
 # Performance tracking variables
 var records = []
@@ -42,7 +33,8 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		
 		print("PERFORMANCE TRACKER: Shot interval:", time_diff, "seconds, fastest:", fastest_time_diff)
 	
-	var score = SCORES.get(hit_area, 0)  # Default to 0 if not found
+	# Get score from settings_dict.target_rule
+	var score = _get_score_for_hit_area(hit_area)
 	
 	var record = {
 		"target_type": target_type,
@@ -87,7 +79,7 @@ func _on_drills_finished():
 	if http_service:
 		var json_string = JSON.stringify(pending_drill_data)
 		var global_data = get_node("/root/GlobalData")
-		var data_id = str(global_data.max_index + 1) if global_data else "1"
+		var data_id = str(int(global_data.settings_dict.get("max_index", 0)) + 1) if global_data else "1"
 		http_service.save_game(_on_performance_saved, data_id, json_string)
 	else:
 		print("HttpService not found")
@@ -95,6 +87,34 @@ func _on_drills_finished():
 # Get the fastest time difference recorded
 func get_fastest_time_diff() -> float:
 	return fastest_time_diff
+
+# Get score for hit area from settings_dict.target_rule
+func _get_score_for_hit_area(hit_area: String) -> int:
+	var global_data = get_node("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("target_rule"):
+		var target_rule = global_data.settings_dict["target_rule"]
+		# Handle case variations and mappings
+		var area_key = hit_area
+		if hit_area == "Miss":
+			area_key = "miss"
+		elif hit_area == "Paddle":
+			area_key = "paddles"
+		elif hit_area == "Popper":
+			area_key = "popper"
+		
+		if target_rule.has(area_key):
+			return int(target_rule[area_key])
+	
+	# Default fallback scores if settings not available
+	var fallback_scores = {
+		"AZone": 5,
+		"CZone": 3,
+		"Miss": 0,
+		"WhiteZone": -5,
+		"Paddle": 2,
+		"Popper": 2
+	}
+	return fallback_scores.get(hit_area, 0)
 
 # Reset the fastest time for a new drill
 func reset_fastest_time():
@@ -126,9 +146,9 @@ func _on_performance_saved(result, response_code, headers, body):
 		print("Performance data saved")
 		var http_service = get_node("/root/HttpService")
 		if http_service:
-			GlobalData.max_index += 1
-			var settings_data = {"max_index": GlobalData.max_index}
-			var settings_json = JSON.stringify(settings_data)
+			GlobalData.settings_dict["max_index"] = int(GlobalData.settings_dict.get("max_index", 0)) + 1
+			# Preserve all existing settings, only update max_index
+			var settings_json = JSON.stringify(GlobalData.settings_dict)
 			http_service.save_game(_on_settings_saved, "settings", settings_json)
 		else:
 			print("HttpService not found")

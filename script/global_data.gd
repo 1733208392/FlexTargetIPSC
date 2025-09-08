@@ -2,14 +2,10 @@ extends Node
 
 # Global data storage for sharing information between scenes
 var upper_level_scene: String = "res://scene/drills.tscn"
-var max_index: int = 0
-var language: String = "en"
 var settings_dict: Dictionary = {}
 
 func _ready():
 	print("GlobalData singleton initialized")
-	print("GlobalData singleton Max index:", max_index)
-	print("GlobalData singleton Language:", language)
 	load_settings_from_http()
 
 func load_settings_from_http():
@@ -24,6 +20,9 @@ func _on_settings_loaded(result, response_code, headers, body):
 			var content_json = JSON.parse_string(json["content"])
 			if content_json:
 				settings_dict = content_json
+				# Ensure max_index is always an integer
+				if settings_dict.has("max_index"):
+					settings_dict["max_index"] = int(settings_dict["max_index"])
 				print("Settings loaded into dictionary: ", settings_dict)
 				print("Settings keys: ", settings_dict.keys())
 			else:
