@@ -61,7 +61,7 @@ offset = Vector2(0, 300)
 
 [node name="WhiteZone" type="CollisionPolygon2D" parent="."]
 position = Vector2(0, 300)
-polygon = PackedVector2Array(132, -485, 379, -164, 379, 162, 132, 471, -132, 471, -379, 162, -379, -164, -132, -485)
+polygon = PackedVector2Array(147, -490, 399, -167, 402, 169, 142, 492, -136, 493, -400, 169, -400, -171, -138, -492)
 
 [node name="AZone" type="CollisionPolygon2D" parent="."]
 polygon = PackedVector2Array(42, -452, 120, -195, -120, -195, -42, -452)
@@ -76,5 +76,3 @@ polygon = PackedVector2Array(132, -485, 379, -164, 381, 100, 147, -197, -139, -2
 libraries = {
 &"": SubResource("AnimationLibrary_1")
 }
-
-[node name="Camera2D" type="Camera2D" parent="."]

@@ -105,8 +105,10 @@ func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 	# Find the collision shape by name
 	var zone_node = get_node(zone_name)
 	if zone_node and zone_node is CollisionPolygon2D:
-		# Check if point is inside the polygon
-		return Geometry2D.is_point_in_polygon(point, zone_node.polygon)
+		# Adjust the point by the zone's position offset
+		var adjusted_point = point - zone_node.position
+		# Check if the adjusted point is inside the polygon
+		return Geometry2D.is_point_in_polygon(adjusted_point, zone_node.polygon)
 	return false
 
 func spawn_bullet_at_position(world_pos: Vector2):
