@@ -500,7 +500,7 @@ func finish_drill_immediately():
 	print("Targets completed: ", current_target_index, "/", target_sequence.size())
 	drill_completed = true
 	
-	# Stop the drill timer
+	# Stop the drill timeru
 	stop_drill_timer()
 	
 	# Freeze the screen by disabling bullet spawning

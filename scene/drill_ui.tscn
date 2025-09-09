@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://drfnfhdej2kp8"]
+[gd_scene load_steps=9 format=3 uid="uid://drfnfhdej2kp8"]
 
 [ext_resource type="Script" uid="uid://buop6viqv08kk" path="res://script/drill_ui.gd" id="1_drill_ui_script"]
+[ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
 [ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="2_title_settings"]
 [ext_resource type="PackedScene" uid="uid://bvmw1s06twfav" path="res://scene/shot_timer.tscn" id="3_shot_timer"]
 [ext_resource type="LabelSettings" uid="uid://deg7d40rl6o81" path="res://theme/big_bold_timer_font.tres" id="4_big_bold"]
@@ -126,3 +127,18 @@ theme_override_font_sizes/font_size = 48
 text = "05:00:32"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="VolumeControl" parent="." instance=ExtResource("1_volumn")]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -420.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0

@@ -1,6 +1,7 @@
-[gd_scene load_steps=15 format=3 uid="uid://rtls33j2jr4q"]
+[gd_scene load_steps=16 format=3 uid="uid://rtls33j2jr4q"]
 
 [ext_resource type="Script" uid="uid://bhvruqf68yix4" path="res://script/intro.gd" id="1_intro"]
+[ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
 [ext_resource type="FontFile" uid="uid://plipxs2shsey" path="res://asset/font/Inter/static/Inter_18pt-Bold.ttf" id="2_yv8ol"]
 [ext_resource type="Texture2D" uid="uid://gk17ni6p470s" path="res://asset/SmallCntnrs.png" id="3_srnjo"]
 [ext_resource type="Texture2D" uid="uid://cxgfbk1um5rac" path="res://asset/SmallCntnrs1.png" id="4_lf28b"]
@@ -235,6 +236,21 @@ text = "START"
 [node name="RightSpacer" type="Control" parent="BottomContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="VolumeControl" parent="." instance=ExtResource("1_volumn")]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -420.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
 
 [connection signal="mouse_entered" from="TopBar/DrillHistoryButton" to="." method="_on_drill_history_button_mouse_entered"]
 [connection signal="mouse_exited" from="TopBar/DrillHistoryButton" to="." method="_on_drill_history_button_mouse_exited"]

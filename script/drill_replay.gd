@@ -174,7 +174,7 @@ func load_record(index):
 				
 				# Disable input for target and its children
 				disable_target_input(target_scene)
-				loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": [], "labels": []}
+				loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
 			else:
 				print("Unknown target type: ", target_type)
 				return
@@ -182,6 +182,71 @@ func load_record(index):
 		loaded_targets[target_type]["scene"].visible = true
 	
 	add_bullet_hole_for_record(index)
+	update_shot_list()
+
+func update_shot_list():
+	var shot_list = get_node_or_null("CanvasLayer/ShotListOverlay/ScrollContainer/ShotList")
+	var scroll_container = get_node_or_null("CanvasLayer/ShotListOverlay/ScrollContainer")
+	if not shot_list or not scroll_container:
+		print("Shot list node not found, skipping update")
+		return
+	
+	# Clear existing children immediately
+	for child in shot_list.get_children():
+		shot_list.remove_child(child)
+		child.queue_free()
+	
+	# Get current target type
+	if current_index >= records.size():
+		return
+	
+	var current_record = records[current_index]
+	var current_target = current_record.get("target_type", "")
+	
+	# Find all shots for the current target up to current index
+	var current_target_shots = []
+	var current_shot_index_in_target = -1
+	
+	for i in range(current_index + 1):
+		var record = records[i]
+		var target_type = record.get("target_type", "")
+		
+		if target_type == current_target:
+			current_target_shots.append({"index": i, "record": record})
+			if i == current_index:
+				current_shot_index_in_target = current_target_shots.size() - 1
+	
+	# Add shot entries for current target only
+	for i in range(current_target_shots.size()):
+		var shot_data = current_target_shots[i]
+		var record = shot_data["record"]
+		var time_diff = record.get("time_diff", 0.0)
+		
+		var label = Label.new()
+		label.text = "Shot %d: %.2fs" % [i + 1, time_diff]
+		
+		# Color scheme: grey for previous shots in current target, highlighted for current shot
+		if i == current_shot_index_in_target:
+			label.modulate = Color(1, 1, 0)  # Yellow for current shot
+		else:
+			label.modulate = Color(0.6, 0.6, 0.6)  # Grey for previous shots in current target
+		
+		shot_list.add_child(label)
+	
+	# Auto-scroll to the current shot
+	if current_shot_index_in_target >= 0:
+		# Wait for the layout to update
+		await get_tree().process_frame
+		
+		# Calculate approximate position based on current shot index in target
+		var label_height = 30  # Approximate label height
+		var container_height = scroll_container.size.y
+		
+		# Calculate target scroll position
+		var target_scroll = current_shot_index_in_target * label_height - (container_height / 2)
+		target_scroll = max(0, target_scroll)  # Don't scroll above the top
+		
+		scroll_container.scroll_vertical = int(target_scroll)
 
 func add_bullet_hole_for_record(index):
 	var record = records[index]
@@ -209,47 +274,23 @@ func add_bullet_hole_for_record(index):
 	target_data["scene"].add_child(bullet_hole)
 	target_data["bullet_holes"].append(bullet_hole)
 	
-	# Add time_diff label
-	var time_diff = record.get("time_diff", 0.0)
-	var label = Label.new()
-	label.text = "%.2f" % time_diff
-	label.position = bullet_hole.position + Vector2(30, -100)
-	label.modulate = Color(0, 0, 0)
-	label.z_index = 10
-	label.add_theme_font_size_override("font_size", 40)
-	
-	# Add rotation angle info for rotating targets
-	if target_type == "ipsc_mini_rotate":
-		var rotation_angle = record.get("rotation_angle", 0.0)
-		label.text += "\n%.1f°" % rad_to_deg(rotation_angle)
-	
-	target_data["scene"].add_child(label)
-	target_data["labels"].append(label)
+
 
 func _input(event):
 	if event is InputEventKey and event.keycode == KEY_N and event.pressed:
 		if current_index < records.size() - 1:
-			# Make previous label 0.3 transparent
-			if loaded_targets.has(current_target_type) and loaded_targets[current_target_type]["labels"].size() > 0:
-				loaded_targets[current_target_type]["labels"].back().modulate.a = 0.3
 			current_index += 1
 			load_record(current_index)
+			update_shot_list()
 	elif event is InputEventKey and event.keycode == KEY_P and event.pressed:
 		if current_index > 0:
-			# Remove current bullet hole and label from current target
+			# Remove current bullet hole from current target
 			if loaded_targets.has(current_target_type):
 				var target_data = loaded_targets[current_target_type]
 				if target_data["bullet_holes"].size() > 0:
 					var last_bullet_hole = target_data["bullet_holes"].back()
 					last_bullet_hole.queue_free()
 					target_data["bullet_holes"].pop_back()
-				if target_data["labels"].size() > 0:
-					var last_label = target_data["labels"].back()
-					last_label.queue_free()
-					target_data["labels"].pop_back()
-					# Make the new last label fully visible
-					if target_data["labels"].size() > 0:
-						target_data["labels"].back().modulate.a = 1.0
 			current_index -= 1
 			
 			# Check if target changed
@@ -273,11 +314,9 @@ func _input(event):
 							if animation_player:
 								animation_player.stop()
 						disable_target_input(target_scene)
-						loaded_targets[current_target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": [], "labels": []}
+						loaded_targets[current_target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
 				loaded_targets[current_target_type]["scene"].visible = true
-				# Set the last label of the new target to fully visible
-				if loaded_targets[current_target_type]["labels"].size() > 0:
-					loaded_targets[current_target_type]["labels"].back().modulate.a = 1.0
+			update_shot_list()
 
 func disable_target_input(node: Node):
 	"""Recursively disable input for a node and its children"""

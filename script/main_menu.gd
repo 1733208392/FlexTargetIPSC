@@ -43,12 +43,6 @@ func _on_menu_control(directive: String):
 		"enter":
 			print("[Menu] Simulating button press")
 			buttons[focused_index].pressed.emit()
-		"volume_up":
-			print("[Menu] Volume up")
-			volume_up()
-		"volume_down":
-			print("[Menu] Volume down")
-			volume_down()
 		"power":
 			print("[Menu] Power off")
 			power_off()
@@ -98,33 +92,6 @@ func _on_bootcamp_response(result, response_code, headers, body):
 func _on_option_pressed():
 	# Load the options scene
 	get_tree().change_scene_to_file("res://scene/option.tscn")
-
-
-func volume_up():
-	# Call the HTTP service to increase the volume
-	var http_service = get_node("/root/HttpService")
-	if http_service:
-		print("[Menu] Sending volume up HTTP request...")
-		http_service.volume_up(_on_volume_up_response)
-	else:
-		print("[Menu] HttpService singleton not found!")
-
-func _on_volume_up_response(result, response_code, headers, body):
-	var body_str = body.get_string_from_utf8()
-	print("[Menu] Volume up HTTP response:", result, response_code, body_str)
-
-func volume_down():
-	# Call the HTTP service to decrease the volume
-	var http_service = get_node("/root/HttpService")
-	if http_service:
-		print("[Menu] Sending volume down HTTP request...")
-		http_service.volume_down(_on_volume_down_response)
-	else:
-		print("[Menu] HttpService singleton not found!")
-
-func _on_volume_down_response(result, response_code, headers, body):
-	var body_str = body.get_string_from_utf8()
-	print("[Menu] Volume down HTTP response:", result, response_code, body_str)
 
 func power_off():
 	# Call the HTTP service to power off the system

@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://ekpvobk5ubws"]
+[gd_scene load_steps=6 format=3 uid="uid://ekpvobk5ubws"]
 
 [ext_resource type="Script" uid="uid://b4jmt6ldumens" path="res://script/history.gd" id="1_history"]
+[ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
 [ext_resource type="Texture2D" uid="uid://de6eee177g4qo" path="res://asset/dialog_cntnrs1.png" id="2_0su6n"]
 [ext_resource type="LabelSettings" uid="uid://bm81ecgqnn8cv" path="res://theme/target_title_settings.tres" id="2_o7yno"]
 [ext_resource type="LabelSettings" uid="uid://bw22f0mtic4xe" path="res://theme/target_title_tactical.tres" id="3_0su6n"]
@@ -122,3 +123,18 @@ layout_mode = 2
 visible = false
 layout_mode = 2
 text = "Back"
+
+[node name="VolumeControl" parent="." instance=ExtResource("1_volumn")]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -420.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0

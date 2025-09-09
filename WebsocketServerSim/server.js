@@ -30,7 +30,7 @@ wss.on('connection', function connection(ws) {
   // }, 1000); // send every 1 second
 
   ws.on('close', () => {
-    clearInterval(interval);
+    // clearInterval(interval);
     connectedClients.delete(ws);
     console.log('Client disconnected');
   });

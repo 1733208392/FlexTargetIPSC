@@ -1,6 +1,7 @@
-[gd_scene load_steps=13 format=3 uid="uid://dus614khw11h2"]
+[gd_scene load_steps=14 format=3 uid="uid://dus614khw11h2"]
 
 [ext_resource type="Script" uid="uid://crika1mdfvjsw" path="res://script/option.gd" id="1_jx2e8"]
+[ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
 [ext_resource type="FontFile" uid="uid://cth4t0ug4hwm8" path="res://asset/font/Inter/static/Inter_24pt-Black.ttf" id="2_font"]
 [ext_resource type="Texture2D" uid="uid://btbmgtdbgtpkm" path="res://asset/largeCntnrs1.png" id="2_i838a"]
 [ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://asset/font/Inter/Inter-VariableFont_opsz,wght.ttf" id="3_i838a"]
@@ -184,3 +185,18 @@ grow_vertical = 0
 theme_override_fonts/font = SubResource("SystemFont_i838a")
 text = "© 2025 FlexTarget IPSC@Grwolf.com"
 horizontal_alignment = 1
+
+[node name="VolumeControl" parent="." instance=ExtResource("1_volumn")]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -420.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0

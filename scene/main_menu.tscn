@@ -1,11 +1,12 @@
-[gd_scene load_steps=14 format=3 uid="uid://cjkeemu421bdp"]
+[gd_scene load_steps=15 format=3 uid="uid://cjkeemu421bdp"]
 
 [ext_resource type="Script" uid="uid://dthf7l17t1uuo" path="res://script/main_menu.gd" id="1_main_menu"]
+[ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
 [ext_resource type="Texture2D" uid="uid://ct7bcimjuqusa" path="res://asset/mini_map.png" id="2_0iwki"]
 [ext_resource type="Texture2D" uid="uid://d3jnypy7bx42r" path="res://asset/largeCntnrs.png" id="2_2atga"]
 [ext_resource type="Texture2D" uid="uid://jkn5ynck2gk5" path="res://asset/start_button_back.png" id="2_hxu56"]
 [ext_resource type="Texture2D" uid="uid://d34m0mqmlp1qq" path="res://asset/crosshair.png" id="3_crosshair"]
-[ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://asset/font/Inter/Inter-VariableFont_opsz,wght.ttf" id="6_14wem"]
+[ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://font/Inter/Inter-VariableFont_opsz,wght.ttf" id="6_14wem"]
 
 [sub_resource type="SystemFont" id="SystemFont_14wem"]
 font_names = PackedStringArray("SF Pro")
@@ -146,3 +147,18 @@ theme_override_fonts/font = ExtResource("6_14wem")
 text = "© 2025 Grwolf.com. All Rights Reserved."
 horizontal_alignment = 1
 vertical_alignment = 2
+
+[node name="VolumeControl" parent="." instance=ExtResource("1_volumn")]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -420.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
