@@ -1,18 +1,24 @@
-[gd_scene load_steps=5 format=3 uid="uid://dmciy24fnm8cw"]
+[gd_scene load_steps=8 format=3 uid="uid://dmciy24fnm8cw"]
 
 [ext_resource type="PackedScene" uid="uid://pxoma10oooh5" path="res://scene/ipsc_mini.tscn" id="1_ipsc"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
+[ext_resource type="Texture2D" uid="uid://gpyjow0hb5mh" path="res://asset/drills_back.jpg" id="2_6mmk4"]
 [ext_resource type="Script" uid="uid://du7pnc5woi148" path="res://script/bootcamp.gd" id="2_bootcamp"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_blue"]
-bg_color = Color(0, 0, 1, 1)
+[ext_resource type="LabelSettings" uid="uid://bm81ecgqnn8cv" path="res://theme/target_title_settings.tres" id="4_cfv3r"]
+[ext_resource type="PackedScene" uid="uid://dturr8so8g8cw" path="res://scene/custom_button.tscn" id="4_e58o0"]
+[ext_resource type="Theme" uid="uid://br4jdxsyx0xtu" path="res://theme/drill_data_theme.tres" id="5_drill_theme"]
 
 [node name="Node2D" type="Node2D"]
 script = ExtResource("2_bootcamp")
 
+[node name="TextureRect" type="TextureRect" parent="."]
+offset_left = -3.05176e-05
+offset_right = 720.0
+offset_bottom = 1280.0
+texture = ExtResource("2_6mmk4")
+
 [node name="IPSC" parent="." instance=ExtResource("1_ipsc")]
 position = Vector2(360, 640)
-scale = Vector2(0.9, 0.9)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -40,91 +46,60 @@ grow_horizontal = 0
 grow_vertical = 0
 
 [node name="IntervalsLabel" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
+visible = false
 layout_mode = 2
-text = "Shot Intervals"
+text = "Shots"
+label_settings = ExtResource("4_cfv3r")
 horizontal_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
 
 [node name="Shot1" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="Shot2" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="Shot3" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="Shot4" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="Shot5" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="Shot6" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="Shot7" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="Shot8" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="Shot9" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="Shot10" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot11" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot12" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot13" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot14" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot15" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot16" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot17" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot18" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot19" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
-horizontal_alignment = 2
-
-[node name="Shot20" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
-layout_mode = 2
+theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
 
 [node name="BottomContainer" type="MarginContainer" parent="CanvasLayer/Control"]
@@ -141,10 +116,9 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="ClearButton" type="Button" parent="CanvasLayer/Control/BottomContainer"]
-custom_minimum_size = Vector2(200, 50)
+[node name="CustomButton" parent="CanvasLayer/Control/BottomContainer" instance=ExtResource("4_e58o0")]
 layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxFlat_blue")
+theme_override_font_sizes/font_size = 36
 text = "Clear"
 
 [node name="VolumeControl" parent="CanvasLayer/Control" instance=ExtResource("1_volumn")]

@@ -2,7 +2,7 @@ extends Node2D
 
 @onready var ipsc = $IPSC
 @onready var shot_labels = []
-@onready var clear_button = $CanvasLayer/Control/BottomContainer/ClearButton
+@onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
 
 var shot_times = []
 
@@ -20,7 +20,7 @@ func _ready():
 		print("ERROR: ClearButton not found!")
 	
 	# Get all shot labels
-	for i in range(1, 21):
+	for i in range(1, 11):
 		var label = get_node("CanvasLayer/Control/ShotIntervalsOverlay/Shot" + str(i))
 		if label:
 			shot_labels.append(label)
