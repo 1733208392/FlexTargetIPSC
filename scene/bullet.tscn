@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://cc24anctnijxh" path="res://scene/bullet_smoke.tscn" id="2_fud7i"]
 [ext_resource type="PackedScene" uid="uid://bxe8x68iqdudd" path="res://scene/bullet_impact.tscn" id="3_fud7i"]
 [ext_resource type="Texture2D" uid="uid://cywdquisabreu" path="res://asset/bullet.png" id="3_tpcvc"]
-[ext_resource type="AudioStream" uid="uid://dik1osar3f5pr" path="res://audio/rifle_steel_plate_multiple_ricochettes.mp3" id="4_4wfq1"]
+[ext_resource type="AudioStream" uid="uid://3753bewgj3bg" path="res://audio/single-gunshot.mp3" id="4_4wfq1"]
 [ext_resource type="Texture2D" uid="uid://vekex1nym2md" path="res://asset/lights1.png" id="5_tpcvc"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_4wfq1"]
