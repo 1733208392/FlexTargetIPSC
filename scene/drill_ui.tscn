@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://drfnfhdej2kp8"]
+[gd_scene load_steps=10 format=3 uid="uid://drfnfhdej2kp8"]
 
 [ext_resource type="Script" uid="uid://buop6viqv08kk" path="res://script/drill_ui.gd" id="1_drill_ui_script"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://5awavhwtv8op" path="res://scene/custom_progress_bar.tscn" id="5_custom_progress"]
 [ext_resource type="Texture2D" uid="uid://cj5m8qdpg1amv" path="res://asset/coin.png" id="6_coin_texture"]
 [ext_resource type="Texture2D" uid="uid://bhksfu7pulyjs" path="res://asset/thunder.png" id="7_thunder_texture"]
+[ext_resource type="PackedScene" uid="uid://unm5ps1c30g" path="res://scene/drill_complete_overlay.tscn" id="8_4gcga"]
 
 [node name="DrillUI" type="Control"]
 layout_mode = 3
@@ -114,19 +115,16 @@ wait_time = 0.1
 [node name="ShotTimerOverlay" parent="." instance=ExtResource("3_shot_timer")]
 layout_mode = 1
 
-[node name="DrillCompleteOverlay" type="Label" parent="."]
-visible = false
-z_index = 10
+[node name="drill_complete_overlay" parent="." instance=ExtResource("8_4gcga")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_font_sizes/font_size = 48
-text = "05:00:32"
-horizontal_alignment = 1
-vertical_alignment = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_top = 40.0
+offset_bottom = 40.0
+script = null
 
 [node name="VolumeControl" parent="." instance=ExtResource("1_volumn")]
 visible = false

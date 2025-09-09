@@ -10,7 +10,7 @@ var current_theme_style: String = "golden"
 @onready var target_type_title = $TopContainer/TopLayout/HeaderContainer/TargetTypeTitle
 @onready var fps_label = $FPSLabel
 @onready var shot_timer_overlay = $ShotTimerOverlay
-@onready var drill_complete_overlay = $DrillCompleteOverlay
+@onready var drill_complete_overlay = $drill_complete_overlay
 @onready var fastest_interval_label = $TopContainer/TopLayout/HeaderContainer/FastestContainer/FastestInterval
 @onready var timer_label = $TopContainer/TopLayout/TimerContainer/Timer
 @onready var score_label = $TopContainer/TopLayout/HeaderContainer/ScoreContainer/Score
@@ -109,29 +109,60 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	"""Show the completion overlay with drill statistics"""
 	print("Showing completion overlay")
 	
-	# Format the time display
-	var total_seconds = int(final_time)
-	var milliseconds = int((final_time - total_seconds) * 100)
-	var minutes = total_seconds / 60
-	var seconds = total_seconds % 60
-	var time_string = "%02d:%02d:%02d" % [minutes, seconds, milliseconds]
-	
 	# Format the fastest time
 	var fastest_string = "--"
 	if fastest_time < 999.0:
 		fastest_string = "%.2fs" % fastest_time
 	
-	# Create the completion message
-	var completion_text = """DRILL COMPLETE!
-
-Total Time: %s
-Fastest Shot: %s
-Final Score: %d
-
-Press R to restart""" % [time_string, fastest_string, final_score]
+	# Update the FastestShot label in the new overlay
+	var fastest_shot_label = drill_complete_overlay.get_node("VBoxContainer/MarginContainer/VBoxContainer/FastestShot")
+	if fastest_shot_label:
+		fastest_shot_label.text = "Fastest Shots: " + fastest_string
 	
-	drill_complete_overlay.text = completion_text
+	# Connect button signals
+	connect_completion_overlay_buttons()
+	
 	drill_complete_overlay.visible = true
+
+func connect_completion_overlay_buttons():
+	"""Connect the completion overlay button signals"""
+	var restart_button = drill_complete_overlay.get_node("VBoxContainer/RestartButton")
+	var review_replay_button = drill_complete_overlay.get_node("VBoxContainer/ReviewReplayButton")
+	
+	if restart_button:
+		# Disconnect any existing connections to avoid duplicates
+		if restart_button.pressed.is_connected(_on_restart_button_pressed):
+			restart_button.pressed.disconnect(_on_restart_button_pressed)
+		restart_button.pressed.connect(_on_restart_button_pressed)
+		print("Connected restart button signal")
+	
+	if review_replay_button:
+		# Disconnect any existing connections to avoid duplicates
+		if review_replay_button.pressed.is_connected(_on_review_replay_button_pressed):
+			review_replay_button.pressed.disconnect(_on_review_replay_button_pressed)
+		review_replay_button.pressed.connect(_on_review_replay_button_pressed)
+		print("Connected review replay button signal")
+
+func _on_restart_button_pressed():
+	"""Handle restart button click - restart the drill"""
+	print("Restart button pressed - restarting drill")
+	
+	# Hide the completion overlay
+	drill_complete_overlay.visible = false
+	
+	# Call restart drill on the parent drills manager
+	var drills_manager = get_parent()
+	if drills_manager and drills_manager.has_method("restart_drill"):
+		drills_manager.restart_drill()
+	else:
+		print("Warning: Could not find drills manager or restart_drill method")
+
+func _on_review_replay_button_pressed():
+	"""Handle review and replay button click - navigate to drill replay scene"""
+	print("Review and replay button pressed - navigating to drill replay")
+	
+	# Navigate to the drill replay scene
+	get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
 
 func _on_show_shot_timer():
 	"""Show the shot timer overlay"""

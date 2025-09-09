@@ -148,6 +148,14 @@ func _process(_delta):
 
 func _unhandled_input(_event):
 	"""Handle input events for theme switching (testing purposes)"""
+	# Don't process input if the completion overlay is visible
+	var drill_ui = get_node_or_null("DrillUI")
+	if drill_ui:
+		var completion_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
+		if completion_overlay and completion_overlay.visible:
+			print("=== DRILLS.GD: Completion overlay is visible, ignoring input ===")
+			return
+	
 	if _event is InputEventMouseButton and _event.pressed:
 		print("=== DRILLS.GD received unhandled mouse click ===")
 		print("Position: ", _event.global_position)
@@ -455,7 +463,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 			# Update progress - since this is the last target, set to completed
 			current_target_index += 1  # Mark this target as completed
 			emit_signal("ui_progress_update", current_target_index)
-			finish_drill_immediately()
+			complete_drill()
 			# Don't return here - let the performance tracking signal be emitted
 	
 	# Update the fastest interval display
@@ -463,7 +471,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 	emit_signal("ui_fastest_time_update", fastest_time)
 
 func complete_drill():
-	"""Complete the drill sequence"""
+	"""Complete the drill sequence and show completion overlay"""
 	print("=== DRILL COMPLETED! ===")
 	print("Final score: ", total_drill_score)
 	print("Targets completed: ", current_target_index, "/", target_sequence.size())
@@ -472,38 +480,7 @@ func complete_drill():
 	# Stop the drill timer
 	stop_drill_timer()
 	
-	# Emit drills finished signal for performance tracking
-	emit_signal("drills_finished")
-	
-	# Reset for next run - but keep UI state for display
-	current_target_index = 0
-	total_drill_score = 0
-	drill_completed = false
-	rotating_target_hits = 0
-	
-	# DON'T reset progress bar, timer, or fastest time - keep them displayed
-	# elapsed_seconds = 0.0  # Keep final time displayed
-	# emit_signal("ui_timer_update", elapsed_seconds)
-	# emit_signal("ui_progress_update", 0)  # Keep progress at 100%
-	
-	# Show shot timer overlay again for next run after a brief delay
-	await get_tree().create_timer(2.0).timeout  # Wait 2 seconds before showing timer
-	show_shot_timer()
-	
-	# You can add additional completion logic here
-	# For example: show results screen, save score, transition to next drill, etc.
-
-func finish_drill_immediately():
-	"""Finish the drill immediately after 2 hits on rotating target"""
-	print("=== DRILL FINISHED IMMEDIATELY! ===")
-	print("Final score: ", total_drill_score)
-	print("Targets completed: ", current_target_index, "/", target_sequence.size())
-	drill_completed = true
-	
-	# Stop the drill timeru
-	stop_drill_timer()
-	
-	# Freeze the screen by disabling bullet spawning
+	# Temporarily disable bullet spawning to freeze gameplay
 	bullets_allowed = false
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
@@ -516,8 +493,13 @@ func finish_drill_immediately():
 	# Set the total elapsed time in performance tracker before finishing
 	performance_tracker.set_total_elapsed_time(elapsed_seconds)
 	
-	# Wait a moment to ensure the overlay is visible before resetting
-	await get_tree().create_timer(0.5).timeout
+	# Wait a moment to ensure the overlay is visible before enabling bullets
+	await get_tree().create_timer(0.1).timeout
+	
+	# Re-enable bullet spawning for overlay interactions
+	if ws_listener:
+		ws_listener.bullet_spawning_enabled = true
+		print("=== BULLETS RE-ENABLED FOR COMPLETION OVERLAY ===")
 	
 	# Emit drills finished signal for performance tracking (after overlay is shown)
 	emit_signal("drills_finished")

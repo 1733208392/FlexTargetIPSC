@@ -1,10 +1,7 @@
-[gd_resource type="LabelSettings" load_steps=2 format=3 uid="uid://cuf6m18dwphgd"]
-
-[ext_resource type="FontFile" uid="uid://v37c3aet13ou" path="res://font/Inter/static/Inter_18pt-BlackItalic.ttf" id="1_8exxp"]
+[gd_resource type="LabelSettings" format=3 uid="uid://cuf6m18dwphgd"]
 
 [resource]
-font = ExtResource("1_8exxp")
-font_size = 36
+font_size = 24
 font_color = Color(1, 0.6, 0, 1)
 shadow_color = Color(0.0392157, 0.0862745, 0.0941176, 1)
 shadow_offset = Vector2(2, 2)
