@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://bgnvqj8xi6u7e"]
 
-[ext_resource type="Texture2D" uid="uid://b2o5mrrxo8qr2" path="res://asset/volumn.png" id="1_volumn_texture"]
+[ext_resource type="Texture2D" uid="uid://b8usst8iass6b" path="res://asset/volumn.png" id="1_volumn_texture"]
 [ext_resource type="Script" uid="uid://bvx7n2m1k8qp3" path="res://script/volumn.gd" id="1_volumn_script"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]

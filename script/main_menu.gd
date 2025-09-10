@@ -2,6 +2,7 @@ extends Control
 
 @onready var start_button = $VBoxContainer/ipsc
 @onready var bootcamp_button = $VBoxContainer/boot_camp
+@onready var leaderboard_button = $VBoxContainer/learder_board
 @onready var option_button = $VBoxContainer/option
 
 var focused_index
@@ -13,6 +14,7 @@ func _ready():
 	buttons = [
 		start_button,
 		bootcamp_button,
+		leaderboard_button,
 		option_button]
 		
 	buttons[focused_index].grab_focus()
@@ -27,6 +29,7 @@ func _ready():
 
 	start_button.pressed.connect(on_start_pressed)
 	bootcamp_button.pressed.connect(_on_bootcamp_pressed)
+	leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 	option_button.pressed.connect(_on_option_pressed)
 
 func _on_menu_control(directive: String):
@@ -88,6 +91,10 @@ func _on_bootcamp_response(result, response_code, headers, body):
 		get_tree().change_scene_to_file("res://scene/bootcamp.tscn")
 	else:
 		print("[Menu] Start bootcamp failed or invalid response.")
+
+func _on_leaderboard_pressed():
+	# Load the history scene
+	get_tree().change_scene_to_file("res://scene/history.tscn")
 
 func _on_option_pressed():
 	# Load the options scene
