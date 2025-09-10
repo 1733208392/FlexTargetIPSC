@@ -4,6 +4,7 @@
 [ext_resource type="Theme" uid="uid://b1xuwasqtx311" path="res://theme/custom_button_theme.tres" id="2"]
 
 [node name="CustomButton" type="Button"]
+custom_minimum_size = Vector2(128, 48)
 theme = ExtResource("2")
 text = "bttn_txt"
 script = ExtResource("1")

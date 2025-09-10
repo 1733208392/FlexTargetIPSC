@@ -1,0 +1,157 @@
+[gd_scene load_steps=14 format=3 uid="uid://d0t8jrtwrccmx"]
+
+[ext_resource type="Script" uid="uid://bhvruqf68yix4" path="res://script/intro.gd" id="1_intro"]
+[ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
+[ext_resource type="FontFile" uid="uid://plipxs2shsey" path="res://font/Inter/static/Inter_18pt-Bold.ttf" id="2_yv8ol"]
+[ext_resource type="Texture2D" uid="uid://gk17ni6p470s" path="res://asset/SmallCntnrs.png" id="3_srnjo"]
+[ext_resource type="Texture2D" uid="uid://cxgfbk1um5rac" path="res://asset/SmallCntnrs1.png" id="4_lf28b"]
+[ext_resource type="FontFile" uid="uid://w674bdq23bld" path="res://font/Inter/static/Inter_24pt-Bold.ttf" id="4_wk1th"]
+[ext_resource type="VideoStream" uid="uid://c7ln8at3cyppd" path="res://video/ipsc.ogv" id="5_video"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_lf28b"]
+texture = ExtResource("3_srnjo")
+modulate_color = Color(1, 1, 1, 0.784314)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_wk1th"]
+texture = ExtResource("3_srnjo")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_nc68o"]
+texture = ExtResource("3_srnjo")
+modulate_color = Color(1, 1, 1, 0.784314)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_tdcom"]
+texture = ExtResource("4_lf28b")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_cm5so"]
+texture = ExtResource("4_lf28b")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_b5vnh"]
+texture = ExtResource("4_lf28b")
+
+[node name="intro" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_intro")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0901961, 0.129412, 0.141176, 1)
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 80.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Spacer" type="Control" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DrillHistoryButton" type="Button" parent="TopBar"]
+custom_minimum_size = Vector2(150, 50)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme_override_fonts/font = ExtResource("2_yv8ol")
+theme_override_font_sizes/font_size = 32
+theme_override_styles/hover = SubResource("StyleBoxTexture_lf28b")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_wk1th")
+theme_override_styles/normal = SubResource("StyleBoxTexture_nc68o")
+text = "History"
+
+[node name="RightMargin" type="Control" parent="TopBar"]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -120.0
+offset_right = 240.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VideoPlayer" type="VideoStreamPlayer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -434.0
+offset_top = -229.0
+offset_right = 418.0
+offset_bottom = 249.0
+grow_horizontal = 2
+grow_vertical = 2
+stream = ExtResource("5_video")
+autoplay = true
+expand = true
+loop = true
+
+[node name="BottomContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -100.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="LeftSpacer" type="Control" parent="BottomContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StartButton" type="Button" parent="BottomContainer"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme_override_fonts/font = ExtResource("4_wk1th")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/hover = SubResource("StyleBoxTexture_tdcom")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_cm5so")
+theme_override_styles/normal = SubResource("StyleBoxTexture_b5vnh")
+text = "START"
+
+[node name="RightSpacer" type="Control" parent="BottomContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VolumeControl" parent="." instance=ExtResource("1_volumn")]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -420.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[connection signal="mouse_entered" from="TopBar/DrillHistoryButton" to="." method="_on_drill_history_button_mouse_entered"]
+[connection signal="mouse_exited" from="TopBar/DrillHistoryButton" to="." method="_on_drill_history_button_mouse_exited"]
+[connection signal="mouse_entered" from="BottomContainer/StartButton" to="." method="_on_start_button_mouse_entered"]
+[connection signal="mouse_exited" from="BottomContainer/StartButton" to="." method="_on_start_button_mouse_exited"]
