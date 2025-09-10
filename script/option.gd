@@ -198,6 +198,7 @@ func press_focused_button():
 			elif button == japanese_button:
 				language = "Japanese"
 			_on_language_changed(language)
+			set_language_button_pressed()
 			break
 
 func volume_up():

@@ -37,9 +37,17 @@ func _on_area_entered(area: Area2D):
 	if not has_collided and area.has_method("handle_bullet_collision"):
 		has_collided = true
 		print("Bullet collided with target: ", area.name)
-		# Let the target handle the collision detection
+		
+		# First, spawn bullet hole if target supports it
+		if area.has_method("spawn_bullet_hole"):
+			var local_pos = area.to_local(global_position)
+			area.spawn_bullet_hole(local_pos)
+			print("Bullet hole spawned first at local position: ", local_pos)
+		
+		# Then let the target handle the collision detection (scoring, animations)
 		area.handle_bullet_collision(global_position)
-		# Still trigger our own impact effects
+		
+		# Finally trigger our own impact effects (smoke, impact animation)
 		on_impact()
 
 func _on_body_entered(body: StaticBody2D):

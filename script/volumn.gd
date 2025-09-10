@@ -27,8 +27,7 @@ func _ready():
 	visible = false
 
 func _on_menu_control(directive: String):
-	print("[VolumeControl] Received directive: ", directive)
-	
+	# Only handle volume-related directives to avoid interference
 	if directive == "volume_up":
 		_increase_volume()
 	elif directive == "volume_down":

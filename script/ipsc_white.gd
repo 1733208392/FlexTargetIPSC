@@ -112,8 +112,7 @@ func handle_bullet_collision(bullet_position: Vector2):
 	target_hit.emit(zone_hit, points, bullet_position)
 	print("Total score: ", total_score)
 	
-	# Spawn bullet hole at impact position
-	spawn_bullet_hole(local_pos)
+	# Note: Bullet hole is now spawned by bullet script before this method is called
 	
 	return zone_hit
 

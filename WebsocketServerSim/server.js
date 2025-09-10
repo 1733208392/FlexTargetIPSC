@@ -18,6 +18,10 @@ const randomDataOptions = [
 
 const connectedClients = new Set();
 
+// Debounce mechanism for Enter key to prevent double firing
+let lastEnterTime = 0;
+const ENTER_DEBOUNCE_MS = 50; // 50ms debounce
+
 wss.on('connection', function connection(ws) {
   console.log('Client connected');
   connectedClients.add(ws);
@@ -51,7 +55,14 @@ process.stdin.on('data', (key) => {
   } else if (keyStr === '\u001b[C') { // Right arrow
     directive = 'right';
   } else if (keyStr === '\n' || keyStr === '\r') { // Enter key
-    directive = 'enter';
+    // Debounce Enter key to prevent double firing from \r\n sequence
+    const now = Date.now();
+    if (now - lastEnterTime > ENTER_DEBOUNCE_MS) {
+      directive = 'enter';
+      lastEnterTime = now;
+    } else {
+      return; // Skip duplicate Enter within debounce period
+    }
   } else if (keyStr === 'B' || keyStr === 'b') { // B - send random data
     const randomData = randomDataOptions[Math.floor(Math.random() * randomDataOptions.length)];
     const randomDataPayload = {

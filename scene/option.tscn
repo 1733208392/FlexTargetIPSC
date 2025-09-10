@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" uid="uid://crika1mdfvjsw" path="res://script/option.gd" id="1_jx2e8"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
-[ext_resource type="FontFile" uid="uid://cth4t0ug4hwm8" path="res://asset/font/Inter/static/Inter_24pt-Black.ttf" id="2_font"]
+[ext_resource type="FontFile" uid="uid://cth4t0ug4hwm8" path="res://font/Inter/static/Inter_24pt-Black.ttf" id="2_font"]
 [ext_resource type="Texture2D" uid="uid://btbmgtdbgtpkm" path="res://asset/largeCntnrs1.png" id="2_i838a"]
-[ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://asset/font/Inter/Inter-VariableFont_opsz,wght.ttf" id="3_i838a"]
+[ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://font/Inter/Inter-VariableFont_opsz,wght.ttf" id="3_i838a"]
 [ext_resource type="Texture2D" uid="uid://c2l6gc1ro012y" path="res://asset/SmallCntnrs3.png" id="6_70qle"]
 [ext_resource type="Texture2D" uid="uid://bphdbktqgumws" path="res://asset/contact.png" id="7_fyn3v"]
 
@@ -169,7 +169,9 @@ size_flags_vertical = 3
 theme_override_fonts/normal_font = SubResource("SFPro")
 theme_override_font_sizes/normal_font_size = 18
 bbcode_enabled = true
-text = "[center]A training game for IPSC shooting practice. Improve your accuracy and speed with customizable training scenarios.[/center]
+text = "The Grwolf Smart Target is designed for shooting enthusiasts who want a convenient solution for practicing with airsoft or Laser Dry Fire at home, eliminating the hassle of going to the shooting range. Compared to the traditional target, the device has the following features, 
+* Real-time hit point display allows you to track and score your shots instantly.
+* Choose different drills with the same device, such as high-speed shooting and free shooting, to enhance your shooting experience.
 "
 fit_content = true
 
