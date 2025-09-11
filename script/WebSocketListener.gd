@@ -7,6 +7,12 @@ signal menu_control(directive: String)
 var socket: WebSocketPeer
 var bullet_spawning_enabled: bool = true
 
+# Message rate limiting for performance optimization
+var last_message_time: float = 0.0
+var message_cooldown: float = 0.016  # ~60fps (16ms minimum between messages)
+var max_messages_per_frame: int = 5  # Maximum messages to process per frame
+var processed_this_frame: int = 0
+
 func _ready():
 	socket = WebSocketPeer.new()
 	#var err = socket.connect_to_url("ws://127.0.0.1/websocket")
@@ -14,17 +20,39 @@ func _ready():
 	if err != OK:
 		print("Unable to connect")
 		set_process(false)
+	else:
+		# Set highest priority for WebSocket processing to ensure immediate message handling
+		set_process_priority(100)  # Higher priority than default (0)
+		print("[WebSocket] Process priority set to maximum for immediate message processing")
 
 func _process(_delta):
 	socket.poll()
 	var state = socket.get_ready_state()
+	
+	# Reset per-frame message counter
+	processed_this_frame = 0
+	
 	if state == WebSocketPeer.STATE_OPEN:
-		while socket.get_available_packet_count():
+		while socket.get_available_packet_count() and processed_this_frame < max_messages_per_frame:
+			var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
+			
+			# Rate limiting check
+			if (time_stamp - last_message_time) < message_cooldown:
+				print("[WebSocket] Message rate limited (too fast - ", time_stamp - last_message_time, "s since last)")
+				break
+			
 			var packet = socket.get_packet()
 			var message = packet.get_string_from_utf8()
 			print("[WebSocket] Received raw message: ", message)
 			data_received.emit(message)
 			_process_websocket_json(message)
+			
+			last_message_time = time_stamp
+			processed_this_frame += 1
+			
+		if socket.get_available_packet_count() > 0:
+			print("[WebSocket] Rate limiting: ", socket.get_available_packet_count(), " messages queued for next frame")
+			
 	elif state == WebSocketPeer.STATE_CLOSING:
 		# Keep polling to achieve proper close.
 		pass
@@ -59,8 +87,17 @@ func _process_websocket_json(json_string):
 			var y = entry.get("y", null)
 			if x != null and y != null:
 				if bullet_spawning_enabled:
-					print("[WebSocket] Emitting bullet_hit at: Vector2(", x, ", ", y, ")")
-					bullet_hit.emit(Vector2(x, y))
+					# Transform pos from WebSocket (268x476.4, origin bottom-left) to game (720x1280, origin top-left)
+					var ws_width = 268.0
+					var ws_height = 476.4
+					var game_width = 720.0
+					var game_height = 1280.0
+					# Flip y and scale
+					var x_new = x * (game_width / ws_width)
+					var y_new = game_height - (y * (game_height / ws_height))
+					var transformed_pos = Vector2(x_new, y_new)
+					print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
+					bullet_hit.emit(transformed_pos)
 				else:
 					print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
 			else:

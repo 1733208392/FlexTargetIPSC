@@ -1,6 +1,6 @@
 [gd_scene load_steps=10 format=3 uid="uid://bxe8x68iqdudd"]
 
-[ext_resource type="Texture2D" uid="uid://veyykq0u46sx" path="res://asset/collision.png" id="1_8vrxq"]
+[ext_resource type="Texture2D" uid="uid://dua460hbj5b0p" path="res://asset/collision.png" id="1_8vrxq"]
 [ext_resource type="Texture2D" uid="uid://d0frb71hyv4ow" path="res://asset/lights4.png" id="2_haka6"]
 [ext_resource type="Texture2D" uid="uid://vekex1nym2md" path="res://asset/lights1.png" id="2_p36n6"]
 [ext_resource type="Texture2D" uid="uid://c1kjf5vpj8c8f" path="res://asset/lights2.png" id="3_dgya3"]

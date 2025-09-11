@@ -398,15 +398,5 @@ func _on_websocket_bullet_hit(pos: Vector2):
 		print("[paddle %s] WebSocket bullet spawning disabled during shot timer" % paddle_id)
 		return
 		
-	# Transform pos from WebSocket (268x476.4, origin bottom-left) to game (720x1280, origin top-left)
-	var ws_width = 268.0
-	var ws_height = 476.4
-	var game_width = 720.0
-	var game_height = 1280.0
-	# Flip y and scale
-	var x_new = pos.x * (game_width / ws_width)
-	var y_new = game_height - (pos.y * (game_height / ws_height))
-	var transformed_pos = Vector2(x_new, y_new)
-	print("[Paddle %s] Received bullet hit at position (ws): %s, transformed to game: %s" % [paddle_id, pos, transformed_pos])
-	#spawn_bullet_at_position
-	spawn_bullet_at_position(transformed_pos)
+	print("[Paddle %s] Received bullet hit at position: %s" % [paddle_id, pos])
+	spawn_bullet_at_position(pos)

@@ -23,7 +23,7 @@ impact_sound = ExtResource("4_4wfq1")
 texture = ExtResource("3_tpcvc")
 
 [node name="PointLight2D" type="PointLight2D" parent="."]
-energy = 0.25
+energy = 0.1
 texture = ExtResource("5_tpcvc")
 texture_scale = 3.0
 

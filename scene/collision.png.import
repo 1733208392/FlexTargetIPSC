@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dua460hbj5b0p"
-path="res://.godot/imported/collision.png-132b70f279f5bc4f3f74203604c9cb3f.ctex"
+uid="uid://b8hmtvx0ac6jv"
+path="res://.godot/imported/collision.png-c11ce6edd5cc1ca31c8a09bd530a26b9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://asset/collision.png"
-dest_files=["res://.godot/imported/collision.png-132b70f279f5bc4f3f74203604c9cb3f.ctex"]
+source_file="res://scene/collision.png"
+dest_files=["res://.godot/imported/collision.png-c11ce6edd5cc1ca31c8a09bd530a26b9.ctex"]
 
 [params]
 

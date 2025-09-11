@@ -6,3 +6,6 @@
 [node name="BulletHole" type="Sprite2D"]
 texture = ExtResource("2_default_texture")
 script = ExtResource("1_bullet_hole_script")
+random_rotation = false
+random_scale = false
+scale_range = Vector2(1, 1)

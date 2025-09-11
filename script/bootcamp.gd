@@ -5,10 +5,19 @@ extends Node2D
 @onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
 
 var shot_times = []
+var drill_started = false  # Track if drill has been started
+var game_start_requested = false  # Prevent multiple requests
 
 func _ready():
+	# Initialize but don't start the drill yet
+	print("[Bootcamp] Initializing bootcamp, waiting for HTTP start game response...")
+	
 	# Disable disappearing for bootcamp
 	ipsc.max_shots = 1000
+	
+	# Temporarily disable target interaction until drill starts
+	ipsc.input_pickable = false
+	print("[Bootcamp] Target disabled until game start response received")
 	
 	# Connect to ipsc target_hit signal
 	ipsc.target_hit.connect(_on_target_hit)
@@ -38,8 +47,64 @@ func _ready():
 		print("[Bootcamp] Connecting to WebSocketListener.menu_control signal")
 	else:
 		print("[Bootcamp] WebSocketListener singleton not found!")
+	
+	# Send HTTP request to start the game and wait for response
+	start_bootcamp_drill()
+
+func start_bootcamp_drill():
+	"""Send HTTP start game request and wait for OK response before starting drill"""
+	if game_start_requested:
+		print("[Bootcamp] Game start already requested, ignoring duplicate call")
+		return
+	
+	game_start_requested = true
+	print("[Bootcamp] Sending start game HTTP request for bootcamp...")
+	
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		# Send start game request with bootcamp mode
+		http_service.start_game(_on_start_game_response, "bootcamp")
+	else:
+		print("[Bootcamp] ERROR: HttpService singleton not found! Starting drill anyway...")
+		_start_drill_immediately()
+
+func _on_start_game_response(result, response_code, headers, body):
+	"""Handle the HTTP start game response"""
+	var body_str = body.get_string_from_utf8()
+	print("[Bootcamp] Start game HTTP response:", result, response_code, body_str)
+	
+	# Parse the JSON response
+	var json = JSON.parse_string(body_str)
+	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
+		print("[Bootcamp] Start game SUCCESS - starting bootcamp drill")
+		_start_drill_immediately()
+	else:
+		print("[Bootcamp] Start game FAILED or invalid response - starting drill anyway")
+		_start_drill_immediately()
+
+func _start_drill_immediately():
+	"""Actually start the bootcamp drill"""
+	if drill_started:
+		print("[Bootcamp] Drill already started, ignoring duplicate call")
+		return
+	
+	drill_started = true
+	print("[Bootcamp] Bootcamp drill officially started!")
+	
+	# Enable target interactions (they might be disabled initially)
+	if ipsc:
+		ipsc.input_pickable = true
+		print("[Bootcamp] Target enabled for shooting practice")
+	
+	# Any additional drill initialization can go here
+	# For bootcamp, the drill is already "active" since it's free practice
 
 func _on_target_hit(_zone: String, _points: int, _hit_position: Vector2):
+	# Only process hits if drill has started
+	if not drill_started:
+		print("[Bootcamp] Target hit before drill started - ignoring")
+		return
+	
 	var current_time = Time.get_ticks_msec() / 1000.0
 	
 	shot_times.append(current_time)

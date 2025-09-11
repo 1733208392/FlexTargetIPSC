@@ -14,6 +14,7 @@ config/name="GODotTetris"
 config/version="1.0"
 run/main_scene="uid://cjkeemu421bdp"
 config/features=PackedStringArray("4.4", "GL Compatibility")
+run/max_fps=10
 boot_splash/image="uid://cipq0m36i6v83"
 config/icon="uid://df7hy2vqfeny8"
 
@@ -27,9 +28,11 @@ GlobalData="*res://script/global_data.gd"
 
 window/size/viewport_width=720
 window/size/viewport_height=1280
+window/size/mode=3
 window/size/resizable=false
 window/stretch/mode="viewport"
 window/handheld/orientation=1
+window/vsync/vsync_mode=0
 
 [gui]
 

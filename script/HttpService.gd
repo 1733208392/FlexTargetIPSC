@@ -16,9 +16,9 @@ func get_request(url: String, callback: Callable):
 	http.request_completed.connect(callback)
 	http.request(url)
 
-func start_game(callback: Callable, mode: String = "free"):
+func start_game(callback: Callable, mode: String = "free", waiting: int = 0):
 	var url = base_url + "/game/start"
-	var data = {"mode": mode}
+	var data = {"mode": mode, "waiting": waiting}
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(callback)
