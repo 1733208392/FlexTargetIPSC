@@ -97,12 +97,19 @@ theme_override_constants/margin_right = 50
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ChineseButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer"]
+[node name="TraditionalChineseButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer"]
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 24
 button_group = SubResource("ButtonGroup_language")
-text = "中文"
+text = "繁体"
+
+[node name="SimplifiedChineseButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
+button_group = SubResource("ButtonGroup_language")
+text = "简体"
 
 [node name="JapaneseButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer"]
 layout_mode = 2

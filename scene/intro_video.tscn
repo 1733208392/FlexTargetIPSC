@@ -68,7 +68,7 @@ theme_override_font_sizes/font_size = 32
 theme_override_styles/hover = SubResource("StyleBoxTexture_lf28b")
 theme_override_styles/pressed = SubResource("StyleBoxTexture_wk1th")
 theme_override_styles/normal = SubResource("StyleBoxTexture_nc68o")
-text = "History"
+text = ""
 
 [node name="RightMargin" type="Control" parent="TopBar"]
 custom_minimum_size = Vector2(20, 0)
@@ -130,7 +130,7 @@ theme_override_font_sizes/font_size = 28
 theme_override_styles/hover = SubResource("StyleBoxTexture_tdcom")
 theme_override_styles/pressed = SubResource("StyleBoxTexture_cm5so")
 theme_override_styles/normal = SubResource("StyleBoxTexture_b5vnh")
-text = "START"
+text = ""
 
 [node name="RightSpacer" type="Control" parent="BottomContainer"]
 layout_mode = 2

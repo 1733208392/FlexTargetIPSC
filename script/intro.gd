@@ -5,105 +5,134 @@ extends Control
 @onready var prev_button = $CenterContainer/ContentVBox/NavigationContainer/PrevButton
 @onready var next_button = $CenterContainer/ContentVBox/NavigationContainer/NextButton
 @onready var page_indicator = $CenterContainer/ContentVBox/NavigationContainer/PageIndicator
+@onready var title_label = $TitleLabel
+@onready var history_button = get_node_or_null("TopBar/HistoryButton")
 
 var current_page = 0
-var pages = [
-	{
-		"title": "SCORING RULES",
-		"content": """[center][color=WHITE][b]SCORING RULES[/b][/color][/center]
-[color=WHITE][b]Target Zones:[/b][/color]
-• [color=WHITE]Alpha (A): 5 pts[/color]
-• [color=WHITE]Charlie (C): 2 pts[/color]
-• [color=WHITE]Delta (D): 1 pt[/color]
-• [color=WHITE]Miss: 1 pt[/color]
+var pages = []
 
-[color=WHITE][b]Special Targets:[/b][/color]
-• [color=WHITE]Steel Plates: 5 pts[/color]
-• [color=WHITE]Paddles: 5 pts[/color]
-• [color=WHITE]No-Shoot: -10 pts[/color]"""
-	},
-	{
-		"title": "PENALTY RULES",
-		"content": """[center][color=WHITE][b]PENALTY RULES[/b][/color][/center]
+func load_language_setting():
+	# Load language setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[Intro] Loaded language from GlobalData: ", language)
+		call_deferred("initialize_pages_and_ui")
+	else:
+		print("[Intro] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
+		call_deferred("initialize_pages_and_ui")
 
-[color=WHITE][b]Time Penalties:[/b][/color]
-• [color=WHITE]Miss: +10 sec[/color]
-• [color=WHITE]No-Shoot Hit: +10 sec[/color]
-• [color=WHITE]Procedural: +10 sec[/color]
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+		_:
+			locale = "en"  # Default to English
+	TranslationServer.set_locale(locale)
+	print("[Intro] Set locale to: ", locale)
 
-[color=WHITE][b]Score Penalties:[/b][/color]
-• [color=WHITE]No-Shoot Hit: -10 pts[/color]
-• [color=WHITE]Disqualification: 0 pts[/color]
+func initialize_pages_and_ui():
+	# Initialize pages with translated content
+	pages = []
+	
+	# Get translated content for each page
+	var translation_keys = ["score_rule", "panelty_rule", "timer_system", "drill_rule", "hit_factor_rule"]
+	
+	for key in translation_keys:
+		var translated_content = tr(key)
+		print("[Intro] Raw translation for ", key, ": ", translated_content)
+		
+		# Try to parse as JSON first
+		var parsed_json = JSON.parse_string(translated_content)
+		if parsed_json != null and typeof(parsed_json) == TYPE_DICTIONARY and parsed_json.has("content"):
+			# Successfully parsed JSON - use only the content
+			pages.append({
+				"title": parsed_json.get("title", key.to_upper().replace("_", " ")),
+				"content": parsed_json.content
+			})
+			print("[Intro] Successfully parsed JSON for ", key)
+		else:
+			# JSON parsing failed, try to extract content manually
+			print("[Intro] JSON parsing failed for ", key, ", trying manual extraction")
+			
+			# Try to extract content from the string manually
+			var content = extract_content_from_string(translated_content)
+			pages.append({
+				"title": key.to_upper().replace("_", " "),
+				"content": content
+			})
+	
+	# Update UI texts
+	update_ui_texts()
+	
+	# Initialize pagination
+	update_page_display()
 
-[color=WHITE][b]Safety First:[/b][/color]
-• [color=WHITE]Identify targets before shooting[/color]
-• [color=WHITE]Avoid hitting hostages[/color]"""
-	},
-	{
-		"title": "TIMER SYSTEM",
-		"content": """[center][color=WHITE][b]TIMER SYSTEM[/b][/color][/center]
+func extract_content_from_string(text: String) -> String:
+	# Try to extract content from JSON-like string manually
+	var content_start = text.find('"content"')
+	if content_start == -1:
+		content_start = text.find("\"content\"")
+	if content_start == -1:
+		return text  # Return original if no content field found
+	
+	# Find the start of the content value
+	var colon_pos = text.find(":", content_start)
+	if colon_pos == -1:
+		return text
+	
+	# Find the opening quote of the content value
+	var quote_start = text.find('"', colon_pos)
+	if quote_start == -1:
+		return text
+	
+	# Find the closing quote (look for last quote before closing brace)
+	var brace_pos = text.rfind("}")
+	if brace_pos == -1:
+		brace_pos = text.length()
+	
+	var quote_end = text.rfind('"', brace_pos)
+	if quote_end == -1 or quote_end <= quote_start:
+		return text
+	
+	# Extract the content between quotes
+	var content = text.substr(quote_start + 1, quote_end - quote_start - 1)
+	
+	# Clean up escaped quotes
+	content = content.replace('""', '"')
+	
+	return content
 
-[color=WHITE][b]Game Start:[/b][/color]
-• Game begins with [color=WHITE]BEEP[/color] sound
-• [color=WHITE]3-5 second[/color] random delay
-• From standby to beep
-
-[color=WHITE][b]Timing:[/b][/color]
-• Timer starts on beep
-• Timer stops when stage complete
-• Total time includes penalties
-
-[color=WHITE][b]Ready Position:[/b][/color]
-• Wait for the beep signal
-• Stay focused and prepared"""
-	},
-	{
-		"title": "TARGET RULES",
-		"content": """[center][color=WHITE][b]TARGET RULES[/b][/color][/center]
-
-[color=WHITE][b]Stage Completion:[/b][/color]
-• [color=WHITE]2 shots[/color] on paper targets
-• [color=WHITE]Knock down all[/color] steel targets
-• Move to next target spot
-
-[color=WHITE][b]Target Types:[/b][/color]
-• Paper targets (IPSC zones)
-• Steel plates and poppers
-• Hostage targets (no-shoot)
-
-[color=WHITE][b]Engagement Rules:[/b][/color]
-• Shoot until requirements met
-• Proceed to next position"""
-	},
-	{
-		"title": "HIT FACTOR",
-		"content": """[center][color=WHITE][b]HIT FACTOR[/b][/color][/center]
-
-[color=WHITE][b]Hit Factor Formula:[/b][/color]
-
-[center][color=WHITE][b]HF = Score ÷ Total Time[/b][/color][/center]
-
-[color=WHITE][b]Leaderboard:[/b][/color]
-• [color=WHITE]Highest Hit Factor[/color] wins
-• Better position in rankings
-• Rewards accuracy + speed
-
-[center][color=WHITE][b]High HF = Champion![/b][/color][/center]
-
-[color=WHITE][b]Strategy:[/b][/color]
-• Balance speed and accuracy
-• Minimize penalties"""
-	}
-]
+func update_ui_texts():
+	# Update button texts and title
+	if title_label:
+		title_label.text = tr("rules")
+	if prev_button:
+		prev_button.text = tr("prev")
+	if next_button:
+		next_button.text = tr("next")
+	if start_button:
+		start_button.text = tr("start")
+	if history_button:
+		history_button.text = tr("leaderboard")
 
 func _ready():
+	# Load and apply current language setting first
+	load_language_setting()
+	
 	# Connect button signals
 	start_button.pressed.connect(_on_start_pressed)
 	prev_button.pressed.connect(_on_prev_pressed)
 	next_button.pressed.connect(_on_next_pressed)
-	
-	# Initialize pagination
-	update_page_display()
 	
 	# Set start button as default focus
 	start_button.grab_focus()
@@ -120,15 +149,32 @@ func _ready():
 	setup_ui_styles()
 
 func update_page_display():
+	# Safety check: ensure pages exist and current_page is valid
+	if pages.is_empty() or current_page < 0 or current_page >= pages.size():
+		print("[Intro] Invalid page state: pages.size()=", pages.size(), " current_page=", current_page)
+		return
+	
 	# Update main text content
-	main_text.text = pages[current_page].content
+	var current_page_data = pages[current_page]
+	if current_page_data != null and typeof(current_page_data) == TYPE_DICTIONARY:
+		if current_page_data.has("content"):
+			main_text.text = current_page_data.content
+		else:
+			main_text.text = "Content not available"
+			print("[Intro] Page ", current_page, " missing content field")
+	else:
+		main_text.text = "Page data invalid"
+		print("[Intro] Page ", current_page, " has invalid data: ", current_page_data)
 	
 	# Update page indicator
-	page_indicator.text = str(current_page + 1) + " / " + str(pages.size())
+	if page_indicator:
+		page_indicator.text = str(current_page + 1) + " / " + str(pages.size())
 	
 	# Update button states
-	prev_button.disabled = (current_page == 0)
-	next_button.disabled = (current_page == pages.size() - 1)
+	if prev_button:
+		prev_button.disabled = (current_page == 0)
+	if next_button:
+		next_button.disabled = (current_page == pages.size() - 1)
 
 func _on_prev_pressed():
 	if current_page > 0:
@@ -162,9 +208,9 @@ func _on_start_pressed():
 		print("[Intro] HttpService singleton not found!")
 		get_tree().change_scene_to_file("res://scene/drills.tscn")
 
-func _on_start_response(result, response_code, headers, body):
+func _on_start_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Intro] Start game HTTP response:", result, response_code, body_str)
+	print("[Intro] Start game HTTP response:", _result, response_code, body_str)
 	var json = JSON.parse_string(body_str)
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
 		print("[Intro] Start game success, changing scene.")
@@ -205,9 +251,9 @@ func volume_up():
 	else:
 		print("[Intro] HttpService singleton not found!")
 
-func _on_volume_up_response(result, response_code, headers, body):
+func _on_volume_up_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Intro] Volume up HTTP response:", result, response_code, body_str)
+	print("[Intro] Volume up HTTP response:", _result, response_code, body_str)
 
 func volume_down():
 	# Call the HTTP service to decrease the volume
@@ -218,9 +264,9 @@ func volume_down():
 	else:
 		print("[Intro] HttpService singleton not found!")
 
-func _on_volume_down_response(result, response_code, headers, body):
+func _on_volume_down_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Intro] Volume down HTTP response:", result, response_code, body_str)
+	print("[Intro] Volume down HTTP response:", _result, response_code, body_str)
 
 func power_off():
 	# Call the HTTP service to power off the system
@@ -231,9 +277,9 @@ func power_off():
 	else:
 		print("[Intro] HttpService singleton not found!")
 
-func _on_shutdown_response(result, response_code, headers, body):
+func _on_shutdown_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Intro] Shutdown HTTP response:", result, response_code, body_str)
+	print("[Intro] Shutdown HTTP response:", _result, response_code, body_str)
 
 func navigate_buttons():
 	# Enhanced navigation for prev/next and start buttons

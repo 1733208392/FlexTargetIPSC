@@ -8,6 +8,9 @@ var history_data = []
 var current_focused_index = 0
 
 func _ready():
+	# Load and apply current language setting from global settings
+	load_language_from_global_settings()
+	
 	# Connect back button
 	if back_button:
 		back_button.pressed.connect(_on_back_pressed)
@@ -17,6 +20,9 @@ func _ready():
 	
 	# Populate the list with data
 	populate_list()
+	
+	# Update UI texts with translations
+	update_ui_texts()
 	
 	# Make list items clickable
 	setup_clickable_items()
@@ -282,10 +288,17 @@ func _size_panel(panel: Panel, item: HBoxContainer):
 	# Size the panel to cover the entire item
 	if panel and item and is_instance_valid(panel) and is_instance_valid(item):
 		# Use a small delay to ensure layout is complete
-		await get_tree().create_timer(0.01).timeout
-		if panel and item and is_instance_valid(panel) and is_instance_valid(item):
-			panel.size = item.size
-			panel.position = Vector2.ZERO
+		var tree = get_tree()
+		if tree:
+			await tree.create_timer(0.01).timeout
+			if panel and item and is_instance_valid(panel) and is_instance_valid(item):
+				panel.size = item.size
+				panel.position = Vector2.ZERO
+		else:
+			# Fallback if tree is not available
+			if panel and item and is_instance_valid(panel) and is_instance_valid(item):
+				panel.size = item.size
+				panel.position = Vector2.ZERO
 
 func _on_back_pressed():
 	# Navigate back to the previous scene (intro or main menu)
@@ -369,7 +382,7 @@ func volume_down():
 	else:
 		print("[History] HttpService singleton not found!")
 
-func _on_volume_response(result, response_code, headers, body):
+func _on_volume_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	print("[History] Volume HTTP response:", result, response_code, body_str)
 
@@ -381,6 +394,110 @@ func power_off():
 	else:
 		print("[History] HttpService singleton not found!")
 
-func _on_shutdown_response(result, response_code, headers, body):
+func _on_shutdown_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	print("[History] Shutdown HTTP response:", result, response_code, body_str)
+
+func load_language_from_global_settings():
+	# Read language setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[History] Loaded language from GlobalData: ", language)
+	else:
+		print("[History] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
+
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+		_:
+			locale = "en"  # Default to English
+	TranslationServer.set_locale(locale)
+	print("[History] Set locale to: ", locale)
+
+func update_ui_texts():
+	# Update static UI elements with translations
+	var title_label = get_node_or_null("MarginContainer/VBoxContainer/TitleLabel")
+	var no_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/NoLabel")
+	var time_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/TotalTimeLabel")
+	var fast_shot_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/FastShotLabel")
+	var score_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/ScoreLabel")
+	var hf_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/HFLabel")
+	var back_btn = get_node_or_null("MarginContainer/VBoxContainer/BackButton")
+	
+	if title_label:
+		title_label.text = get_localized_title_text()
+	if no_label:
+		no_label.text = get_localized_no_text()
+	if time_label:
+		time_label.text = tr("time")
+	if fast_shot_label:
+		fast_shot_label.text = get_localized_fastest_shot_text()
+	if score_label:
+		score_label.text = tr("score")
+	if hf_label:
+		hf_label.text = tr("hit_factor_t")
+	if back_btn:
+		back_btn.text = get_localized_back_text()
+
+func get_localized_title_text() -> String:
+	# Since there's no "history" translation key, create localized text based on locale
+	var locale = TranslationServer.get_locale()
+	match locale:
+		"zh_CN":
+			return "训练记录"
+		"zh_TW":
+			return "訓練記錄"
+		"ja":
+			return "訓練履歴"
+		_:
+			return "Drill History"
+
+func get_localized_no_text() -> String:
+	# Create localized text for "No" based on locale
+	var locale = TranslationServer.get_locale()
+	match locale:
+		"zh_CN":
+			return "编号"
+		"zh_TW":
+			return "編號"
+		"ja":
+			return "番号"
+		_:
+			return "No"
+
+func get_localized_fastest_shot_text() -> String:
+	# Create localized short text for "Fastest Shot" based on locale
+	var locale = TranslationServer.get_locale()
+	match locale:
+		"zh_CN":
+			return "最快"
+		"zh_TW":
+			return "最快"
+		"ja":
+			return "最速"
+		_:
+			return "F'Shot"
+
+func get_localized_back_text() -> String:
+	# Create localized text for "Back" based on locale
+	var locale = TranslationServer.get_locale()
+	match locale:
+		"zh_CN":
+			return "返回"
+		"zh_TW":
+			return "返回"
+		"ja":
+			return "戻る"
+		_:
+			return "Back"

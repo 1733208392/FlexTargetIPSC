@@ -27,14 +27,58 @@ func _ready():
 	"""Initialize the shot timer"""
 	print("=== SHOT TIMER INITIALIZED ===")
 	
+	# Load and apply current language setting from global settings
+	load_language_from_global_settings()
+	
 	# Connect timer signal
 	timer_delay.timeout.connect(_on_timer_timeout)
 	
 	# Hide instructions (not needed anymore)
 	instructions.visible = false
 	
-	# Start timer automatically
-	start_timer_sequence()
+	# Don't start automatically - wait for drill UI to call start_timer_sequence()
+	current_state = TimerState.WAITING
+	standby_label.visible = false
+
+func load_language_from_global_settings():
+	# Read language setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[ShotTimer] Loaded language from GlobalData: ", language)
+	else:
+		print("[ShotTimer] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
+
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+		_:
+			locale = "en"  # Default to English
+	TranslationServer.set_locale(locale)
+	print("[ShotTimer] Set locale to: ", locale)
+
+func get_standby_text() -> String:
+	# Since there's no specific "standby" translation key, use localized text
+	var locale = TranslationServer.get_locale()
+	match locale:
+		"zh_CN":
+			return "准备"
+		"zh_TW":
+			return "準備"
+		"ja":
+			return "スタンバイ"
+		_:
+			return "STANDBY"
 
 func _input(_event):
 	"""Handle input events - removed manual controls"""
@@ -64,7 +108,7 @@ func start_timer_sequence():
 	current_state = TimerState.STANDBY
 	
 	# Show STANDBY text
-	standby_label.text = "STANDBY"
+	standby_label.text = get_standby_text()
 	standby_label.label_settings.font_color = Color.YELLOW
 	standby_label.visible = true
 	
@@ -113,7 +157,7 @@ signal timer_ready()
 signal timer_reset()
 
 func reset_timer():
-	"""Reset the timer to initial state and start automatically"""
+	"""Reset the timer to initial state without auto-starting"""
 	print("=== RESETTING SHOT TIMER ===")
 	
 	# Stop all timers and animations
@@ -126,18 +170,17 @@ func reset_timer():
 	start_time = 0.0
 	beep_time = 0.0
 	
-	# Reset visual elements
-	standby_label.text = "STANDBY"
+	# Reset visual elements and hide them
+	standby_label.text = get_standby_text()
 	standby_label.label_settings.font_color = Color.YELLOW
-	standby_label.visible = true
+	standby_label.visible = false  # Hide until explicitly started
 	standby_label.scale = Vector2.ONE
 	standby_label.modulate = Color.WHITE
 	
 	# Hide instructions (not needed anymore)
 	instructions.visible = false
 	
-	# Start timer automatically after reset
-	start_timer_sequence()
+	# Don't auto-start - wait for explicit call to start_timer_sequence()
 	
 	# Emit reset signal
 	timer_reset.emit()

@@ -76,7 +76,6 @@ theme_override_font_sizes/font_size = 32
 theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
-text = "Start"
 
 [node name="boot_camp" type="Button" parent="VBoxContainer"]
 layout_mode = 2
@@ -86,7 +85,6 @@ theme_override_font_sizes/font_size = 32
 theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
-text = "Bootcamp"
 
 [node name="learder_board" type="Button" parent="VBoxContainer"]
 layout_mode = 2
@@ -96,7 +94,6 @@ theme_override_font_sizes/font_size = 32
 theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
-text = "Leaderboard"
 
 [node name="option" type="Button" parent="VBoxContainer"]
 layout_mode = 2
@@ -107,7 +104,6 @@ theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
 theme_override_styles/pressed = SubResource("StyleBoxTexture_sepwh")
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
-text = "Option"
 
 [node name="minimap" type="TextureRect" parent="."]
 modulate = Color(1, 1, 1, 0.533333)
@@ -149,7 +145,6 @@ offset_left = -200.0
 offset_top = -50.0
 offset_right = 200.0
 theme_override_fonts/font = ExtResource("6_14wem")
-text = "© 2025 Grwolf.com. All Rights Reserved."
 horizontal_alignment = 1
 vertical_alignment = 2
 

@@ -9,6 +9,9 @@ var drill_started = false  # Track if drill has been started
 var game_start_requested = false  # Prevent multiple requests
 
 func _ready():
+	# Load and apply current language setting from global settings
+	load_language_from_global_settings()
+	
 	# Initialize but don't start the drill yet
 	print("[Bootcamp] Initializing bootcamp, waiting for HTTP start game response...")
 	
@@ -36,6 +39,9 @@ func _ready():
 			label.text = ""
 		else:
 			print("ERROR: Shot" + str(i) + " not found!")
+	
+	# Update UI texts with translations
+	update_ui_texts()
 	
 	# Set clear button as default focus
 	clear_button.grab_focus()
@@ -192,6 +198,56 @@ func power_off():
 	else:
 		print("[Bootcamp] HttpService singleton not found!")
 
-func _on_shutdown_response(result, response_code, headers, body):
+func _on_shutdown_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	print("[Bootcamp] Shutdown HTTP response:", result, response_code, body_str)
+
+func load_language_from_global_settings():
+	# Read language setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[Bootcamp] Loaded language from GlobalData: ", language)
+	else:
+		print("[Bootcamp] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
+
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+		_:
+			locale = "en"  # Default to English
+	TranslationServer.set_locale(locale)
+	print("[Bootcamp] Set locale to: ", locale)
+
+func update_ui_texts():
+	# Update static UI elements with translations
+	var intervals_label = get_node_or_null("CanvasLayer/Control/ShotIntervalsOverlay/IntervalsLabel")
+	
+	if intervals_label:
+		intervals_label.text = get_localized_shots_text()
+	
+	if clear_button:
+		clear_button.text = tr("clear")
+
+func get_localized_shots_text() -> String:
+	# Since there's no specific "shots" translation key, create localized text based on locale
+	var locale = TranslationServer.get_locale()
+	match locale:
+		"zh_CN":
+			return "射击"
+		"zh_TW":
+			return "射擊"
+		"ja":
+			return "ショット"
+		_:
+			return "Shots"

@@ -76,7 +76,7 @@ grow_vertical = 2
 
 [node name="StandbyLabel" type="Label" parent="CenterContainer"]
 layout_mode = 2
-text = "STANDBY"
+text = ""
 label_settings = SubResource("LabelSettings_standby")
 horizontal_alignment = 1
 vertical_alignment = 1

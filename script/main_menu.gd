@@ -4,11 +4,61 @@ extends Control
 @onready var bootcamp_button = $VBoxContainer/boot_camp
 @onready var leaderboard_button = $VBoxContainer/learder_board
 @onready var option_button = $VBoxContainer/option
+@onready var copyright_label = $Label
 
 var focused_index
 var buttons = []
 
+func load_language_setting():
+	# Load language setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[Menu] Loaded language from GlobalData: ", language)
+		call_deferred("update_ui_texts")
+	else:
+		print("[Menu] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
+		call_deferred("update_ui_texts")
+
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+		_:
+			locale = "en"  # Default to English
+	TranslationServer.set_locale(locale)
+	print("[Menu] Set locale to: ", locale)
+
+func update_ui_texts():
+	# Update button texts with current language
+	print("[Menu] Updating UI texts with locale: ", TranslationServer.get_locale())
+	print("[Menu] Translation for 'start': ", tr("start"))
+	print("[Menu] Translation for 'boot_camp': ", tr("boot_camp"))
+	print("[Menu] Translation for 'leaderboard': ", tr("leaderboard"))
+	print("[Menu] Translation for 'options': ", tr("options"))
+	print("[Menu] Translation for 'copyright': ", tr("copyright"))
+	
+	start_button.text = tr("start")
+	bootcamp_button.text = tr("boot_camp")
+	leaderboard_button.text = tr("leaderboard")
+	option_button.text = tr("options")
+	copyright_label.text = tr("copyright")
+	
+	print("[Menu] UI texts updated")
+
 func _ready():
+	# Load and apply current language setting
+	load_language_setting()
+	
 	# Connect button signals
 	focused_index = 0
 	buttons = [

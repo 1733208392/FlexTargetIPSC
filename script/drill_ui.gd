@@ -19,6 +19,10 @@ var current_theme_style: String = "golden"
 func _ready():
 	"""Initialize the drill UI"""
 	print("=== DRILL UI INITIALIZED ===")
+	
+	# Load and apply current language setting from global settings
+	load_language_from_global_settings()
+	
 	apply_title_theme("golden")  # Set default theme
 	
 	# Connect to the parent drills manager signals
@@ -33,39 +37,65 @@ func _ready():
 			drills_manager.ui_fastest_time_update.connect(_on_fastest_time_update)
 		if drills_manager.has_signal("ui_show_completion"):
 			drills_manager.ui_show_completion.connect(_on_show_completion)
+		if drills_manager.has_signal("ui_score_update"):
+			drills_manager.ui_score_update.connect(_on_score_update)
+		if drills_manager.has_signal("ui_theme_change"):
+			drills_manager.ui_theme_change.connect(_on_theme_change)
 		if drills_manager.has_signal("ui_show_shot_timer"):
 			drills_manager.ui_show_shot_timer.connect(_on_show_shot_timer)
 		if drills_manager.has_signal("ui_hide_shot_timer"):
 			drills_manager.ui_hide_shot_timer.connect(_on_hide_shot_timer)
-		if drills_manager.has_signal("ui_theme_change"):
-			drills_manager.ui_theme_change.connect(_on_theme_change)
-		if drills_manager.has_signal("ui_score_update"):
-			drills_manager.ui_score_update.connect(_on_score_update)
 		if drills_manager.has_signal("ui_progress_update"):
 			drills_manager.ui_progress_update.connect(_on_progress_update)
-		print("Connected to drills manager UI signals")
+		
+		print("[DrillUI] Connected to drills manager UI signals")
+
+func load_language_from_global_settings():
+	# Read language setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[DrillUI] Loaded language from GlobalData: ", language)
+	else:
+		print("[DrillUI] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
+
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+		_:
+			locale = "en"  # Default to English
+	TranslationServer.set_locale(locale)
+	print("[DrillUI] Set locale to: ", locale)
+
+func _on_timer_update(time_elapsed: float):
+	"""Update the timer display with the current elapsed time"""
+	var minutes = int(time_elapsed) / 60
+	var seconds = int(time_elapsed) % 60
+	var milliseconds = int((time_elapsed - int(time_elapsed)) * 100)
+	
+	var time_string = "%02d:%02d:%02d" % [minutes, seconds, milliseconds]
+	timer_label.text = time_string
 
 func _process(_delta):
 	"""Update FPS counter every frame"""
 	var fps = Engine.get_frames_per_second()
 	fps_label.text = "FPS: " + str(fps)
 
-func _on_timer_update(elapsed_seconds: float):
-	"""Update the timer label with formatted elapsed time in MM:SS:MS format"""
-	var total_seconds = int(elapsed_seconds)
-	var milliseconds = int((elapsed_seconds - total_seconds) * 100)
-	
-	var minutes = total_seconds / 60
-	var seconds = total_seconds % 60
-	
-	var time_string = "%02d:%02d:%02d" % [minutes, seconds, milliseconds]
-	timer_label.text = time_string
-
 func _on_target_title_update(target_index: int, total_targets: int):
 	"""Update the target title based on the current target number"""
 	var target_number = target_index + 1
-	target_type_title.text = "Target " + str(target_number) + "/" + str(total_targets)
-	print("Updated title to: Target ", target_number, "/", total_targets)
+	target_type_title.text = tr("target") + " " + str(target_number) + "/" + str(total_targets)
+	print("Updated title to: ", tr("target"), " ", target_number, "/", total_targets)
 
 func _on_theme_change(theme_name: String):
 	"""Apply a specific theme style to the target title"""
@@ -196,7 +226,13 @@ func _on_show_shot_timer():
 	"""Show the shot timer overlay"""
 	print("=== SHOWING SHOT TIMER OVERLAY ===")
 	shot_timer_overlay.visible = true
-	shot_timer_overlay.reset_timer()
+	
+	# The shot_timer_overlay IS the shot timer, so call its methods directly
+	if shot_timer_overlay.has_method("start_timer_sequence"):
+		shot_timer_overlay.start_timer_sequence()
+		print("[DrillUI] Started shot timer sequence")
+	else:
+		print("[DrillUI] Warning: Shot timer overlay missing start_timer_sequence method")
 	
 	# Hide the completion overlay if visible
 	drill_complete_overlay.visible = false
@@ -205,6 +241,13 @@ func _on_hide_shot_timer():
 	"""Hide the shot timer overlay"""
 	print("=== HIDING SHOT TIMER OVERLAY ===")
 	shot_timer_overlay.visible = false
+	
+	# The shot_timer_overlay IS the shot timer, so call its methods directly
+	if shot_timer_overlay.has_method("reset_timer"):
+		shot_timer_overlay.reset_timer()
+		print("[DrillUI] Reset shot timer")
+	else:
+		print("[DrillUI] Warning: Shot timer overlay missing reset_timer method")
 
 func setup_overlay_focus():
 	"""Set up focus for the overlay buttons"""

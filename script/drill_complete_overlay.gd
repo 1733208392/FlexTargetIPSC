@@ -7,9 +7,20 @@ extends Control
 @onready var area_restart = $VBoxContainer/RestartButton/AreaRestart
 @onready var area_replay = $VBoxContainer/ReviewReplayButton/AreaReplay
 
+# UI elements for internationalization
+@onready var title_label = get_node_or_null("VBoxContainer/TitleLabel")
+@onready var score_label = get_node_or_null("VBoxContainer/ScoreLabel")
+@onready var hit_factor_label = get_node_or_null("VBoxContainer/HitFactorLabel")
+@onready var fastest_shot_label = get_node_or_null("VBoxContainer/FastestShotLabel")
+@onready var restart_button = get_node_or_null("VBoxContainer/RestartButton")
+@onready var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+
 func _ready():
 	"""Initialize the drill complete overlay"""
 	print("=== DRILL COMPLETE OVERLAY INITIALIZED ===")
+	
+	# Load and apply current language setting from global settings
+	load_language_from_global_settings()
 	
 	# Connect to WebSocket for bullet spawning
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
@@ -34,6 +45,44 @@ func _ready():
 	
 	# Set up button focus management
 	setup_button_focus()
+
+func load_language_from_global_settings():
+	# Read language setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[DrillComplete] Loaded language from GlobalData: ", language)
+		call_deferred("update_ui_texts")
+	else:
+		print("[DrillComplete] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
+		call_deferred("update_ui_texts")
+
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+		_:
+			locale = "en"  # Default to English
+	TranslationServer.set_locale(locale)
+	print("[DrillComplete] Set locale to: ", locale)
+
+func update_ui_texts():
+	# Update static text elements with translations
+	if title_label:
+		title_label.text = tr("complete")
+	if restart_button:
+		restart_button.text = tr("restart")
+	if replay_button:
+		replay_button.text = tr("replay")
 
 func _notification(what):
 	"""Debug overlay visibility changes"""
@@ -191,15 +240,15 @@ func update_drill_results(score: int, hit_factor: float, fastest_shot: float):
 	var fastest_label = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/FastestShot")
 	
 	if score_label:
-		score_label.text = "Score: %d points" % score
-		print("[drill_complete_overlay] Updated score: %d points" % score)
+		score_label.text = tr("score") + ": %d" % score
+		print("[drill_complete_overlay] Updated score: %d" % score)
 	
 	if hf_label:
-		hf_label.text = "Hit Factor: %.2f" % hit_factor
+		hf_label.text = tr("hit_factor") + ": %.2f" % hit_factor
 		print("[drill_complete_overlay] Updated hit factor: %.2f" % hit_factor)
 	
 	if fastest_label:
-		fastest_label.text = "Fastest Shot: %.2fs" % fastest_shot
+		fastest_label.text = tr("fastest_shot") + ": %.2fs" % fastest_shot
 		print("[drill_complete_overlay] Updated fastest shot: %.2fs" % fastest_shot)
 
 func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0):

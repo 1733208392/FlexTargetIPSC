@@ -39,7 +39,7 @@ custom_minimum_size = Vector2(200, 48)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 32
-text = "Replay and Review"
+text = ""
 
 [node name="TextureRect" type="TextureRect" parent="VBoxContainer/ReviewReplayButton"]
 layout_mode = 1
@@ -73,7 +73,7 @@ layout_mode = 2
 
 [node name="Title" type="Label" parent="VBoxContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Drill Completed"
+text = ""
 label_settings = ExtResource("2_o6736")
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -104,7 +104,7 @@ custom_minimum_size = Vector2(200, 48)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 32
-text = "Restart"
+text = ""
 
 [node name="TextureRect" type="TextureRect" parent="VBoxContainer/RestartButton"]
 layout_mode = 1

@@ -77,21 +77,21 @@ panelty_rule,"{“title"": ""PENALTY RULES"",
 ""content"": ""[center] [b]PENALTY RULES[/b][/center]
 
  [b]Score Penalties:[/b]
-•  No-Shoot Hit: -10 pts""}","{""title"": ""惩罚规则"",
-""content"": ""[center][b]惩罚规则[/b][/center]
+•  No-Shoot Hit: -10 pts”}","{“title"": “惩罚规则”,
+        ""content"": ""[center][b]惩罚规则[/b][/center]
 
 [b]分数惩罚:[/b]
 • 白色禁止区: -10 pts""}","{“title"": ""ペナルティルール"",
 ""content"": ""[center] [b]ペナルティルール[/b][/center]
 
 [b]得点ペナルティ:[/b]
-• シュートなしヒット: -10ポイント""}","{""title"": ""懲罰規則"",
-""content"": ""[center][b]懲罰規則[/b][/center]
+• シュートなしヒット: -10ポイント""}","{“title"": “懲罰規則”,
+ ""content"": ""[center][b]懲罰規則[/b][/center]
 
 [b]分數懲罰:[/b]
 • 白色禁止區: -10 pts”}"
 drill_rule,"{“title"": “DRILL RULE”,
-""content"": ""[center][b]DRILL RULE[/b][/center]
+""content"": ""[center][b]DRILL RULE[/b]/center]
 
 [b]TARGET TYPES:[/b]
 • Paper targets (IPSC zones)
@@ -116,7 +116,7 @@ drill_rule,"{“title"": “DRILL RULE”,
 [b]训练进程:[/b]
 • 每个射击区域，击中纸靶两枪或者击倒所有钢靶自动进入下一个设计区
 • 完成所有射击区射击完成训练""}","{""title"": “ドリルのルール”,
-""content"": ""[center][b]ドリルのルール[/b][/center]
+""content"": ""[center][b]ドリルのルール[/b]/center]
 
 [b]ターゲットの種類:[/b]
 • 紙ターゲット（IPSCゾーン）
@@ -171,7 +171,7 @@ timer_system,"{“title"": ""TIMER SYSTEM"",
 [b]タイミング:[/b]
 • ビープ音でタイマーがスタートします
 • すべてのスポットがクリアされるとタイマーが停止します
-• 合計時間にはペナルティが含まれます""}","{""title"": ""計時系統"",
+• 合計時間にはペナルティが含まれます""}","{“title”: “計時系統“,
 ""content"": ""[center][b]計時系統[/b][/center]
 
 [b]遊戲開始:[/b]

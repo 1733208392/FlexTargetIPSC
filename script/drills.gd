@@ -146,31 +146,31 @@ func _process(_delta):
 	"""Main process loop - UI updates are handled by drill_ui.gd"""
 	pass
 
-func _unhandled_input(_event):
-	"""Handle input events for theme switching (testing purposes)"""
-	# Don't process input if the completion overlay is visible
-	var drill_ui = get_node_or_null("DrillUI")
-	if drill_ui:
-		var completion_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
-		if completion_overlay and completion_overlay.visible:
-			print("=== DRILLS.GD: Completion overlay is visible, ignoring input ===")
-			return
+# func _unhandled_input(_event):
+# 	"""Handle input events for theme switching (testing purposes)"""
+# 	# Don't process input if the completion overlay is visible
+# 	var drill_ui = get_node_or_null("DrillUI")
+# 	if drill_ui:
+# 		var completion_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
+# 		if completion_overlay and completion_overlay.visible:
+# 			print("=== DRILLS.GD: Completion overlay is visible, ignoring input ===")
+# 			return
 	
-	if _event is InputEventMouseButton and _event.pressed:
-		print("=== DRILLS.GD received unhandled mouse click ===")
-		print("Position: ", _event.global_position)
-		print("Button: ", _event.button_index)
+# 	if _event is InputEventMouseButton and _event.pressed:
+# 		print("=== DRILLS.GD received unhandled mouse click ===")
+# 		print("Position: ", _event.global_position)
+# 		print("Button: ", _event.button_index)
 	
-	if _event is InputEventKey and _event.pressed:
-		match _event.keycode:
-			KEY_1:
-				emit_signal("ui_theme_change", "golden")
-			KEY_2:
-				emit_signal("ui_theme_change", "tactical")
-			KEY_3:
-				emit_signal("ui_theme_change", "competitive")
-			KEY_R:
-				restart_drill()
+# 	if _event is InputEventKey and _event.pressed:
+# 		match _event.keycode:
+# 			KEY_1:
+# 				emit_signal("ui_theme_change", "golden")
+# 			KEY_2:
+# 				emit_signal("ui_theme_change", "tactical")
+# 			KEY_3:
+# 				emit_signal("ui_theme_change", "competitive")
+# 			KEY_R:
+# 				restart_drill()
 
 func update_target_title():
 	"""Update the target title based on the current target number"""
@@ -479,6 +479,9 @@ func complete_drill():
 	
 	# Stop the drill timer
 	stop_drill_timer()
+	
+	# Hide the shot timer since drill is complete
+	hide_shot_timer()
 	
 	# Temporarily disable bullet spawning to freeze gameplay
 	bullets_allowed = false

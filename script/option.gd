@@ -4,9 +4,10 @@ extends Control
 static var current_language = "English"
 
 # References to language buttons
-@onready var chinese_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/ChineseButton"
+@onready var chinese_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/SimplifiedChineseButton"
 @onready var japanese_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/JapaneseButton"
 @onready var english_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/EnglishButton"
+@onready var traditional_chinese_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/TraditionalChineseButton"
 
 # References to labels that need translation
 @onready var tab_container = $"VBoxContainer/MarginContainer/tab_container"
@@ -26,21 +27,20 @@ func _ready():
 		japanese_button.pressed.connect(_on_language_changed.bind("Japanese"))
 	if english_button:
 		english_button.pressed.connect(_on_language_changed.bind("English"))
+	if traditional_chinese_button:
+		traditional_chinese_button.pressed.connect(_on_language_changed.bind("Traditional Chinese"))
 	
-	# Set the initial pressed button based on current language
-	set_language_button_pressed()
-	
-	# Update UI texts
-	update_ui_texts()
+	# Note: set_language_button_pressed() and update_ui_texts() will be called 
+	# from the load_settings callback when the actual language is loaded
 	
 	# Initialize language buttons array
-	language_buttons = [english_button, chinese_button, japanese_button]
+	language_buttons = [english_button, chinese_button, japanese_button, traditional_chinese_button]
 	
 	# Set tab_container focusable
 	if tab_container:
 		tab_container.focus_mode = Control.FOCUS_ALL
 	
-	# Set default focus to English button
+	# Set default focus to English button (will be updated when settings load)
 	if english_button:
 		english_button.grab_focus()
 	
@@ -65,7 +65,9 @@ func set_locale_from_language(language: String):
 		"English":
 			locale = "en"
 		"Chinese":
-			locale = "zh"
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
 		"Japanese":
 			locale = "ja"
 	TranslationServer.set_locale(locale)
@@ -75,12 +77,35 @@ func set_language_button_pressed():
 		"Chinese":
 			if chinese_button:
 				chinese_button.button_pressed = true
+		"Traditional Chinese":
+			if traditional_chinese_button:
+				traditional_chinese_button.button_pressed = true
 		"Japanese":
 			if japanese_button:
 				japanese_button.button_pressed = true
 		"English":
 			if english_button:
 				english_button.button_pressed = true
+
+func set_focus_to_current_language():
+	# Set focus to the button corresponding to the current language
+	match current_language:
+		"English":
+			if english_button:
+				english_button.grab_focus()
+		"Chinese":
+			if chinese_button:
+				chinese_button.grab_focus()
+		"Traditional Chinese":
+			if traditional_chinese_button:
+				traditional_chinese_button.grab_focus()
+		"Japanese":
+			if japanese_button:
+				japanese_button.grab_focus()
+		_:
+			# Default to English if unknown language
+			if english_button:
+				english_button.grab_focus()
 
 func update_ui_texts():
 	if tab_container:
@@ -92,15 +117,51 @@ func update_ui_texts():
 		copyright_label.text = tr("copyright")
 
 func save_settings():
-	var data = {"language": current_language}
-	var content = JSON.stringify(data)
+	# First load current settings to preserve other fields
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		http_service.save_game(_on_save_settings_callback, "settings", content)
+		print("Loading current settings before saving language...")
+		http_service.load_game(_on_load_before_save_callback, "settings")
 	else:
 		print("HttpService not found!")
 
-func _on_save_settings_callback(result, response_code, headers, body):
+func _on_load_before_save_callback(_result, response_code, _headers, body):
+	var http_service = get_node("/root/HttpService")
+	if not http_service:
+		print("HttpService not found!")
+		return
+		
+	var settings_data = {}
+	
+	if response_code == 200:
+		# Parse existing settings
+		var body_str = body.get_string_from_utf8()
+		var json = JSON.new()
+		var error = json.parse(body_str)
+		if error == OK:
+			var data = json.data
+			var settings = data.get("content", "{}")
+			var settings_json = JSON.new()
+			var settings_error = settings_json.parse(settings)
+			if settings_error == OK:
+				settings_data = settings_json.data
+				print("Loaded existing settings: ", settings_data)
+			else:
+				print("Failed to parse existing settings JSON, using empty dict")
+		else:
+			print("Failed to parse response JSON, using empty dict")
+	else:
+		print("Failed to load existing settings (", response_code, "), creating new settings")
+	
+	# Update only the language field
+	settings_data["language"] = current_language
+	print("Updated settings with language: ", settings_data)
+	
+	# Save the merged settings
+	var content = JSON.stringify(settings_data)
+	http_service.save_game(_on_save_settings_callback, "settings", content)
+
+func _on_save_settings_callback(_result, response_code, _headers, _body):
 	if response_code == 200:
 		print("Settings saved successfully")
 	else:
@@ -113,8 +174,11 @@ func load_settings():
 	else:
 		print("HttpService not found, using default")
 		set_locale_from_language(current_language)
+		set_language_button_pressed()
+		update_ui_texts()
+		set_focus_to_current_language()
 
-func _on_load_settings_callback(result, response_code, headers, body):
+func _on_load_settings_callback(_result, response_code, _headers, body):
 	if response_code == 200:
 		var body_str = body.get_string_from_utf8()
 		var json = JSON.new()
@@ -129,15 +193,29 @@ func _on_load_settings_callback(result, response_code, headers, body):
 				current_language = settings_data.get("language", "English")
 				set_locale_from_language(current_language)
 				print("Loaded language: ", current_language)
+				# Update button states and UI to reflect the loaded language
+				set_language_button_pressed()
+				update_ui_texts()
+				# Set focus to the correct language button
+				set_focus_to_current_language()
 			else:
 				print("Failed to parse settings JSON")
 				set_locale_from_language(current_language)
+				set_language_button_pressed()
+				update_ui_texts()
+				set_focus_to_current_language()
 		else:
 			print("Failed to parse response JSON")
 			set_locale_from_language(current_language)
+			set_language_button_pressed()
+			update_ui_texts()
+			set_focus_to_current_language()
 	else:
 		print("Failed to load settings: ", response_code)
 		set_locale_from_language(current_language)
+		set_language_button_pressed()
+		update_ui_texts()
+		set_focus_to_current_language()
 
 # Function to get current language (can be called from other scripts)
 static func get_current_language() -> String:
@@ -195,6 +273,8 @@ func press_focused_button():
 				language = "English"
 			elif button == chinese_button:
 				language = "Chinese"
+			elif button == traditional_chinese_button:
+				language = "Traditional Chinese"
 			elif button == japanese_button:
 				language = "Japanese"
 			_on_language_changed(language)
@@ -209,9 +289,9 @@ func volume_up():
 	else:
 		print("[Option] HttpService singleton not found!")
 
-func _on_volume_up_response(result, response_code, headers, body):
+func _on_volume_up_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Option] Volume up HTTP response:", result, response_code, body_str)
+	print("[Option] Volume up HTTP response:", _result, response_code, body_str)
 
 func volume_down():
 	var http_service = get_node("/root/HttpService")
@@ -221,9 +301,9 @@ func volume_down():
 	else:
 		print("[Option] HttpService singleton not found!")
 
-func _on_volume_down_response(result, response_code, headers, body):
+func _on_volume_down_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Option] Volume down HTTP response:", result, response_code, body_str)
+	print("[Option] Volume down HTTP response:", _result, response_code, body_str)
 
 func power_off():
 	var http_service = get_node("/root/HttpService")
@@ -233,9 +313,9 @@ func power_off():
 	else:
 		print("[Option] HttpService singleton not found!")
 
-func _on_shutdown_response(result, response_code, headers, body):
+func _on_shutdown_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Option] Shutdown HTTP response:", result, response_code, body_str)
+	print("[Option] Shutdown HTTP response:", _result, response_code, body_str)
 
 func switch_tab(direction: String):
 	if not tab_container:
@@ -255,6 +335,9 @@ func switch_tab(direction: String):
 			"Chinese":
 				if chinese_button:
 					chinese_button.grab_focus()
+			"Traditional Chinese":
+				if traditional_chinese_button:
+					traditional_chinese_button.grab_focus()
 			"Japanese":
 				if japanese_button:
 					japanese_button.grab_focus()

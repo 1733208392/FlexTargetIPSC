@@ -35,7 +35,6 @@ offset_top = 40.0
 offset_right = 182.5
 offset_bottom = 77.0
 grow_horizontal = 2
-text = "IPSC Training Rules"
 label_settings = ExtResource("1_srnjo")
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -99,11 +98,9 @@ custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
 theme = ExtResource("4_tdcom")
 disabled = true
-text = "◀ PREV"
 
 [node name="PageIndicator" type="Label" parent="CenterContainer/ContentVBox/NavigationContainer"]
 layout_mode = 2
-text = "1 / 5"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -111,7 +108,6 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
 theme = ExtResource("4_tdcom")
-text = "NEXT ▶"
 
 [node name="StartButton" type="Button" parent="."]
 layout_mode = 1
@@ -130,7 +126,6 @@ size_flags_horizontal = 4
 size_flags_vertical = 3
 theme = ExtResource("4_tdcom")
 theme_override_font_sizes/font_size = 36
-text = "         Start Drill         "
 
 [node name="Volume" parent="." instance=ExtResource("5_volumn")]
 visible = false

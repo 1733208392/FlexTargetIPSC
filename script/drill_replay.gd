@@ -18,6 +18,9 @@ var target_scenes = {
 func _ready():
 	print("Drill Replay: Loading drill records...")
 	
+	# Load and apply current language setting from global settings
+	load_language_from_global_settings()
+	
 	# Connect to WebSocketListener
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
@@ -60,6 +63,64 @@ func _ready():
 			print("No performance files found.")
 			return
 		load_performance_file(latest_file)
+
+func load_language_from_global_settings():
+	# Read language setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	print("[DrillReplay] GlobalData node found: ", global_data != null)
+	
+	if global_data:
+		print("[DrillReplay] GlobalData.settings_dict exists: ", global_data.settings_dict != null)
+		if global_data.settings_dict:
+			print("[DrillReplay] settings_dict keys: ", global_data.settings_dict.keys())
+			print("[DrillReplay] settings_dict language value: ", global_data.settings_dict.get("language", "NOT_FOUND"))
+		
+		if global_data.settings_dict and global_data.settings_dict.has("language"):
+			var language = global_data.settings_dict.get("language", "English")
+			print("[DrillReplay] Loading language from GlobalData: ", language)
+			set_locale_from_language(language)
+		else:
+			print("[DrillReplay] No language key found in settings_dict")
+			set_locale_from_language("English")
+	else:
+		print("[DrillReplay] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
+
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+		_:
+			locale = "en"  # Default to English
+	TranslationServer.set_locale(locale)
+	print("[DrillReplay] Set locale to: ", locale)
+
+func get_localized_shot_text() -> String:
+	# Since there's no specific "shot" translation key, create localized text based on locale
+	var locale = TranslationServer.get_locale()
+	print("[DrillReplay] Current locale for shot text: ", locale)
+	
+	# Test if translation server is working with a known key
+	var test_translation = tr("target")
+	print("[DrillReplay] Test translation for 'target': ", test_translation)
+	
+	match locale:
+		"zh_CN":
+			return "射击"
+		"zh_TW":
+			return "射擊"
+		"ja":
+			return "ショット"
+		_:
+			print("[DrillReplay] Using default English for unknown locale: ", locale)
+			return "Shot"
 
 func load_selected_drill_data(data: Dictionary):
 	"""Load drill data from the selected drill format"""
@@ -223,7 +284,9 @@ func update_shot_list():
 		var time_diff = record.get("time_diff", 0.0)
 		
 		var label = Label.new()
-		label.text = "Shot %d: %.2fs" % [i + 1, time_diff]
+		# Use localized shot text
+		var shot_text = get_localized_shot_text()
+		label.text = "%s %d: %.2fs" % [shot_text, i + 1, time_diff]
 		
 		# Color scheme: grey for previous shots in current target, highlighted for current shot
 		if i == current_shot_index_in_target:
