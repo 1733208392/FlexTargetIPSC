@@ -15,7 +15,9 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
-		print("[drill_complete_overlay] Connected to WebSocketListener bullet_hit signal")
+		# Connect to WebSocket control directives
+		ws_listener.menu_control.connect(_on_websocket_menu_control)
+		print("[drill_complete_overlay] Connected to WebSocketListener signals")
 	else:
 		print("[drill_complete_overlay] WebSocketListener singleton not found!")
 	
@@ -29,6 +31,9 @@ func _ready():
 	
 	# Connect collision area signals for bullet interactions
 	setup_collision_areas()
+	
+	# Set up button focus management
+	setup_button_focus()
 
 func _notification(what):
 	"""Debug overlay visibility changes"""
@@ -38,6 +43,8 @@ func _notification(what):
 		print("[drill_complete_overlay] Position: ", position)
 		if visible:
 			print("[drill_complete_overlay] Overlay is now visible and ready for input")
+			# Grab focus for the restart button when overlay becomes visible
+			grab_restart_button_focus()
 
 func setup_collision_areas():
 	"""Setup collision detection for the restart and replay areas"""
@@ -163,3 +170,115 @@ func _on_area_replay_hit(area: Area2D):
 	
 	# Navigate to the drill replay scene
 	get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
+
+func setup_button_focus():
+	"""Set up button focus management"""
+	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
+	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	
+	if restart_button:
+		restart_button.focus_mode = Control.FOCUS_ALL
+		print("[drill_complete_overlay] RestartButton focus enabled")
+	
+	if replay_button:
+		replay_button.focus_mode = Control.FOCUS_ALL
+		print("[drill_complete_overlay] ReviewReplayButton focus enabled")
+
+func update_drill_results(score: int, hit_factor: float, fastest_shot: float):
+	"""Update the drill completion display with results"""
+	var score_label = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Score")
+	var hf_label = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/HitFactor")
+	var fastest_label = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/FastestShot")
+	
+	if score_label:
+		score_label.text = "Score: %d points" % score
+		print("[drill_complete_overlay] Updated score: %d points" % score)
+	
+	if hf_label:
+		hf_label.text = "Hit Factor: %.2f" % hit_factor
+		print("[drill_complete_overlay] Updated hit factor: %.2f" % hit_factor)
+	
+	if fastest_label:
+		fastest_label.text = "Fastest Shot: %.2fs" % fastest_shot
+		print("[drill_complete_overlay] Updated fastest shot: %.2fs" % fastest_shot)
+
+func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0):
+	"""Show the drill complete overlay with updated results"""
+	update_drill_results(score, hit_factor, fastest_shot)
+	visible = true
+	print("[drill_complete_overlay] Drill complete overlay shown with results")
+
+func grab_restart_button_focus():
+	"""Grab focus for the restart button"""
+	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
+	if restart_button:
+		restart_button.grab_focus()
+		print("[drill_complete_overlay] RestartButton focus grabbed")
+	else:
+		print("[drill_complete_overlay] RestartButton not found for focus grab")
+
+func _on_websocket_menu_control(directive: String):
+	"""Handle WebSocket control directives for menu navigation"""
+	print("[drill_complete_overlay] Received control directive: ", directive)
+	
+	match directive:
+		"up":
+			_navigate_up()
+		"down":
+			_navigate_down()
+		"enter":
+			_activate_focused_button()
+		_:
+			print("[drill_complete_overlay] Unknown directive: ", directive)
+
+func _navigate_up():
+	"""Navigate to previous button"""
+	var focused_control = get_viewport().gui_get_focus_owner()
+	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
+	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	
+	if focused_control == replay_button and restart_button:
+		restart_button.grab_focus()
+		print("[drill_complete_overlay] Navigated up to RestartButton")
+	elif focused_control == restart_button and replay_button:
+		replay_button.grab_focus()
+		print("[drill_complete_overlay] Wrapped around to ReviewReplayButton")
+	else:
+		# Default to restart button if nothing focused
+		if restart_button:
+			restart_button.grab_focus()
+			print("[drill_complete_overlay] Default focus to RestartButton")
+
+func _navigate_down():
+	"""Navigate to next button"""
+	var focused_control = get_viewport().gui_get_focus_owner()
+	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
+	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	
+	if focused_control == restart_button and replay_button:
+		replay_button.grab_focus()
+		print("[drill_complete_overlay] Navigated down to ReviewReplayButton")
+	elif focused_control == replay_button and restart_button:
+		restart_button.grab_focus()
+		print("[drill_complete_overlay] Wrapped around to RestartButton")
+	else:
+		# Default to restart button if nothing focused
+		if restart_button:
+			restart_button.grab_focus()
+			print("[drill_complete_overlay] Default focus to RestartButton")
+
+func _activate_focused_button():
+	"""Activate the currently focused button"""
+	var focused_control = get_viewport().gui_get_focus_owner()
+	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
+	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	
+	if focused_control == restart_button:
+		print("[drill_complete_overlay] Activating RestartButton via WebSocket")
+		_on_area_restart_hit(null)  # Trigger restart action
+	elif focused_control == replay_button:
+		print("[drill_complete_overlay] Activating ReviewReplayButton via WebSocket")
+		_on_area_replay_hit(null)  # Trigger replay action
+	else:
+		print("[drill_complete_overlay] No button focused, defaulting to restart")
+		_on_area_restart_hit(null)  # Default to restart

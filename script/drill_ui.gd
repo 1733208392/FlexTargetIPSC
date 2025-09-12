@@ -109,20 +109,48 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	"""Show the completion overlay with drill statistics"""
 	print("Showing completion overlay")
 	
-	# Format the fastest time
-	var fastest_string = "--"
-	if fastest_time < 999.0:
-		fastest_string = "%.2fs" % fastest_time
+	# Calculate hit factor (simple example: score / time)
+	var hit_factor = 0.0
+	if final_time > 0:
+		hit_factor = final_score / final_time
 	
-	# Update the FastestShot label in the new overlay
-	var fastest_shot_label = drill_complete_overlay.get_node("VBoxContainer/MarginContainer/VBoxContainer/FastestShot")
-	if fastest_shot_label:
-		fastest_shot_label.text = "Fastest Shots: " + fastest_string
+	# Check if the overlay has its script properly attached
+	if drill_complete_overlay.get_script() == null:
+		print("[drill_ui] Script missing from drill_complete_overlay, attempting to reattach")
+		var script_path = "res://script/drill_complete_overlay.gd"
+		var script = load(script_path)
+		if script:
+			drill_complete_overlay.set_script(script)
+			print("[drill_ui] Script reattached successfully")
+		else:
+			print("[drill_ui] Failed to load drill_complete_overlay script")
 	
-	# Connect button signals
+	# Try to use the new method if available
+	if drill_complete_overlay.has_method("show_drill_complete"):
+		drill_complete_overlay.show_drill_complete(final_score, hit_factor, fastest_time)
+		print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f" % [final_score, hit_factor, fastest_time])
+	else:
+		# Fallback to manual update
+		print("[drill_ui] Using fallback method to update overlay")
+		
+		# Update individual labels
+		var score_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Score")
+		var hf_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/HitFactor")
+		var fastest_shot_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/FastestShot")
+		
+		if score_label:
+			score_label.text = "Score: %d points" % final_score
+		if hf_label:
+			hf_label.text = "Hit Factor: %.2f" % hit_factor
+		if fastest_shot_label:
+			var fastest_string = "%.2fs" % fastest_time if fastest_time < 999.0 else "--"
+			fastest_shot_label.text = "Fastest Shot: " + fastest_string
+		
+		drill_complete_overlay.visible = true
+	
+	# Connect button signals and set up focus
 	connect_completion_overlay_buttons()
-	
-	drill_complete_overlay.visible = true
+	setup_overlay_focus()
 
 func connect_completion_overlay_buttons():
 	"""Connect the completion overlay button signals"""
@@ -177,3 +205,17 @@ func _on_hide_shot_timer():
 	"""Hide the shot timer overlay"""
 	print("=== HIDING SHOT TIMER OVERLAY ===")
 	shot_timer_overlay.visible = false
+
+func setup_overlay_focus():
+	"""Set up focus for the overlay buttons"""
+	var restart_button = drill_complete_overlay.get_node_or_null("VBoxContainer/RestartButton")
+	var replay_button = drill_complete_overlay.get_node_or_null("VBoxContainer/ReviewReplayButton")
+	
+	if restart_button:
+		restart_button.focus_mode = Control.FOCUS_ALL
+		restart_button.grab_focus()
+		print("[drill_ui] Set up focus for restart button")
+	
+	if replay_button:
+		replay_button.focus_mode = Control.FOCUS_ALL
+		print("[drill_ui] Set up focus for replay button")

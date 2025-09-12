@@ -38,7 +38,7 @@ grow_vertical = 2
 custom_minimum_size = Vector2(200, 48)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Replay and Review"
 
 [node name="TextureRect" type="TextureRect" parent="VBoxContainer/ReviewReplayButton"]
@@ -78,9 +78,23 @@ label_settings = ExtResource("2_o6736")
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="Score" type="Label" parent="VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Score: 0 points"
+label_settings = ExtResource("3_m5n5t")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HitFactor" type="Label" parent="VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Hit Factor: 0.00"
+label_settings = ExtResource("3_m5n5t")
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="FastestShot" type="Label" parent="VBoxContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Fastest Shots: 0.18s"
+text = "Fastest Shot: 0.18s"
 label_settings = ExtResource("3_m5n5t")
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -89,7 +103,7 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(200, 48)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Restart"
 
 [node name="TextureRect" type="TextureRect" parent="VBoxContainer/RestartButton"]

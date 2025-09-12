@@ -19,6 +19,7 @@ texture = ExtResource("2_6mmk4")
 
 [node name="IPSC" parent="." instance=ExtResource("1_ipsc")]
 position = Vector2(360, 640)
+scale = Vector2(0.9, 0.9)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -111,9 +112,9 @@ anchor_bottom = 1.0
 offset_top = -80.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_constants/margin_left = 20
+theme_override_constants/margin_left = 80
 theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 20
+theme_override_constants/margin_right = 80
 theme_override_constants/margin_bottom = 20
 
 [node name="CustomButton" parent="CanvasLayer/Control/BottomContainer" instance=ExtResource("4_e58o0")]

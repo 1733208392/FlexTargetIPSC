@@ -561,6 +561,47 @@ func get_drills_manager():
 
 func _on_menu_control(directive: String):
 	print("[Drills] Received menu_control signal with directive: ", directive)
+	
+	# Check if drill complete overlay is visible and should handle navigation
+	var drill_ui = get_node_or_null("DrillUI")
+	var drill_complete_overlay = null
+	if drill_ui:
+		drill_complete_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
+	
+	# Forward navigation commands to drill_complete_overlay if it's visible
+	if drill_complete_overlay and drill_complete_overlay.visible and directive in ["up", "down", "enter"]:
+		print("[Drills] Forwarding navigation directive to drill_complete_overlay: ", directive)
+		print("[Drills] drill_complete_overlay script: ", drill_complete_overlay.get_script())
+		print("[Drills] drill_complete_overlay has method: ", drill_complete_overlay.has_method("_on_websocket_menu_control"))
+		
+		if drill_complete_overlay.has_method("_on_websocket_menu_control"):
+			drill_complete_overlay._on_websocket_menu_control(directive)
+		else:
+			# Fallback: Call the navigation methods directly if the main method is missing
+			print("[Drills] Using fallback navigation methods")
+			match directive:
+				"up":
+					if drill_complete_overlay.has_method("_navigate_up"):
+						drill_complete_overlay._navigate_up()
+					else:
+						print("[Drills] _navigate_up method not found")
+						_manual_navigate_up(drill_complete_overlay)
+				"down":
+					if drill_complete_overlay.has_method("_navigate_down"):
+						drill_complete_overlay._navigate_down()
+					else:
+						print("[Drills] _navigate_down method not found")
+						_manual_navigate_down(drill_complete_overlay)
+				"enter":
+					if drill_complete_overlay.has_method("_activate_focused_button"):
+						drill_complete_overlay._activate_focused_button()
+					else:
+						print("[Drills] _activate_focused_button method not found")
+						# Manual button activation
+						_manual_button_activation(drill_complete_overlay)
+		return
+	
+	# Handle drills manager specific commands
 	match directive:
 		"volume_up":
 			print("[Drills] Volume up")
@@ -608,3 +649,72 @@ func power_off():
 func _on_shutdown_response(result, response_code, headers, body):
 	var body_str = body.get_string_from_utf8()
 	print("[Drills] Shutdown HTTP response:", result, response_code, body_str)
+
+func _manual_button_activation(overlay):
+	"""Manually activate the focused button when script methods are not available"""
+	print("[Drills] Attempting manual button activation")
+	
+	# Try to find the focused button in the overlay
+	var restart_button = overlay.get_node_or_null("VBoxContainer/RestartButton")
+	var replay_button = overlay.get_node_or_null("VBoxContainer/ReviewReplayButton")
+	
+	# Check which button has focus using the viewport
+	var focused_control = get_viewport().gui_get_focus_owner()
+	
+	if focused_control == restart_button:
+		print("[Drills] Manually activating restart button")
+		_manual_restart_drill()
+	elif focused_control == replay_button:
+		print("[Drills] Manually activating replay button")
+		_manual_go_to_replay()
+	else:
+		# Default to restart if no focus
+		print("[Drills] No button focused, defaulting to restart")
+		_manual_restart_drill()
+
+func _manual_restart_drill():
+	"""Manually restart the drill when script methods are not available"""
+	print("[Drills] Manual restart drill")
+	
+	# Hide the completion overlay
+	var drill_ui = get_node_or_null("DrillUI")
+	if drill_ui:
+		var drill_complete_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
+		if drill_complete_overlay:
+			drill_complete_overlay.visible = false
+	
+	# Restart the drill
+	restart_drill()
+
+func _manual_go_to_replay():
+	"""Manually navigate to replay scene when script methods are not available"""
+	print("[Drills] Manual navigation to drill replay")
+	get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
+
+func _manual_navigate_up(overlay):
+	"""Manually navigate up between buttons"""
+	print("[Drills] Manual navigate up")
+	var restart_button = overlay.get_node_or_null("VBoxContainer/RestartButton")
+	var replay_button = overlay.get_node_or_null("VBoxContainer/ReviewReplayButton")
+	var focused_control = get_viewport().gui_get_focus_owner()
+	
+	if focused_control == replay_button and restart_button:
+		restart_button.grab_focus()
+		print("[Drills] Focused restart button")
+	elif restart_button:
+		restart_button.grab_focus()
+		print("[Drills] Default focus to restart button")
+
+func _manual_navigate_down(overlay):
+	"""Manually navigate down between buttons"""
+	print("[Drills] Manual navigate down")
+	var restart_button = overlay.get_node_or_null("VBoxContainer/RestartButton")
+	var replay_button = overlay.get_node_or_null("VBoxContainer/ReviewReplayButton")
+	var focused_control = get_viewport().gui_get_focus_owner()
+	
+	if focused_control == restart_button and replay_button:
+		replay_button.grab_focus()
+		print("[Drills] Focused replay button")
+	elif restart_button:
+		restart_button.grab_focus()
+		print("[Drills] Default focus to restart button")

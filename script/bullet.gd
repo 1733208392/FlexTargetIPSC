@@ -7,6 +7,7 @@ var impact_duration = 1  # How long the impact effect lasts
 var show_bullet_sprite = false  # Set to true if you want to see the bullet sprite for debugging
 var spawn_position: Vector2  # Store the actual spawn position
 var has_collided: bool = false  # Prevent multiple collision detections
+var has_played_sound: bool = false  # Prevent multiple sound effects
 
 func set_spawn_position(pos: Vector2):
 	spawn_position = pos
@@ -107,8 +108,15 @@ func _on_impact_finished():
 	queue_free()
 
 func play_impact_sound():
-	"""Play realistic steel target impact sound effect"""
+	"""Play realistic steel target impact sound effect with deduplication"""
+	# Prevent multiple sounds from the same bullet
+	if has_played_sound:
+		print("Sound already played for this bullet - skipping duplicate")
+		return
+		
 	if impact_sound:
+		has_played_sound = true  # Mark sound as played
+		
 		# Create AudioStreamPlayer2D for positional audio
 		var audio_player = AudioStreamPlayer2D.new()
 		audio_player.stream = impact_sound
@@ -122,6 +130,6 @@ func play_impact_sound():
 		
 		# Clean up audio player after sound finishes
 		audio_player.finished.connect(func(): audio_player.queue_free())
-		print("Steel impact sound played at: ", global_position)
+		print("Steel impact sound played at: ", global_position, " (deduplicated)")
 	else:
 		print("No impact sound assigned - add steel impact audio file to bullet scene!")
