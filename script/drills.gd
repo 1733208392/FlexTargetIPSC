@@ -103,13 +103,14 @@ func hide_shot_timer():
 func _on_shot_timer_ready():
 	"""Handle when shot timer beep occurs - start the drill"""
 	print("=== SHOT TIMER READY - STARTING DRILL ===")
-	# Hide the shot timer overlay
-	hide_shot_timer()
-	# Don't enable bullet spawning yet - let spawn_next_target() handle it after target is ready
+	# Wait for the beep to finish and "Ready" text to disappear
+	await get_tree().create_timer(0.5).timeout
 	# Start the drill timer
 	start_drill_timer()
 	# Now spawn the target normally (this will enable bullet spawning when ready)
-	spawn_next_target()
+	await spawn_next_target()
+	# Hide the shot timer overlay after target is spawned
+	hide_shot_timer()
 
 func _on_shot_timer_reset():
 	"""Handle when shot timer is reset"""

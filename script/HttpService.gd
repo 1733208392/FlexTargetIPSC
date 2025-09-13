@@ -82,6 +82,7 @@ func save_game(callback: Callable, data_id: String, content: String, ns: String 
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
 
 func load_game(callback: Callable, data_id: String, ns: String = "default"):
+	print("[HttpService] Sending load_game request for data_id: ", data_id, ", namespace: ", ns)
 	var url = base_url + "/game/load"
 	var data = {
 		"data_id": data_id,
@@ -89,6 +90,15 @@ func load_game(callback: Callable, data_id: String, ns: String = "default"):
 	}
 	var http = HTTPRequest.new()
 	add_child(http)
-	http.request_completed.connect(callback)
+	http.request_completed.connect(func(result, response_code, headers, body):
+		print("[HttpService] load_game response for data_id ", data_id, " - Result: ", result, ", Code: ", response_code)
+		if result == HTTPRequest.RESULT_SUCCESS:
+			var body_str = body.get_string_from_utf8()
+			print("[HttpService] load_game response body: ", body_str)
+		else:
+			print("[HttpService] load_game request failed with result: ", result)
+		callback.call(result, response_code, headers, body)
+	)
 	var json_data = JSON.stringify(data)
+	print("[HttpService] load_game request data: ", json_data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)

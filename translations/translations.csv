@@ -32,7 +32,7 @@ no,No.,序号,序号,序號
 time,Time,时长,時間長,時長
 fastest_t,Fastest,最快,一番嬉しい,最快
 hit_factor_t,HF,系数,システム数,係數
-score_rule,"{“title"": ""SCORING RULES"",
+score_rule,"{""title"": ""SCORING RULES"",
 ""content"": ""[center][b]SCORING RULES[/b][/center]
 
 • IPSC Alpha (A): 5 pts 
@@ -42,7 +42,7 @@ score_rule,"{“title"": ""SCORING RULES"",
 • IPSC Invalid(Black): 0 pts
 • Miss: 0 pt
 • Steel Poppers: 5 pts
-• Steel Paddles: 5 pts”}","{“title"": “记分规则"",
+• Steel Paddles: 5 pts""}","{""title"": ""记分规则"",
 ""content"": ""[center][b] 记分规则[/b][/center]
 
 •  A区: 5 分
@@ -52,7 +52,18 @@ score_rule,"{“title"": ""SCORING RULES"",
 •  黑色无效区: 0 pts
 •  脱靶: 0 分
 •  金属起倒靶: 5 pts
-•  金属蝶靶: 5 pts""}","{“title"": ""採点ルール"",
+•  金属蝶靶: 5 pts""}","{""title"": ""记分规则"",
+""content"": ""[center][b] 记分规则[/b][/center]
+
+•  A区: 5 分
+•  C区: 2 分
+•  D区: 1 分
+•  白色禁止区:  -10 pts
+•  黑色无效区: 0 pts
+•  脱靶: 0 分
+•  金属起倒靶: 5 pts
+•  金属蝶靶: 5 pts""}
+{""title"": ""採点ルール"",
 ""content"": ""[center][b]採点ルール[/b][/center]
 
 • IPSC アルファ (A): 5ポイント
@@ -62,7 +73,7 @@ score_rule,"{“title"": ""SCORING RULES"",
 • IPSC インバリッド(黒): 0ポイント
 • ミス: 0ポイント
 • スチールポッパー: 5ポイント
-• スチールパドル: 5ポイント""}","{“title"": “記分規則"",
+• スチールパドル: 5ポイント""}","{""title"": ""記分規則"",
 ""content"": ""[center][b] 記分規則[/b][/center]
 
 • A區: 5 分
@@ -72,8 +83,8 @@ score_rule,"{“title"": ""SCORING RULES"",
 • 黑色無效區: 0 pts
 • 脫靶: 0 分
 • 金屬起倒靶: 5 pts
-• 金屬蝶靶: 5 pts”}"
-panelty_rule,"{“title"": ""PENALTY RULES"",
+• 金屬蝶靶: 5 pts""}"
+panelty_rule,"{""title"": ""PENALTY RULES"",
 ""content"": ""[center] [b]PENALTY RULES[/b][/center]
 
  [b]Score Penalties:[/b]
@@ -81,7 +92,7 @@ panelty_rule,"{“title"": ""PENALTY RULES"",
 ""content"": ""[center][b]惩罚规则[/b][/center]
 
 [b]分数惩罚:[/b]
-• 白色禁止区: -10 pts""}","{“title"": ""ペナルティルール"",
+• 白色禁止区: -10 pts""}","{""title"": ""ペナルティルール"",
 ""content"": ""[center] [b]ペナルティルール[/b][/center]
 
 [b]得点ペナルティ:[/b]
@@ -89,8 +100,8 @@ panelty_rule,"{“title"": ""PENALTY RULES"",
 ""content"": ""[center][b]懲罰規則[/b][/center]
 
 [b]分數懲罰:[/b]
-• 白色禁止區: -10 pts”}"
-drill_rule,"{“title"": “DRILL RULE”,
+• 白色禁止區: -10 pts""}"
+drill_rule,"{""title"": ""DRILL RULE"",
 ""content"": ""[center][b]DRILL RULE[/b][/center]
 
 [b]TARGET TYPES:[/b]
@@ -102,7 +113,7 @@ drill_rule,"{“title"": “DRILL RULE”,
 
 [b]DRILL PROGRESSESSION:[/b]
 • At each shooting spot, 2 shots on paper targets or  hitting all steel targets will auto move to the next spot
-• Completion of shooting all required targets finishes the drill""}","{“title"": “训练”,
+• Completion of shooting all required targets finishes the drill""}","{""title"": ""训练"",
 ""content"": ""[center][b]训练规则[/b][/center]
 
 [b]靶子类型:[/b]
@@ -115,7 +126,7 @@ drill_rule,"{“title"": “DRILL RULE”,
 
 [b]训练进程:[/b]
 • 每个射击区域，击中纸靶两枪或者击倒所有钢靶自动进入下一个设计区
-• 完成所有射击区射击完成训练""}","{""title"": “ドリルのルール”,
+• 完成所有射击区射击完成训练""}","{""title"": ""ドリルのルール"",
 ""content"": ""[center][b]ドリルのルール[/b][/center]
 
 [b]ターゲットの種類:[/b]
@@ -127,7 +138,7 @@ drill_rule,"{“title"": “DRILL RULE”,
 
 [b]ドリルの進行:[/b]
 • 各射撃スポットで、紙ターゲットに2発、またはすべてのスチールターゲットに命中すると、自動的に次のスポットに移動します。
-• 必要なターゲットをすべて射撃し終えると、ドリルは終了します。""}","{“title"": “訓練”,
+• 必要なターゲットをすべて射撃し終えると、ドリルは終了します。""}","{""title"": ""訓練"",
 ""content"": ""[center][b]訓練規則[/b][/center]
 
 [b]靶子類型:[/b]
@@ -140,8 +151,8 @@ drill_rule,"{“title"": “DRILL RULE”,
 
 [b]訓練過程:[/b]
 • 每個射擊區域，擊中紙靶兩槍或擊倒所有鋼靶自動進入下一個設計區
-• 完成所有射擊區射擊完成訓練”}"
-timer_system,"{“title"": ""TIMER SYSTEM"",
+• 完成所有射擊區射擊完成訓練""}"
+timer_system,"{""title"": ""TIMER SYSTEM"",
 ""content"": ""[center][b]TIMER SYSTEM[/b][/center]
 
 [b]Drill Start:[/b]
@@ -151,7 +162,7 @@ timer_system,"{“title"": ""TIMER SYSTEM"",
 [b]Timing:[/b]
 • Timer starts on beep
 • Timer stops when all spots clear
-• Total time includes penalties”}","{“title"": “计时系统“,
+• Total time includes penalties""}","{""title"": ""计时系统"",
 ""content"": ""[center][b]计时系统[/b][/center]
 
 [b]游戏开始:[/b]
@@ -161,7 +172,7 @@ timer_system,"{“title"": ""TIMER SYSTEM"",
 [b]计时:[/b]
 • 滴声后开始
 • 所有目标击中后结束
-• 总时长包含惩罚时长""}","{“title"": ""タイマーシステム"",
+• 总时长包含惩罚时长""}","{""title"": ""タイマーシステム"",
 ""content"": ""[center][b]タイマーシステム[/b][/center]
 
 [b]ドリル開始:[/b]
@@ -181,8 +192,8 @@ timer_system,"{“title"": ""TIMER SYSTEM"",
 [b]計時:[/b]
 • 滴聲後開始
 • 所有目標擊中後結束
-• 總時長包含懲罰時長”}"
-hit_factor_rule,"{“title"": ""HIT FACTOR"",
+• 總時長包含懲罰時長""}"
+hit_factor_rule,"{""title"": ""HIT FACTOR"",
 ""content"": ""[center][b]HIT FACTOR[/b][/center]
 
 [b]Hit Factor Formula:[/b]
@@ -196,7 +207,7 @@ hit_factor_rule,"{“title"": ""HIT FACTOR"",
 
 [b]Strategy:[/b]
 • Balance speed and accuracy
-• Minimize penalties”}","{“title"": “射击系数”,
+• Minimize penalties""}","{""title"": ""射击系数"",
 ""content"": ""[center][b]射击系数[/b][/center]
 
 [b]计算公式:[/b]
@@ -210,7 +221,7 @@ hit_factor_rule,"{“title"": ""HIT FACTOR"",
 
 [b]策略:[/b]
 • 平衡速度与准确度
-• 追求最小惩罚""}","{“title"": ""ヒットファクター"",
+• 追求最小惩罚""}","{""title"": ""ヒットファクター"",
 ""content"": ""[center][b]ヒットファクター[/b][/center]
 
 [b]ヒットファクターの計算式:[/b]
@@ -224,7 +235,7 @@ hit_factor_rule,"{“title"": ""HIT FACTOR"",
 
 [b]戦略:[/b]
 • スピードと正確さのバランスをとる
-• ペナルティを最小限に抑える""}","{“title"": “射擊係數”,
+• ペナルティを最小限に抑える""}","{""title"": ""射擊係數"",
 ""content"": ""[center][b]射擊係數[/b][/center]
 
 [b]計算公式:[/b]

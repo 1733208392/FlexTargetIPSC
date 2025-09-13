@@ -66,7 +66,7 @@ func set_locale_from_language(language: String):
 	match language:
 		"English":
 			locale = "en"
-		"Chinese":
+		"Chinese", "Simplified Chinese":
 			locale = "zh_CN"
 		"Traditional Chinese":
 			locale = "zh_TW"
@@ -224,16 +224,15 @@ func _on_review_replay_button_pressed():
 
 func _on_show_shot_timer():
 	"""Show the shot timer overlay"""
-	print("=== SHOWING SHOT TIMER OVERLAY ===")
+	print("=== DRILL_UI: Received ui_show_shot_timer signal ===")
+	print("DEBUG: shot_timer_overlay node: ", shot_timer_overlay)
 	shot_timer_overlay.visible = true
 	
 	# The shot_timer_overlay IS the shot timer, so call its methods directly
-	if shot_timer_overlay.has_method("start_timer_sequence"):
-		shot_timer_overlay.start_timer_sequence()
-		print("[DrillUI] Started shot timer sequence")
-	else:
-		print("[DrillUI] Warning: Shot timer overlay missing start_timer_sequence method")
-	
+	print("DEBUG: Calling start_timer_sequence() on shot_timer_overlay")
+	shot_timer_overlay.start_timer_sequence()
+	print("[DrillUI] Started shot timer sequence")
+
 	# Hide the completion overlay if visible
 	drill_complete_overlay.visible = false
 

@@ -64,7 +64,7 @@ func set_locale_from_language(language: String):
 	match language:
 		"English":
 			locale = "en"
-		"Chinese":
+		"Chinese", "Simplified Chinese":
 			locale = "zh_CN"
 		"Traditional Chinese":
 			locale = "zh_TW"
@@ -133,6 +133,7 @@ func _on_load_before_save_callback(_result, response_code, _headers, body):
 		
 	var settings_data = {}
 	
+	# Try to get existing settings from HTTP first
 	if response_code == 200:
 		# Parse existing settings
 		var body_str = body.get_string_from_utf8()
@@ -145,17 +146,44 @@ func _on_load_before_save_callback(_result, response_code, _headers, body):
 			var settings_error = settings_json.parse(settings)
 			if settings_error == OK:
 				settings_data = settings_json.data
-				print("Loaded existing settings: ", settings_data)
+				print("Loaded existing settings from HTTP: ", settings_data)
 			else:
-				print("Failed to parse existing settings JSON, using empty dict")
+				print("Failed to parse existing settings JSON from HTTP")
 		else:
-			print("Failed to parse response JSON, using empty dict")
+			print("Failed to parse HTTP response JSON")
 	else:
-		print("Failed to load existing settings (", response_code, "), creating new settings")
+		print("Failed to load existing settings from HTTP (", response_code, ")")
+	
+	# If HTTP failed or parsed empty, fallback to GlobalData.settings_dict
+	if settings_data.size() == 0:
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data and global_data.settings_dict.size() > 0:
+			settings_data = global_data.settings_dict.duplicate()
+			print("Using GlobalData.settings_dict as fallback: ", settings_data)
+		else:
+			print("GlobalData.settings_dict not available, creating minimal settings")
+			# Create minimal settings with essential fields
+			settings_data = {
+				"language": "English",
+				"http_service_url": "http://127.0.0.1",
+				"websocket_url": "ws://127.0.0.1/websocket",
+				"max_index": 1,
+				"spots": ["ipsc_mini", "hostage", "2poppers", "3paddles", "ipsc_mini_rotation"],
+				"target_rule": {
+					"AZone": 5.0,
+					"CZone": 2.0,
+					"DZone": 1.0,
+					"WhiteZone": -10.0,
+					"miss": 1.0,
+					"paddles": 5.0,
+					"popper": 5.0
+				}
+			}
 	
 	# Update only the language field
 	settings_data["language"] = current_language
-	print("Updated settings with language: ", settings_data)
+	print("Updated settings with language: ", current_language)
+	print("Full settings to save: ", settings_data)
 	
 	# Save the merged settings
 	var content = JSON.stringify(settings_data)
@@ -164,6 +192,14 @@ func _on_load_before_save_callback(_result, response_code, _headers, body):
 func _on_save_settings_callback(_result, response_code, _headers, _body):
 	if response_code == 200:
 		print("Settings saved successfully")
+		
+		# Update GlobalData.settings_dict to reflect the change
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data:
+			global_data.settings_dict["language"] = current_language
+			print("Updated GlobalData.settings_dict with new language: ", current_language)
+		else:
+			print("GlobalData not found, couldn't update settings_dict")
 	else:
 		print("Failed to save settings: ", response_code)
 

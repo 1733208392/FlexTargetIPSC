@@ -62,7 +62,7 @@ const server = http.createServer((req, res) => {
             res.end(JSON.stringify({ code: 1, msg: "File not found" }));
           } else {
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ code: 0, content: content }));
+            res.end(JSON.stringify({ code: 0, data: content }));
           }
         });
       } catch (error) {
