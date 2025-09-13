@@ -43,62 +43,33 @@ func _ready():
 			global_data.selected_drill_data = {}
 			return
 	
-	# Fallback: find the latest performance file via HttpService
-	print("[Drill Replay] No selected drill data found, loading latest performance")
-	load_latest_performance_via_http()
+	# Fallback: use latest performance data from memory
+	print("[Drill Replay] No selected drill data found, checking in-memory latest performance")
+	load_latest_performance_from_memory()
 
-func load_latest_performance_via_http():
-	"""Load the latest performance file using HttpService"""
-	print("[Drill Replay] Loading latest performance via HttpService")
+func load_latest_performance_from_memory():
+	"""Load the latest performance data from GlobalData (in-memory)"""
+	print("[Drill Replay] Loading latest performance from memory")
 	
-	# Get max_index from GlobalData to know the latest drill
 	var global_data = get_node("/root/GlobalData")
-	if not global_data or not global_data.settings_dict.has("max_index"):
-		print("[Drill Replay] No max_index found, cannot load latest performance")
+	if not global_data:
+		print("[Drill Replay] GlobalData not found")
 		return
 	
-	var max_index = int(global_data.settings_dict.get("max_index", 0))
-	if max_index <= 0:
-		print("[Drill Replay] max_index is 0, no performance files to load")
-		return
-	
-	# Load the latest drill file (max_index.json)
-	var latest_file_id = str(max_index) + ".json"
-	print("[Drill Replay] Loading latest performance file: ", latest_file_id)
-	
-	var http_service = get_node_or_null("/root/HttpService")
-	if http_service:
-		http_service.load_game(_on_latest_performance_loaded, latest_file_id)
-	else:
-		print("[Drill Replay] HttpService not found")
-
-func _on_latest_performance_loaded(result, response_code, headers, body):
-	print("[Drill Replay] Latest performance load response - Result: ", result, ", Code: ", response_code)
-	
-	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-		var body_str = body.get_string_from_utf8()
-		var json = JSON.new()
-		var parse_result = json.parse(body_str)
+	# Check if we have latest performance data in memory
+	if global_data.latest_performance_data.size() > 0:
+		print("[Drill Replay] Found latest performance data in memory")
+		var data = global_data.latest_performance_data
 		
-		if parse_result == OK:
-			var response_data = json.data
-			if response_data.has("data"):
-				var content_str = response_data["data"]
-				var content_json = JSON.new()
-				var content_parse_result = content_json.parse(content_str)
-				
-				if content_parse_result == OK:
-					var data = content_json.data
-					print("[Drill Replay] Successfully loaded latest performance data")
-					load_selected_drill_data(data)
-				else:
-					print("[Drill Replay] Failed to parse latest performance content JSON")
-			else:
-				print("[Drill Replay] No data field in latest performance response")
+		# Verify the data structure
+		if data.has("drill_summary") and data.has("records"):
+			print("[Drill Replay] Successfully loaded latest performance data from memory")
+			load_selected_drill_data(data)
+			return
 		else:
-			print("[Drill Replay] Failed to parse latest performance response JSON")
-	else:
-		print("[Drill Replay] Failed to load latest performance file")
+			print("[Drill Replay] Invalid data structure in memory performance data")
+	
+	print("[Drill Replay] No latest performance data in memory, nothing to display")
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
@@ -161,7 +132,15 @@ func get_localized_shot_text() -> String:
 func load_selected_drill_data(data: Dictionary):
 	"""Load drill data from the selected drill format"""
 	print("Loading selected drill data")
-	records = data["targets"]
+	print("[Drill Replay] Data structure keys: ", data.keys())
+	
+	# Both history and performance tracker use "records" field
+	if data.has("records"):
+		records = data["records"]
+		print("[Drill Replay] Using 'records' field from data")
+	else:
+		print("[Drill Replay] Error: No 'records' field found in data")
+		return
 	
 	if records.size() == 0:
 		print("No records found in selected drill data")

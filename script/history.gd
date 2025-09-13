@@ -165,7 +165,7 @@ func process_loaded_data(data: Dictionary, file_id: String):
 			"fastest_shot": "%.2fs" % (drill_summary.get("fastest_shot_interval", 0.0) if drill_summary.get("fastest_shot_interval") != null else 0.0),
 			"total_score": "%.1f" % total_score,
 			"hf": "%.2f" % hf,
-			"targets": records
+			"records": records
 		}
 		history_data.append(drill_data)
 		print("[History] Created drill_data: ", drill_data)

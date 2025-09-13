@@ -75,10 +75,15 @@ func _on_drills_finished():
 	
 	pending_drill_data = drill_data
 	
+	# Store latest performance data in GlobalData for immediate access
+	var global_data = get_node("/root/GlobalData")
+	if global_data:
+		global_data.latest_performance_data = drill_data.duplicate()
+		print("[PerformanceTracker] Stored latest performance data in GlobalData")
+	
 	var http_service = get_node("/root/HttpService")
 	if http_service:
 		var json_string = JSON.stringify(pending_drill_data)
-		var global_data = get_node("/root/GlobalData")
 		var data_id = str(int(global_data.settings_dict.get("max_index", 0)) + 1) if global_data else "1"
 		http_service.save_game(_on_performance_saved, data_id, json_string)
 	else:

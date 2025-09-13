@@ -4,6 +4,7 @@ extends Node
 var upper_level_scene: String = "res://scene/drills.tscn"
 var settings_dict: Dictionary = {}
 var selected_drill_data: Dictionary = {}  # Store selected drill data for replay
+var latest_performance_data: Dictionary = {}  # Store latest performance data for fallback
 
 # Signal emitted when settings are successfully loaded
 signal settings_loaded
