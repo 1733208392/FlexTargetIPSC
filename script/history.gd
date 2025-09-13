@@ -7,6 +7,18 @@ extends Control
 var history_data = []
 var current_focused_index = 0
 
+# Loading overlay components
+var loading_overlay: Control
+var loading_label: Label
+var loading_timer: Timer
+var dots_count = 0
+
+# Loading state variables
+var is_loading = false
+var files_to_load = []
+var current_file_index = 0
+var max_index = 0
+
 func _ready():
 	# Load and apply current language setting from global settings
 	load_language_from_global_settings()
@@ -15,17 +27,11 @@ func _ready():
 	if back_button:
 		back_button.pressed.connect(_on_back_pressed)
 	
-	# Load history data from saved files
-	load_history_data()
-	
-	# Populate the list with data
-	populate_list()
+	# Create loading overlay
+	create_loading_overlay()
 	
 	# Update UI texts with translations
 	update_ui_texts()
-	
-	# Make list items clickable
-	setup_clickable_items()
 	
 	# Connect to WebSocketListener
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
@@ -34,55 +40,211 @@ func _ready():
 		print("[History] Connecting to WebSocketListener.menu_control signal")
 	else:
 		print("[History] WebSocketListener singleton not found!")
+	
+	# Start loading history data
+	load_history_data()
 
 func load_history_data():
+	print("[History] Starting to load history data via HTTP")
 	history_data.clear()
-	var dir = DirAccess.open("user://")
-	if dir:
-		var files = dir.get_files()
-		var performance_files = []
-		for file in files:
-			if file.begins_with("performance_") and file.ends_with(".json"):
-				performance_files.append(file)
-		
-		# Sort by index
-		performance_files.sort_custom(func(a, b): return int(a.substr(12, 3)) < int(b.substr(12, 3)))
-		
-		for file_name in performance_files:
-			var file = FileAccess.open("user://" + file_name, FileAccess.READ)
-			if file:
-				var json_string = file.get_as_text()
-				file.close()
-				var json = JSON.new()
-				var error = json.parse(json_string)
-				if error == OK:
-					var data = json.data
-					var drill_summary = data["drill_summary"]
-					var records = data["records"]
-					
-					var total_score = 0
-					for record in records:
-						total_score += record["score"]
-					
-					var hf = 0.0
-					if drill_summary["total_elapsed_time"] > 0:
-						hf = total_score / drill_summary["total_elapsed_time"]
-					
-					var drill_data = {
-						"drill_number": int(file_name.substr(12, 3)),
-						"total_time": "%.2fs" % drill_summary["total_elapsed_time"],
-						"fastest_shot": "%.2fs" % (drill_summary["fastest_shot_interval"] if drill_summary["fastest_shot_interval"] != null else 0.0),
-						"total_score": "%.1f" % total_score,
-						"hf": "%.2f" % hf,
-						"targets": records
-					}
-					history_data.append(drill_data)
-				else:
-					print("Failed to parse JSON in ", file_name)
-			else:
-				print("Failed to open ", file_name)
+	
+	# Get max_index from GlobalData
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("max_index"):
+		max_index = int(global_data.settings_dict.get("max_index", 0))
 	else:
-		print("Failed to access user directory")
+		max_index = 0
+		print("[History] No max_index found in GlobalData, no files to load")
+		hide_loading_overlay()
+		populate_list()
+		setup_clickable_items()
+		return
+	
+	if max_index <= 0:
+		print("[History] max_index is 0, no files to load")
+		hide_loading_overlay()
+		populate_list()
+		setup_clickable_items()
+		return
+	
+	# Prepare list of files to load
+	files_to_load.clear()
+	for i in range(1, max_index + 1):
+		files_to_load.append(str(i))
+	
+	print("[History] Loading ", files_to_load.size(), " files: ", files_to_load)
+	
+	# Show loading overlay and start loading
+	show_loading_overlay()
+	current_file_index = 0
+	is_loading = true
+	load_next_file()
+
+func load_next_file():
+	if current_file_index >= files_to_load.size():
+		# All files loaded, finish up
+		print("[History] All files loaded successfully")
+		
+		# Sort history data by drill number
+		history_data.sort_custom(func(a, b): return a["drill_number"] < b["drill_number"])
+		
+		hide_loading_overlay()
+		populate_list()
+		setup_clickable_items()
+		return
+	
+	var file_id = files_to_load[current_file_index]
+	print("[History] Loading file ", current_file_index + 1, "/", files_to_load.size(), ": ", file_id)
+	
+	# Update loading progress
+	update_loading_progress()
+	
+	# Load the file via HttpService
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		http_service.load_game(_on_file_loaded, file_id)
+	else:
+		print("[History] HttpService not found, skipping file: ", file_id)
+		current_file_index += 1
+		load_next_file()
+
+func _on_file_loaded(result, response_code, headers, body):
+	var file_id = files_to_load[current_file_index]
+	print("[History] File load response for ", file_id, " - Result: ", result, ", Code: ", response_code)
+	
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		var body_str = body.get_string_from_utf8()
+		var json = JSON.new()
+		var parse_result = json.parse(body_str)
+		
+		if parse_result == OK:
+			var response_data = json.data
+			if response_data.has("data"):
+				var content_str = response_data["data"]
+				var content_json = JSON.new()
+				var content_parse_result = content_json.parse(content_str)
+				
+				if content_parse_result == OK:
+					var data = content_json.data
+					process_loaded_data(data, file_id)
+				else:
+					print("[History] Failed to parse content JSON for ", file_id)
+			else:
+				print("[History] No data field in response for ", file_id)
+		else:
+			print("[History] Failed to parse response JSON for ", file_id)
+	else:
+		print("[History] Failed to load file ", file_id, " - skipping")
+	
+	# Move to next file
+	current_file_index += 1
+	load_next_file()
+
+func process_loaded_data(data: Dictionary, file_id: String):
+	# Extract the drill number from file_id (e.g., "1.json" -> 1)
+	print("[History] Processing file_id: ", file_id)
+	var drill_number = int(file_id.replace(".json", ""))
+	print("[History] Extracted drill_number: ", drill_number)
+	
+	if data.has("drill_summary") and data.has("records"):
+		var drill_summary = data["drill_summary"]
+		var records = data["records"]
+		
+		var total_score = 0
+		for record in records:
+			if record.has("score"):
+				total_score += record["score"]
+		
+		var hf = 0.0
+		if drill_summary.has("total_elapsed_time") and drill_summary["total_elapsed_time"] > 0:
+			hf = total_score / drill_summary["total_elapsed_time"]
+		
+		var drill_data = {
+			"drill_number": drill_number,
+			"total_time": "%.2fs" % (drill_summary.get("total_elapsed_time", 0.0)),
+			"fastest_shot": "%.2fs" % (drill_summary.get("fastest_shot_interval", 0.0) if drill_summary.get("fastest_shot_interval") != null else 0.0),
+			"total_score": "%.1f" % total_score,
+			"hf": "%.2f" % hf,
+			"targets": records
+		}
+		history_data.append(drill_data)
+		print("[History] Created drill_data: ", drill_data)
+		print("[History] history_data now has ", history_data.size(), " items")
+	else:
+		print("[History] Invalid data structure in file ", file_id)
+
+func create_loading_overlay():
+	# Create loading overlay similar to splash_loading
+	loading_overlay = Control.new()
+	loading_overlay.name = "LoadingOverlay"
+	loading_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	loading_overlay.mouse_filter = Control.MOUSE_FILTER_STOP  # Block mouse input
+	
+	# Background panel
+	var bg_panel = Panel.new()
+	bg_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.7)  # Semi-transparent black
+	bg_panel.add_theme_stylebox_override("panel", style)
+	loading_overlay.add_child(bg_panel)
+	
+	# Center container
+	var center_container = CenterContainer.new()
+	center_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	loading_overlay.add_child(center_container)
+	
+	# VBox for content
+	var vbox = VBoxContainer.new()
+	center_container.add_child(vbox)
+	
+	# Loading label
+	loading_label = Label.new()
+	loading_label.text = tr("loading")
+	loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	loading_label.add_theme_font_size_override("font_size", 24)
+	vbox.add_child(loading_label)
+	
+	# Add to scene
+	add_child(loading_overlay)
+	loading_overlay.visible = false
+	
+	# Setup loading animation timer
+	loading_timer = Timer.new()
+	loading_timer.wait_time = 0.5
+	loading_timer.timeout.connect(_on_loading_timer_timeout)
+	add_child(loading_timer)
+
+func show_loading_overlay():
+	if loading_overlay:
+		loading_overlay.visible = true
+		dots_count = 0
+		loading_timer.start()
+
+func hide_loading_overlay():
+	if loading_overlay:
+		loading_overlay.visible = false
+		loading_timer.stop()
+		is_loading = false
+
+func update_loading_progress():
+	if loading_label and files_to_load.size() > 0:
+		var progress_text = "(" + str(current_file_index + 1) + "/" + str(files_to_load.size()) + ")"
+		loading_label.text = tr("loading") + " " + progress_text
+
+func _on_loading_timer_timeout():
+	if not is_loading:
+		return
+		
+	dots_count = (dots_count + 1) % 4
+	var dots = ""
+	for i in range(dots_count):
+		dots += "."
+	
+	var base_text = tr("loading")
+	if files_to_load.size() > 0:
+		base_text += " (" + str(current_file_index + 1) + "/" + str(files_to_load.size()) + ")"
+	
+	loading_label.text = base_text + dots
 
 func populate_list():
 	if not list_container:
@@ -104,6 +266,7 @@ func populate_list():
 		no_label.size_flags_horizontal = 3
 		no_label.text = str(data["drill_number"])
 		no_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		no_label.add_theme_font_size_override("font_size", 20)
 		item.add_child(no_label)
 		
 		# VSeparator
@@ -117,6 +280,7 @@ func populate_list():
 		time_label.size_flags_horizontal = 3
 		time_label.text = data["total_time"]
 		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		time_label.add_theme_font_size_override("font_size", 20)
 		item.add_child(time_label)
 		
 		# VSeparator
@@ -130,6 +294,7 @@ func populate_list():
 		fast_label.size_flags_horizontal = 3
 		fast_label.text = data["fastest_shot"]
 		fast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		fast_label.add_theme_font_size_override("font_size", 20)
 		item.add_child(fast_label)
 		
 		# VSeparator
@@ -143,6 +308,7 @@ func populate_list():
 		score_label.size_flags_horizontal = 3
 		score_label.text = data["total_score"]
 		score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		score_label.add_theme_font_size_override("font_size", 20)
 		item.add_child(score_label)
 		
 		# VSeparator
@@ -156,6 +322,7 @@ func populate_list():
 		hf_label.size_flags_horizontal = 3
 		hf_label.text = data["hf"]
 		hf_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hf_label.add_theme_font_size_override("font_size", 20)
 		item.add_child(hf_label)
 		
 		list_container.add_child(item)
@@ -192,18 +359,14 @@ func _on_item_clicked(event: InputEvent, item_index: int):
 	if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) or (event is InputEventKey and event.keycode == KEY_ENTER and event.pressed):
 		print("History item ", item_index + 1, " selected")
 		
-		# Store the selected drill data in a way that can be accessed by the drill_replay scene
+		# Store drill data in GlobalData instead of creating temp file
 		if item_index < history_data.size():
-			# Create a temporary file to store the drill data
-			var file = FileAccess.open("user://selected_drill.dat", FileAccess.WRITE)
-			if file:
-				file.store_string(JSON.stringify(history_data[item_index]))
-				file.close()
-		
-		# Set the upper level scene for drill_replay
-		var global_data = get_node("/root/GlobalData")
-		if global_data:
-			global_data.upper_level_scene = "res://scene/history.tscn"
+			var drill_data = history_data[item_index]
+			print("[History] Storing drill data in GlobalData for drill ", drill_data["drill_number"])
+			var global_data = get_node("/root/GlobalData")
+			if global_data:
+				global_data.selected_drill_data = drill_data
+				global_data.upper_level_scene = "res://scene/history.tscn"
 		
 		# Navigate to drill_replay scene
 		get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
@@ -352,15 +515,12 @@ func select_current_item():
 	if current_focused_index < history_data.size():
 		print("History item ", current_focused_index + 1, " selected via keyboard")
 		
-		# Store the selected drill data
-		var file = FileAccess.open("user://selected_drill.dat", FileAccess.WRITE)
-		if file:
-			file.store_string(JSON.stringify(history_data[current_focused_index]))
-			file.close()
-		
-		# Set the upper level scene for drill_replay
+		# Store drill data in GlobalData instead of creating temp file
+		var drill_data = history_data[current_focused_index]
+		print("[History] Storing drill data in GlobalData for drill ", drill_data["drill_number"])
 		var global_data = get_node("/root/GlobalData")
 		if global_data:
+			global_data.selected_drill_data = drill_data
 			global_data.upper_level_scene = "res://scene/history.tscn"
 		
 		# Navigate to drill_replay scene

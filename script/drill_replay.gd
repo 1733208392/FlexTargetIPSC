@@ -29,40 +29,76 @@ func _ready():
 	else:
 		print("[Drill Replay] WebSocketListener singleton not found!")
 	
-	# Get upper level scene from GlobalData
+	# Get upper level scene and selected drill data from GlobalData
 	var global_data = get_node("/root/GlobalData")
 	if global_data:
 		upper_level_scene = global_data.upper_level_scene
 		print("[Drill Replay] Upper level scene set to: ", upper_level_scene)
-	
-	# Check for selected drill data first
-	var selected_file = "user://selected_drill.dat"
-	var file = FileAccess.open(selected_file, FileAccess.READ)
-	if file:
-		print("Found selected drill data file")
-		var json_string = file.get_as_text()
-		file.close()
 		
-		var json = JSON.parse_string(json_string)
-		if json:
-			print("Loaded selected drill data")
-			load_selected_drill_data(json)
-		else:
-			print("Failed to parse selected drill data")
-			# Fallback to latest performance file
-			var latest_file = find_latest_performance_file()
-			if latest_file == "":
-				print("No performance files found.")
-				return
-			load_performance_file(latest_file)
-	else:
-		print("No selected drill data found, loading latest performance file")
-		# Find the latest performance file
-		var latest_file = find_latest_performance_file()
-		if latest_file == "":
-			print("No performance files found.")
+		# Check if drill data is available in GlobalData
+		if global_data.selected_drill_data.size() > 0:
+			print("[Drill Replay] Found selected drill data in GlobalData")
+			load_selected_drill_data(global_data.selected_drill_data)
+			# Clear the data after loading to prevent reuse
+			global_data.selected_drill_data = {}
 			return
-		load_performance_file(latest_file)
+	
+	# Fallback: find the latest performance file via HttpService
+	print("[Drill Replay] No selected drill data found, loading latest performance")
+	load_latest_performance_via_http()
+
+func load_latest_performance_via_http():
+	"""Load the latest performance file using HttpService"""
+	print("[Drill Replay] Loading latest performance via HttpService")
+	
+	# Get max_index from GlobalData to know the latest drill
+	var global_data = get_node("/root/GlobalData")
+	if not global_data or not global_data.settings_dict.has("max_index"):
+		print("[Drill Replay] No max_index found, cannot load latest performance")
+		return
+	
+	var max_index = int(global_data.settings_dict.get("max_index", 0))
+	if max_index <= 0:
+		print("[Drill Replay] max_index is 0, no performance files to load")
+		return
+	
+	# Load the latest drill file (max_index.json)
+	var latest_file_id = str(max_index) + ".json"
+	print("[Drill Replay] Loading latest performance file: ", latest_file_id)
+	
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		http_service.load_game(_on_latest_performance_loaded, latest_file_id)
+	else:
+		print("[Drill Replay] HttpService not found")
+
+func _on_latest_performance_loaded(result, response_code, headers, body):
+	print("[Drill Replay] Latest performance load response - Result: ", result, ", Code: ", response_code)
+	
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		var body_str = body.get_string_from_utf8()
+		var json = JSON.new()
+		var parse_result = json.parse(body_str)
+		
+		if parse_result == OK:
+			var response_data = json.data
+			if response_data.has("data"):
+				var content_str = response_data["data"]
+				var content_json = JSON.new()
+				var content_parse_result = content_json.parse(content_str)
+				
+				if content_parse_result == OK:
+					var data = content_json.data
+					print("[Drill Replay] Successfully loaded latest performance data")
+					load_selected_drill_data(data)
+				else:
+					print("[Drill Replay] Failed to parse latest performance content JSON")
+			else:
+				print("[Drill Replay] No data field in latest performance response")
+		else:
+			print("[Drill Replay] Failed to parse latest performance response JSON")
+	else:
+		print("[Drill Replay] Failed to load latest performance file")
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict

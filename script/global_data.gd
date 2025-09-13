@@ -3,6 +3,7 @@ extends Node
 # Global data storage for sharing information between scenes
 var upper_level_scene: String = "res://scene/drills.tscn"
 var settings_dict: Dictionary = {}
+var selected_drill_data: Dictionary = {}  # Store selected drill data for replay
 
 # Signal emitted when settings are successfully loaded
 signal settings_loaded
