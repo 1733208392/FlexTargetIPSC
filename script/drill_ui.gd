@@ -66,7 +66,7 @@ func set_locale_from_language(language: String):
 	match language:
 		"English":
 			locale = "en"
-		"Chinese", "Simplified Chinese":
+		"Chinese":
 			locale = "zh_CN"
 		"Traditional Chinese":
 			locale = "zh_TW"

@@ -1,4 +1,4 @@
-keys,en,zh-CN,ja,zh-TW
+keys,en,zh_CN,ja,zh_TW
 languages,Languages,语言,言語,語言
 about,About,关于,約,關於
 description,"The Grwolf Smart Target is designed for shooting enthusiasts who want a convenient solution for practicing with airsoft, eliminating the hassle of going to the shooting range. Compared to the traditional target, the device has the following features, 
@@ -18,6 +18,7 @@ options,Options,选项,オプション,選項
 prev,Prev,上页,上页,上頁
 next,Next,下页,ページ,下頁
 start,Start,启动,启アニメーション,啟動
+loading,Loading,加载中,ロード中,載入中
 rules,IPSC Rules,IPSC训练规则,IPSC接続,IPSC訓練規則
 target,Target,标靶,标靶,標靶
 complete,Drill Completed,训练结束,训练结束,訓練結束
