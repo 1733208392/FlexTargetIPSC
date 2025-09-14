@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" uid="uid://unm5ps1c30g" path="res://scene/drill_complete_overlay.tscn" id="1"]
+[ext_resource type="Script" path="res://test_overlay.gd" id="2"]
+
+[node name="TestOverlay" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("2")
+
+[node name="drill_complete_overlay" parent="." instance=ExtResource("1")]
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 2.0
+one_shot = true
+autostart = true

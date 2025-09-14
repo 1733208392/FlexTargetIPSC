@@ -11,10 +11,7 @@ const DEBUG_LOGGING = false  # Set to true for verbose debugging
 @onready var area_replay = $VBoxContainer/ReviewReplayButton/AreaReplay
 
 # UI elements for internationalization
-@onready var title_label = get_node_or_null("VBoxContainer/TitleLabel")
-@onready var score_label = get_node_or_null("VBoxContainer/ScoreLabel")
-@onready var hit_factor_label = get_node_or_null("VBoxContainer/HitFactorLabel")
-@onready var fastest_shot_label = get_node_or_null("VBoxContainer/FastestShotLabel")
+@onready var title_label = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Title")
 @onready var restart_button = get_node_or_null("VBoxContainer/RestartButton")
 @onready var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
 
@@ -22,6 +19,8 @@ func _ready():
 	"""Initialize the drill complete overlay"""
 	if DEBUG_LOGGING:
 		print("=== DRILL COMPLETE OVERLAY INITIALIZED ===")
+		print("[DrillComplete] Scene tree structure:")
+		_debug_print_children(self, 0)
 	
 	# Load and apply current language setting from global settings
 	load_language_from_global_settings()
@@ -51,10 +50,33 @@ func _ready():
 	
 	# Set up button focus management
 	setup_button_focus()
+	
+	# Connect to GlobalData settings_loaded signal for language changes
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and not global_data.settings_loaded.is_connected(_on_global_settings_loaded):
+		global_data.settings_loaded.connect(_on_global_settings_loaded)
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Connected to GlobalData settings_loaded signal")
+
+func _debug_print_children(node: Node, depth: int):
+	"""Debug helper to print scene tree structure"""
+	var indent = ""
+	for i in range(depth):
+		indent += "  "
+	print(indent + node.name + " (" + node.get_class() + ")")
+	for child in node.get_children():
+		_debug_print_children(child, depth + 1)
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
 	var global_data = get_node_or_null("/root/GlobalData")
+	if DEBUG_LOGGING:
+		print("[DrillComplete] load_language_from_global_settings called")
+		if global_data:
+			print("[DrillComplete] GlobalData found, settings_dict: ", global_data.settings_dict)
+		else:
+			print("[DrillComplete] GlobalData not found!")
+	
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
@@ -86,12 +108,42 @@ func set_locale_from_language(language: String):
 
 func update_ui_texts():
 	# Update static text elements with translations
-	if title_label:
-		title_label.text = tr("complete")
-	if restart_button:
-		restart_button.text = tr("restart")
-	if replay_button:
-		replay_button.text = tr("replay")
+	if DEBUG_LOGGING:
+		print("[DrillComplete] update_ui_texts called")
+		print("[DrillComplete] Current locale: ", TranslationServer.get_locale())
+		print("[DrillComplete] Available locales: ", TranslationServer.get_loaded_locales())
+		print("[DrillComplete] Translation for 'complete': ", tr("complete"))
+		print("[DrillComplete] Translation for 'restart': ", tr("restart"))
+		print("[DrillComplete] Translation for 'replay': ", tr("replay"))
+	
+	# Re-get the nodes to ensure they exist (in case of timing issues)
+	var title = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Title")
+	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
+	var replay_btn = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	
+	if title:
+		title.text = tr("complete")
+		if DEBUG_LOGGING:
+			print("[DrillComplete] Updated title to: ", title.text)
+	else:
+		if DEBUG_LOGGING:
+			print("[DrillComplete] ERROR: title node not found at VBoxContainer/MarginContainer/VBoxContainer/Title")
+	
+	if restart_btn:
+		restart_btn.text = tr("restart")
+		if DEBUG_LOGGING:
+			print("[DrillComplete] Updated restart button to: ", restart_btn.text)
+	else:
+		if DEBUG_LOGGING:
+			print("[DrillComplete] ERROR: restart button not found at VBoxContainer/RestartButton")
+	
+	if replay_btn:
+		replay_btn.text = tr("replay")
+		if DEBUG_LOGGING:
+			print("[DrillComplete] Updated replay button to: ", replay_btn.text)
+	else:
+		if DEBUG_LOGGING:
+			print("[DrillComplete] ERROR: replay button not found at VBoxContainer/ReviewReplayButton")
 
 func _notification(what):
 	"""Debug overlay visibility changes"""
@@ -291,10 +343,30 @@ func update_drill_results(score: int, hit_factor: float, fastest_shot: float):
 
 func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0):
 	"""Show the drill complete overlay with updated results"""
-	update_drill_results(score, hit_factor, fastest_shot)
+	# First make sure we're visible so the nodes are available
 	visible = true
+	
+	# Update UI texts with current language (wait one frame to ensure visibility is processed)
+	call_deferred("_update_ui_after_visible")
+	
+	# Update the results
+	update_drill_results(score, hit_factor, fastest_shot)
+	
 	if DEBUG_LOGGING:
 		print("[drill_complete_overlay] Drill complete overlay shown with results")
+
+func _update_ui_after_visible():
+	"""Update UI texts after the overlay becomes visible"""
+	# Always reload language settings from GlobalData to catch any changes
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		if DEBUG_LOGGING:
+			print("[DrillComplete] Reloaded language from GlobalData: ", language)
+	
+	# Then update the UI texts
+	update_ui_texts()
 
 func grab_restart_button_focus():
 	"""Grab focus for the restart button"""
@@ -364,6 +436,13 @@ func _navigate_down():
 			restart_button.grab_focus()
 			if DEBUG_LOGGING:
 				print("[drill_complete_overlay] Default focus to RestartButton")
+
+func _on_global_settings_loaded():
+	"""Handle when GlobalData settings are loaded/updated"""
+	if DEBUG_LOGGING:
+		print("[drill_complete_overlay] Settings loaded signal received")
+	# Wait a frame to ensure everything is ready, then reload language settings
+	call_deferred("load_language_from_global_settings")
 
 func _activate_focused_button():
 	"""Activate the currently focused button"""
