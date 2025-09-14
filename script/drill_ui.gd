@@ -1,5 +1,8 @@
 extends Control
 
+# Performance optimization
+const DEBUG_LOGGING = false  # Set to true for verbose debugging
+
 # Theme styles for title
 @export var golden_title_style: LabelSettings = preload("res://theme/target_title_settings.tres")
 @export var tactical_title_style: LabelSettings = preload("res://theme/target_title_tactical.tres")
@@ -18,7 +21,8 @@ var current_theme_style: String = "golden"
 
 func _ready():
 	"""Initialize the drill UI"""
-	print("=== DRILL UI INITIALIZED ===")
+	if DEBUG_LOGGING:
+		print("=== DRILL UI INITIALIZED ===")
 	
 	# Load and apply current language setting from global settings
 	load_language_from_global_settings()
@@ -48,7 +52,8 @@ func _ready():
 		if drills_manager.has_signal("ui_progress_update"):
 			drills_manager.ui_progress_update.connect(_on_progress_update)
 		
-		print("[DrillUI] Connected to drills manager UI signals")
+		if DEBUG_LOGGING:
+			print("[DrillUI] Connected to drills manager UI signals")
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
@@ -56,9 +61,11 @@ func load_language_from_global_settings():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		print("[DrillUI] Loaded language from GlobalData: ", language)
+		if DEBUG_LOGGING:
+			print("[DrillUI] Loaded language from GlobalData: ", language)
 	else:
-		print("[DrillUI] GlobalData not found or no language setting, using default English")
+		if DEBUG_LOGGING:
+			print("[DrillUI] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
 func set_locale_from_language(language: String):
@@ -75,7 +82,8 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	print("[DrillUI] Set locale to: ", locale)
+	if DEBUG_LOGGING:
+		print("[DrillUI] Set locale to: ", locale)
 
 func _on_timer_update(time_elapsed: float):
 	"""Update the timer display with the current elapsed time"""
@@ -95,7 +103,8 @@ func _on_target_title_update(target_index: int, total_targets: int):
 	"""Update the target title based on the current target number"""
 	var target_number = target_index + 1
 	target_type_title.text = tr("target") + " " + str(target_number) + "/" + str(total_targets)
-	print("Updated title to: ", tr("target"), " ", target_number, "/", total_targets)
+	if DEBUG_LOGGING:
+		print("Updated title to: ", tr("target"), " ", target_number, "/", total_targets)
 
 func _on_theme_change(theme_name: String):
 	"""Apply a specific theme style to the target title"""
@@ -111,11 +120,13 @@ func apply_title_theme(theme_name: String):
 		"competitive":
 			target_type_title.label_settings = competitive_title_style
 		_:
-			print("Unknown theme: ", theme_name)
+			if DEBUG_LOGGING:
+				print("Unknown theme: ", theme_name)
 			return
 	
 	current_theme_style = theme_name
-	print("Applied theme: ", theme_name)
+	if DEBUG_LOGGING:
+		print("Applied theme: ", theme_name)
 
 func _on_fastest_time_update(fastest_time: float):
 	"""Update the fastest interval label with the current fastest time"""
@@ -133,11 +144,13 @@ func _on_progress_update(targets_completed: int):
 	if progress_bar and progress_bar.has_method("update_progress"):
 		progress_bar.update_progress(targets_completed)
 	else:
-		print("Warning: Progress bar not found or missing update_progress method")
+		if DEBUG_LOGGING:
+			print("Warning: Progress bar not found or missing update_progress method")
 
 func _on_show_completion(final_time: float, fastest_time: float, final_score: int):
 	"""Show the completion overlay with drill statistics"""
-	print("Showing completion overlay")
+	if DEBUG_LOGGING:
+		print("Showing completion overlay")
 	
 	# Calculate hit factor (simple example: score / time)
 	var hit_factor = 0.0
@@ -146,22 +159,27 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	
 	# Check if the overlay has its script properly attached
 	if drill_complete_overlay.get_script() == null:
-		print("[drill_ui] Script missing from drill_complete_overlay, attempting to reattach")
+		if DEBUG_LOGGING:
+			print("[drill_ui] Script missing from drill_complete_overlay, attempting to reattach")
 		var script_path = "res://script/drill_complete_overlay.gd"
 		var script = load(script_path)
 		if script:
 			drill_complete_overlay.set_script(script)
-			print("[drill_ui] Script reattached successfully")
+			if DEBUG_LOGGING:
+				print("[drill_ui] Script reattached successfully")
 		else:
-			print("[drill_ui] Failed to load drill_complete_overlay script")
+			if DEBUG_LOGGING:
+				print("[drill_ui] Failed to load drill_complete_overlay script")
 	
 	# Try to use the new method if available
 	if drill_complete_overlay.has_method("show_drill_complete"):
 		drill_complete_overlay.show_drill_complete(final_score, hit_factor, fastest_time)
-		print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f" % [final_score, hit_factor, fastest_time])
+		if DEBUG_LOGGING:
+			print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f" % [final_score, hit_factor, fastest_time])
 	else:
 		# Fallback to manual update
-		print("[drill_ui] Using fallback method to update overlay")
+		if DEBUG_LOGGING:
+			print("[drill_ui] Using fallback method to update overlay")
 		
 		# Update individual labels
 		var score_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Score")
@@ -192,18 +210,21 @@ func connect_completion_overlay_buttons():
 		if restart_button.pressed.is_connected(_on_restart_button_pressed):
 			restart_button.pressed.disconnect(_on_restart_button_pressed)
 		restart_button.pressed.connect(_on_restart_button_pressed)
-		print("Connected restart button signal")
+		if DEBUG_LOGGING:
+			print("Connected restart button signal")
 	
 	if review_replay_button:
 		# Disconnect any existing connections to avoid duplicates
 		if review_replay_button.pressed.is_connected(_on_review_replay_button_pressed):
 			review_replay_button.pressed.disconnect(_on_review_replay_button_pressed)
 		review_replay_button.pressed.connect(_on_review_replay_button_pressed)
-		print("Connected review replay button signal")
+		if DEBUG_LOGGING:
+			print("Connected review replay button signal")
 
 func _on_restart_button_pressed():
 	"""Handle restart button click - restart the drill"""
-	print("Restart button pressed - restarting drill")
+	if DEBUG_LOGGING:
+		print("Restart button pressed - restarting drill")
 	
 	# Hide the completion overlay
 	drill_complete_overlay.visible = false
@@ -213,40 +234,48 @@ func _on_restart_button_pressed():
 	if drills_manager and drills_manager.has_method("restart_drill"):
 		drills_manager.restart_drill()
 	else:
-		print("Warning: Could not find drills manager or restart_drill method")
+		if DEBUG_LOGGING:
+			print("Warning: Could not find drills manager or restart_drill method")
 
 func _on_review_replay_button_pressed():
 	"""Handle review and replay button click - navigate to drill replay scene"""
-	print("Review and replay button pressed - navigating to drill replay")
+	if DEBUG_LOGGING:
+		print("Review and replay button pressed - navigating to drill replay")
 	
 	# Navigate to the drill replay scene
 	get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
 
 func _on_show_shot_timer():
 	"""Show the shot timer overlay"""
-	print("=== DRILL_UI: Received ui_show_shot_timer signal ===")
-	print("DEBUG: shot_timer_overlay node: ", shot_timer_overlay)
+	if DEBUG_LOGGING:
+		print("=== DRILL_UI: Received ui_show_shot_timer signal ===")
+		print("DEBUG: shot_timer_overlay node: ", shot_timer_overlay)
 	shot_timer_overlay.visible = true
 	
 	# The shot_timer_overlay IS the shot timer, so call its methods directly
-	print("DEBUG: Calling start_timer_sequence() on shot_timer_overlay")
+	if DEBUG_LOGGING:
+		print("DEBUG: Calling start_timer_sequence() on shot_timer_overlay")
 	shot_timer_overlay.start_timer_sequence()
-	print("[DrillUI] Started shot timer sequence")
+	if DEBUG_LOGGING:
+		print("[DrillUI] Started shot timer sequence")
 
 	# Hide the completion overlay if visible
 	drill_complete_overlay.visible = false
 
 func _on_hide_shot_timer():
 	"""Hide the shot timer overlay"""
-	print("=== HIDING SHOT TIMER OVERLAY ===")
+	if DEBUG_LOGGING:
+		print("=== HIDING SHOT TIMER OVERLAY ===")
 	shot_timer_overlay.visible = false
 	
 	# The shot_timer_overlay IS the shot timer, so call its methods directly
 	if shot_timer_overlay.has_method("reset_timer"):
 		shot_timer_overlay.reset_timer()
-		print("[DrillUI] Reset shot timer")
+		if DEBUG_LOGGING:
+			print("[DrillUI] Reset shot timer")
 	else:
-		print("[DrillUI] Warning: Shot timer overlay missing reset_timer method")
+		if DEBUG_LOGGING:
+			print("[DrillUI] Warning: Shot timer overlay missing reset_timer method")
 
 func setup_overlay_focus():
 	"""Set up focus for the overlay buttons"""
@@ -256,8 +285,10 @@ func setup_overlay_focus():
 	if restart_button:
 		restart_button.focus_mode = Control.FOCUS_ALL
 		restart_button.grab_focus()
-		print("[drill_ui] Set up focus for restart button")
+		if DEBUG_LOGGING:
+			print("[drill_ui] Set up focus for restart button")
 	
 	if replay_button:
 		replay_button.focus_mode = Control.FOCUS_ALL
-		print("[drill_ui] Set up focus for replay button")
+		if DEBUG_LOGGING:
+			print("[drill_ui] Set up focus for replay button")

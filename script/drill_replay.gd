@@ -1,5 +1,8 @@
 extends Node
 
+# Performance optimization
+const DEBUG_LOGGING = false  # Set to true for verbose debugging
+
 var records = []
 var current_index = 0
 var current_target_type = ""
@@ -16,7 +19,8 @@ var target_scenes = {
 }
 
 func _ready():
-	print("Drill Replay: Loading drill records...")
+	if DEBUG_LOGGING:
+						print("Drill Replay: Loading drill records...")
 	
 	# Load and apply current language setting from global settings
 	load_language_from_global_settings()
@@ -25,72 +29,90 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		print("[Drill Replay] Connecting to WebSocketListener.menu_control signal")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] Connecting to WebSocketListener.menu_control signal")
 	else:
-		print("[Drill Replay] WebSocketListener singleton not found!")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] WebSocketListener singleton not found!")
 	
 	# Get upper level scene and selected drill data from GlobalData
 	var global_data = get_node("/root/GlobalData")
 	if global_data:
 		upper_level_scene = global_data.upper_level_scene
-		print("[Drill Replay] Upper level scene set to: ", upper_level_scene)
+		if DEBUG_LOGGING:
+						print("[Drill Replay] Upper level scene set to: ", upper_level_scene)
 		
 		# Check if drill data is available in GlobalData
 		if global_data.selected_drill_data.size() > 0:
-			print("[Drill Replay] Found selected drill data in GlobalData")
+			if DEBUG_LOGGING:
+				print("[Drill Replay] Found selected drill data in GlobalData")
 			load_selected_drill_data(global_data.selected_drill_data)
 			# Clear the data after loading to prevent reuse
 			global_data.selected_drill_data = {}
 			return
 	
 	# Fallback: use latest performance data from memory
-	print("[Drill Replay] No selected drill data found, checking in-memory latest performance")
+	if DEBUG_LOGGING:
+						print("[Drill Replay] No selected drill data found, checking in-memory latest performance")
 	load_latest_performance_from_memory()
 
 func load_latest_performance_from_memory():
 	"""Load the latest performance data from GlobalData (in-memory)"""
-	print("[Drill Replay] Loading latest performance from memory")
+	if DEBUG_LOGGING:
+						print("[Drill Replay] Loading latest performance from memory")
 	
 	var global_data = get_node("/root/GlobalData")
 	if not global_data:
-		print("[Drill Replay] GlobalData not found")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] GlobalData not found")
 		return
 	
 	# Check if we have latest performance data in memory
 	if global_data.latest_performance_data.size() > 0:
-		print("[Drill Replay] Found latest performance data in memory")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] Found latest performance data in memory")
 		var data = global_data.latest_performance_data
 		
 		# Verify the data structure
 		if data.has("drill_summary") and data.has("records"):
-			print("[Drill Replay] Successfully loaded latest performance data from memory")
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Successfully loaded latest performance data from memory")
 			load_selected_drill_data(data)
 			return
 		else:
-			print("[Drill Replay] Invalid data structure in memory performance data")
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Invalid data structure in memory performance data")
 	
-	print("[Drill Replay] No latest performance data in memory, nothing to display")
+	if DEBUG_LOGGING:
+						print("[Drill Replay] No latest performance data in memory, nothing to display")
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
 	var global_data = get_node_or_null("/root/GlobalData")
-	print("[DrillReplay] GlobalData node found: ", global_data != null)
+	if DEBUG_LOGGING:
+						print("[DrillReplay] GlobalData node found: ", global_data != null)
 	
 	if global_data:
-		print("[DrillReplay] GlobalData.settings_dict exists: ", global_data.settings_dict != null)
+		if DEBUG_LOGGING:
+						print("[DrillReplay] GlobalData.settings_dict exists: ", global_data.settings_dict != null)
 		if global_data.settings_dict:
-			print("[DrillReplay] settings_dict keys: ", global_data.settings_dict.keys())
-			print("[DrillReplay] settings_dict language value: ", global_data.settings_dict.get("language", "NOT_FOUND"))
+			if DEBUG_LOGGING:
+						print("[DrillReplay] settings_dict keys: ", global_data.settings_dict.keys())
+			if DEBUG_LOGGING:
+						print("[DrillReplay] settings_dict language value: ", global_data.settings_dict.get("language", "NOT_FOUND"))
 		
 		if global_data.settings_dict and global_data.settings_dict.has("language"):
 			var language = global_data.settings_dict.get("language", "English")
-			print("[DrillReplay] Loading language from GlobalData: ", language)
+			if DEBUG_LOGGING:
+						print("[DrillReplay] Loading language from GlobalData: ", language)
 			set_locale_from_language(language)
 		else:
-			print("[DrillReplay] No language key found in settings_dict")
+			if DEBUG_LOGGING:
+						print("[DrillReplay] No language key found in settings_dict")
 			set_locale_from_language("English")
 	else:
-		print("[DrillReplay] GlobalData not found or no language setting, using default English")
+		if DEBUG_LOGGING:
+						print("[DrillReplay] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
 func set_locale_from_language(language: String):
@@ -107,16 +129,19 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	print("[DrillReplay] Set locale to: ", locale)
+	if DEBUG_LOGGING:
+						print("[DrillReplay] Set locale to: ", locale)
 
 func get_localized_shot_text() -> String:
 	# Since there's no specific "shot" translation key, create localized text based on locale
 	var locale = TranslationServer.get_locale()
-	print("[DrillReplay] Current locale for shot text: ", locale)
+	if DEBUG_LOGGING:
+						print("[DrillReplay] Current locale for shot text: ", locale)
 	
 	# Test if translation server is working with a known key
 	var test_translation = tr("target")
-	print("[DrillReplay] Test translation for 'target': ", test_translation)
+	if DEBUG_LOGGING:
+						print("[DrillReplay] Test translation for 'target': ", test_translation)
 	
 	match locale:
 		"zh_CN":
@@ -126,33 +151,41 @@ func get_localized_shot_text() -> String:
 		"ja":
 			return "ショット"
 		_:
-			print("[DrillReplay] Using default English for unknown locale: ", locale)
+			if DEBUG_LOGGING:
+						print("[DrillReplay] Using default English for unknown locale: ", locale)
 			return "Shot"
 
 func load_selected_drill_data(data: Dictionary):
 	"""Load drill data from the selected drill format"""
-	print("Loading selected drill data")
-	print("[Drill Replay] Data structure keys: ", data.keys())
+	if DEBUG_LOGGING:
+						print("Loading selected drill data")
+	if DEBUG_LOGGING:
+						print("[Drill Replay] Data structure keys: ", data.keys())
 	
 	# Both history and performance tracker use "records" field
 	if data.has("records"):
 		records = data["records"]
-		print("[Drill Replay] Using 'records' field from data")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] Using 'records' field from data")
 	else:
-		print("[Drill Replay] Error: No 'records' field found in data")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] Error: No 'records' field found in data")
 		return
 	
 	if records.size() == 0:
-		print("No records found in selected drill data")
+		if DEBUG_LOGGING:
+						print("No records found in selected drill data")
 		return
 	
 	# Check if records contain rotation angle data
 	if records.size() > 0:
 		var first_record = records[0]
 		if first_record.has("rotation_angle"):
-			print("Rotation angle data found in records - will display target at recorded angles during replay")
+			if DEBUG_LOGGING:
+						print("Rotation angle data found in records - will display target at recorded angles during replay")
 		else:
-			print("No rotation angle data found in records")
+			if DEBUG_LOGGING:
+						print("No rotation angle data found in records")
 	
 	# Load the first record
 	load_record(current_index)
@@ -162,55 +195,70 @@ func load_selected_drill_data(data: Dictionary):
 
 func load_performance_file(file_path: String):
 	"""Load drill data from a performance file"""
-	print("Loading performance file: ", file_path)
+	if DEBUG_LOGGING:
+						print("Loading performance file: ", file_path)
 	
 	# Load the data
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
-		print("Failed to open file: ", file_path)
+		if DEBUG_LOGGING:
+						print("Failed to open file: ", file_path)
 		return
 	
 	var json_string = file.get_as_text()
 	file.close()
 	
-	print("JSON string: ", json_string)
+	if DEBUG_LOGGING:
+						print("JSON string: ", json_string)
 	
 	var json = JSON.parse_string(json_string)
 	if json == null:
-		print("Failed to parse JSON from: ", file_path)
+		if DEBUG_LOGGING:
+						print("Failed to parse JSON from: ", file_path)
 		return
 	
-	print("Parsed JSON type: ", typeof(json))
+	if DEBUG_LOGGING:
+						print("Parsed JSON type: ", typeof(json))
 	if json is Dictionary:
-		print("Parsed JSON keys: ", json.keys())
+		if DEBUG_LOGGING:
+						print("Parsed JSON keys: ", json.keys())
 		if json.has("records"):
 			records = json["records"]
 	elif json is Array:
 		records = json
 	else:
-		print("Unexpected JSON type")
+		if DEBUG_LOGGING:
+						print("Unexpected JSON type")
 		return
 	
 	if records.size() == 0:
-		print("No records found")
+		if DEBUG_LOGGING:
+						print("No records found")
 		return
 	
 	# Print the drill summary
 	if json is Dictionary and json.has("drill_summary"):
 		var summary = json["drill_summary"]
-		print("Drill Summary:")
-		print("  Total Elapsed Time: ", summary.get("total_elapsed_time", "N/A"), " seconds")
-		print("  Fastest Shot Interval: ", summary.get("fastest_shot_interval", "N/A"), " seconds")
-		print("  Total Shots: ", summary.get("total_shots", 0))
-		print("  Timestamp: ", summary.get("timestamp", "N/A"))
+		if DEBUG_LOGGING:
+						print("Drill Summary:")
+		if DEBUG_LOGGING:
+						print("  Total Elapsed Time: ", summary.get("total_elapsed_time", "N/A"), " seconds")
+		if DEBUG_LOGGING:
+						print("  Fastest Shot Interval: ", summary.get("fastest_shot_interval", "N/A"), " seconds")
+		if DEBUG_LOGGING:
+						print("  Total Shots: ", summary.get("total_shots", 0))
+		if DEBUG_LOGGING:
+						print("  Timestamp: ", summary.get("timestamp", "N/A"))
 	
 	# Check if records contain rotation angle data
 	if records.size() > 0:
 		var first_record = records[0]
 		if first_record.has("rotation_angle"):
-			print("Rotation angle data found in records - will display target at recorded angles during replay")
+			if DEBUG_LOGGING:
+						print("Rotation angle data found in records - will display target at recorded angles during replay")
 		else:
-			print("No rotation angle data found in records")
+			if DEBUG_LOGGING:
+						print("No rotation angle data found in records")
 	
 	# Load the first record
 	load_record(current_index)
@@ -246,13 +294,15 @@ func load_record(index):
 					var animation_player = target_scene.get_node("AnimationPlayer")
 					if animation_player:
 						animation_player.stop()
-						print("Drill Replay New: Stopped rotation animation for replay")
+						if DEBUG_LOGGING:
+							print("Drill Replay New: Stopped rotation animation for replay")
 				
 				# Disable input for target and its children
 				disable_target_input(target_scene)
 				loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
 			else:
-				print("Unknown target type: ", target_type)
+				if DEBUG_LOGGING:
+						print("Unknown target type: ", target_type)
 				return
 		# Show current target
 		loaded_targets[target_type]["scene"].visible = true
@@ -264,7 +314,8 @@ func update_shot_list():
 	var shot_list = get_node_or_null("CanvasLayer/ShotListOverlay/ScrollContainer/ShotList")
 	var scroll_container = get_node_or_null("CanvasLayer/ShotListOverlay/ScrollContainer")
 	if not shot_list or not scroll_container:
-		print("Shot list node not found, skipping update")
+		if DEBUG_LOGGING:
+						print("Shot list node not found, skipping update")
 		return
 	
 	# Clear existing children immediately
@@ -341,7 +392,8 @@ func add_bullet_hole_for_record(index):
 		var rotation_center = target_scene.get_node("RotationCenter")
 		if rotation_center:
 			rotation_center.rotation = rotation_angle
-			print("Drill Replay New: Set target rotation to: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", index + 1)
+			if DEBUG_LOGGING:
+						print("Drill Replay New: Set target rotation to: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", index + 1)
 	
 	# Add bullet hole
 	var hit_pos = record["hit_position"]
@@ -414,67 +466,85 @@ func disable_target_input(node: Node):
 		disable_target_input(child)
 
 func _on_menu_control(directive: String):
-	print("[Drill Replay] Received menu_control signal with directive: ", directive)
+	if DEBUG_LOGGING:
+						print("[Drill Replay] Received menu_control signal with directive: ", directive)
 	match directive:
 		"volume_up":
-			print("[Drill Replay] Volume up")
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Volume up")
 			volume_up()
 		"volume_down":
-			print("[Drill Replay] Volume down")
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Volume down")
 			volume_down()
 		"power":
-			print("[Drill Replay] Power off")
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Power off")
 			power_off()
 		"back":
-			print("[Drill Replay] Back to upper level scene")
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Back to upper level scene")
 			back_to_upper_level()
 		"homepage":
-			print("[Drill Replay] Back to main menu")
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Back to main menu")
 			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
 		"left", "up":
-			print("[Drill Replay] Previous bullet/target")
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Previous bullet/target")
 			navigate_previous()
 		"right", "down":
-			print("[Drill Replay] Next bullet/target")
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Next bullet/target")
 			navigate_next()
 		_:
-			print("[Drill Replay] Unknown directive: ", directive)
+			if DEBUG_LOGGING:
+						print("[Drill Replay] Unknown directive: ", directive)
 
 func volume_up():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Drill Replay] Sending volume up HTTP request...")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] Sending volume up HTTP request...")
 		http_service.volume_up(_on_volume_response)
 	else:
-		print("[Drill Replay] HttpService singleton not found!")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] HttpService singleton not found!")
 
 func volume_down():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Drill Replay] Sending volume down HTTP request...")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] Sending volume down HTTP request...")
 		http_service.volume_down(_on_volume_response)
 	else:
-		print("[Drill Replay] HttpService singleton not found!")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] HttpService singleton not found!")
 
 func _on_volume_response(result, response_code, headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Drill Replay] Volume HTTP response:", result, response_code, body_str)
+	if DEBUG_LOGGING:
+						print("[Drill Replay] Volume HTTP response:", result, response_code, body_str)
 
 func power_off():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Drill Replay] Sending power off HTTP request...")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] Sending power off HTTP request...")
 		http_service.shutdown(_on_shutdown_response)
 	else:
-		print("[Drill Replay] HttpService singleton not found!")
+		if DEBUG_LOGGING:
+						print("[Drill Replay] HttpService singleton not found!")
 
 func _on_shutdown_response(result, response_code, headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Drill Replay] Shutdown HTTP response:", result, response_code, body_str)
+	if DEBUG_LOGGING:
+						print("[Drill Replay] Shutdown HTTP response:", result, response_code, body_str)
 
 func back_to_upper_level():
 	# Go back to the recorded upper level scene
-	print("[Drill Replay] Going back to upper level scene: ", upper_level_scene)
+	if DEBUG_LOGGING:
+						print("[Drill Replay] Going back to upper level scene: ", upper_level_scene)
 	get_tree().change_scene_to_file(upper_level_scene)
 
 func navigate_previous():
@@ -496,20 +566,23 @@ func navigate_next():
 func find_latest_performance_file() -> String:
 	var dir = DirAccess.open("user://")
 	if not dir:
-		print("Failed to open user:// directory")
+		if DEBUG_LOGGING:
+						print("Failed to open user:// directory")
 		return ""
 	
 	var files = []
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
 	while file_name != "":
-		print("Found file: ", file_name)
+		if DEBUG_LOGGING:
+						print("Found file: ", file_name)
 		if file_name.begins_with("performance_") and file_name.ends_with(".json"):
 			files.append(file_name)
 		file_name = dir.get_next()
 	dir.list_dir_end()
 	
-	print("Performance files found: ", files)
+	if DEBUG_LOGGING:
+						print("Performance files found: ", files)
 	
 	if files.size() == 0:
 		return ""

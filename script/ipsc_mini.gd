@@ -306,7 +306,7 @@ func get_pooled_bullet_hole() -> Node:
 			return hole
 	
 	# If no available holes in pool, create a new one (fallback)
-	print("[ipsc_mini] Pool exhausted, creating new bullet hole")
+	# print("[ipsc_mini] Pool exhausted, creating new bullet hole")
 	if BulletHoleScene:
 		var new_hole = BulletHoleScene.instantiate()
 		add_child(new_hole)
@@ -327,7 +327,7 @@ func return_bullet_hole_to_pool(hole: Node):
 
 func spawn_bullet_hole(local_position: Vector2):
 	"""Spawn a bullet hole at the specified local position using object pool"""
-	print("[ipsc_mini] POOL: Spawning bullet hole at local position: ", local_position)
+	# print("[ipsc_mini] POOL: Spawning bullet hole at local position: ", local_position)
 	
 	var bullet_hole = get_pooled_bullet_hole()
 	if bullet_hole:
@@ -352,7 +352,7 @@ func _on_websocket_bullet_hit(pos: Vector2):
 		print("[ipsc_mini] WebSocket bullet spawning disabled during shot timer")
 		return
 	
-	print("[ipsc_mini] Received bullet hit at position: ", pos)
+	# print("[ipsc_mini] Received bullet hit at position: ", pos)
 	
 	# FAST PATH: Direct bullet hole spawning for WebSocket hits
 	handle_websocket_bullet_hit_fast(pos)

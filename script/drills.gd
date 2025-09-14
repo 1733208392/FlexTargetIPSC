@@ -47,7 +47,8 @@ signal ui_progress_update(targets_completed: int)
 
 func _ready():
 	"""Initialize the drill with the first target"""
-	print("=== STARTING DRILL ===")
+	if DEBUG_LOGGING:
+		print("=== STARTING DRILL ===")
 	emit_signal("ui_theme_change", "golden")  # Set default theme
 	emit_signal("ui_progress_update", 0)  # Initialize progress bar
 	
@@ -77,16 +78,19 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		print("[Drills] Connecting to WebSocketListener.menu_control signal")
+		if DEBUG_LOGGING:
+			print("[Drills] Connecting to WebSocketListener.menu_control signal")
 	else:
-		print("[Drills] WebSocketListener singleton not found!")
+		if DEBUG_LOGGING:
+			print("[Drills] WebSocketListener singleton not found!")
 	
 	# Show shot timer overlay before starting drill
 	show_shot_timer()
 
 func show_shot_timer():
 	"""Show the shot timer overlay"""
-	print("=== SHOWING SHOT TIMER OVERLAY ===")
+	if DEBUG_LOGGING:
+		print("=== SHOWING SHOT TIMER OVERLAY ===")
 	emit_signal("ui_show_shot_timer")
 	
 	# Disable bullet spawning during shot timer
@@ -100,12 +104,14 @@ func show_shot_timer():
 
 func hide_shot_timer():
 	"""Hide the shot timer overlay"""
-	print("=== HIDING SHOT TIMER OVERLAY ===")
+	if DEBUG_LOGGING:
+		print("=== HIDING SHOT TIMER OVERLAY ===")
 	emit_signal("ui_hide_shot_timer")
 
 func _on_shot_timer_ready():
 	"""Handle when shot timer beep occurs - start the drill"""
-	print("=== SHOT TIMER READY - STARTING DRILL ===")
+	if DEBUG_LOGGING:
+		print("=== SHOT TIMER READY - STARTING DRILL ===")
 	# Wait for the beep to finish and "Ready" text to disappear
 	await get_tree().create_timer(0.5).timeout
 	# Start the drill timer
@@ -117,7 +123,8 @@ func _on_shot_timer_ready():
 
 func _on_shot_timer_reset():
 	"""Handle when shot timer is reset"""
-	print("=== SHOT TIMER RESET ===")
+	if DEBUG_LOGGING:
+		print("=== SHOT TIMER RESET ===")
 	# Could add additional logic here if needed
 
 func _on_drill_timer_timeout():
@@ -139,12 +146,14 @@ func start_drill_timer():
 	performance_tracker.reset_fastest_time()
 	emit_signal("ui_fastest_time_update", 999.0)  # Reset to show "--"
 	
-	print("=== DRILL TIMER STARTED ===")
+	if DEBUG_LOGGING:
+		print("=== DRILL TIMER STARTED ===")
 
 func stop_drill_timer():
 	"""Stop the drill elapsed time timer"""
 	drill_timer.stop()
-	print("=== DRILL TIMER STOPPED ===")
+	if DEBUG_LOGGING:
+		print("=== DRILL TIMER STOPPED ===")
 
 func _process(_delta):
 	"""Main process loop - UI updates are handled by drill_ui.gd"""
@@ -179,7 +188,8 @@ func _process(_delta):
 func update_target_title():
 	"""Update the target title based on the current target number"""
 	emit_signal("ui_target_title_update", current_target_index, target_sequence.size())
-	print("Updated title to: Target ", current_target_index + 1, "/", target_sequence.size())
+	if DEBUG_LOGGING:
+		print("Updated title to: Target ", current_target_index + 1, "/", target_sequence.size())
 
 func spawn_next_target():
 	"""Spawn the next target in the sequence"""
@@ -188,7 +198,8 @@ func spawn_next_target():
 		return
 	
 	var target_type = target_sequence[current_target_index]
-	print("=== SPAWNING TARGET: ", target_type, " (", current_target_index + 1, "/", target_sequence.size(), ") ===")
+	if DEBUG_LOGGING:
+		print("=== SPAWNING TARGET: ", target_type, " (", current_target_index + 1, "/", target_sequence.size(), ") ===")
 	
 	# Clear any existing target
 	clear_current_target()
@@ -221,7 +232,8 @@ func spawn_next_target():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_spawning_enabled = true
-	print("Bullet spawning re-enabled for new target: ", target_type)
+	if DEBUG_LOGGING:
+		print("Bullet spawning re-enabled for new target: ", target_type)
 
 func clear_current_target():
 	"""Remove the current target from the scene"""
@@ -236,18 +248,21 @@ func spawn_ipsc_mini():
 	var target = ipsc_mini_scene.instantiate()
 	center_container.add_child(target)
 	current_target_instance = target
-	print("IPSC Mini target spawned")
+	if DEBUG_LOGGING:
+		print("IPSC Mini target spawned")
 
 func spawn_hostage():
 	"""Spawn a hostage target"""
-	print("=== SPAWNING HOSTAGE TARGET ===")
+	if DEBUG_LOGGING:
+		print("=== SPAWNING HOSTAGE TARGET ===")
 	var target = hostage_scene.instantiate()
 	center_container.add_child(target)
 	
 	current_target_instance = target
-	print("Hostage target spawned successfully")
-	print("Hostage target has target_hit signal: ", target.has_signal("target_hit"))
-	print("Hostage target has target_disappeared signal: ", target.has_signal("target_disappeared"))
+	if DEBUG_LOGGING:
+		print("Hostage target spawned successfully")
+		print("Hostage target has target_hit signal: ", target.has_signal("target_hit"))
+		print("Hostage target has target_disappeared signal: ", target.has_signal("target_disappeared"))
 	
 	# Wait for the target to be fully ready before proceeding
 	await get_tree().process_frame
@@ -257,14 +272,16 @@ func spawn_2poppers():
 	var target = two_poppers_scene.instantiate()
 	center_container.add_child(target)
 	current_target_instance = target
-	print("2poppers target spawned")
+	if DEBUG_LOGGING:
+		print("2poppers target spawned")
 
 func spawn_3paddles():
 	"""Spawn a 3paddles composite target"""
 	var target = three_paddles_scene.instantiate()
 	center_container.add_child(target)
 	current_target_instance = target
-	print("3paddles target spawned")
+	if DEBUG_LOGGING:
+		print("3paddles target spawned")
 
 func spawn_ipsc_mini_rotate():
 	"""Spawn an IPSC mini rotating target"""
@@ -276,17 +293,20 @@ func spawn_ipsc_mini_rotate():
 	
 	# Reset rotating target hit counter
 	rotating_target_hits = 0
-	print("Rotating target hit counter reset to 0")
+	if DEBUG_LOGGING:
+		print("Rotating target hit counter reset to 0")
 	
 	# Wait for the node to be fully added to the scene
 	await get_tree().process_frame
 	
-	print("IPSC Mini Rotate target spawned and positioned")
+	if DEBUG_LOGGING:
+		print("IPSC Mini Rotate target spawned and positioned")
 
 func connect_target_signals():
 	"""Connect to the current target's signals"""
 	if not current_target_instance:
-		print("WARNING: No current target instance to connect signals")
+		if DEBUG_LOGGING:
+			print("WARNING: No current target instance to connect signals")
 		return
 	
 	var current_target_type = target_sequence[current_target_index]
@@ -304,13 +324,16 @@ func connect_target_signals():
 
 func connect_simple_target_signals():
 	"""Connect signals for simple targets (ipsc_mini, hostage, popper, paddle)"""
-	print("=== CONNECTING SIMPLE TARGET SIGNALS ===")
-	print("Target instance: ", current_target_instance)
+	if DEBUG_LOGGING:
+		print("=== CONNECTING SIMPLE TARGET SIGNALS ===")
+		print("Target instance: ", current_target_instance)
 	if current_target_instance:
-		print("Target name: ", current_target_instance.name)
-		print("Target type: ", target_sequence[current_target_index])
+		if DEBUG_LOGGING:
+			print("Target name: ", current_target_instance.name)
+			print("Target type: ", target_sequence[current_target_index])
 	else:
-		print("Target name: None")
+		if DEBUG_LOGGING:
+			print("Target name: None")
 	
 	if current_target_instance.has_signal("target_hit"):
 		# Disconnect any existing connections
@@ -319,36 +342,43 @@ func connect_simple_target_signals():
 		
 		# Connect the signal
 		current_target_instance.target_hit.connect(_on_target_hit)
-		print("Connected to target_hit signal")
+		if DEBUG_LOGGING:
+			print("Connected to target_hit signal")
 	else:
-		print("WARNING: target_hit signal not found!")
+		if DEBUG_LOGGING:
+			print("WARNING: target_hit signal not found!")
 	
 	# Connect to disappear signal if available
 	if current_target_instance.has_signal("target_disappeared"):
 		if current_target_instance.target_disappeared.is_connected(_on_target_disappeared):
 			current_target_instance.target_disappeared.disconnect(_on_target_disappeared)
 		current_target_instance.target_disappeared.connect(_on_target_disappeared)
-		print("Connected to target_disappeared signal")
+		if DEBUG_LOGGING:
+			print("Connected to target_disappeared signal")
 	else:
-		print("WARNING: target_disappeared signal not found!")
+		if DEBUG_LOGGING:
+			print("WARNING: target_disappeared signal not found!")
 	
-	print("=== SIGNAL CONNECTION COMPLETE ===")
+	if DEBUG_LOGGING:
+		print("=== SIGNAL CONNECTION COMPLETE ===")
 
 func _on_target_disappeared(target_id: String = ""):
 	"""Handle when a target has completed its disappear animation"""
 	var current_target_type = target_sequence[current_target_index]
-	print("=== TARGET DISAPPEARED ===")
-	print("Target type: ", current_target_type)
-	print("Target ID: ", target_id)
-	print("Target index: ", current_target_index)
-	print("Moving to next target...")
+	if DEBUG_LOGGING:
+		print("=== TARGET DISAPPEARED ===")
+		print("Target type: ", current_target_type)
+		print("Target ID: ", target_id)
+		print("Target index: ", current_target_index)
+		print("Moving to next target...")
 	
 	# Disable bullet spawning during target transition
 	bullets_allowed = false
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_spawning_enabled = false
-	print("Bullet spawning disabled during target transition")
+	if DEBUG_LOGGING:
+		print("Bullet spawning disabled during target transition")
 	
 	current_target_index += 1
 	
@@ -364,7 +394,8 @@ func connect_ipsc_mini_rotate_signals():
 		if ipsc_mini.target_hit.is_connected(_on_target_hit):
 			ipsc_mini.target_hit.disconnect(_on_target_hit)
 		ipsc_mini.target_hit.connect(_on_target_hit)
-		print("Connected to ipsc_mini_rotate signals")
+		if DEBUG_LOGGING:
+			print("Connected to ipsc_mini_rotate signals")
 		
 		# Connect disappear signal
 		if ipsc_mini.has_signal("target_disappeared"):
@@ -374,39 +405,47 @@ func connect_ipsc_mini_rotate_signals():
 
 func connect_paddle_signals():
 	"""Connect signals for paddle targets (3paddles composite target)"""
-	print("=== CONNECTING TO 3PADDLES SIGNALS ===")
+	if DEBUG_LOGGING:
+		print("=== CONNECTING TO 3PADDLES SIGNALS ===")
 	if current_target_instance and current_target_instance.has_signal("target_hit"):
 		if current_target_instance.target_hit.is_connected(_on_target_hit):
 			current_target_instance.target_hit.disconnect(_on_target_hit)
 		current_target_instance.target_hit.connect(_on_target_hit)
-		print("Connected to 3paddles target_hit signal")
+		if DEBUG_LOGGING:
+			print("Connected to 3paddles target_hit signal")
 		
 		# Connect disappear signal
 		if current_target_instance.has_signal("target_disappeared"):
 			if current_target_instance.target_disappeared.is_connected(_on_target_disappeared):
 				current_target_instance.target_disappeared.disconnect(_on_target_disappeared)
 			current_target_instance.target_disappeared.connect(_on_target_disappeared)
-			print("Connected to 3paddles target_disappeared signal")
+			if DEBUG_LOGGING:
+				print("Connected to 3paddles target_disappeared signal")
 	else:
-		print("WARNING: 3paddles target doesn't have expected signals!")
+		if DEBUG_LOGGING:
+			print("WARNING: 3paddles target doesn't have expected signals!")
 
 func connect_2poppers_signals():
 	"""Connect signals for popper targets (2poppers composite target)"""
-	print("=== CONNECTING TO 2POPPERS SIGNALS ===")
+	if DEBUG_LOGGING:
+		print("=== CONNECTING TO 2POPPERS SIGNALS ===")
 	if current_target_instance and current_target_instance.has_signal("target_hit"):
 		if current_target_instance.target_hit.is_connected(_on_target_hit):
 			current_target_instance.target_hit.disconnect(_on_target_hit)
 		current_target_instance.target_hit.connect(_on_target_hit)
-		print("Connected to 2poppers target_hit signal")
+		if DEBUG_LOGGING:
+			print("Connected to 2poppers target_hit signal")
 		
 		# Connect disappear signal
 		if current_target_instance.has_signal("target_disappeared"):
 			if current_target_instance.target_disappeared.is_connected(_on_target_disappeared):
 				current_target_instance.target_disappeared.disconnect(_on_target_disappeared)
 			current_target_instance.target_disappeared.connect(_on_target_disappeared)
-			print("Connected to 2poppers target_disappeared signal")
+			if DEBUG_LOGGING:
+				print("Connected to 2poppers target_disappeared signal")
 	else:
-		print("WARNING: 2poppers target doesn't have expected signals!")
+		if DEBUG_LOGGING:
+			print("WARNING: 2poppers target doesn't have expected signals!")
 
 func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 	"""Handle when a target is hit - supports both simple targets and composite targets"""
@@ -464,11 +503,13 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 	# Special handling for rotating target
 	if current_target_type == "ipsc_mini_rotate":
 		rotating_target_hits += 1
-		print("Rotating target hit count: ", rotating_target_hits)
+		if DEBUG_LOGGING:
+			print("Rotating target hit count: ", rotating_target_hits)
 		
 		# Check if we've reached 2 hits on the rotating target
 		if rotating_target_hits >= 2:
-			print("2 hits on rotating target reached! Finishing drill immediately.")
+			if DEBUG_LOGGING:
+				print("2 hits on rotating target reached! Finishing drill immediately.")
 			# Update progress - since this is the last target, set to completed
 			current_target_index += 1  # Mark this target as completed
 			emit_signal("ui_progress_update", current_target_index)
@@ -481,9 +522,10 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 
 func complete_drill():
 	"""Complete the drill sequence and show completion overlay"""
-	print("=== DRILL COMPLETED! ===")
-	print("Final score: ", total_drill_score)
-	print("Targets completed: ", current_target_index, "/", target_sequence.size())
+	if DEBUG_LOGGING:
+		print("=== DRILL COMPLETED! ===")
+		print("Final score: ", total_drill_score)
+		print("Targets completed: ", current_target_index, "/", target_sequence.size())
 	drill_completed = true
 	
 	# Stop the drill timer
@@ -511,7 +553,8 @@ func complete_drill():
 	# Re-enable bullet spawning for overlay interactions
 	if ws_listener:
 		ws_listener.bullet_spawning_enabled = true
-		print("=== BULLETS RE-ENABLED FOR COMPLETION OVERLAY ===")
+		if DEBUG_LOGGING:
+			print("=== BULLETS RE-ENABLED FOR COMPLETION OVERLAY ===")
 	
 	# Emit drills finished signal for performance tracking (after overlay is shown)
 	emit_signal("drills_finished")
@@ -536,7 +579,8 @@ func complete_drill():
 
 func restart_drill():
 	"""Restart the drill from the beginning"""
-	print("=== RESTARTING DRILL ===")
+	if DEBUG_LOGGING:
+		print("=== RESTARTING DRILL ===")
 	
 	# Reset all tracking variables
 	current_target_index = 0
@@ -561,7 +605,8 @@ func restart_drill():
 	# Show shot timer overlay again (which will spawn inactive target)
 	show_shot_timer()
 	
-	print("Drill restarted!")
+	if DEBUG_LOGGING:
+		print("Drill restarted!")
 
 func is_bullet_spawning_allowed() -> bool:
 	"""Check if bullet spawning is currently allowed"""

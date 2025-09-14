@@ -1,5 +1,8 @@
 extends Control
 
+# Performance optimization
+const DEBUG_LOGGING = false  # Set to true for verbose debugging
+
 # Shot timer states
 enum TimerState {
 	WAITING,    # Waiting for user to start
@@ -25,7 +28,8 @@ var beep_time: float = 0.0
 
 func _ready():
 	"""Initialize the shot timer"""
-	print("=== SHOT TIMER INITIALIZED ===")
+	if DEBUG_LOGGING:
+		print("=== SHOT TIMER INITIALIZED ===")
 	
 	# Load and apply current language setting from global settings
 	load_language_from_global_settings()
@@ -46,9 +50,11 @@ func load_language_from_global_settings():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		print("[ShotTimer] Loaded language from GlobalData: ", language)
+		if DEBUG_LOGGING:
+			print("[ShotTimer] Loaded language from GlobalData: ", language)
 	else:
-		print("[ShotTimer] GlobalData not found or no language setting, using default English")
+		if DEBUG_LOGGING:
+			print("[ShotTimer] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
 func set_locale_from_language(language: String):
@@ -65,7 +71,8 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	print("[ShotTimer] Set locale to: ", locale)
+	if DEBUG_LOGGING:
+		print("[ShotTimer] Set locale to: ", locale)
 
 func get_standby_text() -> String:
 	# Since there's no specific "standby" translation key, use localized text
@@ -99,7 +106,8 @@ func _process(_delta):
 
 func start_timer_sequence():
 	"""Start the shot timer sequence"""
-	print("=== STARTING SHOT TIMER SEQUENCE ===")
+	if DEBUG_LOGGING:
+		print("=== STARTING SHOT TIMER SEQUENCE ===")
 	
 	# Hide instructions (not needed)
 	instructions.visible = false
@@ -120,7 +128,8 @@ func start_timer_sequence():
 	timer_delay.wait_time = random_delay
 	timer_delay.start()
 	
-	print("Random delay set to: ", random_delay, " seconds")
+	if DEBUG_LOGGING:
+		print("Random delay set to: ", random_delay, " seconds")
 	
 	# Record start time
 	start_time = Time.get_unix_time_from_system()
@@ -130,7 +139,8 @@ func _on_timer_timeout():
 	if current_state != TimerState.STANDBY:
 		return
 	
-	print("=== TIMER BEEP - READY TO SHOOT ===")
+	if DEBUG_LOGGING:
+		print("=== TIMER BEEP - READY TO SHOOT ===")
 	
 	# Record beep time
 	beep_time = Time.get_unix_time_from_system()
@@ -158,7 +168,8 @@ signal timer_reset()
 
 func reset_timer():
 	"""Reset the timer to initial state without auto-starting"""
-	print("=== RESETTING SHOT TIMER ===")
+	if DEBUG_LOGGING:
+		print("=== RESETTING SHOT TIMER ===")
 	
 	# Stop all timers and animations
 	timer_delay.stop()

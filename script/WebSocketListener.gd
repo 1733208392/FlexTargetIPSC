@@ -43,7 +43,7 @@ func _process(_delta):
 			
 			var packet = socket.get_packet()
 			var message = packet.get_string_from_utf8()
-			print("[WebSocket] Received raw message: ", message)
+			# print("[WebSocket] Received raw message: ", message)
 			data_received.emit(message)
 			_process_websocket_json(message)
 			
@@ -64,7 +64,7 @@ func _process(_delta):
 
 # Parse JSON and emit bullet_hit for each (x, y)
 func _process_websocket_json(json_string):
-	print("[WebSocket] Processing JSON: ", json_string)
+	# print("[WebSocket] Processing JSON: ", json_string)
 	var json = JSON.new()
 	var parse_result = json.parse(json_string)
 	if parse_result != OK:
@@ -72,7 +72,7 @@ func _process_websocket_json(json_string):
 		return
 	
 	var parsed = json.get_data()
-	print("[WebSocket] Parsed data: ", parsed)
+	# print("[WebSocket] Parsed data: ", parsed)
 	# Handle control directive
 	if parsed and parsed.has("type") and parsed["type"] == "control" and parsed.has("directive"):
 		print("[WebSocket] Emitting menu_control with directive: ", parsed["directive"])
@@ -81,7 +81,7 @@ func _process_websocket_json(json_string):
 	
 	# Handle bullet hit data
 	if parsed and parsed.has("data"):
-		print("[WebSocket] Found data array with ", parsed["data"].size(), " entries")
+		# print("[WebSocket] Found data array with ", parsed["data"].size(), " entries")
 		for entry in parsed["data"]:
 			var x = entry.get("x", null)
 			var y = entry.get("y", null)
@@ -96,9 +96,9 @@ func _process_websocket_json(json_string):
 					var x_new = x * (game_width / ws_width)
 					var y_new = game_height - (y * (game_height / ws_height))
 					var transformed_pos = Vector2(x_new, y_new)
-					print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
+					# print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
 					bullet_hit.emit(transformed_pos)
 				else:
-					print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
+					# print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
 			else:
 				print("[WebSocket] Entry missing x or y: ", entry)

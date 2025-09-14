@@ -1,5 +1,8 @@
 extends Node
 
+# Performance optimization
+const DEBUG_LOGGING = false  # Set to true for verbose debugging
+
 # Scoring rules are now loaded dynamically from settings_dict.target_rule
 
 # Performance tracking variables
@@ -21,7 +24,8 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		# First shot of the drill - just record the time, don't calculate interval
 		last_shot_time = current_time
 		first_shot = false
-		print("PERFORMANCE TRACKER: First shot recorded at time:", current_time)
+		if DEBUG_LOGGING:
+			print("PERFORMANCE TRACKER: First shot recorded at time:", current_time)
 	else:
 		# Subsequent shots - calculate interval
 		time_diff = (current_time - last_shot_time) / 1000.0  # in seconds
@@ -31,7 +35,8 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		if time_diff < fastest_time_diff:
 			fastest_time_diff = time_diff
 		
-		print("PERFORMANCE TRACKER: Shot interval:", time_diff, "seconds, fastest:", fastest_time_diff)
+		if DEBUG_LOGGING:
+			print("PERFORMANCE TRACKER: Shot interval:", time_diff, "seconds, fastest:", fastest_time_diff)
 	
 	# Get score from settings_dict.target_rule
 	var score = _get_score_for_hit_area(hit_area)
@@ -46,14 +51,16 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 	}
 	
 	records.append(record)
-	print("Performance record added: ", record)
+	if DEBUG_LOGGING:
+		print("Performance record added: ", record)
 
 # Signal handler for drills finished
 func _on_drills_finished():
 	if records.size() == 0:
 		return
 	
-	print("Performance records for this drill: ", records)
+	if DEBUG_LOGGING:
+		print("Performance records for this drill: ", records)
 	
 	# Create the summary data
 	var fastest_value = null
@@ -79,7 +86,8 @@ func _on_drills_finished():
 	var global_data = get_node("/root/GlobalData")
 	if global_data:
 		global_data.latest_performance_data = drill_data.duplicate()
-		print("[PerformanceTracker] Stored latest performance data in GlobalData")
+		if DEBUG_LOGGING:
+			print("[PerformanceTracker] Stored latest performance data in GlobalData")
 	
 	var http_service = get_node("/root/HttpService")
 	if http_service:
@@ -87,7 +95,8 @@ func _on_drills_finished():
 		var data_id = str(int(global_data.settings_dict.get("max_index", 0)) + 1) if global_data else "1"
 		http_service.save_game(_on_performance_saved, data_id, json_string)
 	else:
-		print("HttpService not found")
+		if DEBUG_LOGGING:
+			print("HttpService not found")
 
 # Get the fastest time difference recorded
 func get_fastest_time_diff() -> float:
@@ -132,23 +141,28 @@ func reset_shot_timer():
 # Set the total elapsed time for the drill
 func set_total_elapsed_time(time_seconds: float):
 	total_elapsed_time = time_seconds
-	print("PERFORMANCE TRACKER: Total elapsed time set to:", total_elapsed_time, "seconds")
+	if DEBUG_LOGGING:
+		print("PERFORMANCE TRACKER: Total elapsed time set to:", total_elapsed_time, "seconds")
 
 func _on_settings_saved(result, response_code, headers, body):
 	if response_code == 200:
-		print("Settings saved")
+		if DEBUG_LOGGING:
+			print("Settings saved")
 		var fastest_display = "N/A"
 		if fastest_time_diff < 999.0:
 			fastest_display = "%.2f" % fastest_time_diff
-		print("Drill summary - Total time:", total_elapsed_time, "seconds, Fastest shot:", fastest_display)
+		if DEBUG_LOGGING:
+			print("Drill summary - Total time:", total_elapsed_time, "seconds, Fastest shot:", fastest_display)
 		records.clear()
 		pending_drill_data = null
 	else:
-		print("Failed to save settings")
+		if DEBUG_LOGGING:
+			print("Failed to save settings")
 
 func _on_performance_saved(result, response_code, headers, body):
 	if response_code == 200:
-		print("Performance data saved")
+		if DEBUG_LOGGING:
+			print("Performance data saved")
 		var http_service = get_node("/root/HttpService")
 		if http_service:
 			GlobalData.settings_dict["max_index"] = int(GlobalData.settings_dict.get("max_index", 0)) + 1
@@ -156,6 +170,8 @@ func _on_performance_saved(result, response_code, headers, body):
 			var settings_json = JSON.stringify(GlobalData.settings_dict)
 			http_service.save_game(_on_settings_saved, "settings", settings_json)
 		else:
-			print("HttpService not found")
+			if DEBUG_LOGGING:
+				print("HttpService not found")
 	else:
-		print("Failed to save performance data")
+		if DEBUG_LOGGING:
+			print("Failed to save performance data")

@@ -31,13 +31,13 @@ func _ready():
 		var scale_factor = randf_range(scale_range.x, scale_range.y)
 		scale = Vector2(scale_factor, scale_factor)
 	
-	print("Bullet hole created with:")
-	print("  - Texture: ", texture.resource_path if texture else "none")
-	print("  - Position: ", position)
-	print("  - Scale: ", scale)
-	print("  - Z-index: ", z_index)
-	print("  - Visible: ", visible)
-	print("  - Modulate: ", modulate)
+	# print("Bullet hole created with:")
+	# print("  - Texture: ", texture.resource_path if texture else "none")
+	# print("  - Position: ", position)
+	# print("  - Scale: ", scale)
+	# print("  - Z-index: ", z_index)
+	# print("  - Visible: ", visible)
+	# print("  - Modulate: ", modulate)
 
 func randomize_texture():
 	"""Randomly select one of the bullet hole textures"""
@@ -45,7 +45,7 @@ func randomize_texture():
 		var random_index = randi() % BULLET_HOLE_TEXTURES.size()
 		var texture_path = BULLET_HOLE_TEXTURES[random_index]
 		texture = load(texture_path)
-		print("Selected bullet hole texture ", random_index + 1, ": ", texture_path)
+		# print("Selected bullet hole texture ", random_index + 1, ": ", texture_path)
 	else:
 		print("ERROR: No bullet hole textures found!")
 
