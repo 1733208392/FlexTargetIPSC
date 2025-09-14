@@ -97,7 +97,7 @@ func show_shot_timer():
 	bullets_allowed = false
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
-		ws_listener.bullet_spawning_enabled = false
+		ws_listener.set_bullet_spawning_enabled(false)
 	
 	# No target should be visible during shot timer phase
 	clear_current_target()
@@ -232,7 +232,7 @@ func spawn_next_target():
 	bullets_allowed = true
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
-		ws_listener.bullet_spawning_enabled = true
+		ws_listener.set_bullet_spawning_enabled(true)
 	if DEBUG_LOGGING:
 		print("Bullet spawning re-enabled for new target: ", target_type)
 
@@ -377,7 +377,7 @@ func _on_target_disappeared(target_id: String = ""):
 	bullets_allowed = false
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
-		ws_listener.bullet_spawning_enabled = false
+		ws_listener.set_bullet_spawning_enabled(false)
 	if DEBUG_LOGGING:
 		print("Bullet spawning disabled during target transition")
 	
@@ -539,7 +539,7 @@ func complete_drill():
 	bullets_allowed = false
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
-		ws_listener.bullet_spawning_enabled = false
+		ws_listener.set_bullet_spawning_enabled(false)
 	
 	# Show the completion overlay
 	var fastest_time = performance_tracker.get_fastest_time_diff()
@@ -553,7 +553,7 @@ func complete_drill():
 	
 	# Re-enable bullet spawning for overlay interactions
 	if ws_listener:
-		ws_listener.bullet_spawning_enabled = true
+		ws_listener.set_bullet_spawning_enabled(true)
 		if DEBUG_LOGGING:
 			print("=== BULLETS RE-ENABLED FOR COMPLETION OVERLAY ===")
 	

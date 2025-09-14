@@ -13,6 +13,9 @@ var message_cooldown: float = 0.016  # ~60fps (16ms minimum between messages)
 var max_messages_per_frame: int = 5  # Maximum messages to process per frame
 var processed_this_frame: int = 0
 
+# Queue management for clearing pending signals
+var pending_bullet_hits: Array[Vector2] = []  # Track pending bullet hit signals
+
 func _ready():
 	socket = WebSocketPeer.new()
 	#var err = socket.connect_to_url("ws://127.0.0.1/websocket")
@@ -86,20 +89,61 @@ func _process_websocket_json(json_string):
 			var x = entry.get("x", null)
 			var y = entry.get("y", null)
 			if x != null and y != null:
+				# Transform pos from WebSocket (268x476.4, origin bottom-left) to game (720x1280, origin top-left)
+				var ws_width = 268.0
+				var ws_height = 476.4
+				var game_width = 720.0
+				var game_height = 1280.0
+				# Flip y and scale
+				var x_new = x * (game_width / ws_width)
+				var y_new = game_height - (y * (game_height / ws_height))
+				var transformed_pos = Vector2(x_new, y_new)
+				
 				if bullet_spawning_enabled:
-					# Transform pos from WebSocket (268x476.4, origin bottom-left) to game (720x1280, origin top-left)
-					var ws_width = 268.0
-					var ws_height = 476.4
-					var game_width = 720.0
-					var game_height = 1280.0
-					# Flip y and scale
-					var x_new = x * (game_width / ws_width)
-					var y_new = game_height - (y * (game_height / ws_height))
-					var transformed_pos = Vector2(x_new, y_new)
+					# Emit immediately when enabled
 					# print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
 					bullet_hit.emit(transformed_pos)
 				else:
+					# When disabled, don't add to pending queue - just ignore
 					pass
 					# print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
 			else:
 				print("[WebSocket] Entry missing x or y: ", entry)
+
+func clear_queued_signals():
+	"""Clear all queued WebSocket packets and pending bullet hit signals"""
+	print("[WebSocket] Clearing queued signals and packets")
+	
+	# Clear all pending WebSocket packets
+	var cleared_packets = 0
+	while socket.get_available_packet_count() > 0:
+		socket.get_packet()  # Consume and discard the packet
+		cleared_packets += 1
+	
+	if cleared_packets > 0:
+		print("[WebSocket] Cleared ", cleared_packets, " queued WebSocket packets")
+	
+	# Clear pending bullet hit signals
+	var cleared_signals = pending_bullet_hits.size()
+	pending_bullet_hits.clear()
+	
+	if cleared_signals > 0:
+		print("[WebSocket] Cleared ", cleared_signals, " pending bullet hit signals")
+	
+	# Reset rate limiting timer to prevent immediate flood when re-enabled
+	last_message_time = Time.get_ticks_msec() / 1000.0
+
+func set_bullet_spawning_enabled(enabled: bool):
+	"""Set bullet spawning enabled state and clear queues when disabled"""
+	var previous_state = bullet_spawning_enabled
+	bullet_spawning_enabled = enabled
+	
+	print("[WebSocket] Bullet spawning enabled changed from ", previous_state, " to ", enabled)
+	
+	# Clear queues when disabling bullet spawning
+	if not enabled and previous_state:
+		clear_queued_signals()
+
+func get_bullet_spawning_enabled() -> bool:
+	"""Get current bullet spawning enabled state"""
+	return bullet_spawning_enabled
