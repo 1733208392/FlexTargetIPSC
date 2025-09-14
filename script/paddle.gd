@@ -13,6 +13,19 @@ var paddle_id: String = ""  # Unique identifier for this paddle
 const BulletScene = preload("res://scene/bullet.tscn")
 var debug_markers = true  # Set to false to disable debug markers
 
+# Effect throttling for performance optimization
+var last_sound_time: float = 0.0
+var last_smoke_time: float = 0.0
+var last_impact_time: float = 0.0
+var sound_cooldown: float = 0.05  # 50ms minimum between sounds
+var smoke_cooldown: float = 0.08  # 80ms minimum between smoke effects
+var impact_cooldown: float = 0.06  # 60ms minimum between impact effects
+var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
+var active_sounds: int = 0
+
+# Performance optimization
+const DEBUG_LOGGING = false  # Set to true for verbose debugging
+
 # Scoring system
 var total_score: int = 0
 signal target_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2)
@@ -52,8 +65,9 @@ func _ready():
 		print("[paddle %s] WebSocketListener singleton not found!" % paddle_id)
 	
 	# Set up collision detection for bullets
-	collision_layer = 7  # Target layer
-	collision_mask = 0   # Don't detect other targets
+	# NOTE: Collision detection is now obsolete due to WebSocket fast path
+	# collision_layer = 7  # Target layer
+	# collision_mask = 0   # Don't detect other targets
 	
 	# Debug: Test if shader material is working
 	test_shader_material()
@@ -216,6 +230,9 @@ func spawn_bullet_at_position(world_pos: Vector2):
 
 func handle_bullet_collision(bullet_position: Vector2):
 	"""Handle collision detection when a bullet hits this target"""
+	# NOTE: This collision handling is now obsolete due to WebSocket fast path
+	# WebSocket hits use handle_websocket_bullet_hit_fast() instead
+	
 	print("PADDLE %s: Bullet collision detected at position: %s" % [paddle_id, bullet_position])
 	
 	# If paddle has already fallen, ignore further collisions
@@ -397,6 +414,195 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	if ws_listener and not ws_listener.bullet_spawning_enabled:
 		print("[paddle %s] WebSocket bullet spawning disabled during shot timer" % paddle_id)
 		return
+	
+	print("[paddle %s] Received bullet hit at position: %s" % [paddle_id, pos])
+	
+	# FAST PATH: Direct processing for WebSocket hits
+	handle_websocket_bullet_hit_fast(pos)
+
+func handle_websocket_bullet_hit_fast(world_pos: Vector2):
+	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
+	if DEBUG_LOGGING:
+		print("[paddle %s] FAST PATH: Processing WebSocket bullet hit at: %s" % [paddle_id, world_pos])
+	
+	# Don't process if paddle has already fallen
+	if is_fallen:
+		if DEBUG_LOGGING:
+			print("[paddle %s] Paddle already fallen - ignoring WebSocket hit" % paddle_id)
+		return
+	
+	# Convert world position to local coordinates
+	var local_pos = to_local(world_pos)
+	if DEBUG_LOGGING:
+		print("[paddle %s] World pos: %s -> Local pos: %s" % [paddle_id, world_pos, local_pos])
+	
+	# 1. FIRST: Determine hit zone and scoring
+	var zone_hit = ""
+	var points = 0
+	var is_target_hit = false
+	var should_fall = false
+	
+	# Check which zone was hit (highest score first)
+	if is_point_in_circle_area(local_pos):
+		zone_hit = "CircleArea"
+		points = 5
+		is_target_hit = true
+		should_fall = true
+		if DEBUG_LOGGING:
+			print("[paddle %s] FAST: Circle area hit - 5 points!" % paddle_id)
+	elif is_point_in_stand_area(local_pos):
+		zone_hit = "StandArea"
+		points = 0
+		is_target_hit = true
+		should_fall = false
+		if DEBUG_LOGGING:
+			print("[paddle %s] FAST: Stand area hit - 0 points (no fall)" % paddle_id)
+	else:
+		zone_hit = "miss"
+		points = 0
+		is_target_hit = false
+		should_fall = false
+		if DEBUG_LOGGING:
+			print("[paddle %s] FAST: Bullet missed target" % paddle_id)
+	
+	# 2. NO BULLET HOLES: Paddle is steel target, doesn't create bullet holes
+	
+	# 3. ALWAYS: Spawn bullet effects (impact/sound) for target hits
+	if is_target_hit:
+		spawn_bullet_effects_at_position(world_pos, is_target_hit)
+		if DEBUG_LOGGING:
+			print("[paddle %s] FAST: Bullet effects spawned for target hit" % paddle_id)
+	else:
+		if DEBUG_LOGGING:
+			print("[paddle %s] FAST: No effects - bullet missed target" % paddle_id)
+	
+	# 4. Update score and emit signal
+	total_score += points
+	target_hit.emit(paddle_id, zone_hit, points, world_pos)
+	if DEBUG_LOGGING:
+		print("[paddle %s] FAST: Total score: %d" % [paddle_id, total_score])
+	
+	# 5. Trigger fall animation if needed (only for hits that should cause falling)
+	if should_fall:
+		if DEBUG_LOGGING:
+			print("[paddle %s] FAST: Triggering fall animation..." % paddle_id)
+		trigger_fall_animation()
+	elif zone_hit == "StandArea":
+		if DEBUG_LOGGING:
+			print("[paddle %s] FAST: Stand hit - testing shader effects only" % paddle_id)
+		test_shader_effects()
+	else:
+		if DEBUG_LOGGING:
+			print("[paddle %s] FAST: Miss - no animation triggered" % paddle_id)
+
+func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = true):
+	"""Spawn bullet smoke and impact effects with throttling for performance"""
+	if DEBUG_LOGGING:
+		print("[paddle %s] Spawning bullet effects at: %s (Target hit: %s)" % [paddle_id, world_pos, is_target_hit])
+	
+	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
+	
+	# Load the effect scenes directly
+	var bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
+	var bullet_impact_scene = preload("res://scene/bullet_impact.tscn")
+	
+	# Find the scene root for effects
+	var scene_root = get_tree().current_scene
+	var effects_parent = scene_root if scene_root else get_parent()
+	
+	# Throttled smoke effect - DISABLED for performance optimization
+	# Smoke is the most expensive effect (GPUParticles2D) and not essential for gameplay
+	if false:  # Completely disabled
+		pass
+	else:
+		if DEBUG_LOGGING:
+			print("[paddle %s] Smoke effect disabled for performance optimization" % paddle_id)
+	
+	# Throttled impact effect - ALWAYS spawn (for both hits and misses)
+	if bullet_impact_scene and (time_stamp - last_impact_time) >= impact_cooldown:
+		var impact = bullet_impact_scene.instantiate()
+		impact.global_position = world_pos
+		effects_parent.add_child(impact)
+		# Ensure impact effects appear above other elements
+		impact.z_index = 15
+		last_impact_time = time_stamp
+		if DEBUG_LOGGING:
+			print("[paddle %s] Impact effect spawned at: %s with z_index: 15" % [paddle_id, world_pos])
+	elif (time_stamp - last_impact_time) < impact_cooldown:
+		if DEBUG_LOGGING:
+			print("[paddle %s] Impact effect throttled (too fast)" % paddle_id)
+	
+	# Throttled sound effect - ALWAYS play (for both hits and misses)
+	play_impact_sound_at_position_throttled(world_pos, time_stamp)
+
+func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: float):
+	"""Play steel impact sound effect with throttling and concurrent sound limiting"""
+	# Check time-based throttling
+	if (current_time - last_sound_time) < sound_cooldown:
+		if DEBUG_LOGGING:
+			print("[paddle %s] Sound effect throttled (too fast - %ss since last)" % [paddle_id, current_time - last_sound_time])
+		return
+	
+	# Check concurrent sound limiting
+	if active_sounds >= max_concurrent_sounds:
+		if DEBUG_LOGGING:
+			print("[paddle %s] Sound effect throttled (too many concurrent sounds: %d/%d)" % [paddle_id, active_sounds, max_concurrent_sounds])
+		return
+	
+	# Load the impact sound (same as bullet script)
+	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	
+	if impact_sound:
+		# Create AudioStreamPlayer2D for positional audio
+		var audio_player = AudioStreamPlayer2D.new()
+		audio_player.stream = impact_sound
+		audio_player.volume_db = -5  # Adjust volume as needed
+		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
 		
-	print("[Paddle %s] Received bullet hit at position: %s" % [paddle_id, pos])
-	spawn_bullet_at_position(pos)
+		# Add to scene and play
+		var scene_root = get_tree().current_scene
+		var audio_parent = scene_root if scene_root else get_parent()
+		audio_parent.add_child(audio_player)
+		audio_player.global_position = world_pos
+		audio_player.play()
+		
+		# Update throttling state
+		last_sound_time = current_time
+		active_sounds += 1
+		
+		# Clean up audio player after sound finishes and decrease active count
+		audio_player.finished.connect(func(): 
+			active_sounds -= 1
+			audio_player.queue_free()
+			if DEBUG_LOGGING:
+				print("[paddle %s] Sound finished, active sounds: %d" % [paddle_id, active_sounds])
+		)
+		if DEBUG_LOGGING:
+			print("[paddle %s] Steel impact sound played at: %s (Active sounds: %d)" % [paddle_id, world_pos, active_sounds])
+	else:
+		print("[paddle %s] No impact sound found!" % paddle_id)  # Keep this as it indicates an error
+
+func play_impact_sound_at_position(world_pos: Vector2):
+	"""Play steel impact sound effect at specific position (legacy - non-throttled)"""
+	# Load the impact sound (same as bullet script)
+	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	
+	if impact_sound:
+		# Create AudioStreamPlayer2D for positional audio
+		var audio_player = AudioStreamPlayer2D.new()
+		audio_player.stream = impact_sound
+		audio_player.volume_db = -5  # Adjust volume as needed
+		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
+		
+		# Add to scene and play
+		var scene_root = get_tree().current_scene
+		var audio_parent = scene_root if scene_root else get_parent()
+		audio_parent.add_child(audio_player)
+		audio_player.global_position = world_pos
+		audio_player.play()
+		
+		# Clean up audio player after sound finishes
+		audio_player.finished.connect(func(): audio_player.queue_free())
+		print("[paddle %s] Steel impact sound played at: %s" % [paddle_id, world_pos])
+	else:
+		print("[paddle %s] No impact sound found!" % paddle_id)

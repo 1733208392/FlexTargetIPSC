@@ -29,6 +29,9 @@ var drill_start_time: float = 0.0
 signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float)
 signal drills_finished
 
+# Performance optimization
+const DEBUG_LOGGING = false  # Set to true for verbose debugging
+
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
 signal ui_target_title_update(target_index: int, total_targets: int)
@@ -419,7 +422,8 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		var actual_points = param3
 		hit_position = param4
 		hit_area = "Paddle"
-		print("Target hit: ", current_target_type, " paddle: ", paddle_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
+		if DEBUG_LOGGING:
+			print("Target hit: ", current_target_type, " paddle: ", paddle_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 		total_drill_score += actual_points
 	elif current_target_type == "2poppers":
 		# 2poppers sends: popper_id, zone, points, hit_position
@@ -428,7 +432,8 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		var actual_points = param3
 		hit_position = param4
 		hit_area = "Popper"
-		print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
+		if DEBUG_LOGGING:
+			print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 		total_drill_score += actual_points
 	else:
 		# Simple targets send: zone, points, hit_position
@@ -436,10 +441,12 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		var actual_points = param2
 		hit_position = param3
 		hit_area = zone
-		print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
+		if DEBUG_LOGGING:
+			print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 		total_drill_score += actual_points
 	
-	print("Total drill score: ", total_drill_score)
+	if DEBUG_LOGGING:
+		print("Total drill score: ", total_drill_score)
 	emit_signal("ui_score_update", total_drill_score)
 	
 	# Get rotation angle for rotating targets
@@ -448,7 +455,8 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		var rotation_center = current_target_instance.get_node("RotationCenter")
 		if rotation_center:
 			rotation_angle = rotation_center.rotation
-			print("Rotating target hit at rotation angle: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees)")
+			if DEBUG_LOGGING:
+				print("Rotating target hit at rotation angle: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees)")
 	
 	# Emit the enhanced target_hit signal for performance tracking
 	emit_signal("target_hit", current_target_type, hit_position, hit_area, rotation_angle)

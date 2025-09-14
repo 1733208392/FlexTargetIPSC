@@ -28,6 +28,9 @@ var impact_cooldown: float = 0.06  # 60ms minimum between impact effects
 var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
+# Performance optimization
+const DEBUG_LOGGING = false  # Set to true for verbose debugging
+
 # Scoring system
 var total_score: int = 0
 signal target_hit(zone: String, points: int, hit_position: Vector2)
@@ -356,16 +359,19 @@ func _on_websocket_bullet_hit(pos: Vector2):
 
 func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
-	print("[ipsc_mini] FAST PATH: Processing WebSocket bullet hit at: ", world_pos)
+	if DEBUG_LOGGING:
+		print("[ipsc_mini] FAST PATH: Processing WebSocket bullet hit at: ", world_pos)
 	
 	# Don't process if target is disappearing
 	if is_disappearing:
-		print("[ipsc_mini] Target is disappearing - ignoring WebSocket hit")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] Target is disappearing - ignoring WebSocket hit")
 		return
 	
 	# Convert world position to local coordinates
 	var local_pos = to_local(world_pos)
-	print("[ipsc_mini] World pos: ", world_pos, " -> Local pos: ", local_pos)
+	if DEBUG_LOGGING:
+		print("[ipsc_mini] World pos: ", world_pos, " -> Local pos: ", local_pos)
 	
 	# 1. FIRST: Determine hit zone and scoring
 	var zone_hit = ""
@@ -377,29 +383,35 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 		zone_hit = "AZone"
 		points = 5
 		is_target_hit = true
-		print("[ipsc_mini] FAST: Zone A hit - 5 points!")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] FAST: Zone A hit - 5 points!")
 	elif is_point_in_zone("CZone", local_pos):
 		zone_hit = "CZone"
 		points = 3
 		is_target_hit = true
-		print("[ipsc_mini] FAST: Zone C hit - 3 points!")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] FAST: Zone C hit - 3 points!")
 	elif is_point_in_zone("DZone", local_pos):
 		zone_hit = "DZone"
 		points = 1
 		is_target_hit = true
-		print("[ipsc_mini] FAST: Zone D hit - 1 point!")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] FAST: Zone D hit - 1 point!")
 	else:
 		zone_hit = "miss"
 		points = 0
 		is_target_hit = false
-		print("[ipsc_mini] FAST: Bullet missed target - no bullet hole")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] FAST: Bullet missed target - no bullet hole")
 	
 	# 2. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if is_target_hit:
 		spawn_bullet_hole(local_pos)
-		print("[ipsc_mini] FAST: Bullet hole spawned for target hit")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] FAST: Bullet hole spawned for target hit")
 	else:
-		print("[ipsc_mini] FAST: No bullet hole - bullet missed target")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] FAST: No bullet hole - bullet missed target")
 	
 	# 3. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
 	spawn_bullet_effects_at_position(world_pos, is_target_hit)
@@ -407,23 +419,28 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# 4. Update score and emit signal
 	total_score += points
 	target_hit.emit(zone_hit, points, world_pos)
-	print("[ipsc_mini] FAST: Total score: ", total_score)
+	if DEBUG_LOGGING:
+		print("[ipsc_mini] FAST: Total score: ", total_score)
 	
 	# 5. Increment shot count and check for disappearing animation (only for hits)
 	if is_target_hit:
 		shot_count += 1
-		print("[ipsc_mini] FAST: Shot count: ", shot_count, "/", max_shots)
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] FAST: Shot count: ", shot_count, "/", max_shots)
 		
 		# Check if we've reached the maximum shots
 		if shot_count >= max_shots:
-			print("[ipsc_mini] FAST: Maximum shots reached! Triggering disappearing animation...")
+			if DEBUG_LOGGING:
+				print("[ipsc_mini] FAST: Maximum shots reached! Triggering disappearing animation...")
 			play_disappearing_animation()
 	else:
-		print("[ipsc_mini] FAST: Miss - shot count not incremented")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] FAST: Miss - shot count not incremented")
 
 func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = true):
 	"""Spawn bullet smoke and impact effects with throttling for performance"""
-	print("[ipsc_mini] Spawning bullet effects at: ", world_pos, " (Target hit: ", is_target_hit, ")")
+	if DEBUG_LOGGING:
+		print("[ipsc_mini] Spawning bullet effects at: ", world_pos, " (Target hit: ", is_target_hit, ")")
 	
 	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
 	
@@ -440,7 +457,8 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 	if false:  # Completely disabled
 		pass
 	else:
-		print("[ipsc_mini] Smoke effect disabled for performance optimization")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] Smoke effect disabled for performance optimization")
 	
 	# Throttled impact effect - ALWAYS spawn (for both hits and misses)
 	if bullet_impact_scene and (time_stamp - last_impact_time) >= impact_cooldown:
@@ -450,9 +468,11 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 		# Ensure impact effects appear above bullet holes
 		impact.z_index = 15
 		last_impact_time = time_stamp
-		print("[ipsc_mini] Impact effect spawned at: ", world_pos, " with z_index: 15")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] Impact effect spawned at: ", world_pos, " with z_index: 15")
 	elif (time_stamp - last_impact_time) < impact_cooldown:
-		print("[ipsc_mini] Impact effect throttled (too fast)")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] Impact effect throttled (too fast)")
 	
 	# Throttled sound effect - ALWAYS play (for both hits and misses)
 	play_impact_sound_at_position_throttled(world_pos, time_stamp)
@@ -461,12 +481,14 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 	"""Play steel impact sound effect with throttling and concurrent sound limiting"""
 	# Check time-based throttling
 	if (current_time - last_sound_time) < sound_cooldown:
-		print("[ipsc_mini] Sound effect throttled (too fast - ", current_time - last_sound_time, "s since last)")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] Sound effect throttled (too fast - ", current_time - last_sound_time, "s since last)")
 		return
 	
 	# Check concurrent sound limiting
 	if active_sounds >= max_concurrent_sounds:
-		print("[ipsc_mini] Sound effect throttled (too many concurrent sounds: ", active_sounds, "/", max_concurrent_sounds, ")")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] Sound effect throttled (too many concurrent sounds: ", active_sounds, "/", max_concurrent_sounds, ")")
 		return
 	
 	# Load the impact sound (same as bullet script)
@@ -494,11 +516,13 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 		audio_player.finished.connect(func(): 
 			active_sounds -= 1
 			audio_player.queue_free()
-			print("[ipsc_mini] Sound finished, active sounds: ", active_sounds)
+			if DEBUG_LOGGING:
+				print("[ipsc_mini] Sound finished, active sounds: ", active_sounds)
 		)
-		print("[ipsc_mini] Steel impact sound played at: ", world_pos, " (Active sounds: ", active_sounds, ")")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] Steel impact sound played at: ", world_pos, " (Active sounds: ", active_sounds, ")")
 	else:
-		print("[ipsc_mini] No impact sound found!")
+		print("[ipsc_mini] No impact sound found!")  # Keep this as it indicates an error
 
 func play_impact_sound_at_position(world_pos: Vector2):
 	"""Play steel impact sound effect at specific position (legacy - non-throttled)"""

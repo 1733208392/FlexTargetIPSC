@@ -13,6 +13,21 @@ var max_shots: int = 2
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
 
+# Bullet hole pool for performance optimization
+var bullet_hole_pool: Array[Node] = []
+var pool_size: int = 8  # Keep 8 bullet holes pre-instantiated
+var active_bullet_holes: Array[Node] = []
+
+# Effect throttling for performance optimization
+var last_sound_time: float = 0.0
+var last_smoke_time: float = 0.0
+var last_impact_time: float = 0.0
+var sound_cooldown: float = 0.05  # 50ms minimum between sounds
+var smoke_cooldown: float = 0.08  # 80ms minimum between smoke effects
+var impact_cooldown: float = 0.06  # 60ms minimum between impact effects
+var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
+var active_sounds: int = 0
+
 # Scoring system
 var total_score: int = 0
 signal target_hit(zone: String, points: int, hit_position: Vector2)
@@ -36,6 +51,9 @@ func _ready():
 	# Connect the input_event signal to detect mouse clicks
 	input_event.connect(_on_input_event)
 	
+	# Initialize bullet hole pool for performance
+	initialize_bullet_hole_pool()
+	
 		# Connect to WebSocket bullet hit signal
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
@@ -45,8 +63,9 @@ func _ready():
 		print("[hostage] WebSocketListener singleton not found!")
 	
 	# Set up collision detection for bullets
-	collision_layer = 7  # Target layer
-	collision_mask = 0   # Don't detect other targets
+	# NOTE: Collision detection is now obsolete due to WebSocket fast path
+	# collision_layer = 7  # Target layer
+	# collision_mask = 0   # Don't detect other targets
 
 func _input(event):
 	# Handle mouse clicks for bullet spawning
@@ -133,6 +152,9 @@ func spawn_bullet_at_position(world_pos: Vector2):
 
 func handle_bullet_collision(bullet_position: Vector2):
 	"""Handle collision detection when a bullet hits this target"""
+	# NOTE: This collision handling is now obsolete due to WebSocket fast path
+	# WebSocket hits use handle_websocket_bullet_hit_fast() instead
+	
 	# Don't process bullet collisions if target is disappearing
 	if is_disappearing:
 		print("Target is disappearing - ignoring bullet collision")
@@ -187,14 +209,24 @@ func handle_bullet_collision(bullet_position: Vector2):
 	return zone_hit
 
 func spawn_bullet_hole(local_position: Vector2):
-	"""Spawn a bullet hole at the specified local position on this target"""
-	if BulletHoleScene:
-		var bullet_hole = BulletHoleScene.instantiate()
-		add_child(bullet_hole)
+	"""Spawn a bullet hole at the specified local position using object pool"""
+	print("[hostage] POOL: Spawning bullet hole at local position: ", local_position)
+	
+	var bullet_hole = get_pooled_bullet_hole()
+	if bullet_hole:
+		# Configure the bullet hole
 		bullet_hole.set_hole_position(local_position)
-		print("Bullet hole spawned on target at local position: ", local_position)
+		bullet_hole.visible = true
+		# Ensure bullet holes appear below smoke/debris effects
+		bullet_hole.z_index = 0
+		
+		# Track as active
+		if bullet_hole not in active_bullet_holes:
+			active_bullet_holes.append(bullet_hole)
+		
+		print("[hostage] POOL: Bullet hole activated at position: ", local_position, " (Active: ", active_bullet_holes.size(), ") with z_index: 0")
 	else:
-		print("ERROR: BulletHoleScene not found!")
+		print("[hostage] POOL ERROR: Failed to get bullet hole from pool!")
 
 func get_total_score() -> int:
 	"""Get the current total score for this target"""
@@ -258,13 +290,86 @@ func reset_target():
 	scale = Vector2.ONE
 	
 	# Re-enable collision detection
-	collision_layer = 7
-	collision_mask = 0
+	# NOTE: Collision detection disabled as it's obsolete due to WebSocket fast path
+	# collision_layer = 7
+	# collision_mask = 0
 	
 	# Reset score
 	reset_score()
 	
+	# Reset bullet hole pool - hide all active holes
+	reset_bullet_hole_pool()
+	
 	print("Target reset to original state")
+
+func reset_bullet_hole_pool():
+	"""Reset the bullet hole pool by hiding all active holes"""
+	print("[hostage] Resetting bullet hole pool")
+	
+	# Hide all active bullet holes
+	for hole in active_bullet_holes:
+		if is_instance_valid(hole):
+			hole.visible = false
+	
+	# Clear active list
+	active_bullet_holes.clear()
+	
+	print("[hostage] Bullet hole pool reset - all holes returned to pool")
+
+func initialize_bullet_hole_pool():
+	"""Pre-instantiate bullet holes for performance optimization"""
+	print("[hostage] Initializing bullet hole pool with size: ", pool_size)
+	
+	if not BulletHoleScene:
+		print("[hostage] ERROR: BulletHoleScene not found for pool initialization!")
+		return
+	
+	# Clear existing pool
+	for hole in bullet_hole_pool:
+		if is_instance_valid(hole):
+			hole.queue_free()
+	bullet_hole_pool.clear()
+	active_bullet_holes.clear()
+	
+	# Pre-instantiate bullet holes
+	for i in range(pool_size):
+		var bullet_hole = BulletHoleScene.instantiate()
+		add_child(bullet_hole)
+		bullet_hole.visible = false  # Hide until needed
+		# Set z-index to ensure bullet holes appear below effects
+		bullet_hole.z_index = 0
+		bullet_hole_pool.append(bullet_hole)
+		print("[hostage] Pre-instantiated bullet hole ", i + 1, "/", pool_size, " with z_index: 0")
+	
+	print("[hostage] Bullet hole pool initialized successfully with ", bullet_hole_pool.size(), " holes")
+
+func get_pooled_bullet_hole() -> Node:
+	"""Get an available bullet hole from the pool, or create new if needed"""
+	# Try to find an inactive bullet hole in the pool
+	for hole in bullet_hole_pool:
+		if is_instance_valid(hole) and not hole.visible:
+			print("[hostage] Reusing pooled bullet hole")
+			return hole
+	
+	# If no available holes in pool, create a new one (fallback)
+	print("[hostage] Pool exhausted, creating new bullet hole")
+	if BulletHoleScene:
+		var new_hole = BulletHoleScene.instantiate()
+		add_child(new_hole)
+		bullet_hole_pool.append(new_hole)  # Add to pool for future use
+		return new_hole
+	
+	print("[hostage] ERROR: Cannot create new bullet hole - BulletHoleScene missing!")
+	return null
+
+func return_bullet_hole_to_pool(hole: Node):
+	"""Return a bullet hole to the pool by hiding it"""
+	if is_instance_valid(hole):
+		hole.visible = false
+		# Remove from active list
+		if hole in active_bullet_holes:
+			active_bullet_holes.erase(hole)
+		print("[hostage] Bullet hole returned to pool, active holes: ", active_bullet_holes.size())
 
 func _on_websocket_bullet_hit(pos: Vector2):
 	# Check if bullet spawning is enabled
@@ -272,6 +377,184 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	if ws_listener and not ws_listener.bullet_spawning_enabled:
 		print("[hostage] WebSocket bullet spawning disabled during shot timer")
 		return
+	
+	print("[hostage] Received bullet hit at position: ", pos)
+	
+	# FAST PATH: Direct bullet hole spawning for WebSocket hits
+	handle_websocket_bullet_hit_fast(pos)
+
+func handle_websocket_bullet_hit_fast(world_pos: Vector2):
+	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
+	print("[hostage] FAST PATH: Processing WebSocket bullet hit at: ", world_pos)
+	
+	# Don't process if target is disappearing
+	if is_disappearing:
+		print("[hostage] Target is disappearing - ignoring WebSocket hit")
+		return
+	
+	# Convert world position to local coordinates
+	var local_pos = to_local(world_pos)
+	print("[hostage] World pos: ", world_pos, " -> Local pos: ", local_pos)
+	
+	# 1. FIRST: Determine hit zone and scoring
+	var zone_hit = ""
+	var points = 0
+	var is_target_hit = false
+	
+	# Check which zone was hit (highest score first, including WhiteZone penalty)
+	if is_point_in_zone("WhiteZone", local_pos):
+		zone_hit = "WhiteZone"
+		points = -5
+		is_target_hit = true
+		print("[hostage] FAST: WhiteZone hit - -5 points!")
+	elif is_point_in_zone("AZone", local_pos):
+		zone_hit = "AZone"
+		points = 5
+		is_target_hit = true
+		print("[hostage] FAST: Zone A hit - 5 points!")
+	elif is_point_in_zone("CZone", local_pos):
+		zone_hit = "CZone"
+		points = 3
+		is_target_hit = true
+		print("[hostage] FAST: Zone C hit - 3 points!")
+	elif is_point_in_zone("DZone", local_pos):
+		zone_hit = "DZone"
+		points = 1
+		is_target_hit = true
+		print("[hostage] FAST: Zone D hit - 1 point!")
+	else:
+		zone_hit = "miss"
+		points = 0
+		is_target_hit = false
+		print("[hostage] FAST: Bullet missed target - no bullet hole")
+	
+	# 2. CONDITIONAL: Only spawn bullet hole if target was actually hit
+	if is_target_hit:
+		spawn_bullet_hole(local_pos)
+		print("[hostage] FAST: Bullet hole spawned for target hit")
+	else:
+		print("[hostage] FAST: No bullet hole - bullet missed target")
+	
+	# 3. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
+	spawn_bullet_effects_at_position(world_pos, is_target_hit)
+	
+	# 4. Update score and emit signal
+	total_score += points
+	target_hit.emit(zone_hit, points, world_pos)
+	print("[hostage] FAST: Total score: ", total_score)
+	
+	# 5. Increment shot count and check for disappearing animation (only for hits)
+	if is_target_hit:
+		shot_count += 1
+		print("[hostage] FAST: Shot count: ", shot_count, "/", max_shots)
 		
-	print("[BlockSpawner] Received bullet hit at position: ", pos)
-	spawn_bullet_at_position(pos)
+		# Check if we've reached the maximum shots
+		if shot_count >= max_shots:
+			print("[hostage] FAST: Maximum shots reached! Triggering disappearing animation...")
+			play_disappearing_animation()
+	else:
+		print("[hostage] FAST: Miss - shot count not incremented")
+
+func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = true):
+	"""Spawn bullet smoke and impact effects with throttling for performance"""
+	print("[hostage] Spawning bullet effects at: ", world_pos, " (Target hit: ", is_target_hit, ")")
+	
+	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
+	
+	# Load the effect scenes directly
+	var bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
+	var bullet_impact_scene = preload("res://scene/bullet_impact.tscn")
+	
+	# Find the scene root for effects
+	var scene_root = get_tree().current_scene
+	var effects_parent = scene_root if scene_root else get_parent()
+	
+	# Throttled smoke effect - DISABLED for performance optimization
+	# Smoke is the most expensive effect (GPUParticles2D) and not essential for gameplay
+	if false:  # Completely disabled
+		pass
+	else:
+		print("[hostage] Smoke effect disabled for performance optimization")
+	
+	# Throttled impact effect - ALWAYS spawn (for both hits and misses)
+	if bullet_impact_scene and (time_stamp - last_impact_time) >= impact_cooldown:
+		var impact = bullet_impact_scene.instantiate()
+		impact.global_position = world_pos
+		effects_parent.add_child(impact)
+		# Ensure impact effects appear above bullet holes
+		impact.z_index = 15
+		last_impact_time = time_stamp
+		print("[hostage] Impact effect spawned at: ", world_pos, " with z_index: 15")
+	elif (time_stamp - last_impact_time) < impact_cooldown:
+		print("[hostage] Impact effect throttled (too fast)")
+	
+	# Throttled sound effect - ALWAYS play (for both hits and misses)
+	play_impact_sound_at_position_throttled(world_pos, time_stamp)
+
+func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: float):
+	"""Play steel impact sound effect with throttling and concurrent sound limiting"""
+	# Check time-based throttling
+	if (current_time - last_sound_time) < sound_cooldown:
+		print("[hostage] Sound effect throttled (too fast - ", current_time - last_sound_time, "s since last)")
+		return
+	
+	# Check concurrent sound limiting
+	if active_sounds >= max_concurrent_sounds:
+		print("[hostage] Sound effect throttled (too many concurrent sounds: ", active_sounds, "/", max_concurrent_sounds, ")")
+		return
+	
+	# Load the impact sound (same as bullet script)
+	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	
+	if impact_sound:
+		# Create AudioStreamPlayer2D for positional audio
+		var audio_player = AudioStreamPlayer2D.new()
+		audio_player.stream = impact_sound
+		audio_player.volume_db = -5  # Adjust volume as needed
+		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
+		
+		# Add to scene and play
+		var scene_root = get_tree().current_scene
+		var audio_parent = scene_root if scene_root else get_parent()
+		audio_parent.add_child(audio_player)
+		audio_player.global_position = world_pos
+		audio_player.play()
+		
+		# Update throttling state
+		last_sound_time = current_time
+		active_sounds += 1
+		
+		# Clean up audio player after sound finishes and decrease active count
+		audio_player.finished.connect(func(): 
+			active_sounds -= 1
+			audio_player.queue_free()
+			print("[hostage] Sound finished, active sounds: ", active_sounds)
+		)
+		print("[hostage] Steel impact sound played at: ", world_pos, " (Active sounds: ", active_sounds, ")")
+	else:
+		print("[hostage] No impact sound found!")
+
+func play_impact_sound_at_position(world_pos: Vector2):
+	"""Play steel impact sound effect at specific position (legacy - non-throttled)"""
+	# Load the impact sound (same as bullet script)
+	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	
+	if impact_sound:
+		# Create AudioStreamPlayer2D for positional audio
+		var audio_player = AudioStreamPlayer2D.new()
+		audio_player.stream = impact_sound
+		audio_player.volume_db = -5  # Adjust volume as needed
+		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
+		
+		# Add to scene and play
+		var scene_root = get_tree().current_scene
+		var audio_parent = scene_root if scene_root else get_parent()
+		audio_parent.add_child(audio_player)
+		audio_player.global_position = world_pos
+		audio_player.play()
+		
+		# Clean up audio player after sound finishes
+		audio_player.finished.connect(func(): audio_player.queue_free())
+		print("[hostage] Steel impact sound played at: ", world_pos)
+	else:
+		print("[hostage] No impact sound found!")

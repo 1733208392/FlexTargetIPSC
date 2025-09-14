@@ -1,5 +1,8 @@
 extends Node2D
 
+# Performance optimization
+const DEBUG_LOGGING = false  # Set to true for verbose debugging
+
 @onready var ipsc = $IPSC
 @onready var shot_labels = []
 @onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
@@ -108,7 +111,8 @@ func _start_drill_immediately():
 func _on_target_hit(_zone: String, _points: int, _hit_position: Vector2):
 	# Only process hits if drill has started
 	if not drill_started:
-		print("[Bootcamp] Target hit before drill started - ignoring")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Target hit before drill started - ignoring")
 		return
 	
 	var current_time = Time.get_ticks_msec() / 1000.0
@@ -143,7 +147,8 @@ func _on_clear_pressed():
 	# Remove all bullet holes
 	for bullet_hole in children_to_remove:
 		bullet_hole.queue_free()
-		print("Removed bullet hole: ", bullet_hole.name)
+		if DEBUG_LOGGING:
+			print("Removed bullet hole: ", bullet_hole.name)
 
 func _on_menu_control(directive: String):
 	print("[Bootcamp] Received menu_control signal with directive: ", directive)
