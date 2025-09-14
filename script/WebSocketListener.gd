@@ -99,6 +99,7 @@ func _process_websocket_json(json_string):
 					# print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
 					bullet_hit.emit(transformed_pos)
 				else:
+					pass
 					# print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
 			else:
 				print("[WebSocket] Entry missing x or y: ", entry)
