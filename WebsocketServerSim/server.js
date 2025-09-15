@@ -26,6 +26,11 @@ const connectedClients = new Set();
 let lastEnterTime = 0;
 const ENTER_DEBOUNCE_MS = 50; // 50ms debounce
 
+// Burst mode configuration
+let burstMode = false;
+let burstInterval = null;
+const BURST_RATE_MS = 50; // 50ms = 20 bullets per second (1000ms / 20)
+
 wss.on('connection', function connection(ws) {
   console.log('Client connected');
   connectedClients.add(ws);
@@ -80,6 +85,33 @@ process.stdin.on('data', (key) => {
     });
     console.log(`Sent random data: ${JSON.stringify(randomData)}`);
     return; // Don't send control message
+  } else if (keyStr === 'F' || keyStr === 'f') { // F - toggle burst mode (20 bullets/second)
+    if (burstMode) {
+      // Stop burst mode
+      if (burstInterval) {
+        clearInterval(burstInterval);
+        burstInterval = null;
+      }
+      burstMode = false;
+      console.log('Burst mode stopped');
+    } else {
+      // Start burst mode
+      burstMode = true;
+      burstInterval = setInterval(() => {
+        const randomData = randomDataOptions[Math.floor(Math.random() * randomDataOptions.length)];
+        const randomDataPayload = {
+          type: 'data',
+          data: [randomData]
+        };
+        connectedClients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(randomDataPayload));
+          }
+        });
+      }, BURST_RATE_MS);
+      console.log(`Burst mode started - firing at 20 bullets/second (${BURST_RATE_MS}ms intervals)`);
+    }
+    return; // Don't send control message
   } else if (keyStr === 'H' || keyStr === 'h') { // H - homepage
     directive = 'homepage';
   } else if (keyStr === 'V' || keyStr === 'v') { // V - volume_up
@@ -104,3 +136,13 @@ process.stdin.on('data', (key) => {
 });
 
 console.log('WebSocket server running on ws://localhost:8080');
+console.log('Controls:');
+console.log('  B - Send single random bullet');
+console.log('  F - Toggle burst mode (20 bullets/second)');
+console.log('  Arrow keys - Send directional commands');
+console.log('  Enter - Send enter command');
+console.log('  H - Homepage command');
+console.log('  V - Volume up command');
+console.log('  D - Volume down command');
+console.log('  P - Power command');
+console.log('  Ctrl+C - Exit');

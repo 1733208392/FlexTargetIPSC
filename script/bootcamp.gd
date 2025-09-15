@@ -16,14 +16,16 @@ func _ready():
 	load_language_from_global_settings()
 	
 	# Initialize but don't start the drill yet
-	print("[Bootcamp] Initializing bootcamp, waiting for HTTP start game response...")
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Initializing bootcamp, waiting for HTTP start game response...")
 	
 	# Disable disappearing for bootcamp
 	ipsc.max_shots = 1000
 	
 	# Temporarily disable target interaction until drill starts
 	ipsc.input_pickable = false
-	print("[Bootcamp] Target disabled until game start response received")
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Target disabled until game start response received")
 	
 	# Connect to ipsc target_hit signal
 	ipsc.target_hit.connect(_on_target_hit)
@@ -32,7 +34,8 @@ func _ready():
 	if clear_button:
 		clear_button.pressed.connect(_on_clear_pressed)
 	else:
-		print("ERROR: ClearButton not found!")
+		if DEBUG_LOGGING:
+			print("ERROR: ClearButton not found!")
 	
 	# Get all shot labels
 	for i in range(1, 11):
@@ -41,7 +44,8 @@ func _ready():
 			shot_labels.append(label)
 			label.text = ""
 		else:
-			print("ERROR: Shot" + str(i) + " not found!")
+			if DEBUG_LOGGING:
+				print("ERROR: Shot" + str(i) + " not found!")
 	
 	# Update UI texts with translations
 	update_ui_texts()
@@ -53,9 +57,11 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		print("[Bootcamp] Connecting to WebSocketListener.menu_control signal")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Connecting to WebSocketListener.menu_control signal")
 	else:
-		print("[Bootcamp] WebSocketListener singleton not found!")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] WebSocketListener singleton not found!")
 	
 	# Send HTTP request to start the game and wait for response
 	start_bootcamp_drill()
@@ -63,47 +69,56 @@ func _ready():
 func start_bootcamp_drill():
 	"""Send HTTP start game request and wait for OK response before starting drill"""
 	if game_start_requested:
-		print("[Bootcamp] Game start already requested, ignoring duplicate call")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Game start already requested, ignoring duplicate call")
 		return
 	
 	game_start_requested = true
-	print("[Bootcamp] Sending start game HTTP request for bootcamp...")
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Sending start game HTTP request for bootcamp...")
 	
 	var http_service = get_node("/root/HttpService")
 	if http_service:
 		# Send start game request with bootcamp mode
 		http_service.start_game(_on_start_game_response, "bootcamp")
 	else:
-		print("[Bootcamp] ERROR: HttpService singleton not found! Starting drill anyway...")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] ERROR: HttpService singleton not found! Starting drill anyway...")
 		_start_drill_immediately()
 
 func _on_start_game_response(result, response_code, headers, body):
 	"""Handle the HTTP start game response"""
 	var body_str = body.get_string_from_utf8()
-	print("[Bootcamp] Start game HTTP response:", result, response_code, body_str)
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Start game HTTP response:", result, response_code, body_str)
 	
 	# Parse the JSON response
 	var json = JSON.parse_string(body_str)
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
-		print("[Bootcamp] Start game SUCCESS - starting bootcamp drill")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Start game SUCCESS - starting bootcamp drill")
 		_start_drill_immediately()
 	else:
-		print("[Bootcamp] Start game FAILED or invalid response - starting drill anyway")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Start game FAILED or invalid response - starting drill anyway")
 		_start_drill_immediately()
 
 func _start_drill_immediately():
 	"""Actually start the bootcamp drill"""
 	if drill_started:
-		print("[Bootcamp] Drill already started, ignoring duplicate call")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Drill already started, ignoring duplicate call")
 		return
 	
 	drill_started = true
-	print("[Bootcamp] Bootcamp drill officially started!")
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Bootcamp drill officially started!")
 	
 	# Enable target interactions (they might be disabled initially)
 	if ipsc:
 		ipsc.input_pickable = true
-		print("[Bootcamp] Target enabled for shooting practice")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Target enabled for shooting practice")
 	
 	# Any additional drill initialization can go here
 	# For bootcamp, the drill is already "active" since it's free practice
@@ -151,61 +166,77 @@ func _on_clear_pressed():
 			print("Removed bullet hole: ", bullet_hole.name)
 
 func _on_menu_control(directive: String):
-	print("[Bootcamp] Received menu_control signal with directive: ", directive)
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Received menu_control signal with directive: ", directive)
 	match directive:
 		"enter":
-			print("[Bootcamp] Enter pressed")
+			if DEBUG_LOGGING:
+				print("[Bootcamp] Enter pressed")
 			_on_clear_pressed()
 		"back", "homepage":
-			print("[Bootcamp] ", directive, " - navigating to main menu")
+			if DEBUG_LOGGING:
+				print("[Bootcamp] ", directive, " - navigating to main menu")
 			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
 		"volume_up":
-			print("[Bootcamp] Volume up")
+			if DEBUG_LOGGING:
+				print("[Bootcamp] Volume up")
 			volume_up()
 		"volume_down":
-			print("[Bootcamp] Volume down")
+			if DEBUG_LOGGING:
+				print("[Bootcamp] Volume down")
 			volume_down()
 		"power":
-			print("[Bootcamp] Power off")
+			if DEBUG_LOGGING:
+				print("[Bootcamp] Power off")
 			power_off()
 		_:
-			print("[Bootcamp] Unknown directive: ", directive)
+			if DEBUG_LOGGING:
+				print("[Bootcamp] Unknown directive: ", directive)
 
 func volume_up():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Bootcamp] Sending volume up HTTP request...")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Sending volume up HTTP request...")
 		http_service.volume_up(_on_volume_up_response)
 	else:
-		print("[Bootcamp] HttpService singleton not found!")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] HttpService singleton not found!")
 
 func _on_volume_up_response(result, response_code, headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Bootcamp] Volume up HTTP response:", result, response_code, body_str)
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Volume up HTTP response:", result, response_code, body_str)
 
 func volume_down():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Bootcamp] Sending volume down HTTP request...")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Sending volume down HTTP request...")
 		http_service.volume_down(_on_volume_down_response)
 	else:
-		print("[Bootcamp] HttpService singleton not found!")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] HttpService singleton not found!")
 
 func _on_volume_down_response(result, response_code, headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Bootcamp] Volume down HTTP response:", result, response_code, body_str)
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Volume down HTTP response:", result, response_code, body_str)
 
 func power_off():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Bootcamp] Sending power off HTTP request...")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Sending power off HTTP request...")
 		http_service.shutdown(_on_shutdown_response)
 	else:
-		print("[Bootcamp] HttpService singleton not found!")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] HttpService singleton not found!")
 
 func _on_shutdown_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Bootcamp] Shutdown HTTP response:", result, response_code, body_str)
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Shutdown HTTP response:", result, response_code, body_str)
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
@@ -213,9 +244,11 @@ func load_language_from_global_settings():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		print("[Bootcamp] Loaded language from GlobalData: ", language)
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Loaded language from GlobalData: ", language)
 	else:
-		print("[Bootcamp] GlobalData not found or no language setting, using default English")
+		if DEBUG_LOGGING:
+			print("[Bootcamp] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
 func set_locale_from_language(language: String):
@@ -232,7 +265,8 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	print("[Bootcamp] Set locale to: ", locale)
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Set locale to: ", locale)
 
 func update_ui_texts():
 	# Update static UI elements with translations

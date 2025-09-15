@@ -341,9 +341,11 @@ func spawn_bullet_hole(local_position: Vector2):
 		if bullet_hole not in active_bullet_holes:
 			active_bullet_holes.append(bullet_hole)
 		
-		print("[ipsc_mini] POOL: Bullet hole activated at position: ", local_position, " (Active: ", active_bullet_holes.size(), ") with z_index: 0")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] POOL: Bullet hole activated at position: ", local_position, " (Active: ", active_bullet_holes.size(), ") with z_index: 0")
 	else:
-		print("[ipsc_mini] POOL ERROR: Failed to get bullet hole from pool!")
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] POOL ERROR: Failed to get bullet hole from pool!")
 
 func _on_websocket_bullet_hit(pos: Vector2):
 	# Check if bullet spawning is enabled
