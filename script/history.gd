@@ -86,13 +86,15 @@ func load_history_data():
 		setup_clickable_items()
 		return
 	
-	# Prepare list of files to load
+	# Prepare list of files to load - check both new and old naming schemes
 	files_to_load.clear()
-	for i in range(1, max_index + 1):
+	# With circular buffer, we need to check all possible performance files 1-30
+	# but also support legacy files during transition
+	for i in range(1, 31):  # Always check 1-30 for circular buffer
 		files_to_load.append(str(i))
 	
 	if DEBUG_PRINTS:
-		print("[History] Loading ", files_to_load.size(), " files: ", files_to_load)
+		print("[History] Loading ", files_to_load.size(), " potential files (new and legacy): ", files_to_load)
 	
 	# Show loading overlay and start loading
 	show_loading_overlay()
@@ -108,7 +110,6 @@ func load_next_file():
 		
 		# Sort history data based on current sort mode
 		sort_history_data()
-		
 		hide_loading_overlay()
 		populate_list()
 		setup_clickable_items()
@@ -170,10 +171,12 @@ func _on_file_loaded(result, response_code, headers, body):
 	load_next_file()
 
 func process_loaded_data(data: Dictionary, file_id: String):
-	# Extract the drill number from file_id (e.g., "1.json" -> 1)
+	# Extract the drill number from file_id - handle both new and old naming schemes
 	if DEBUG_PRINTS:
 		print("[History] Processing file_id: ", file_id)
-	var drill_number = int(file_id.replace(".json", ""))
+	
+	var drill_number = int(file_id)
+	
 	if DEBUG_PRINTS:
 		print("[History] Extracted drill_number: ", drill_number)
 	

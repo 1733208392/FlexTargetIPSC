@@ -10,7 +10,6 @@ func _ready():
 	if not DEBUG_DISABLED:
 		print("[HttpService] Ready.")
 
-
 # Renamed to avoid conflict with Godot's built-in get()
 func get_request(url: String, callback: Callable):
 	if not DEBUG_DISABLED:
