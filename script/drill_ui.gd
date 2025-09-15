@@ -9,6 +9,9 @@ const DEBUG_LOGGING = false  # Set to true for verbose debugging
 @export var competitive_title_style: LabelSettings = preload("res://theme/target_title_competitive.tres")
 var current_theme_style: String = "golden"
 
+# Timeout warning state
+var timeout_warning_active: bool = false
+
 # UI Node references
 @onready var target_type_title = $TopContainer/TopLayout/HeaderContainer/TargetTypeTitle
 @onready var fps_label = $FPSLabel
@@ -41,6 +44,10 @@ func _ready():
 			drills_manager.ui_fastest_time_update.connect(_on_fastest_time_update)
 		if drills_manager.has_signal("ui_show_completion"):
 			drills_manager.ui_show_completion.connect(_on_show_completion)
+		if drills_manager.has_signal("ui_show_completion_with_timeout"):
+			drills_manager.ui_show_completion_with_timeout.connect(_on_show_completion_with_timeout)
+		if drills_manager.has_signal("ui_timeout_warning"):
+			drills_manager.ui_timeout_warning.connect(_on_timeout_warning)
 		if drills_manager.has_signal("ui_score_update"):
 			drills_manager.ui_score_update.connect(_on_score_update)
 		if drills_manager.has_signal("ui_theme_change"):
@@ -93,6 +100,18 @@ func _on_timer_update(time_elapsed: float):
 	
 	var time_string = "%02d:%02d:%02d" % [minutes, seconds, milliseconds]
 	timer_label.text = time_string
+	
+	# Change color to red if timeout warning is active
+	if timeout_warning_active:
+		timer_label.modulate = Color.RED
+	else:
+		timer_label.modulate = Color.WHITE
+
+func _on_timeout_warning(remaining_seconds: float):
+	"""Handle timeout warning - show red timer"""
+	timeout_warning_active = true
+	if DEBUG_LOGGING:
+		print("[DrillUI] Timeout warning activated - %.1f seconds remaining" % remaining_seconds)
 
 func _process(_delta):
 	"""Update FPS counter every frame"""
@@ -182,12 +201,12 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 			print("[drill_ui] Using fallback method to update overlay")
 		
 		# Update individual labels
-		var score_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Score")
+		var completion_score_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Score")
 		var hf_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/HitFactor")
 		var fastest_shot_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/FastestShot")
 		
-		if score_label:
-			score_label.text = "Score: %d points" % final_score
+		if completion_score_label:
+			completion_score_label.text = "Score: %d points" % final_score
 		if hf_label:
 			hf_label.text = "Hit Factor: %.2f" % hit_factor
 		if fastest_shot_label:
@@ -199,6 +218,74 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	# Connect button signals and set up focus
 	connect_completion_overlay_buttons()
 	setup_overlay_focus()
+	
+	# Reset timeout warning state
+	timeout_warning_active = false
+
+func _on_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool):
+	"""Show the completion overlay with timeout message"""
+	if DEBUG_LOGGING:
+		print("Showing completion overlay with timeout")
+	
+	# Calculate hit factor (simple example: score / time)
+	var hit_factor = 0.0
+	if final_time > 0:
+		hit_factor = final_score / final_time
+	
+	# Check if the overlay has its script properly attached
+	if drill_complete_overlay.get_script() == null:
+		if DEBUG_LOGGING:
+			print("[drill_ui] Script missing from drill_complete_overlay, attempting to reattach")
+		var script_path = "res://script/drill_complete_overlay.gd"
+		var script = load(script_path)
+		if script:
+			drill_complete_overlay.set_script(script)
+			if DEBUG_LOGGING:
+				print("[drill_ui] Script reattached successfully")
+		else:
+			if DEBUG_LOGGING:
+				print("[drill_ui] Failed to load drill_complete_overlay script")
+	
+	# Try to use the new method if available
+	if drill_complete_overlay.has_method("show_drill_complete_with_timeout"):
+		drill_complete_overlay.show_drill_complete_with_timeout(final_score, hit_factor, fastest_time, timed_out)
+		if DEBUG_LOGGING:
+			print("Updated drill complete overlay with timeout: score=%d, hit_factor=%.2f, fastest=%.2f, timed_out=%s" % [final_score, hit_factor, fastest_time, timed_out])
+	else:
+		# Fallback to manual update with timeout handling
+		if DEBUG_LOGGING:
+			print("[drill_ui] Using fallback method to update overlay with timeout")
+		
+		# Update individual labels
+		var title_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Title")
+		var completion_score_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Score")
+		var hf_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/HitFactor")
+		var fastest_shot_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/FastestShot")
+		
+		# Set timeout title in red
+		if title_label and timed_out:
+			title_label.text = "TIMEOUT!"
+			title_label.modulate = Color.RED
+		elif title_label:
+			title_label.text = "Drill Completed"
+			title_label.modulate = Color.WHITE
+		
+		if completion_score_label:
+			completion_score_label.text = "Score: %d points" % final_score
+		if hf_label:
+			hf_label.text = "Hit Factor: %.2f" % hit_factor
+		if fastest_shot_label:
+			var fastest_string = "%.2fs" % fastest_time if fastest_time < 999.0 else "--"
+			fastest_shot_label.text = "Fastest Shot: " + fastest_string
+		
+		drill_complete_overlay.visible = true
+	
+	# Connect button signals and set up focus
+	connect_completion_overlay_buttons()
+	setup_overlay_focus()
+	
+	# Reset timeout warning state
+	timeout_warning_active = false
 
 func connect_completion_overlay_buttons():
 	"""Connect the completion overlay button signals"""
@@ -225,6 +312,9 @@ func _on_restart_button_pressed():
 	"""Handle restart button click - restart the drill"""
 	if DEBUG_LOGGING:
 		print("Restart button pressed - restarting drill")
+	
+	# Reset timeout warning state
+	timeout_warning_active = false
 	
 	# Hide the completion overlay
 	drill_complete_overlay.visible = false

@@ -307,16 +307,16 @@ func _on_area_replay_hit(area: Area2D):
 
 func setup_button_focus():
 	"""Set up button focus management"""
-	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
-	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
+	var replay_btn = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	
-	if restart_button:
-		restart_button.focus_mode = Control.FOCUS_ALL
+	if restart_btn:
+		restart_btn.focus_mode = Control.FOCUS_ALL
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] RestartButton focus enabled")
 	
-	if replay_button:
-		replay_button.focus_mode = Control.FOCUS_ALL
+	if replay_btn:
+		replay_btn.focus_mode = Control.FOCUS_ALL
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] ReviewReplayButton focus enabled")
 
@@ -354,6 +354,67 @@ func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: 
 	
 	if DEBUG_LOGGING:
 		print("[drill_complete_overlay] Drill complete overlay shown with results")
+
+func show_drill_complete_with_timeout(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0, timed_out: bool = false):
+	"""Show the drill complete overlay with timeout handling"""
+	# First make sure we're visible so the nodes are available
+	visible = true
+	
+	# Update UI texts with current language (wait one frame to ensure visibility is processed)
+	call_deferred("_update_ui_after_visible_with_timeout", timed_out)
+	
+	# Update the results
+	update_drill_results(score, hit_factor, fastest_shot)
+	
+	if DEBUG_LOGGING:
+		print("[drill_complete_overlay] Drill complete overlay shown with timeout state: %s" % timed_out)
+
+func _update_ui_after_visible_with_timeout(timed_out: bool):
+	"""Update UI texts after the overlay becomes visible with timeout handling"""
+	# Always reload language settings from GlobalData to catch any changes
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		if DEBUG_LOGGING:
+			print("[DrillComplete] Reloaded language from GlobalData: ", language)
+	
+	# Update the UI texts with timeout consideration
+	update_ui_texts_with_timeout(timed_out)
+
+func update_ui_texts_with_timeout(timed_out: bool):
+	"""Update UI texts with timeout consideration"""
+	if DEBUG_LOGGING:
+		print("[DrillComplete] Updating UI texts with timeout state: ", timed_out)
+		print("[DrillComplete] Current locale: ", TranslationServer.get_locale())
+	
+	# Get the title node
+	var title = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Title")
+	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
+	var replay_btn = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	
+	if title:
+		if timed_out:
+			title.text = "TIMEOUT!"
+			title.modulate = Color.RED
+		else:
+			title.text = tr("complete")
+			title.modulate = Color.WHITE
+		if DEBUG_LOGGING:
+			print("[DrillComplete] Updated title to: ", title.text, " with color: ", title.modulate)
+	else:
+		if DEBUG_LOGGING:
+			print("[DrillComplete] ERROR: title node not found")
+	
+	if restart_btn:
+		restart_btn.text = tr("restart")
+		if DEBUG_LOGGING:
+			print("[DrillComplete] Updated restart button to: ", restart_btn.text)
+	
+	if replay_btn:
+		replay_btn.text = tr("replay")
+		if DEBUG_LOGGING:
+			print("[DrillComplete] Updated replay button to: ", replay_btn.text)
 
 func _update_ui_after_visible():
 	"""Update UI texts after the overlay becomes visible"""

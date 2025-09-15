@@ -29,6 +29,11 @@ var rotating_target_hits: int = 0  # Track hits on the rotating target
 var elapsed_seconds: float = 0.0
 var drill_start_time: float = 0.0
 
+# Timeout functionality
+var timeout_timer: Timer = null
+var timeout_seconds: float = 30.0
+var drill_timed_out: bool = false
+
 # Node references
 @onready var center_container = $CenterContainer
 @onready var drill_timer = $DrillUI/DrillTimer
@@ -45,11 +50,13 @@ signal ui_timer_update(elapsed_seconds: float)
 signal ui_target_title_update(target_index: int, total_targets: int)
 signal ui_fastest_time_update(fastest_time: float)
 signal ui_show_completion(final_time: float, fastest_time: float, final_score: int)
+signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool)
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
 signal ui_theme_change(theme_name: String)
 signal ui_score_update(score: int)
 signal ui_progress_update(targets_completed: int)
+signal ui_timeout_warning(remaining_seconds: float)
 
 @onready var performance_tracker = preload("res://script/performance_tracker.gd").new()
 
@@ -79,6 +86,13 @@ func _ready():
 	
 	# Connect drill timer signal
 	drill_timer.timeout.connect(_on_drill_timer_timeout)
+	
+	# Create and setup timeout timer
+	timeout_timer = Timer.new()
+	timeout_timer.wait_time = timeout_seconds
+	timeout_timer.one_shot = true
+	timeout_timer.timeout.connect(_on_timeout_timer_timeout)
+	add_child(timeout_timer)
 	
 	# Instantiate and add performance tracker
 	add_child(performance_tracker)
@@ -142,13 +156,22 @@ func _on_drill_timer_timeout():
 	"""Handle drill timer timeout - update elapsed time display"""
 	elapsed_seconds += 0.1
 	emit_signal("ui_timer_update", elapsed_seconds)
+	
+	# Check for timeout warning (5 seconds left)
+	var remaining_time = timeout_seconds - elapsed_seconds
+	if remaining_time <= 5.0 and remaining_time > 0.0:
+		emit_signal("ui_timeout_warning", remaining_time)
 
 func start_drill_timer():
 	"""Start the drill elapsed time timer"""
 	elapsed_seconds = 0.0
 	drill_start_time = Time.get_unix_time_from_system()
+	drill_timed_out = false
 	emit_signal("ui_timer_update", elapsed_seconds)
 	drill_timer.start()
+	
+	# Start the timeout timer
+	timeout_timer.start()
 	
 	# Reset performance tracker timing for accurate first shot measurement
 	performance_tracker.reset_shot_timer()
@@ -159,6 +182,14 @@ func start_drill_timer():
 	
 	if DEBUG_LOGGING:
 		print("=== DRILL TIMER STARTED ===")
+		print("=== TIMEOUT TIMER STARTED (30 seconds) ===")
+
+func _on_timeout_timer_timeout():
+	"""Handle timeout when 30 seconds have elapsed"""
+	if DEBUG_LOGGING:
+		print("=== DRILL TIMEOUT! ===")
+	drill_timed_out = true
+	complete_drill_with_timeout()
 
 func initialize_target_sequence():
 	"""Initialize the target sequence - randomized if enabled"""
@@ -245,8 +276,10 @@ func _input(event):
 func stop_drill_timer():
 	"""Stop the drill elapsed time timer"""
 	drill_timer.stop()
+	timeout_timer.stop()
 	if DEBUG_LOGGING:
 		print("=== DRILL TIMER STOPPED ===")
+		print("=== TIMEOUT TIMER STOPPED ===")
 
 func _process(_delta):
 	"""Main process loop - UI updates are handled by drill_ui.gd"""
@@ -673,7 +706,10 @@ func complete_drill():
 	
 	# Show the completion overlay
 	var fastest_time = performance_tracker.get_fastest_time_diff()
-	emit_signal("ui_show_completion", elapsed_seconds, fastest_time, total_drill_score)
+	if drill_timed_out:
+		emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true)
+	else:
+		emit_signal("ui_show_completion", elapsed_seconds, fastest_time, total_drill_score)
 	
 	# Set the total elapsed time in performance tracker before finishing
 	performance_tracker.set_total_elapsed_time(elapsed_seconds)
@@ -687,8 +723,9 @@ func complete_drill():
 		if DEBUG_LOGGING:
 			print("=== BULLETS RE-ENABLED FOR COMPLETION OVERLAY ===")
 	
-	# Emit drills finished signal for performance tracking (after overlay is shown)
-	emit_signal("drills_finished")
+	# Only emit drills finished signal if not timed out (to save performance data)
+	if not drill_timed_out:
+		emit_signal("drills_finished")
 	
 	# Clear the current target to prevent further interactions
 	clear_current_target()
@@ -697,6 +734,7 @@ func complete_drill():
 	current_target_index = 0
 	total_drill_score = 0
 	drill_completed = false
+	drill_timed_out = false
 	rotating_target_hits = 0
 	
 	# DON'T reset progress bar, timer, or fastest time - keep them displayed
@@ -708,6 +746,59 @@ func complete_drill():
 	performance_tracker.reset_fastest_time()
 	# emit_signal("ui_fastest_time_update", 999.0)  # Don't reset UI display
 
+func complete_drill_with_timeout():
+	"""Complete the drill due to timeout - don't save performance data"""
+	if DEBUG_LOGGING:
+		print("=== DRILL TIMED OUT! ===")
+		print("Final score: ", total_drill_score)
+		print("Targets completed: ", current_target_index, "/", target_sequence.size())
+	drill_completed = true
+	drill_timed_out = true
+	
+	# Stop the drill timer
+	stop_drill_timer()
+	
+	# Hide the shot timer since drill is complete
+	hide_shot_timer()
+	
+	# Temporarily disable bullet spawning to freeze gameplay
+	bullets_allowed = false
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.set_bullet_spawning_enabled(false)
+	
+	# Show the completion overlay with timeout indication
+	var fastest_time = performance_tracker.get_fastest_time_diff()
+	emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true)
+	
+	# DON'T set total elapsed time in performance tracker - we're not saving timeout data
+	# performance_tracker.set_total_elapsed_time(elapsed_seconds)
+	
+	# Wait a moment to ensure the overlay is visible before enabling bullets
+	await get_tree().create_timer(0.1).timeout
+	
+	# Re-enable bullet spawning for overlay interactions
+	if ws_listener:
+		ws_listener.set_bullet_spawning_enabled(true)
+		if DEBUG_LOGGING:
+			print("=== BULLETS RE-ENABLED FOR COMPLETION OVERLAY ===")
+	
+	# DON'T emit drills_finished signal - this prevents performance data saving
+	# emit_signal("drills_finished")
+	
+	# Clear the current target to prevent further interactions
+	clear_current_target()
+	
+	# Reset tracking variables for next run - but keep UI state for display
+	current_target_index = 0
+	total_drill_score = 0
+	drill_completed = false
+	drill_timed_out = false
+	rotating_target_hits = 0
+	
+	# Reset performance tracker for next drill without saving data
+	performance_tracker.reset_fastest_time()
+
 func restart_drill():
 	"""Restart the drill from the beginning"""
 	if DEBUG_LOGGING:
@@ -717,7 +808,12 @@ func restart_drill():
 	current_target_index = 0
 	total_drill_score = 0
 	drill_completed = false
+	drill_timed_out = false
 	rotating_target_hits = 0
+	
+	# Stop any running timers
+	if timeout_timer.is_stopped() == false:
+		timeout_timer.stop()
 	
 	# Re-initialize target sequence (this will re-randomize if enabled)
 	initialize_target_sequence()

@@ -34,7 +34,7 @@ time,Time,时长,時間長,時長
 fastest_t,Fastest,最快,一番嬉しい,最快
 hit_factor_t,HF,系数,システム数,係數
 score_rule,"{""title"": ""SCORING RULES"",
-""content"": ""[center][b]SCORING RULES[/b][/center]
+""content"": ""[center]SCORING RULES[/center]
 
 • IPSC Alpha (A): 5 pts 
 • IPSC Charlie (C): 2 pts 
@@ -44,7 +44,7 @@ score_rule,"{""title"": ""SCORING RULES"",
 • Miss: 0 pt
 • Steel Poppers: 5 pts
 • Steel Paddles: 5 pts""}","{""title"": ""记分规则"",
-""content"": ""[center][b] 记分规则[/b][/center]
+""content"": ""[center] 记分规则 [/center]
 
 •  A区: 5 分
 •  C区: 2 分
@@ -54,7 +54,7 @@ score_rule,"{""title"": ""SCORING RULES"",
 •  脱靶: 0 分
 •  金属起倒靶: 5 pts
 •  金属蝶靶: 5 pts""}","{""title"": ""记分规则"",
-""content"": ""[center][b] 记分规则[/b][/center]
+""content"": ""[center] 记分规则 [/center]
 
 •  A区: 5 分
 •  C区: 2 分
@@ -65,7 +65,7 @@ score_rule,"{""title"": ""SCORING RULES"",
 •  金属起倒靶: 5 pts
 •  金属蝶靶: 5 pts""}
 {""title"": ""採点ルール"",
-""content"": ""[center][b]採点ルール[/b][/center]
+""content"": ""[center]採点ルール[/center]
 
 • IPSC アルファ (A): 5ポイント
 • IPSC チャーリー (C): 2ポイント
@@ -75,7 +75,7 @@ score_rule,"{""title"": ""SCORING RULES"",
 • ミス: 0ポイント
 • スチールポッパー: 5ポイント
 • スチールパドル: 5ポイント""}","{""title"": ""記分規則"",
-""content"": ""[center][b] 記分規則[/b][/center]
+""content"": ""[center] 記分規則 [/center]
 
 • A區: 5 分
 • C區: 2 分
@@ -86,38 +86,38 @@ score_rule,"{""title"": ""SCORING RULES"",
 • 金屬起倒靶: 5 pts
 • 金屬蝶靶: 5 pts""}"
 panelty_rule,"{""title"": ""PENALTY RULES"",
-""content"": ""[center] [b]PENALTY RULES[/b][/center]
+""content"": ""[center] PENALTY RULES[/center]
 
- [b]Score Penalties:[/b]
+ Score Penalties:
 •  No-Shoot Hit: -10 pts""}","{""title"": ""惩罚规则"",
-""content"": ""[center][b]惩罚规则[/b][/center]
+""content"": ""[center]惩罚规则[/center]
 
-[b]分数惩罚:[/b]
+分数惩罚:
 • 白色禁止区: -10 pts""}","{""title"": ""ペナルティルール"",
-""content"": ""[center] [b]ペナルティルール[/b][/center]
+""content"": ""[center] ペナルティルール[/center]
 
-[b]得点ペナルティ:[/b]
+得点ペナルティ:
 • シュートなしヒット: -10ポイント""}","{""title"": ""懲罰規則"",
-""content"": ""[center][b]懲罰規則[/b][/center]
+""content"": ""[center]懲罰規則[/center]
 
-[b]分數懲罰:[/b]
+分數懲罰:
 • 白色禁止區: -10 pts""}"
 drill_rule,"{""title"": ""DRILL RULE"",
-""content"": ""[center][b]DRILL RULE[/b][/center]
+""content"": ""[center]DRILL RULE[/center]
 
-[b]TARGET TYPES:[/b]
+TARGET TYPES:
 • Paper targets (IPSC zones)
 • Steel plates and poppers
 • White targets (no-shoot)
 • Special target (no score area)
 • Rotating and Moving target
 
-[b]DRILL PROGRESSESSION:[/b]
+DRILL PROGRESSESSION:
 • At each shooting spot, 2 shots on paper targets or  hitting all steel targets will auto move to the next spot
 • Completion of shooting all required targets finishes the drill""}","{""title"": ""训练"",
-""content"": ""[center][b]训练规则[/b][/center]
+""content"": ""[center]训练规则[/center]
 
-[b]靶子类型:[/b]
+靶子类型:
 • IPSC纸靶 (IPSC 区域)
 • 钢质蝶靶
 • 钢质起倒靶
@@ -125,24 +125,24 @@ drill_rule,"{""title"": ""DRILL RULE"",
 • 黑色无效区靶
 • 移动靶
 
-[b]训练进程:[/b]
+训练进程:
 • 每个射击区域，击中纸靶两枪或者击倒所有钢靶自动进入下一个设计区
 • 完成所有射击区射击完成训练""}","{""title"": ""ドリルのルール"",
-""content"": ""[center][b]ドリルのルール[/b][/center]
+""content"": ""[center]ドリルのルール[/center]
 
-[b]ターゲットの種類:[/b]
+ターゲットの種類:
 • 紙ターゲット（IPSCゾーン）
 • スチールプレートとポッパー
 • 白ターゲット（射撃禁止）
 • 特殊ターゲット（得点エリアなし）
 • 回転ターゲットと移動ターゲット
 
-[b]ドリルの進行:[/b]
+ドリルの進行:
 • 各射撃スポットで、紙ターゲットに2発、またはすべてのスチールターゲットに命中すると、自動的に次のスポットに移動します。
 • 必要なターゲットをすべて射撃し終えると、ドリルは終了します。""}","{""title"": ""訓練"",
-""content"": ""[center][b]訓練規則[/b][/center]
+""content"": ""[center]訓練規則[/center]
 
-[b]靶子類型:[/b]
+靶子類型:
 • IPSC紙靶 (IPSC 區域)
 • 鋼蝶靶
 • 鋼質起倒靶
@@ -150,104 +150,104 @@ drill_rule,"{""title"": ""DRILL RULE"",
 • 黑色無效區靶
 • 移動靶
 
-[b]訓練過程:[/b]
+訓練過程:
 • 每個射擊區域，擊中紙靶兩槍或擊倒所有鋼靶自動進入下一個設計區
 • 完成所有射擊區射擊完成訓練""}"
 timer_system,"{""title"": ""TIMER SYSTEM"",
-""content"": ""[center][b]TIMER SYSTEM[/b][/center]
+""content"": ""[center]TIMER SYSTEM[/center]
 
-[b]Drill Start:[/b]
+Drill Start:
 • Drill begins with BEEPING sound
 • 3-5 second random delay from standby to beep
 
-[b]Timing:[/b]
+Timing:
 • Timer starts on beep
 • Timer stops when all spots clear
 • Total time includes penalties""}","{""title"": ""计时系统"",
-""content"": ""[center][b]计时系统[/b][/center]
+""content"": ""[center]计时系统[/center]
 
-[b]游戏开始:[/b]
+游戏开始:
 • 游戏滴声后开始计时
 • 从预备到滴声有3-5秒随机延迟
 
-[b]计时:[/b]
+计时:
 • 滴声后开始
 • 所有目标击中后结束
 • 总时长包含惩罚时长""}","{""title"": ""タイマーシステム"",
-""content"": ""[center][b]タイマーシステム[/b][/center]
+""content"": ""[center]タイマーシステム[/center]
 
-[b]ドリル開始:[/b]
+ドリル開始:
 • ドリルはビープ音で開始します
 • スタンバイ状態からビープ音まで、3～5秒のランダムな遅延があります
 
-[b]タイミング:[/b]
+タイミング:
 • ビープ音でタイマーがスタートします
 • すべてのスポットがクリアされるとタイマーが停止します
 • 合計時間にはペナルティが含まれます""}","{""title"": ""計時系統"",
-""content"": ""[center][b]計時系統[/b][/center]
+""content"": ""[center]計時系統[/center]
 
-[b]遊戲開始:[/b]
+遊戲開始:
 • 遊戲滴聲後開始計時
 • 從預備到滴聲有3-5秒隨機延遲
 
-[b]計時:[/b]
+計時:
 • 滴聲後開始
 • 所有目標擊中後結束
 • 總時長包含懲罰時長""}"
 hit_factor_rule,"{""title"": ""HIT FACTOR"",
-""content"": ""[center][b]HIT FACTOR[/b][/center]
+""content"": ""[center]HIT FACTOR[/center]
 
-[b]Hit Factor Formula:[/b]
+Hit Factor Formula:
 
-[center][b]HF = Score ÷ Total Time[/b][/center]
+[center]HF = Score ÷ Total Time[/center]
 
-[b]Leaderboard:[/b]
+Leaderboard:
 • Higher Hit Factor wins a better position in rankings
 
-[center][b]Highest HF = Champion![/b][/center]
+[center]Highest HF = Champion![/center]
 
-[b]Strategy:[/b]
+Strategy:
 • Balance speed and accuracy
 • Minimize penalties""}","{""title"": ""射击系数"",
-""content"": ""[center][b]射击系数[/b][/center]
+""content"": ""[center]射击系数[/center]
 
-[b]计算公式:[/b]
+计算公式:
 
-[center][b]HF = 总分 ÷  总时长[/b][/center]
+[center]HF = 总分 ÷  总时长[/center]
 
-[b]排行榜:[/b]
+排行榜:
 • 按照射击系数从高到低进行排名
 
-[center][b]最高射击系数 = 冠军![/b][/center]
+[center]最高射击系数 = 冠军![/center]
 
-[b]策略:[/b]
+策略:
 • 平衡速度与准确度
 • 追求最小惩罚""}","{""title"": ""ヒットファクター"",
-""content"": ""[center][b]ヒットファクター[/b][/center]
+""content"": ""[center]ヒットファクター[/center]
 
-[b]ヒットファクターの計算式:[/b]
+ヒットファクターの計算式:
 
-[center][b]HF = スコア ÷ 合計時間[/b][/center]
+[center]HF = スコア ÷ 合計時間[/center]
 
-[b]リーダーボード:[/b]
+リーダーボード:
 • ヒットファクターが高いほど、ランキングで上位にランクインします
 
-[center][b]最高HF = チャンピオン！[/b][/center]
+[center]最高HF = チャンピオン！[/center]
 
-[b]戦略:[/b]
+戦略:
 • スピードと正確さのバランスをとる
 • ペナルティを最小限に抑える""}","{""title"": ""射擊係數"",
-""content"": ""[center][b]射擊係數[/b][/center]
+""content"": ""[center]射擊係數[/center]
 
-[b]計算公式:[/b]
+計算公式:
 
-[center][b]HF = 總分 ÷ 總時長[/b][/center]
+[center]HF = 總分 ÷ 總時長[/center]
 
-[b]排行榜:[/b]
+排行榜:
 • 依照射擊係數由高到低進行排名
 
-[center][b]最高射擊係數 = 冠軍![/b][/center]
+[center]最高射擊係數 = 冠軍![/center]
 
-[b]策略:[/b]
+策略:
 • 平衡速度與準確度
 • 追求最小懲罰""}"
