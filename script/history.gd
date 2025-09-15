@@ -1,11 +1,17 @@
 extends Control
 
+# Performance optimization - disable debug prints in production
+const DEBUG_PRINTS = false
+
 @onready var list_container = $MarginContainer/VBoxContainer/ScrollContainer/ListContainer
 @onready var back_button = $MarginContainer/VBoxContainer/BackButton
 
 # History data structure to store drill results
 var history_data = []
 var current_focused_index = 0
+
+# Sorting mode control
+var sort_by_hit_factor = true  # When true, sort by hit factor; when false, sort by drill number
 
 # Loading overlay components
 var loading_overlay: Control
@@ -37,15 +43,26 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		print("[History] Connecting to WebSocketListener.menu_control signal")
+		if DEBUG_PRINTS:
+			print("[History] Connecting to WebSocketListener.menu_control signal")
 	else:
-		print("[History] WebSocketListener singleton not found!")
+		if DEBUG_PRINTS:
+			print("[History] WebSocketListener singleton not found!")
 	
 	# Start loading history data
 	load_history_data()
 
+func _input(event):
+	"""Handle direct keyboard input for sorting toggle"""
+	if event is InputEventKey and event.pressed:
+		# Toggle sort mode with 'S' or 'H' key
+		if event.keycode == KEY_S or event.keycode == KEY_H:
+			toggle_sort_mode()
+			get_viewport().set_input_as_handled()  # Prevent further processing
+
 func load_history_data():
-	print("[History] Starting to load history data via HTTP")
+	if DEBUG_PRINTS:
+		print("[History] Starting to load history data via HTTP")
 	history_data.clear()
 	
 	# Get max_index from GlobalData
@@ -54,14 +71,16 @@ func load_history_data():
 		max_index = int(global_data.settings_dict.get("max_index", 0))
 	else:
 		max_index = 0
-		print("[History] No max_index found in GlobalData, no files to load")
+		if DEBUG_PRINTS:
+			print("[History] No max_index found in GlobalData, no files to load")
 		hide_loading_overlay()
 		populate_list()
 		setup_clickable_items()
 		return
 	
 	if max_index <= 0:
-		print("[History] max_index is 0, no files to load")
+		if DEBUG_PRINTS:
+			print("[History] max_index is 0, no files to load")
 		hide_loading_overlay()
 		populate_list()
 		setup_clickable_items()
@@ -72,7 +91,8 @@ func load_history_data():
 	for i in range(1, max_index + 1):
 		files_to_load.append(str(i))
 	
-	print("[History] Loading ", files_to_load.size(), " files: ", files_to_load)
+	if DEBUG_PRINTS:
+		print("[History] Loading ", files_to_load.size(), " files: ", files_to_load)
 	
 	# Show loading overlay and start loading
 	show_loading_overlay()
@@ -83,18 +103,21 @@ func load_history_data():
 func load_next_file():
 	if current_file_index >= files_to_load.size():
 		# All files loaded, finish up
-		print("[History] All files loaded successfully")
+		if DEBUG_PRINTS:
+			print("[History] All files loaded successfully")
 		
-		# Sort history data by drill number
-		history_data.sort_custom(func(a, b): return a["drill_number"] < b["drill_number"])
+		# Sort history data based on current sort mode
+		sort_history_data()
 		
 		hide_loading_overlay()
 		populate_list()
 		setup_clickable_items()
+		update_hf_header_visual()  # Update header visual indicator
 		return
 	
 	var file_id = files_to_load[current_file_index]
-	print("[History] Loading file ", current_file_index + 1, "/", files_to_load.size(), ": ", file_id)
+	if DEBUG_PRINTS:
+		print("[History] Loading file ", current_file_index + 1, "/", files_to_load.size(), ": ", file_id)
 	
 	# Update loading progress
 	update_loading_progress()
@@ -104,13 +127,15 @@ func load_next_file():
 	if http_service:
 		http_service.load_game(_on_file_loaded, file_id)
 	else:
-		print("[History] HttpService not found, skipping file: ", file_id)
+		if DEBUG_PRINTS:
+			print("[History] HttpService not found, skipping file: ", file_id)
 		current_file_index += 1
 		load_next_file()
 
 func _on_file_loaded(result, response_code, headers, body):
 	var file_id = files_to_load[current_file_index]
-	print("[History] File load response for ", file_id, " - Result: ", result, ", Code: ", response_code)
+	if DEBUG_PRINTS:
+		print("[History] File load response for ", file_id, " - Result: ", result, ", Code: ", response_code)
 	
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		var body_str = body.get_string_from_utf8()
@@ -128,13 +153,17 @@ func _on_file_loaded(result, response_code, headers, body):
 					var data = content_json.data
 					process_loaded_data(data, file_id)
 				else:
-					print("[History] Failed to parse content JSON for ", file_id)
+					if DEBUG_PRINTS:
+						print("[History] Failed to parse content JSON for ", file_id)
 			else:
-				print("[History] No data field in response for ", file_id)
+				if DEBUG_PRINTS:
+					print("[History] No data field in response for ", file_id)
 		else:
-			print("[History] Failed to parse response JSON for ", file_id)
+			if DEBUG_PRINTS:
+				print("[History] Failed to parse response JSON for ", file_id)
 	else:
-		print("[History] Failed to load file ", file_id, " - skipping")
+		if DEBUG_PRINTS:
+			print("[History] Failed to load file ", file_id, " - skipping")
 	
 	# Move to next file
 	current_file_index += 1
@@ -142,9 +171,11 @@ func _on_file_loaded(result, response_code, headers, body):
 
 func process_loaded_data(data: Dictionary, file_id: String):
 	# Extract the drill number from file_id (e.g., "1.json" -> 1)
-	print("[History] Processing file_id: ", file_id)
+	if DEBUG_PRINTS:
+		print("[History] Processing file_id: ", file_id)
 	var drill_number = int(file_id.replace(".json", ""))
-	print("[History] Extracted drill_number: ", drill_number)
+	if DEBUG_PRINTS:
+		print("[History] Extracted drill_number: ", drill_number)
 	
 	if data.has("drill_summary") and data.has("records"):
 		var drill_summary = data["drill_summary"]
@@ -168,10 +199,12 @@ func process_loaded_data(data: Dictionary, file_id: String):
 			"records": records
 		}
 		history_data.append(drill_data)
-		print("[History] Created drill_data: ", drill_data)
-		print("[History] history_data now has ", history_data.size(), " items")
+		if DEBUG_PRINTS:
+			print("[History] Created drill_data: ", drill_data)
+			print("[History] history_data now has ", history_data.size(), " items")
 	else:
-		print("[History] Invalid data structure in file ", file_id)
+		if DEBUG_PRINTS:
+			print("[History] Invalid data structure in file ", file_id)
 
 func create_loading_overlay():
 	# Create loading overlay similar to splash_loading
@@ -357,12 +390,14 @@ func setup_clickable_items():
 
 func _on_item_clicked(event: InputEvent, item_index: int):
 	if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) or (event is InputEventKey and event.keycode == KEY_ENTER and event.pressed):
-		print("History item ", item_index + 1, " selected")
+		if DEBUG_PRINTS:
+			print("History item ", item_index + 1, " selected")
 		
 		# Store drill data in GlobalData instead of creating temp file
 		if item_index < history_data.size():
 			var drill_data = history_data[item_index]
-			print("[History] Storing drill data in GlobalData for drill ", drill_data["drill_number"])
+			if DEBUG_PRINTS:
+				print("[History] Storing drill data in GlobalData for drill ", drill_data["drill_number"])
 			var global_data = get_node("/root/GlobalData")
 			if global_data:
 				global_data.selected_drill_data = drill_data
@@ -465,35 +500,49 @@ func _size_panel(panel: Panel, item: HBoxContainer):
 
 func _on_back_pressed():
 	# Navigate back to the previous scene (intro or main menu)
-	print("Back button pressed - returning to intro")
+	if DEBUG_PRINTS:
+		print("Back button pressed - returning to intro")
 	get_tree().change_scene_to_file("res://scene/intro.tscn")
 
 func _on_menu_control(directive: String):
-	print("[History] Received menu_control signal with directive: ", directive)
+	if DEBUG_PRINTS:
+		print("[History] Received menu_control signal with directive: ", directive)
 	match directive:
 		"volume_up":
-			print("[History] Volume up")
+			if DEBUG_PRINTS:
+				print("[History] Volume up")
 			volume_up()
 		"volume_down":
-			print("[History] Volume down")
+			if DEBUG_PRINTS:
+				print("[History] Volume down")
 			volume_down()
 		"power":
-			print("[History] Power off")
+			if DEBUG_PRINTS:
+				print("[History] Power off")
 			power_off()
 		"back", "homepage":
-			print("[History] ", directive, " - navigating to main menu")
+			if DEBUG_PRINTS:
+				print("[History] ", directive, " - navigating to main menu")
 			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
 		"up":
-			print("[History] Moving focus up")
+			if DEBUG_PRINTS:
+				print("[History] Moving focus up")
 			navigate_up()
 		"down":
-			print("[History] Moving focus down")
+			if DEBUG_PRINTS:
+				print("[History] Moving focus down")
 			navigate_down()
 		"enter":
-			print("[History] Enter pressed")
+			if DEBUG_PRINTS:
+				print("[History] Enter pressed")
 			select_current_item()
+		"sort", "toggle_sort":
+			if DEBUG_PRINTS:
+				print("[History] Sort mode toggle")
+			toggle_sort_mode()
 		_:
-			print("[History] Unknown directive: ", directive)
+			if DEBUG_PRINTS:
+				print("[History] Unknown directive: ", directive)
 
 func navigate_up():
 	if list_container.get_child_count() == 0:
@@ -513,11 +562,13 @@ func navigate_down():
 
 func select_current_item():
 	if current_focused_index < history_data.size():
-		print("History item ", current_focused_index + 1, " selected via keyboard")
+		if DEBUG_PRINTS:
+			print("History item ", current_focused_index + 1, " selected via keyboard")
 		
 		# Store drill data in GlobalData instead of creating temp file
 		var drill_data = history_data[current_focused_index]
-		print("[History] Storing drill data in GlobalData for drill ", drill_data["drill_number"])
+		if DEBUG_PRINTS:
+			print("[History] Storing drill data in GlobalData for drill ", drill_data["drill_number"])
 		var global_data = get_node("/root/GlobalData")
 		if global_data:
 			global_data.selected_drill_data = drill_data
@@ -529,34 +580,74 @@ func select_current_item():
 func volume_up():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[History] Sending volume up HTTP request...")
+		if DEBUG_PRINTS:
+			print("[History] Sending volume up HTTP request...")
 		http_service.volume_up(_on_volume_response)
 	else:
-		print("[History] HttpService singleton not found!")
+		if DEBUG_PRINTS:
+			print("[History] HttpService singleton not found!")
 
 func volume_down():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[History] Sending volume down HTTP request...")
+		if DEBUG_PRINTS:
+			print("[History] Sending volume down HTTP request...")
 		http_service.volume_down(_on_volume_response)
 	else:
-		print("[History] HttpService singleton not found!")
+		if DEBUG_PRINTS:
+			print("[History] HttpService singleton not found!")
 
 func _on_volume_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[History] Volume HTTP response:", result, response_code, body_str)
+	if DEBUG_PRINTS:
+		print("[History] Volume HTTP response:", result, response_code, body_str)
+
+func toggle_sort_mode():
+	"""Toggle between sorting by hit factor and sorting by drill number"""
+	sort_by_hit_factor = !sort_by_hit_factor
+	if DEBUG_PRINTS:
+		print("[History] Sort mode toggled - now sorting by: ", "Hit Factor (desc)" if sort_by_hit_factor else "Drill Number (asc)")
+	
+	# Re-sort and refresh the display
+	sort_history_data()
+	populate_list()
+	setup_clickable_items()
+	update_hf_header_visual()
+
+func sort_history_data():
+	"""Sort history data based on current sort mode"""
+	if sort_by_hit_factor:
+		# Sort by hit factor in descending order (highest first)
+		history_data.sort_custom(func(a, b): return float(a["hf"]) > float(b["hf"]))
+	else:
+		# Sort by drill number in ascending order
+		history_data.sort_custom(func(a, b): return a["drill_number"] < b["drill_number"])
+
+func update_hf_header_visual():
+	"""Update the HF header to show visual indication of sorting mode"""
+	var hf_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/HFLabel")
+	if hf_label:
+		if sort_by_hit_factor:
+			hf_label.text = "  HF ↓"  # Down arrow indicates descending sort
+			hf_label.modulate = Color(1.0, 0.8, 0.2)  # Golden color to indicate active sorting
+		else:
+			hf_label.text = "  HF  "
+			hf_label.modulate = Color.WHITE  # Default color
 
 func power_off():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[History] Sending power off HTTP request...")
+		if DEBUG_PRINTS:
+			print("[History] Sending power off HTTP request...")
 		http_service.shutdown(_on_shutdown_response)
 	else:
-		print("[History] HttpService singleton not found!")
+		if DEBUG_PRINTS:
+			print("[History] HttpService singleton not found!")
 
 func _on_shutdown_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[History] Shutdown HTTP response:", result, response_code, body_str)
+	if DEBUG_PRINTS:
+		print("[History] Shutdown HTTP response:", result, response_code, body_str)
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
@@ -564,9 +655,11 @@ func load_language_from_global_settings():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		print("[History] Loaded language from GlobalData: ", language)
+		if DEBUG_PRINTS:
+			print("[History] Loaded language from GlobalData: ", language)
 	else:
-		print("[History] GlobalData not found or no language setting, using default English")
+		if DEBUG_PRINTS:
+			print("[History] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
 func set_locale_from_language(language: String):
@@ -583,7 +676,8 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	print("[History] Set locale to: ", locale)
+	if DEBUG_PRINTS:
+		print("[History] Set locale to: ", locale)
 
 func update_ui_texts():
 	# Update static UI elements with translations

@@ -2,15 +2,19 @@ extends Node
 
 # Add this script as an autoload (singleton) in Project Settings > Autoload
 
+const DEBUG_DISABLED = true
+
 var base_url: String = "http://127.0.0.1"
 
 func _ready():
-	print("[HttpService] Ready.")
+	if not DEBUG_DISABLED:
+		print("[HttpService] Ready.")
 
 
 # Renamed to avoid conflict with Godot's built-in get()
 func get_request(url: String, callback: Callable):
-	print("[HttpService] GET ", url)
+	if not DEBUG_DISABLED:
+		print("[HttpService] GET ", url)
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(callback)
@@ -27,7 +31,8 @@ func start_game(callback: Callable, mode: String = "free", waiting: int = 0):
 
 func stop_game(callback: Callable):
 	var url = base_url + "/game/stop"
-	print("[HttpService] Sending stop game request to ", url)
+	if not DEBUG_DISABLED:
+		print("[HttpService] Sending stop game request to ", url)
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(callback)
@@ -61,7 +66,8 @@ func volume_down(callback: Callable, mode: String = "free"):
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
 
 func post(url: String, data: Dictionary, callback: Callable):
-	print("[HttpService] POST ", url, " data: ", data)
+	if not DEBUG_DISABLED:
+		print("[HttpService] POST ", url, " data: ", data)
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(callback)
@@ -82,7 +88,8 @@ func save_game(callback: Callable, data_id: String, content: String, ns: String 
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
 
 func load_game(callback: Callable, data_id: String, ns: String = "default"):
-	print("[HttpService] Sending load_game request for data_id: ", data_id, ", namespace: ", ns)
+	if not DEBUG_DISABLED:
+		print("[HttpService] Sending load_game request for data_id: ", data_id, ", namespace: ", ns)
 	var url = base_url + "/game/load"
 	var data = {
 		"data_id": data_id,
@@ -91,14 +98,18 @@ func load_game(callback: Callable, data_id: String, ns: String = "default"):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		print("[HttpService] load_game response for data_id ", data_id, " - Result: ", result, ", Code: ", response_code)
+		if not DEBUG_DISABLED:
+			print("[HttpService] load_game response for data_id ", data_id, " - Result: ", result, ", Code: ", response_code)
 		if result == HTTPRequest.RESULT_SUCCESS:
 			var body_str = body.get_string_from_utf8()
-			print("[HttpService] load_game response body: ", body_str)
+			if not DEBUG_DISABLED:
+				print("[HttpService] load_game response body: ", body_str)
 		else:
-			print("[HttpService] load_game request failed with result: ", result)
+			if not DEBUG_DISABLED:
+				print("[HttpService] load_game request failed with result: ", result)
 		callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
-	print("[HttpService] load_game request data: ", json_data)
+	if not DEBUG_DISABLED:
+		print("[HttpService] load_game request data: ", json_data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)

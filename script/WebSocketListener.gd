@@ -1,5 +1,7 @@
 extends Node
 
+const DEBUG_DISABLED = true
+
 signal data_received(data)
 signal bullet_hit(pos: Vector2)
 signal menu_control(directive: String)
@@ -9,8 +11,8 @@ var bullet_spawning_enabled: bool = true
 
 # Message rate limiting for performance optimization
 var last_message_time: float = 0.0
-var message_cooldown: float = 0.016  # ~60fps (16ms minimum between messages)
-var max_messages_per_frame: int = 5  # Maximum messages to process per frame
+var message_cooldown: float = 0.032  # ~30fps (32ms minimum between messages)
+var max_messages_per_frame: int = 3  # Maximum messages to process per frame
 var processed_this_frame: int = 0
 
 # Queue management for clearing pending signals
@@ -21,12 +23,14 @@ func _ready():
 	#var err = socket.connect_to_url("ws://127.0.0.1/websocket")
 	var err = socket.connect_to_url("ws://localhost:8080")
 	if err != OK:
-		print("Unable to connect")
+		if not DEBUG_DISABLED:
+			print("Unable to connect")
 		set_process(false)
 	else:
 		# Set highest priority for WebSocket processing to ensure immediate message handling
 		set_process_priority(100)  # Higher priority than default (0)
-		print("[WebSocket] Process priority set to maximum for immediate message processing")
+		if not DEBUG_DISABLED:
+			print("[WebSocket] Process priority set to maximum for immediate message processing")
 
 func _process(_delta):
 	socket.poll()
@@ -41,7 +45,8 @@ func _process(_delta):
 			
 			# Rate limiting check
 			if (time_stamp - last_message_time) < message_cooldown:
-				print("[WebSocket] Message rate limited (too fast - ", time_stamp - last_message_time, "s since last)")
+				if not DEBUG_DISABLED:
+					print("[WebSocket] Message rate limited (too fast - ", time_stamp - last_message_time, "s since last)")
 				break
 			
 			var packet = socket.get_packet()
@@ -54,7 +59,8 @@ func _process(_delta):
 			processed_this_frame += 1
 			
 		if socket.get_available_packet_count() > 0:
-			print("[WebSocket] Rate limiting: ", socket.get_available_packet_count(), " messages queued for next frame")
+			if not DEBUG_DISABLED:
+				print("[WebSocket] Rate limiting: ", socket.get_available_packet_count(), " messages queued for next frame")
 			
 	elif state == WebSocketPeer.STATE_CLOSING:
 		# Keep polling to achieve proper close.
@@ -62,7 +68,8 @@ func _process(_delta):
 	elif state == WebSocketPeer.STATE_CLOSED:
 		var code = socket.get_close_code()
 		var reason = socket.get_close_reason()
-		print("WebSocket closed with code: %d, reason %s. Clean: %s" % [code, reason, code != -1])
+		if not DEBUG_DISABLED:
+			print("WebSocket closed with code: %d, reason %s. Clean: %s" % [code, reason, code != -1])
 		set_process(false) # Stop processing.
 
 # Parse JSON and emit bullet_hit for each (x, y)
@@ -71,14 +78,16 @@ func _process_websocket_json(json_string):
 	var json = JSON.new()
 	var parse_result = json.parse(json_string)
 	if parse_result != OK:
-		print("[WebSocket] Error parsing JSON: ", json_string)
+		if not DEBUG_DISABLED:
+			print("[WebSocket] Error parsing JSON: ", json_string)
 		return
 	
 	var parsed = json.get_data()
 	# print("[WebSocket] Parsed data: ", parsed)
 	# Handle control directive
 	if parsed and parsed.has("type") and parsed["type"] == "control" and parsed.has("directive"):
-		print("[WebSocket] Emitting menu_control with directive: ", parsed["directive"])
+		if not DEBUG_DISABLED:
+			print("[WebSocket] Emitting menu_control with directive: ", parsed["directive"])
 		menu_control.emit(parsed["directive"])
 		return
 	
@@ -108,11 +117,13 @@ func _process_websocket_json(json_string):
 					pass
 					# print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
 			else:
-				print("[WebSocket] Entry missing x or y: ", entry)
+				if not DEBUG_DISABLED:
+					print("[WebSocket] Entry missing x or y: ", entry)
 
 func clear_queued_signals():
 	"""Clear all queued WebSocket packets and pending bullet hit signals"""
-	print("[WebSocket] Clearing queued signals and packets")
+	if not DEBUG_DISABLED:
+		print("[WebSocket] Clearing queued signals and packets")
 	
 	# Clear all pending WebSocket packets
 	var cleared_packets = 0
@@ -121,7 +132,8 @@ func clear_queued_signals():
 		cleared_packets += 1
 	
 	if cleared_packets > 0:
-		print("[WebSocket] Cleared ", cleared_packets, " queued WebSocket packets")
+		if not DEBUG_DISABLED:
+			print("[WebSocket] Cleared ", cleared_packets, " queued WebSocket packets")
 	
 	# Clear pending bullet hit signals
 	var cleared_signals = pending_bullet_hits.size()
@@ -138,7 +150,8 @@ func set_bullet_spawning_enabled(enabled: bool):
 	var previous_state = bullet_spawning_enabled
 	bullet_spawning_enabled = enabled
 	
-	print("[WebSocket] Bullet spawning enabled changed from ", previous_state, " to ", enabled)
+	if not DEBUG_DISABLED:
+		print("[WebSocket] Bullet spawning enabled changed from ", previous_state, " to ", enabled)
 	
 	# Clear queues when disabling bullet spawning
 	if not enabled and previous_state:
