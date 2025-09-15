@@ -7,31 +7,38 @@ const DEBUG_LOGGING = false  # Set to true for verbose debugging
 
 # Performance tracking variables
 var records = []
-var last_shot_time = 0
+var last_shot_time_usec = 0  # Changed to microseconds for better precision
 var fastest_time_diff = 999.0  # Initialize with a large value
 var first_shot = true  # Track if this is the first shot of the drill
 var total_elapsed_time = 0.0  # Store the total elapsed time for the drill
 var pending_drill_data = null
+var minimum_shot_interval = 0.01  # 10ms minimum realistic shot interval
 
 func _ready():
 	pass
 
 func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float = 0.0):
-	var current_time = Time.get_ticks_msec()
+	var current_time_usec = Time.get_ticks_usec()  # Use microsecond precision
 	var time_diff = 0.0  # Initialize to 0 for first shot
 	
 	if first_shot:
 		# First shot of the drill - just record the time, don't calculate interval
-		last_shot_time = current_time
+		last_shot_time_usec = current_time_usec
 		first_shot = false
 		if DEBUG_LOGGING:
-			print("PERFORMANCE TRACKER: First shot recorded at time:", current_time)
+			print("PERFORMANCE TRACKER: First shot recorded at time:", current_time_usec)
 	else:
-		# Subsequent shots - calculate interval
-		time_diff = (current_time - last_shot_time) / 1000.0  # in seconds
-		last_shot_time = current_time
+		# Subsequent shots - calculate interval with microsecond precision
+		time_diff = (current_time_usec - last_shot_time_usec) / 1000000.0  # Convert to seconds
+		last_shot_time_usec = current_time_usec
 		
-		# Update fastest time if this is faster
+		# Apply minimum time threshold to prevent unrealistic 0.0s intervals
+		if time_diff < minimum_shot_interval:
+			if DEBUG_LOGGING:
+				print("PERFORMANCE TRACKER: Shot interval too fast (", time_diff, "s), clamping to minimum (", minimum_shot_interval, "s)")
+			time_diff = minimum_shot_interval
+		
+		# Update fastest time if this is faster (but still realistic)
 		if time_diff < fastest_time_diff:
 			fastest_time_diff = time_diff
 		
@@ -141,7 +148,8 @@ func reset_fastest_time():
 
 # Reset the shot timer for accurate first shot measurement
 func reset_shot_timer():
-	last_shot_time = Time.get_ticks_msec()
+	last_shot_time_usec = Time.get_ticks_usec()  # Use microsecond precision
+	first_shot = true  # Reset first shot flag for new drill
 
 # Set the total elapsed time for the drill
 func set_total_elapsed_time(time_seconds: float):

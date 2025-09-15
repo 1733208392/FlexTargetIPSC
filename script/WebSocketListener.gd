@@ -11,17 +11,21 @@ var bullet_spawning_enabled: bool = true
 
 # Message rate limiting for performance optimization
 var last_message_time: float = 0.0
-var message_cooldown: float = 0.032  # ~30fps (32ms minimum between messages)
-var max_messages_per_frame: int = 3  # Maximum messages to process per frame
+var message_cooldown: float = 0.050  # Increased to 50ms minimum between messages (was 32ms)
+var max_messages_per_frame: int = 2  # Reduced from 3 to 2 for better spacing
 var processed_this_frame: int = 0
+
+# Enhanced timing tracking for better shot spacing
+var last_shot_processing_time: float = 0.0
+var minimum_shot_spacing: float = 0.015  # 15ms minimum between individual shots
 
 # Queue management for clearing pending signals
 var pending_bullet_hits: Array[Vector2] = []  # Track pending bullet hit signals
 
 func _ready():
 	socket = WebSocketPeer.new()
-	var err = socket.connect_to_url("ws://127.0.0.1/websocket")
-	#var err = socket.connect_to_url("ws://localhost:8080")
+	#var err = socket.connect_to_url("ws://127.0.0.1/websocket")
+	var err = socket.connect_to_url("ws://localhost:8080")
 	if err != OK:
 		if not DEBUG_DISABLED:
 			print("Unable to connect")
@@ -98,6 +102,16 @@ func _process_websocket_json(json_string):
 			var x = entry.get("x", null)
 			var y = entry.get("y", null)
 			if x != null and y != null:
+				# Apply additional shot spacing to prevent burst processing
+				var current_shot_time = Time.get_ticks_msec() / 1000.0
+				if (current_shot_time - last_shot_processing_time) < minimum_shot_spacing:
+					if not DEBUG_DISABLED:
+						print("[WebSocket] Shot spacing too fast (", current_shot_time - last_shot_processing_time, "s), delaying processing")
+					# Skip this shot to maintain minimum spacing
+					continue
+				
+				last_shot_processing_time = current_shot_time
+				
 				# Transform pos from WebSocket (268x476.4, origin bottom-left) to game (720x1280, origin top-left)
 				var ws_width = 268.0
 				var ws_height = 476.4
@@ -144,6 +158,9 @@ func clear_queued_signals():
 	
 	# Reset rate limiting timer to prevent immediate flood when re-enabled
 	last_message_time = Time.get_ticks_msec() / 1000.0
+	
+	# Reset shot processing timer for clean restart
+	last_shot_processing_time = 0.0
 
 func set_bullet_spawning_enabled(enabled: bool):
 	"""Set bullet spawning enabled state and clear queues when disabled"""
