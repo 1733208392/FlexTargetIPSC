@@ -11,13 +11,19 @@ extends Control
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
 # Drill sequence and progress tracking
-var target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
 var current_target_instance: Node = null
 var total_drill_score: int = 0
 var drill_completed: bool = false
 var bullets_allowed: bool = false  # Track if bullet spawning is allowed
 var rotating_target_hits: int = 0  # Track hits on the rotating target
+
+# Randomization settings
+# When enabled, target sequence will be randomized at the start of each drill
+# This adds unpredictability while maintaining the same target types and counts
+@export var randomize_sequence: bool = true  # Enable/disable sequence randomization
 
 # Elapsed time tracking
 var elapsed_seconds: float = 0.0
@@ -49,6 +55,9 @@ signal ui_progress_update(targets_completed: int)
 
 func _ready():
 	"""Initialize the drill with the first target"""
+	# Initialize the target sequence (randomized or not)
+	initialize_target_sequence()
+	
 	if DEBUG_LOGGING:
 		print("=== STARTING DRILL ===")
 	emit_signal("ui_theme_change", "golden")  # Set default theme
@@ -150,6 +159,88 @@ func start_drill_timer():
 	
 	if DEBUG_LOGGING:
 		print("=== DRILL TIMER STARTED ===")
+
+func initialize_target_sequence():
+	"""Initialize the target sequence - randomized if enabled"""
+	if randomize_sequence:
+		randomize_target_sequence()
+	else:
+		# Use the base sequence as-is
+		target_sequence = base_target_sequence.duplicate()
+	
+	if DEBUG_LOGGING:
+		print("=== TARGET SEQUENCE INITIALIZED ===")
+		print("Randomization enabled: ", randomize_sequence)
+		print("Target sequence: ", target_sequence)
+
+func randomize_target_sequence():
+	"""Randomize the target sequence using Fisher-Yates shuffle algorithm"""
+	# Start with a copy of the base sequence
+	target_sequence = base_target_sequence.duplicate()
+	
+	# Fisher-Yates shuffle for true randomness
+	for i in range(target_sequence.size() - 1, 0, -1):
+		var j = randi() % (i + 1)
+		var temp = target_sequence[i]
+		target_sequence[i] = target_sequence[j]
+		target_sequence[j] = temp
+	
+	if DEBUG_LOGGING:
+		print("=== TARGET SEQUENCE RANDOMIZED ===")
+		print("Original: ", base_target_sequence)
+		print("Randomized: ", target_sequence)
+
+func toggle_randomization():
+	"""Toggle sequence randomization on/off"""
+	randomize_sequence = !randomize_sequence
+	# Re-initialize sequence with new setting
+	initialize_target_sequence()
+	
+	if DEBUG_LOGGING:
+		print("=== RANDOMIZATION TOGGLED ===")
+		print("Randomization now: ", "ENABLED" if randomize_sequence else "DISABLED")
+		print("Current sequence: ", target_sequence)
+
+func set_randomization(enabled: bool):
+	"""Set randomization state and reinitialize sequence"""
+	randomize_sequence = enabled
+	initialize_target_sequence()
+	
+	if DEBUG_LOGGING:
+		print("=== RANDOMIZATION SET TO: ", "ENABLED" if enabled else "DISABLED", " ===")
+		print("Current sequence: ", target_sequence)
+
+func test_randomization():
+	"""Test function to verify randomization works correctly"""
+	print("=== TESTING RANDOMIZATION ===")
+	print("Base sequence: ", base_target_sequence)
+	
+	# Test multiple randomizations
+	for i in range(5):
+		randomize_target_sequence()
+		print("Test ", i + 1, ": ", target_sequence)
+		
+		# Verify all elements are present
+		var base_copy = base_target_sequence.duplicate()
+		var randomized_copy = target_sequence.duplicate()
+		base_copy.sort()
+		randomized_copy.sort()
+		
+		if base_copy == randomized_copy:
+			print("✓ All targets preserved")
+		else:
+			print("✗ ERROR: Missing or extra targets!")
+			print("Expected: ", base_copy)
+			print("Got: ", randomized_copy)
+	
+	print("=== RANDOMIZATION TEST COMPLETE ===")
+
+# Call test function in debug mode
+func _input(event):
+	"""Handle debug input for testing"""
+	if DEBUG_LOGGING and event is InputEventKey and event.pressed:
+		if event.keycode == KEY_T:
+			test_randomization()
 
 func stop_drill_timer():
 	"""Stop the drill elapsed time timer"""
@@ -532,12 +623,29 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		# Check if we've reached 2 hits on the rotating target
 		if rotating_target_hits >= 2:
 			if DEBUG_LOGGING:
-				print("2 hits on rotating target reached! Finishing drill immediately.")
-			# Update progress - since this is the last target, set to completed
-			current_target_index += 1  # Mark this target as completed
-			emit_signal("ui_progress_update", current_target_index)
-			complete_drill()
-			# Don't return here - let the performance tracking signal be emitted
+				print("2 hits on rotating target reached! Moving to next target.")
+			
+			# Reset the counter for potential future rotating targets
+			rotating_target_hits = 0
+			
+			# Check if this is the last target in the sequence
+			if current_target_index >= target_sequence.size() - 1:
+				# This is the last target - complete the drill
+				current_target_index += 1  # Mark this target as completed
+				emit_signal("ui_progress_update", current_target_index)
+				complete_drill()
+				if DEBUG_LOGGING:
+					print("Rotating target was the last target - drill completed!")
+			else:
+				# Not the last target - proceed to next target normally
+				current_target_index += 1
+				emit_signal("ui_progress_update", current_target_index)
+				spawn_next_target()
+				if DEBUG_LOGGING:
+					print("Rotating target completed - moving to next target in sequence")
+			
+			# Don't continue processing this hit since we're transitioning
+			return
 	
 	# Update the fastest interval display
 	var fastest_time = performance_tracker.get_fastest_time_diff()
@@ -611,6 +719,9 @@ func restart_drill():
 	drill_completed = false
 	rotating_target_hits = 0
 	
+	# Re-initialize target sequence (this will re-randomize if enabled)
+	initialize_target_sequence()
+	
 	# NOW reset all UI displays when restarting
 	emit_signal("ui_progress_update", 0)  # Reset progress bar
 	elapsed_seconds = 0.0
@@ -630,6 +741,7 @@ func restart_drill():
 	
 	if DEBUG_LOGGING:
 		print("Drill restarted!")
+		print("New target sequence: ", target_sequence)
 
 func is_bullet_spawning_allowed() -> bool:
 	"""Check if bullet spawning is currently allowed"""
