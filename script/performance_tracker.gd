@@ -92,9 +92,9 @@ func _on_drills_finished():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
 		var json_string = JSON.stringify(pending_drill_data)
-		# Implement circular buffer: cycle through indices 1-30
+		# Implement circular buffer: cycle through indices 1-20
 		var current_index = int(global_data.settings_dict.get("max_index", 0)) if global_data else 0
-		var next_index = (current_index % 30) + 1  # Circular buffer: 1-30
+		var next_index = (current_index % 20) + 1  # Circular buffer: 1-20
 		var data_id = "performance_" + str(next_index)
 		if DEBUG_LOGGING:
 			print("[PerformanceTracker] Saving drill data to file: ", data_id, " (previous index: ", current_index, ", next index: ", next_index, ")")
@@ -170,12 +170,12 @@ func _on_performance_saved(result, response_code, headers, body):
 			print("Performance data saved")
 		var http_service = get_node("/root/HttpService")
 		if http_service:
-			# Update max_index with circular buffer logic: cycle 1-30
+			# Update max_index with circular buffer logic: cycle 1-20
 			var current_index = int(GlobalData.settings_dict.get("max_index", 0))
-			var next_index = (current_index % 30) + 1
+			var next_index = (current_index % 20) + 1
 			GlobalData.settings_dict["max_index"] = next_index
 			if DEBUG_LOGGING:
-				print("[PerformanceTracker] Updated max_index from ", current_index, " to ", next_index, " (circular buffer 1-30)")
+				print("[PerformanceTracker] Updated max_index from ", current_index, " to ", next_index, " (circular buffer 1-20)")
 			# Preserve all existing settings, only update max_index
 			var settings_json = JSON.stringify(GlobalData.settings_dict)
 			http_service.save_game(_on_settings_saved, "settings", settings_json)

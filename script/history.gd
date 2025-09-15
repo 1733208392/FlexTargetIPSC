@@ -24,6 +24,8 @@ var is_loading = false
 var files_to_load = []
 var current_file_index = 0
 var max_index = 0
+var consecutive_404s = 0  # Track consecutive 404 errors for early termination
+const MAX_CONSECUTIVE_404S = 10  # Stop after 10 consecutive missing files (for 20-record buffer)
 
 func _ready():
 	# Load and apply current language setting from global settings
@@ -86,34 +88,26 @@ func load_history_data():
 		setup_clickable_items()
 		return
 	
-	# Prepare list of files to load - check both new and old naming schemes
+	# Prepare list of files to load - always load performance_1 to performance_20
 	files_to_load.clear()
-	# With circular buffer, we need to check all possible performance files 1-30
-	# but also support legacy files during transition
-	for i in range(1, 31):  # Always check 1-30 for circular buffer
-		files_to_load.append(str(i))
+	# Always try to load all 20 possible files since we don't know if circular buffer is full
+	for i in range(1, 21):  # Always load performance_1 to performance_20
+		files_to_load.append("performance_" + str(i))
 	
 	if DEBUG_PRINTS:
-		print("[History] Loading ", files_to_load.size(), " potential files (new and legacy): ", files_to_load)
+		print("[History] Loading all 20 possible files: ", files_to_load)
 	
 	# Show loading overlay and start loading
 	show_loading_overlay()
 	current_file_index = 0
+	consecutive_404s = 0  # Reset 404 counter
 	is_loading = true
 	load_next_file()
 
 func load_next_file():
 	if current_file_index >= files_to_load.size():
-		# All files loaded, finish up
-		if DEBUG_PRINTS:
-			print("[History] All files loaded successfully")
-		
-		# Sort history data based on current sort mode
-		sort_history_data()
-		hide_loading_overlay()
-		populate_list()
-		setup_clickable_items()
-		update_hf_header_visual()  # Update header visual indicator
+		# All files processed, finish up
+		finish_loading()
 		return
 	
 	var file_id = files_to_load[current_file_index]
@@ -133,12 +127,25 @@ func load_next_file():
 		current_file_index += 1
 		load_next_file()
 
-func _on_file_loaded(result, response_code, headers, body):
+func finish_loading():
+	"""Complete the loading process and update UI"""
+	if DEBUG_PRINTS:
+		print("[History] Loading finished - found ", history_data.size(), " drill records")
+	
+	# Sort history data based on current sort mode
+	sort_history_data()
+	hide_loading_overlay()
+	populate_list()
+	setup_clickable_items()
+	update_hf_header_visual()  # Update header visual indicator
+
+func _on_file_loaded(result, response_code, _headers, body):
 	var file_id = files_to_load[current_file_index]
 	if DEBUG_PRINTS:
 		print("[History] File load response for ", file_id, " - Result: ", result, ", Code: ", response_code)
 	
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		consecutive_404s = 0  # Reset 404 counter on successful load
 		var body_str = body.get_string_from_utf8()
 		var json = JSON.new()
 		var parse_result = json.parse(body_str)
@@ -163,19 +170,39 @@ func _on_file_loaded(result, response_code, headers, body):
 			if DEBUG_PRINTS:
 				print("[History] Failed to parse response JSON for ", file_id)
 	else:
-		if DEBUG_PRINTS:
-			print("[History] Failed to load file ", file_id, " - skipping")
+		# Handle 404 and other errors
+		if response_code == 404:
+			consecutive_404s += 1
+			if DEBUG_PRINTS:
+				print("[History] File not found (404) for ", file_id, " - consecutive 404s: ", consecutive_404s)
+			
+			# Early termination if too many consecutive 404s
+			if consecutive_404s >= MAX_CONSECUTIVE_404S:
+				if DEBUG_PRINTS:
+					print("[History] Too many consecutive 404s (", consecutive_404s, "), stopping load early")
+				finish_loading()
+				return
+		else:
+			consecutive_404s = 0  # Reset on non-404 errors
+			if DEBUG_PRINTS:
+				print("[History] Failed to load file ", file_id, " - skipping")
 	
 	# Move to next file
 	current_file_index += 1
 	load_next_file()
 
 func process_loaded_data(data: Dictionary, file_id: String):
-	# Extract the drill number from file_id - handle both new and old naming schemes
+	# Extract the drill number from file_id (e.g., "performance_1" -> 1)
 	if DEBUG_PRINTS:
 		print("[History] Processing file_id: ", file_id)
 	
-	var drill_number = int(file_id)
+	var drill_number: int
+	if file_id.begins_with("performance_"):
+		# New naming scheme: "performance_1" -> 1
+		drill_number = int(file_id.replace("performance_", ""))
+	else:
+		# Fallback for any legacy files: "1" -> 1
+		drill_number = int(file_id)
 	
 	if DEBUG_PRINTS:
 		print("[History] Extracted drill_number: ", drill_number)
@@ -244,9 +271,9 @@ func create_loading_overlay():
 	add_child(loading_overlay)
 	loading_overlay.visible = false
 	
-	# Setup loading animation timer
+	# Setup loading animation timer - reduced frequency for better performance
 	loading_timer = Timer.new()
-	loading_timer.wait_time = 0.5
+	loading_timer.wait_time = 1.0  # Reduced from 0.5 to 1.0 second
 	loading_timer.timeout.connect(_on_loading_timer_timeout)
 	add_child(loading_timer)
 
@@ -296,13 +323,13 @@ func populate_list():
 		var item = HBoxContainer.new()
 		item.layout_mode = 2
 		
-		# No label
+		# No label - use sorted position (i+1) instead of drill_number
 		var no_label = Label.new()
 		no_label.layout_mode = 2
 		no_label.size_flags_horizontal = 3
-		no_label.text = str(data["drill_number"])
+		no_label.text = str(i + 1)  # Use sorted position: 1, 2, 3, etc.
 		no_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		no_label.add_theme_font_size_override("font_size", 20)
+		no_label.add_theme_font_size_override("font_size", 24)
 		item.add_child(no_label)
 		
 		# VSeparator
@@ -316,7 +343,7 @@ func populate_list():
 		time_label.size_flags_horizontal = 3
 		time_label.text = data["total_time"]
 		time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		time_label.add_theme_font_size_override("font_size", 20)
+		time_label.add_theme_font_size_override("font_size", 24)
 		item.add_child(time_label)
 		
 		# VSeparator
@@ -330,7 +357,7 @@ func populate_list():
 		fast_label.size_flags_horizontal = 3
 		fast_label.text = data["fastest_shot"]
 		fast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		fast_label.add_theme_font_size_override("font_size", 20)
+		fast_label.add_theme_font_size_override("font_size", 24)
 		item.add_child(fast_label)
 		
 		# VSeparator
@@ -344,7 +371,7 @@ func populate_list():
 		score_label.size_flags_horizontal = 3
 		score_label.text = data["total_score"]
 		score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		score_label.add_theme_font_size_override("font_size", 20)
+		score_label.add_theme_font_size_override("font_size", 24)
 		item.add_child(score_label)
 		
 		# VSeparator
@@ -358,7 +385,7 @@ func populate_list():
 		hf_label.size_flags_horizontal = 3
 		hf_label.text = data["hf"]
 		hf_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		hf_label.add_theme_font_size_override("font_size", 20)
+		hf_label.add_theme_font_size_override("font_size", 24)
 		item.add_child(hf_label)
 		
 		list_container.add_child(item)
