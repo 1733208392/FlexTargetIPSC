@@ -11,6 +11,8 @@ var upper_level_scene = "res://scene/drills.tscn"  # Default upper level scene
 
 var target_scenes = {
 	"ipsc_mini": "res://scene/ipsc_mini.tscn",
+	"ipsc_mini_black_1": "res://scene/ipsc_mini_black_1.tscn",
+	"ipsc_mini_black_2": "res://scene/ipsc_mini_black_2.tscn",
 	"hostage": "res://scene/hostage.tscn",
 	"ipsc_mini_rotate": "res://scene/ipsc_mini_rotate.tscn",
 	"3paddles": "res://scene/3paddles.tscn",

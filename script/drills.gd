@@ -2,6 +2,8 @@ extends Control
 
 # Preload the scenes for the drill sequence
 @export var ipsc_mini_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
+@export var ipsc_mini_black_1_scene: PackedScene = preload("res://scene/ipsc_mini_black_1.tscn")
+@export var ipsc_mini_black_2_scene: PackedScene = preload("res://scene/ipsc_mini_black_2.tscn")
 @export var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
 @export var two_poppers_scene: PackedScene = preload("res://scene/2poppers.tscn")
 #@export var paddle_scene: PackedScene = preload("res://scene/paddle.tscn")
@@ -9,7 +11,7 @@ extends Control
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
 # Drill sequence and progress tracking
-var target_sequence: Array[String] = ["ipsc_mini","hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
 var current_target_index: int = 0
 var current_target_instance: Node = null
 var total_drill_score: int = 0
@@ -208,6 +210,10 @@ func spawn_next_target():
 	match target_type:
 		"ipsc_mini":
 			spawn_ipsc_mini()
+		"ipsc_mini_black_1":
+			spawn_ipsc_mini_black_1()
+		"ipsc_mini_black_2":
+			spawn_ipsc_mini_black_2()
 		"hostage":
 			await spawn_hostage()
 		"2poppers":
@@ -251,6 +257,22 @@ func spawn_ipsc_mini():
 	current_target_instance = target
 	if DEBUG_LOGGING:
 		print("IPSC Mini target spawned")
+
+func spawn_ipsc_mini_black_1():
+	"""Spawn an IPSC mini black 1 target"""
+	var target = ipsc_mini_black_1_scene.instantiate()
+	center_container.add_child(target)
+	current_target_instance = target
+	if DEBUG_LOGGING:
+		print("IPSC Mini Black 1 target spawned")
+
+func spawn_ipsc_mini_black_2():
+	"""Spawn an IPSC mini black 2 target"""
+	var target = ipsc_mini_black_2_scene.instantiate()
+	center_container.add_child(target)
+	current_target_instance = target
+	if DEBUG_LOGGING:
+		print("IPSC Mini Black 2 target spawned")
 
 func spawn_hostage():
 	"""Spawn a hostage target"""

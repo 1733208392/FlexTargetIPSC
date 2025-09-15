@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=3 uid="uid://b7gq40xmvbr24"]
+
+[ext_resource type="PackedScene" uid="uid://b7gq40xmvbr23" path="res://scene/ipsc_mini_black_1.tscn" id="1_test_target"]
+[ext_resource type="Script" path="res://script/test_ipsc_mini_black_1.gd" id="2_test_script"]
+
+[node name="TestIPSCMiniBlack1" type="Node2D"]
+script = ExtResource("2_test_script")
+
+[node name="IPSC" parent="." instance=ExtResource("1_test_target")]
+
+[node name="Instructions" type="Label" parent="."]
+offset_left = -400.0
+offset_top = -300.0
+offset_right = 400.0
+offset_bottom = -200.0
+text = "IPSC Mini Black 1 Target Test
+Click on different zones to test scoring:
+• A-Zone (center): 5 points
+• C-Zone (middle ring): 3 points  
+• D-Zone (outer ring): 1 point
+• Black Zones (left/right): 0 points
+• Outside zones: Miss (0 points)
+
+Press R to reset, T to trigger animation, S to show score"
+horizontal_alignment = 1
+vertical_alignment = 1
