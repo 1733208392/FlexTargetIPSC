@@ -33,6 +33,8 @@ var drill_start_time: float = 0.0
 var timeout_timer: Timer = null
 var timeout_seconds: float = 30.0
 var drill_timed_out: bool = false
+var timeout_beep_player: AudioStreamPlayer = null
+var last_beep_second: int = -1  # Track last second we beeped
 
 # Node references
 @onready var center_container = $CenterContainer
@@ -93,6 +95,12 @@ func _ready():
 	timeout_timer.one_shot = true
 	timeout_timer.timeout.connect(_on_timeout_timer_timeout)
 	add_child(timeout_timer)
+	
+	# Create and setup timeout beep audio player
+	timeout_beep_player = AudioStreamPlayer.new()
+	timeout_beep_player.stream = preload("res://audio/synthetic-shot-timer.wav")
+	timeout_beep_player.volume_db = 0.0
+	add_child(timeout_beep_player)
 	
 	# Instantiate and add performance tracker
 	add_child(performance_tracker)
@@ -161,12 +169,22 @@ func _on_drill_timer_timeout():
 	var remaining_time = timeout_seconds - elapsed_seconds
 	if remaining_time <= 5.0 and remaining_time > 0.0:
 		emit_signal("ui_timeout_warning", remaining_time)
+		
+		# Play beep for each remaining second during countdown
+		var current_second = int(ceil(remaining_time))
+		if current_second != last_beep_second and current_second <= 5:
+			last_beep_second = current_second
+			if timeout_beep_player:
+				timeout_beep_player.play()
+				if DEBUG_LOGGING:
+					print("=== TIMEOUT BEEP - %d seconds remaining ===" % current_second)
 
 func start_drill_timer():
 	"""Start the drill elapsed time timer"""
 	elapsed_seconds = 0.0
 	drill_start_time = Time.get_unix_time_from_system()
 	drill_timed_out = false
+	last_beep_second = -1  # Reset beep tracking
 	emit_signal("ui_timer_update", elapsed_seconds)
 	drill_timer.start()
 	
@@ -810,6 +828,7 @@ func restart_drill():
 	drill_completed = false
 	drill_timed_out = false
 	rotating_target_hits = 0
+	last_beep_second = -1  # Reset beep tracking
 	
 	# Stop any running timers
 	if timeout_timer.is_stopped() == false:

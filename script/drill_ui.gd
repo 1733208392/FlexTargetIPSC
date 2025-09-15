@@ -219,8 +219,9 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	connect_completion_overlay_buttons()
 	setup_overlay_focus()
 	
-	# Reset timeout warning state
+	# Reset timeout warning state and timer color
 	timeout_warning_active = false
+	timer_label.modulate = Color.WHITE
 
 func _on_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool):
 	"""Show the completion overlay with timeout message"""
@@ -284,8 +285,9 @@ func _on_show_completion_with_timeout(final_time: float, fastest_time: float, fi
 	connect_completion_overlay_buttons()
 	setup_overlay_focus()
 	
-	# Reset timeout warning state
+	# Reset timeout warning state and timer color
 	timeout_warning_active = false
+	timer_label.modulate = Color.WHITE
 
 func connect_completion_overlay_buttons():
 	"""Connect the completion overlay button signals"""
@@ -315,6 +317,9 @@ func _on_restart_button_pressed():
 	
 	# Reset timeout warning state
 	timeout_warning_active = false
+	
+	# Reset timer color back to white
+	timer_label.modulate = Color.WHITE
 	
 	# Hide the completion overlay
 	drill_complete_overlay.visible = false

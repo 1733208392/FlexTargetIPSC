@@ -33,6 +33,7 @@ no,No.,序号,序号,序號
 time,Time,时长,時間長,時長
 fastest_t,Fastest,最快,一番嬉しい,最快
 hit_factor_t,HF,系数,システム数,係數
+timeout,TIMEOUT!,超时了，继续努力！,タイムアウト,超時了，繼續努力！
 score_rule,"{""title"": ""SCORING RULES"",
 ""content"": ""[center]SCORING RULES[/center]
 

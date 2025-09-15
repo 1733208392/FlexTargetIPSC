@@ -395,7 +395,7 @@ func update_ui_texts_with_timeout(timed_out: bool):
 	
 	if title:
 		if timed_out:
-			title.text = "TIMEOUT!"
+			title.text = tr("timeout")
 			title.modulate = Color.RED
 		else:
 			title.text = tr("complete")

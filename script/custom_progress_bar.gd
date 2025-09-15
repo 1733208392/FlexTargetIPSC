@@ -1,12 +1,16 @@
 extends Control
 
+# Performance optimization
+const DEBUG_LOGGING = false  # Set to true for verbose debugging
+
 @onready var skew_shader = preload("res://shader/skew_shader.gdshader")
 @onready var progress_segments = $ProgressContainer/ProgressSegments
 
 # Progress configuration
 const TOTAL_SEGMENTS = 15
-const TOTAL_TARGETS = 5
-const SEGMENTS_PER_TARGET = 3  # 15 segments / 5 targets = 3 segments per target
+const TOTAL_TARGETS = 7
+# Target segments: [2, 2, 2, 2, 2, 2, 3] for targets 0-6
+const SEGMENTS_PER_TARGET = [2, 2, 2, 2, 2, 2, 3]
 
 # Colors for progress states
 const ACTIVE_COLOR = Color(1.0, 0.6, 0.0, 1.0)  # Orange
@@ -27,8 +31,13 @@ func _ready():
 	update_progress(0)
 
 func update_progress(targets_completed: int):
-	"""Update progress bar based on number of targets completed (0-5)"""
-	var active_segments = min(targets_completed * SEGMENTS_PER_TARGET, TOTAL_SEGMENTS)
+	"""Update progress bar based on number of targets completed (0-7)"""
+	# Calculate total active segments based on completed targets
+	var active_segments = 0
+	for i in range(min(targets_completed, TOTAL_TARGETS)):
+		active_segments += SEGMENTS_PER_TARGET[i]
+	
+	active_segments = min(active_segments, TOTAL_SEGMENTS)
 	
 	# Update each segment's color based on progress
 	for i in range(TOTAL_SEGMENTS):
@@ -41,7 +50,17 @@ func update_progress(targets_completed: int):
 				else:
 					bar_node.color = INACTIVE_COLOR  # Inactive/not completed
 	
-	print("Progress updated: ", targets_completed, "/", TOTAL_TARGETS, " targets (", active_segments, "/", TOTAL_SEGMENTS, " segments)")
+	# Debug output with segment breakdown
+	if DEBUG_LOGGING and targets_completed >= 0:
+		var segment_breakdown = []
+		var cumulative = 0
+		for i in range(TOTAL_TARGETS):
+			cumulative += SEGMENTS_PER_TARGET[i]
+			segment_breakdown.append("Target %d: %d segments (total: %d)" % [i, SEGMENTS_PER_TARGET[i], cumulative])
+		print("Progress updated: ", targets_completed, "/", TOTAL_TARGETS, " targets (", active_segments, "/", TOTAL_SEGMENTS, " segments)")
+		print("Segment breakdown: ", segment_breakdown)
+	else:
+		print("Progress updated: ", targets_completed, "/", TOTAL_TARGETS, " targets (", active_segments, "/", TOTAL_SEGMENTS, " segments)")
 
 func reset_progress():
 	"""Reset progress bar to empty state"""
