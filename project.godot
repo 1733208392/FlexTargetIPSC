@@ -27,12 +27,12 @@ buses/default_bus_layout="res://audio_bus_layout.tres"
 WebSocketListener="*res://script/WebSocketListener.gd"
 HttpService="*res://script/HttpService.gd"
 GlobalData="*res://script/global_data.gd"
-SceneManager="*res://script/scene_manager.gd"
 
 [display]
 
 window/size/viewport_width=720
 window/size/viewport_height=1280
+window/size/mode=3
 window/size/resizable=false
 window/stretch/mode="viewport"
 window/handheld/orientation=1

@@ -20,8 +20,8 @@ var pending_bullet_hits: Array[Vector2] = []  # Track pending bullet hit signals
 
 func _ready():
 	socket = WebSocketPeer.new()
-	#var err = socket.connect_to_url("ws://127.0.0.1/websocket")
-	var err = socket.connect_to_url("ws://localhost:8080")
+	var err = socket.connect_to_url("ws://127.0.0.1/websocket")
+	#var err = socket.connect_to_url("ws://localhost:8080")
 	if err != OK:
 		if not DEBUG_DISABLED:
 			print("Unable to connect")

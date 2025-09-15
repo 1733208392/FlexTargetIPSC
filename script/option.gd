@@ -11,8 +11,8 @@ static var current_language = "English"
 
 # References to labels that need translation
 @onready var tab_container = $"VBoxContainer/MarginContainer/tab_container"
-@onready var description_label = $"VBoxContainer/MarginContainer/tab_container/About/Left/DescriptionLabel"
-@onready var copyright_label = $"VBoxContainer/MarginContainer/tab_container/About/Left/CopyrightLabel"
+@onready var description_label = $"VBoxContainer/MarginContainer/tab_container/About/Left/MarginContainer/DescriptionLabel"
+@onready var copyright_label = $"CopyrightLabel"
 
 @onready var language_buttons = []
 
