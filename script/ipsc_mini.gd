@@ -352,9 +352,21 @@ func _on_websocket_bullet_hit(pos: Vector2):
 		print("[ipsc_mini] WebSocket bullet spawning disabled during shot timer")
 		return
 	
+	# Check if this target is part of a rotating scene (ipsc_mini_rotate)
+	# If so, use bullet collision detection instead of fast path
+	var parent_node = get_parent()
+	while parent_node:
+		if parent_node.name.contains("IPSCMiniRotate") or parent_node.name.contains("RotationCenter"):
+			if DEBUG_LOGGING:
+				print("[ipsc_mini] Rotating target detected - using bullet collision system instead of fast path")
+			# Spawn bullet for proper collision detection with rotation
+			spawn_bullet_at_position(pos)
+			return
+		parent_node = parent_node.get_parent()
+	
 	# print("[ipsc_mini] Received bullet hit at position: ", pos)
 	
-	# FAST PATH: Direct bullet hole spawning for WebSocket hits
+	# FAST PATH: Direct bullet hole spawning for WebSocket hits (non-rotating targets only)
 	handle_websocket_bullet_hit_fast(pos)
 
 func handle_websocket_bullet_hit_fast(world_pos: Vector2):

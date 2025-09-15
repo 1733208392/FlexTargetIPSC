@@ -6,12 +6,12 @@ extends Control
 @export var ipsc_mini_black_2_scene: PackedScene = preload("res://scene/ipsc_mini_black_2.tscn")
 @export var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
 @export var two_poppers_scene: PackedScene = preload("res://scene/2poppers.tscn")
-#@export var paddle_scene: PackedScene = preload("res://scene/paddle.tscn")
 @export var three_paddles_scene: PackedScene = preload("res://scene/3paddles.tscn")
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
 # Drill sequence and progress tracking
 var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
 var current_target_instance: Node = null
