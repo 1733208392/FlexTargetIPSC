@@ -17,8 +17,8 @@ static var current_language = "English"
 @onready var language_buttons = []
 
 func _ready():
-	# Load saved settings
-	load_settings()
+	# Load saved settings from GlobalData
+	load_settings_from_global_data()
 	
 	# Connect signals for language buttons
 	if chinese_button:
@@ -30,19 +30,23 @@ func _ready():
 	if traditional_chinese_button:
 		traditional_chinese_button.pressed.connect(_on_language_changed.bind("Traditional Chinese"))
 	
-	# Note: set_language_button_pressed() and update_ui_texts() will be called 
-	# from the load_settings callback when the actual language is loaded
-	
 	# Initialize language buttons array
-	language_buttons = [english_button, chinese_button, japanese_button, traditional_chinese_button]
+	# Order: Traditional Chinese (0), Chinese (1), Japanese (2), English (3)
+	language_buttons = [traditional_chinese_button, chinese_button, japanese_button, english_button]
+	
+	# Debug: Check which buttons are properly loaded
+	print("[Option] Language buttons initialization:")
+	for i in range(language_buttons.size()):
+		if language_buttons[i]:
+			print("[Option]   Button ", i, ": ", language_buttons[i].name, " - OK")
+		else:
+			print("[Option]   Button ", i, ": NULL - MISSING!")
 	
 	# Set tab_container focusable
 	if tab_container:
 		tab_container.focus_mode = Control.FOCUS_ALL
 	
-	# Set default focus to English button (will be updated when settings load)
-	if english_button:
-		english_button.grab_focus()
+	# Focus will be set by load_settings_from_global_data() based on current language
 	
 	# Connect to WebSocketListener
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
@@ -73,6 +77,17 @@ func set_locale_from_language(language: String):
 	TranslationServer.set_locale(locale)
 
 func set_language_button_pressed():
+	# First reset all buttons
+	if english_button:
+		english_button.button_pressed = false
+	if chinese_button:
+		chinese_button.button_pressed = false
+	if traditional_chinese_button:
+		traditional_chinese_button.button_pressed = false
+	if japanese_button:
+		japanese_button.button_pressed = false
+	
+	# Then set the current language button as pressed
 	match current_language:
 		"Chinese":
 			if chinese_button:
@@ -203,55 +218,23 @@ func _on_save_settings_callback(_result, response_code, _headers, _body):
 	else:
 		print("Failed to save settings: ", response_code)
 
-func load_settings():
-	var http_service = get_node("/root/HttpService")
-	if http_service:
-		http_service.load_game(_on_load_settings_callback, "settings")
-	else:
-		print("HttpService not found, using default")
+func load_settings_from_global_data():
+	# Load language setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		current_language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(current_language)
-		set_language_button_pressed()
-		update_ui_texts()
-		set_focus_to_current_language()
-
-func _on_load_settings_callback(_result, response_code, _headers, body):
-	if response_code == 200:
-		var body_str = body.get_string_from_utf8()
-		var json = JSON.new()
-		var error = json.parse(body_str)
-		if error == OK:
-			var data = json.data
-			var settings = data.get("content", "{}")
-			var settings_json = JSON.new()
-			var settings_error = settings_json.parse(settings)
-			if settings_error == OK:
-				var settings_data = settings_json.data
-				current_language = settings_data.get("language", "English")
-				set_locale_from_language(current_language)
-				print("Loaded language: ", current_language)
-				# Update button states and UI to reflect the loaded language
-				set_language_button_pressed()
-				update_ui_texts()
-				# Set focus to the correct language button
-				set_focus_to_current_language()
-			else:
-				print("Failed to parse settings JSON")
-				set_locale_from_language(current_language)
-				set_language_button_pressed()
-				update_ui_texts()
-				set_focus_to_current_language()
-		else:
-			print("Failed to parse response JSON")
-			set_locale_from_language(current_language)
-			set_language_button_pressed()
-			update_ui_texts()
-			set_focus_to_current_language()
+		print("[Option] Loaded language from GlobalData: ", current_language)
 	else:
-		print("Failed to load settings: ", response_code)
+		print("[Option] GlobalData not found or no language setting, using default English")
+		current_language = "English"
 		set_locale_from_language(current_language)
-		set_language_button_pressed()
-		update_ui_texts()
-		set_focus_to_current_language()
+	
+	# Update UI to reflect the loaded language
+	set_language_button_pressed()
+	update_ui_texts()
+	# Use call_deferred to ensure focus is set after all UI updates are complete
+	call_deferred("set_focus_to_current_language")
 
 # Function to get current language (can be called from other scripts)
 static func get_current_language() -> String:
@@ -262,8 +245,10 @@ func _on_menu_control(directive: String):
 	match directive:
 		"up", "down":
 			if tab_container and tab_container.current_tab == 0:
-				print("[Option] Navigation: ", directive)
+				print("[Option] Navigation: ", directive, " on Languages tab")
 				navigate_buttons(directive)
+			else:
+				print("[Option] Navigation: ", directive, " ignored - not on Languages tab (current tab: ", tab_container.current_tab if tab_container else "N/A", ")")
 		"left", "right":
 			print("[Option] Tab switch: ", directive)
 			switch_tab(directive)
@@ -292,14 +277,32 @@ func navigate_buttons(direction: String):
 			current_index = i
 			break
 	if current_index == -1:
+		# If no button has focus, start with the first valid button
+		for i in range(language_buttons.size()):
+			if language_buttons[i]:
+				language_buttons[i].grab_focus()
+				print("[Option] Focus set to first valid button: ", language_buttons[i].name)
+				return
 		return
-	if direction == "up":
-		current_index = (current_index - 1 + language_buttons.size()) % language_buttons.size()
-	else:  # down
-		current_index = (current_index + 1) % language_buttons.size()
-	if language_buttons[current_index]:
-		language_buttons[current_index].grab_focus()
-		print("[Option] Focus moved to ", language_buttons[current_index].name)
+	
+	# Find the next valid button in the specified direction
+	var attempts = 0
+	var target_index = current_index
+	while attempts < language_buttons.size():
+		if direction == "up":
+			target_index = (target_index - 1 + language_buttons.size()) % language_buttons.size()
+		else:  # down
+			target_index = (target_index + 1) % language_buttons.size()
+		
+		# Check if the target button exists and is valid
+		if language_buttons[target_index] and language_buttons[target_index] != language_buttons[current_index]:
+			language_buttons[target_index].grab_focus()
+			print("[Option] Focus moved to ", language_buttons[target_index].name)
+			return
+		
+		attempts += 1
+	
+	print("[Option] No other valid buttons found for navigation")
 
 func press_focused_button():
 	for button in language_buttons:
