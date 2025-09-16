@@ -20,6 +20,10 @@ var target_scenes = {
 	# Add more as needed
 }
 
+# UI references
+var target_type_title: Label
+var bullet_hole_labels = []  # Store sequence number labels for bullet holes
+
 func _ready():
 	if DEBUG_LOGGING:
 						print("Drill Replay: Loading drill records...")
@@ -32,17 +36,17 @@ func _ready():
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
 		if DEBUG_LOGGING:
-						print("[Drill Replay] Connecting to WebSocketListener.menu_control signal")
+			print("[Drill Replay] Connecting to WebSocketListener.menu_control signal")
 	else:
 		if DEBUG_LOGGING:
-						print("[Drill Replay] WebSocketListener singleton not found!")
+			print("[Drill Replay] WebSocketListener singleton not found!")
 	
 	# Get upper level scene and selected drill data from GlobalData
 	var global_data = get_node("/root/GlobalData")
 	if global_data:
 		upper_level_scene = global_data.upper_level_scene
 		if DEBUG_LOGGING:
-						print("[Drill Replay] Upper level scene set to: ", upper_level_scene)
+			print("[Drill Replay] Upper level scene set to: ", upper_level_scene)
 		
 		# Check if drill data is available in GlobalData
 		if global_data.selected_drill_data.size() > 0:
@@ -51,70 +55,74 @@ func _ready():
 			load_selected_drill_data(global_data.selected_drill_data)
 			# Clear the data after loading to prevent reuse
 			global_data.selected_drill_data = {}
+			# Initialize UI after data load
+			initialize_ui()
 			return
 	
 	# Fallback: use latest performance data from memory
 	if DEBUG_LOGGING:
 						print("[Drill Replay] No selected drill data found, checking in-memory latest performance")
 	load_latest_performance_from_memory()
+	# Initialize UI after fallback load
+	initialize_ui()
 
 func load_latest_performance_from_memory():
 	"""Load the latest performance data from GlobalData (in-memory)"""
 	if DEBUG_LOGGING:
-						print("[Drill Replay] Loading latest performance from memory")
+		print("[Drill Replay] Loading latest performance from memory")
 	
 	var global_data = get_node("/root/GlobalData")
 	if not global_data:
 		if DEBUG_LOGGING:
-						print("[Drill Replay] GlobalData not found")
+			print("[Drill Replay] GlobalData not found")
 		return
 	
 	# Check if we have latest performance data in memory
 	if global_data.latest_performance_data.size() > 0:
 		if DEBUG_LOGGING:
-						print("[Drill Replay] Found latest performance data in memory")
+			print("[Drill Replay] Found latest performance data in memory")
 		var data = global_data.latest_performance_data
 		
 		# Verify the data structure
 		if data.has("drill_summary") and data.has("records"):
 			if DEBUG_LOGGING:
-						print("[Drill Replay] Successfully loaded latest performance data from memory")
+				print("[Drill Replay] Successfully loaded latest performance data from memory")
 			load_selected_drill_data(data)
 			return
 		else:
 			if DEBUG_LOGGING:
-						print("[Drill Replay] Invalid data structure in memory performance data")
+				print("[Drill Replay] Invalid data structure in memory performance data")
 	
 	if DEBUG_LOGGING:
-						print("[Drill Replay] No latest performance data in memory, nothing to display")
+		print("[Drill Replay] No latest performance data in memory, nothing to display")
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
 	var global_data = get_node_or_null("/root/GlobalData")
 	if DEBUG_LOGGING:
-						print("[DrillReplay] GlobalData node found: ", global_data != null)
+		print("[DrillReplay] GlobalData node found: ", global_data != null)
 	
 	if global_data:
 		if DEBUG_LOGGING:
-						print("[DrillReplay] GlobalData.settings_dict exists: ", global_data.settings_dict != null)
+			print("[DrillReplay] GlobalData.settings_dict exists: ", global_data.settings_dict != null)
 		if global_data.settings_dict:
 			if DEBUG_LOGGING:
-						print("[DrillReplay] settings_dict keys: ", global_data.settings_dict.keys())
+				print("[DrillReplay] settings_dict keys: ", global_data.settings_dict.keys())
 			if DEBUG_LOGGING:
-						print("[DrillReplay] settings_dict language value: ", global_data.settings_dict.get("language", "NOT_FOUND"))
+				print("[DrillReplay] settings_dict language value: ", global_data.settings_dict.get("language", "NOT_FOUND"))
 		
 		if global_data.settings_dict and global_data.settings_dict.has("language"):
 			var language = global_data.settings_dict.get("language", "English")
 			if DEBUG_LOGGING:
-						print("[DrillReplay] Loading language from GlobalData: ", language)
+				print("[DrillReplay] Loading language from GlobalData: ", language)
 			set_locale_from_language(language)
 		else:
 			if DEBUG_LOGGING:
-						print("[DrillReplay] No language key found in settings_dict")
+				print("[DrillReplay] No language key found in settings_dict")
 			set_locale_from_language("English")
 	else:
 		if DEBUG_LOGGING:
-						print("[DrillReplay] GlobalData not found or no language setting, using default English")
+			print("[DrillReplay] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
 func set_locale_from_language(language: String):
@@ -132,18 +140,18 @@ func set_locale_from_language(language: String):
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
 	if DEBUG_LOGGING:
-						print("[DrillReplay] Set locale to: ", locale)
+		print("[DrillReplay] Set locale to: ", locale)
 
 func get_localized_shot_text() -> String:
 	# Since there's no specific "shot" translation key, create localized text based on locale
 	var locale = TranslationServer.get_locale()
 	if DEBUG_LOGGING:
-						print("[DrillReplay] Current locale for shot text: ", locale)
+		print("[DrillReplay] Current locale for shot text: ", locale)
 	
 	# Test if translation server is working with a known key
 	var test_translation = tr("target")
 	if DEBUG_LOGGING:
-						print("[DrillReplay] Test translation for 'target': ", test_translation)
+		print("[DrillReplay] Test translation for 'target': ", test_translation)
 	
 	match locale:
 		"zh_CN":
@@ -154,7 +162,7 @@ func get_localized_shot_text() -> String:
 			return "ショット"
 		_:
 			if DEBUG_LOGGING:
-						print("[DrillReplay] Using default English for unknown locale: ", locale)
+				print("[DrillReplay] Using default English for unknown locale: ", locale)
 			return "Shot"
 
 func load_selected_drill_data(data: Dictionary):
@@ -179,6 +187,9 @@ func load_selected_drill_data(data: Dictionary):
 						print("No records found in selected drill data")
 		return
 	
+	# Clear any existing sequence labels
+	clear_all_sequence_labels()
+	
 	# Check if records contain rotation angle data
 	if records.size() > 0:
 		var first_record = records[0]
@@ -194,6 +205,13 @@ func load_selected_drill_data(data: Dictionary):
 	
 	# Enable input for this node
 	set_process_input(true)
+
+func clear_all_sequence_labels():
+	"""Clear all sequence number labels"""
+	for label_data in bullet_hole_labels:
+		if is_instance_valid(label_data["label"]):
+			label_data["label"].queue_free()
+	bullet_hole_labels.clear()
 
 func load_performance_file(file_path: String):
 	"""Load drill data from a performance file"""
@@ -311,6 +329,8 @@ func load_record(index):
 	
 	add_bullet_hole_for_record(index)
 	update_shot_list()
+	update_progress_title()
+	update_bullet_hole_highlight()
 
 func update_shot_list():
 	var shot_list = get_node_or_null("CanvasLayer/ShotListOverlay/ScrollContainer/ShotList")
@@ -345,16 +365,17 @@ func update_shot_list():
 			if i == current_index:
 				current_shot_index_in_target = current_target_shots.size() - 1
 	
-	# Add shot entries for current target only
+	# Add shot entries for current target only using global sequence numbers
 	for i in range(current_target_shots.size()):
 		var shot_data = current_target_shots[i]
 		var record = shot_data["record"]
+		var global_index = shot_data["index"]  # Global shot sequence number
 		var time_diff = record.get("time_diff", 0.0)
 		
 		var label = Label.new()
-		# Use localized shot text
+		# Use global sequence number (1-based)
 		var shot_text = get_localized_shot_text()
-		label.text = "%s %d: %.2fs" % [shot_text, i + 1, time_diff]
+		label.text = "%s %d: %.2fs" % [shot_text, global_index + 1, time_diff]
 		
 		# Color scheme: grey for previous shots in current target, highlighted for current shot
 		if i == current_shot_index_in_target:
@@ -406,6 +427,85 @@ func add_bullet_hole_for_record(index):
 	target_data["scene"].add_child(bullet_hole)
 	target_data["bullet_holes"].append(bullet_hole)
 	
+	# Add sequence number label on top of bullet hole
+	var seq_label = Label.new()
+	seq_label.text = str(index + 1)  # Global sequence number (1-based)
+	seq_label.add_theme_font_size_override("font_size", 24)  # Increased from 14 to 18
+	seq_label.add_theme_color_override("font_color", Color.YELLOW)
+	seq_label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	seq_label.add_theme_constant_override("shadow_offset_x", 2)  # Increased shadow for better visibility
+	seq_label.add_theme_constant_override("shadow_offset_y", 2)
+	seq_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	seq_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	seq_label.position = bullet_hole.position + Vector2(-12, -30)  # Adjusted position for larger font
+	seq_label.size = Vector2(24, 24)  # Increased size for larger text
+	seq_label.z_index = 6  # Above bullet hole
+	target_data["scene"].add_child(seq_label)
+	
+	# Store label reference for highlighting
+	bullet_hole_labels.append({"label": seq_label, "index": index, "target_type": target_type})
+	
+
+func initialize_ui():
+	"""Initialize UI references and setup highlight system"""
+	# Get UI references
+	target_type_title = get_node_or_null("CanvasLayer/HeaderContainer/TargetTypeTitle")
+	
+	# Update title initially
+	update_progress_title()
+
+func update_progress_title():
+	"""Update the progress title showing current shot and target sequence"""
+	if not target_type_title:
+		return
+	
+	if records.size() == 0:
+		target_type_title.text = ""
+		return
+	
+	# Calculate target sequence information
+	var unique_targets = []
+	var current_target_index = 0
+	var target_found = false
+	
+	# Find all unique target types in order of appearance
+	for i in range(records.size()):
+		var record = records[i]
+		var target_type = record.get("target_type", "")
+		
+		if target_type not in unique_targets:
+			unique_targets.append(target_type)
+		
+		# Find which target index we're currently on
+		if i == current_index and not target_found:
+			current_target_index = unique_targets.find(target_type) + 1  # 1-based
+			target_found = true
+	
+	# Format: "Shots: 3/41 on Target 2/7"
+	var shots_text = "Shots: " + str(current_index + 1) + "/" + str(records.size())
+	var target_text = "Target " + str(current_target_index) + "/" + str(unique_targets.size())
+	var progress_text = shots_text + " on " + target_text
+	
+	target_type_title.text = progress_text
+
+func update_bullet_hole_highlight():
+	"""Update the sequence number highlighting for the current bullet hole"""
+	# Reset all sequence number labels to normal color and size
+	for label_data in bullet_hole_labels:
+		var label = label_data["label"]
+		if is_instance_valid(label):
+			label.add_theme_color_override("font_color", Color.YELLOW)
+			label.add_theme_font_size_override("font_size", 18)  # Normal size increased
+	
+	# Highlight the current shot's sequence number
+	if current_index < records.size():
+		for label_data in bullet_hole_labels:
+			if label_data["index"] == current_index:
+				var label = label_data["label"]
+				if is_instance_valid(label):
+					label.add_theme_color_override("font_color", Color.RED)
+					label.add_theme_font_size_override("font_size", 24)  # Highlighted size increased
+				break
 
 
 func _input(event):
@@ -414,15 +514,27 @@ func _input(event):
 			current_index += 1
 			load_record(current_index)
 			update_shot_list()
+			update_progress_title()
+			update_bullet_hole_highlight()
 	elif event is InputEventKey and event.keycode == KEY_P and event.pressed:
 		if current_index > 0:
-			# Remove current bullet hole from current target
+			# Remove current bullet hole and sequence label from current target
 			if loaded_targets.has(current_target_type):
 				var target_data = loaded_targets[current_target_type]
 				if target_data["bullet_holes"].size() > 0:
 					var last_bullet_hole = target_data["bullet_holes"].back()
 					last_bullet_hole.queue_free()
 					target_data["bullet_holes"].pop_back()
+			
+			# Remove the corresponding sequence label
+			for i in range(bullet_hole_labels.size() - 1, -1, -1):
+				var label_data = bullet_hole_labels[i]
+				if label_data["index"] == current_index:
+					if is_instance_valid(label_data["label"]):
+						label_data["label"].queue_free()
+					bullet_hole_labels.remove_at(i)
+					break
+			
 			current_index -= 1
 			
 			# Check if target changed
@@ -449,6 +561,8 @@ func _input(event):
 						loaded_targets[current_target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
 				loaded_targets[current_target_type]["scene"].visible = true
 			update_shot_list()
+			update_progress_title()
+			update_bullet_hole_highlight()
 
 func disable_target_input(node: Node):
 	"""Recursively disable input for a node and its children"""
