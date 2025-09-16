@@ -33,7 +33,16 @@ text = "Save Settings"
 layout_mode = 2
 text = "Load Settings"
 
+[node name="SaveLeaderBoardButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Save Leader Board Index"
+
+[node name="LoadLeaderBoardButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Load Leader Board Index"
+
 [node name="ResponseText" type="TextEdit" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 placeholder_text = "Server responses will appear here..."
+wrap_mode = 1

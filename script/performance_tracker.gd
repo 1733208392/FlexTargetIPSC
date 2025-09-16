@@ -262,32 +262,38 @@ func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers
 		if parse_result == OK:
 			var response_data = json.data
 			if response_data.has("data") and response_data["code"] == 0:
-				var index_json = JSON.new()
-				var index_parse = index_json.parse(response_data["data"])
-				if index_parse == OK:
-					index_data = index_json.data
-					# Normalize existing data to ensure correct types
-					for i in range(index_data.size()):
-						var entry = index_data[i]
-						if entry.has("index"):
-							entry["index"] = int(entry["index"])  # Ensure index is integer
-						if entry.has("score"):
-							entry["score"] = int(entry["score"])  # Ensure score is integer
-						if entry.has("hf"):
-							entry["hf"] = round(float(entry["hf"]) * 10) / 10.0  # Ensure hf is float with 1 decimal
-						if entry.has("time"):
-							entry["time"] = round(float(entry["time"]) * 10) / 10.0  # Ensure time is float with 1 decimal
-						if entry.has("fastest_shot"):
-							entry["fastest_shot"] = round(float(entry["fastest_shot"]) * 100) / 100.0  # Ensure fastest_shot is float with 2 decimals
-						else:
-							# Add fastest_shot field if missing (for backward compatibility)
-							entry["fastest_shot"] = 0.0
+				# Check if data is empty string "{}" indicating file doesn't exist
+				if response_data["data"] == "{}":
+					# File doesn't exist - create new one
 					if DEBUG_LOGGING:
-						print("[PerformanceTracker] Loaded and normalized existing leader_board_index.json with ", index_data.size(), " entries")
+						print("[PerformanceTracker] leader_board_index.json doesn't exist, creating new file")
+				else:
+					var index_json = JSON.new()
+					var index_parse = index_json.parse(response_data["data"])
+					if index_parse == OK:
+						index_data = index_json.data
+						# Normalize existing data to ensure correct types
+						for i in range(index_data.size()):
+							var entry = index_data[i]
+							if entry.has("index"):
+								entry["index"] = int(entry["index"])  # Ensure index is integer
+							if entry.has("score"):
+								entry["score"] = int(entry["score"])  # Ensure score is integer
+							if entry.has("hf"):
+								entry["hf"] = round(float(entry["hf"]) * 10) / 10.0  # Ensure hf is float with 1 decimal
+							if entry.has("time"):
+								entry["time"] = round(float(entry["time"]) * 10) / 10.0  # Ensure time is float with 1 decimal
+							if entry.has("fastest_shot"):
+								entry["fastest_shot"] = round(float(entry["fastest_shot"]) * 100) / 100.0  # Ensure fastest_shot is float with 2 decimals
+							else:
+								# Add fastest_shot field if missing (for backward compatibility)
+								entry["fastest_shot"] = 0.0
+						if DEBUG_LOGGING:
+							print("[PerformanceTracker] Loaded and normalized existing leader_board_index.json with ", index_data.size(), " entries")
 	else:
-		# File doesn't exist - create new one
+		# Unexpected response code - create new file
 		if DEBUG_LOGGING:
-			print("[PerformanceTracker] leader_board_index.json doesn't exist, creating new file")
+			print("[PerformanceTracker] Unexpected response code ", response_code, ", creating new file")
 	
 	# Find if entry with same index exists and update it, otherwise append new entry
 	var entry_updated = false

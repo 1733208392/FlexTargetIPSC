@@ -58,8 +58,8 @@ const server = http.createServer((req, res) => {
         fs.readFile(fileName, 'utf8', (err, content) => {
           if (err) {
             console.error('Error loading file:', err);
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ code: 1, msg: "File not found" }));
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ code: 0, data: "{}", msg: "OK" }));
           } else {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ code: 0, data: content }));
