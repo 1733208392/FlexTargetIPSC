@@ -419,7 +419,7 @@ func update_shot_list():
 	var scroll_container = get_node_or_null("CanvasLayer/ShotListOverlay/ScrollContainer")
 	if not shot_list or not scroll_container:
 		if DEBUG_LOGGING:
-						print("Shot list node not found, skipping update")
+			print("Shot list node not found, skipping update")
 		return
 	
 	# Clear existing children immediately

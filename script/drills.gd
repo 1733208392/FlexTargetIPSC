@@ -5,12 +5,13 @@ extends Control
 @export var ipsc_mini_black_1_scene: PackedScene = preload("res://scene/ipsc_mini_black_1.tscn")
 @export var ipsc_mini_black_2_scene: PackedScene = preload("res://scene/ipsc_mini_black_2.tscn")
 @export var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
-@export var two_poppers_scene: PackedScene = preload("res://scene/2poppers.tscn")
+@export var two_poppers_scene: PackedScene = preload("res://scene/2poppers_simple.tscn")
 @export var three_paddles_scene: PackedScene = preload("res://scene/3paddles.tscn")
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+#var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var base_target_sequence: Array[String] = ["2poppers"]
 
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
@@ -45,7 +46,7 @@ signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, 
 signal drills_finished
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_LOGGING = true  # Set to true for detailed logging
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
@@ -359,7 +360,7 @@ func spawn_next_target():
 		"hostage":
 			await spawn_hostage()
 		"2poppers":
-			spawn_2poppers()
+			spawn_2poppers_simple()
 		"3paddles":
 			spawn_3paddles()
 		"ipsc_mini_rotate":
@@ -432,13 +433,17 @@ func spawn_hostage():
 	# Wait for the target to be fully ready before proceeding
 	await get_tree().process_frame
 
-func spawn_2poppers():
-	"""Spawn a 2poppers composite target"""
+func spawn_2poppers_simple():
+	"""Spawn a 2poppers_simple composite target with WebSocket integration"""
 	var target = two_poppers_scene.instantiate()
 	center_container.add_child(target)
 	current_target_instance = target
 	if DEBUG_LOGGING:
-		print("2poppers target spawned")
+		print("2poppers_simple target spawned with WebSocket integration")
+
+func spawn_2poppers():
+	"""Legacy function - redirects to spawn_2poppers_simple()"""
+	spawn_2poppers_simple()
 
 func spawn_3paddles():
 	"""Spawn a 3paddles composite target"""
@@ -635,9 +640,16 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		var zone = str(param2)
 		var actual_points = param3
 		hit_position = param4
-		hit_area = "Popper"
-		if DEBUG_LOGGING:
-			print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
+		
+		if popper_id == "miss":
+			hit_area = "Miss"
+			if DEBUG_LOGGING:
+				print("Target miss: ", current_target_type, " - bullet missed both poppers at ", hit_position)
+		else:
+			hit_area = "Popper"
+			if DEBUG_LOGGING:
+				print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
+		
 		total_drill_score += actual_points
 	else:
 		# Simple targets send: zone, points, hit_position

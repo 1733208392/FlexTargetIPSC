@@ -170,8 +170,8 @@ func _on_input_event(_viewport, event, shape_idx):
 			0:  # StandArea (index 0)
 				zone_hit = "StandArea"
 				points = 0
-				print("Popper stand hit!")
-				test_shader_effects()
+				print("Popper stand hit! Starting fall animation...")
+				trigger_fall_animation()
 			1:  # BodyArea (index 1) - Main scoring hit
 				zone_hit = "BodyArea"
 				points = 2
@@ -192,11 +192,13 @@ func _on_input_event(_viewport, event, shape_idx):
 				points = 0
 				print("Popper hit!")
 		
-		# Emit the target_hit signal for mouse clicks too
-		if zone_hit != "":
+		# Emit the target_hit signal for mouse clicks only if it's a valid hit (including stand hits with 0 points)
+		if zone_hit != "" and zone_hit != "unknown":
 			total_score += points
 			target_hit.emit(zone_hit, points, event.position)
 			print("Mouse click target_hit emitted: ", zone_hit, " for ", points, " points at ", event.position)
+		else:
+			print("Mouse click missed - no target_hit signal emitted")
 
 func test_shader_effects():
 	print("Testing popper shader effects manually...")
@@ -347,16 +349,19 @@ func handle_bullet_collision(bullet_position: Vector2):
 		zone_hit = "StandArea"
 		points = 0
 		print("COLLISION: Popper stand hit by bullet - 0 points!")
-		test_shader_effects()
+		trigger_fall_animation()
 	else:
 		zone_hit = "miss"
 		points = 0
 		print("COLLISION: Bullet hit popper but outside defined areas")
 	
-	# Update score and emit signal
-	total_score += points
-	target_hit.emit(zone_hit, points, bullet_position)
-	print("Total score: ", total_score)
+	# Update score and emit signal ONLY for actual hits (including stand hits with 0 points)
+	if zone_hit != "miss":
+		total_score += points
+		target_hit.emit(zone_hit, points, bullet_position)
+		print("COLLISION: Target hit! Total score: ", total_score)
+	else:
+		print("COLLISION: Bullet missed - no target_hit signal emitted")
 	
 	return zone_hit
 
@@ -453,8 +458,8 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 		zone_hit = "StandArea"
 		points = 0
 		is_target_hit = true
-		should_fall = false
-		print("[popper %s] FAST: Stand hit - 0 points (no fall)" % popper_id)
+		should_fall = true
+		print("[popper %s] FAST: Stand hit - 0 points (will fall)" % popper_id)
 	else:
 		zone_hit = "miss"
 		points = 0
@@ -471,18 +476,18 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	else:
 		print("[popper %s] FAST: No effects - bullet missed target" % popper_id)
 	
-	# 4. Update score and emit signal
-	total_score += points
-	target_hit.emit(zone_hit, points, world_pos)
-	print("[popper %s] FAST: Total score: %d" % [popper_id, total_score])
+	# 4. Update score and emit signal ONLY for actual hits
+	if is_target_hit:
+		total_score += points
+		target_hit.emit(zone_hit, points, world_pos)
+		print("[popper %s] FAST: Target hit! Total score: %d" % [popper_id, total_score])
+	else:
+		print("[popper %s] FAST: Bullet missed - no target_hit signal emitted" % popper_id)
 	
-	# 5. Trigger fall animation if needed (only for hits that should cause falling)
+	# 5. Trigger fall animation if needed (for all hits that should cause falling)
 	if should_fall:
 		print("[popper %s] FAST: Triggering fall animation..." % popper_id)
 		trigger_fall_animation()
-	elif zone_hit == "StandArea":
-		print("[popper %s] FAST: Stand hit - testing shader effects only" % popper_id)
-		test_shader_effects()
 	else:
 		print("[popper %s] FAST: Miss - no animation triggered" % popper_id)
 
