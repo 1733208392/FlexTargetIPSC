@@ -4,6 +4,8 @@ extends Control
 @onready var hide_timer: Timer = Timer.new()
 
 var current_volume: float = 50.0  # Default volume level (0-100)
+var remote_button_sound: AudioStream = preload("res://audio/remote_button_sound.mp3")
+var audio_player: AudioStreamPlayer
 
 func _ready():
 	# Setup the hide timer
@@ -11,6 +13,11 @@ func _ready():
 	hide_timer.wait_time = 5.0
 	hide_timer.one_shot = true
 	hide_timer.timeout.connect(_on_hide_timer_timeout)
+	
+	# Setup audio player for button sound
+	audio_player = AudioStreamPlayer.new()
+	audio_player.stream = remote_button_sound
+	add_child(audio_player)
 	
 	# Connect to WebSocket menu control signals
 	var websocket_listener = get_node("/root/WebSocketListener")
@@ -64,7 +71,16 @@ func _update_volume_display():
 	hide_timer.stop()
 	hide_timer.start()
 	
+	# Play button sound feedback
+	_play_button_sound()
+	
 	print("[VolumeControl] Volume updated to: ", current_volume, "%")
+
+func _play_button_sound():
+	# Play the remote button sound when volume changes
+	if audio_player and remote_button_sound:
+		audio_player.play()
+		print("[VolumeControl] Playing remote button sound")
 
 func _on_hide_timer_timeout():
 	print("[VolumeControl] Hiding volume control after timeout")
