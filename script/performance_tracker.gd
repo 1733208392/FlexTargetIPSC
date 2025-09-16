@@ -187,9 +187,135 @@ func _on_performance_saved(result, response_code, headers, body):
 			# Preserve all existing settings, only update max_index
 			var settings_json = JSON.stringify(GlobalData.settings_dict)
 			http_service.save_game(_on_settings_saved, "settings", settings_json)
+			
+			# Save/update leaderboard index
+			_save_leaderboard_index(next_index)
 		else:
 			if DEBUG_LOGGING:
 				print("HttpService not found")
 	else:
 		if DEBUG_LOGGING:
 			print("Failed to save performance data")
+
+# Save/update leaderboard index with current drill performance
+func _save_leaderboard_index(drill_index: int):
+	if not pending_drill_data:
+		if DEBUG_LOGGING:
+			print("[PerformanceTracker] No pending drill data for leaderboard index")
+		return
+	
+	var http_service = get_node("/root/HttpService")
+	if not http_service:
+		if DEBUG_LOGGING:
+			print("[PerformanceTracker] HttpService not found for leaderboard index update")
+		return
+	
+	# Calculate performance metrics from pending drill data
+	var drill_summary = pending_drill_data.get("drill_summary", {})
+	var records = pending_drill_data.get("records", [])
+	
+	# Calculate total score
+	var total_score = 0
+	for record in records:
+		if record.has("score"):
+			total_score += record["score"]
+	
+	# Calculate hit factor (hf)
+	var hf = 0.0
+	var total_time = drill_summary.get("total_elapsed_time", 0.0)
+	if total_time > 0:
+		hf = total_score / total_time
+	
+	# Get fastest shot interval
+	var fastest_shot = drill_summary.get("fastest_shot_interval", null)
+	var fastest_shot_time = 0.0
+	if fastest_shot != null:
+		fastest_shot_time = fastest_shot
+	
+	# Create leaderboard entry with exact format specified including fastest shot
+	var leaderboard_entry = {
+		"index": int(drill_index),  # Ensure index is always an integer
+		"hf": round(hf * 10) / 10.0,  # Round to 1 decimal place
+		"score": int(total_score),  # Ensure score is always an integer
+		"time": round(total_time * 10) / 10.0,  # Round to 1 decimal place
+		"fastest_shot": round(fastest_shot_time * 100) / 100.0  # Round to 2 decimal places
+	}
+	
+	if DEBUG_LOGGING:
+		print("[PerformanceTracker] Creating leaderboard index entry: ", leaderboard_entry)
+	
+	# Try to load existing leader_board_index.json or create new one if it doesn't exist
+	http_service.load_game(func(result, response_code, headers, body): _on_index_file_loaded(leaderboard_entry, result, response_code, headers, body), "leader_board_index")
+
+func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers, body):
+	var http_service = get_node("/root/HttpService")
+	if not http_service:
+		return
+	
+	var index_data = []
+	
+	# If leader_board_index.json exists, load existing data for appending
+	if response_code == 200:
+		var body_str = body.get_string_from_utf8()
+		var json = JSON.new()
+		var parse_result = json.parse(body_str)
+		if parse_result == OK:
+			var response_data = json.data
+			if response_data.has("data") and response_data["code"] == 0:
+				var index_json = JSON.new()
+				var index_parse = index_json.parse(response_data["data"])
+				if index_parse == OK:
+					index_data = index_json.data
+					# Normalize existing data to ensure correct types
+					for i in range(index_data.size()):
+						var entry = index_data[i]
+						if entry.has("index"):
+							entry["index"] = int(entry["index"])  # Ensure index is integer
+						if entry.has("score"):
+							entry["score"] = int(entry["score"])  # Ensure score is integer
+						if entry.has("hf"):
+							entry["hf"] = round(float(entry["hf"]) * 10) / 10.0  # Ensure hf is float with 1 decimal
+						if entry.has("time"):
+							entry["time"] = round(float(entry["time"]) * 10) / 10.0  # Ensure time is float with 1 decimal
+						if entry.has("fastest_shot"):
+							entry["fastest_shot"] = round(float(entry["fastest_shot"]) * 100) / 100.0  # Ensure fastest_shot is float with 2 decimals
+						else:
+							# Add fastest_shot field if missing (for backward compatibility)
+							entry["fastest_shot"] = 0.0
+					if DEBUG_LOGGING:
+						print("[PerformanceTracker] Loaded and normalized existing leader_board_index.json with ", index_data.size(), " entries")
+	else:
+		# File doesn't exist - create new one
+		if DEBUG_LOGGING:
+			print("[PerformanceTracker] leader_board_index.json doesn't exist, creating new file")
+	
+	# Find if entry with same index exists and update it, otherwise append new entry
+	var entry_updated = false
+	for i in range(index_data.size()):
+		if int(index_data[i].get("index")) == int(new_entry["index"]):
+			index_data[i] = new_entry
+			entry_updated = true
+			if DEBUG_LOGGING:
+				print("[PerformanceTracker] Updated existing entry at index ", new_entry["index"])
+			break
+	
+	# If entry with this index doesn't exist, append the new entry
+	if not entry_updated:
+		index_data.append(new_entry)
+		if DEBUG_LOGGING:
+			print("[PerformanceTracker] Appended new entry at index ", new_entry["index"])
+	
+	# Sort index data by hit factor in descending order for better leaderboard presentation
+	index_data.sort_custom(func(a, b): return a.get("hf", 0.0) > b.get("hf", 0.0))
+	
+	# Save updated leader_board_index.json
+	var index_json = JSON.stringify(index_data)
+	http_service.save_game(_on_index_file_saved, "leader_board_index", index_json)
+
+func _on_index_file_saved(result, response_code, headers, body):
+	if response_code == 200:
+		if DEBUG_LOGGING:
+			print("[PerformanceTracker] leader_board_index.json saved successfully")
+	else:
+		if DEBUG_LOGGING:
+			print("[PerformanceTracker] Failed to save leader_board_index.json - Response code: ", response_code)

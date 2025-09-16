@@ -52,7 +52,7 @@ func _ready():
 			print("[History] WebSocketListener singleton not found!")
 	
 	# Start loading history data
-	load_history_data()
+	load_drill_data()
 
 func _input(event):
 	"""Handle direct keyboard input for sorting toggle"""
@@ -62,47 +62,99 @@ func _input(event):
 			toggle_sort_mode()
 			get_viewport().set_input_as_handled()  # Prevent further processing
 
-func load_history_data():
-	if DEBUG_PRINTS:
-		print("[History] Starting to load history data via HTTP")
+func load_drill_data():
+	# Load drill data from leader_board_index.json instead of individual files
 	history_data.clear()
-	
-	# Get max_index from GlobalData
-	var global_data = get_node_or_null("/root/GlobalData")
-	if global_data and global_data.settings_dict.has("max_index"):
-		max_index = int(global_data.settings_dict.get("max_index", 0))
-	else:
-		max_index = 0
-		if DEBUG_PRINTS:
-			print("[History] No max_index found in GlobalData, no files to load")
-		hide_loading_overlay()
-		populate_list()
-		setup_clickable_items()
-		return
-	
-	if max_index <= 0:
-		if DEBUG_PRINTS:
-			print("[History] max_index is 0, no files to load")
-		hide_loading_overlay()
-		populate_list()
-		setup_clickable_items()
-		return
-	
-	# Prepare list of files to load - always load performance_1 to performance_20
-	files_to_load.clear()
-	# Always try to load all 20 possible files since we don't know if circular buffer is full
-	for i in range(1, 21):  # Always load performance_1 to performance_20
-		files_to_load.append("performance_" + str(i))
+	current_focused_index = 0
 	
 	if DEBUG_PRINTS:
-		print("[History] Loading all 20 possible files: ", files_to_load)
+		print("[History] Loading drill data from leader_board_index.json")
 	
 	# Show loading overlay and start loading
 	show_loading_overlay()
-	current_file_index = 0
-	consecutive_404s = 0  # Reset 404 counter
 	is_loading = true
-	load_next_file()
+	
+	# Load the leaderboard index file
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		http_service.load_game(_on_leaderboard_index_loaded, "leader_board_index")
+	else:
+		if DEBUG_PRINTS:
+			print("[History] HttpService not found")
+		hide_loading_overlay()
+		populate_list()
+		setup_clickable_items()
+
+func _on_leaderboard_index_loaded(result, response_code, _headers, body):
+	# Process the loaded leader_board_index.json file
+	if DEBUG_PRINTS:
+		print("[History] Leaderboard index load response - Result: ", result, ", Code: ", response_code)
+	
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		var body_str = body.get_string_from_utf8()
+		var json = JSON.new()
+		var parse_result = json.parse(body_str)
+		
+		if parse_result == OK:
+			var response_data = json.data
+			if response_data.has("data") and response_data["code"] == 0:
+				var index_json = JSON.new()
+				var index_parse = index_json.parse(response_data["data"])
+				if index_parse == OK:
+					var leaderboard_data = index_json.data
+					process_leaderboard_data(leaderboard_data)
+				else:
+					if DEBUG_PRINTS:
+						print("[History] Failed to parse leaderboard index data")
+					finish_loading()
+			else:
+				if DEBUG_PRINTS:
+					print("[History] No data field in leaderboard index response")
+				finish_loading()
+		else:
+			if DEBUG_PRINTS:
+				print("[History] Failed to parse leaderboard index response JSON")
+			finish_loading()
+	else:
+		if response_code == 404:
+			if DEBUG_PRINTS:
+				print("[History] leader_board_index.json not found (404) - no drill data available")
+		else:
+			if DEBUG_PRINTS:
+				print("[History] Failed to load leader_board_index.json - Response code: ", response_code)
+		finish_loading()
+
+func process_leaderboard_data(leaderboard_data: Array):
+	# Convert leaderboard data format to history data format
+	if DEBUG_PRINTS:
+		print("[History] Processing leaderboard data with ", leaderboard_data.size(), " entries")
+	
+	for entry in leaderboard_data:
+		# Extract data from leaderboard entry format: {"index": 1, "hf": 4.3, "score": 26, "time": 28.1, "fastest_shot": 0.45}
+		var drill_number = int(entry.get("index", 0))
+		var total_score = entry.get("score", 0)
+		var total_time = entry.get("time", 0.0)
+		var hf = entry.get("hf", 0.0)
+		var fastest_shot = entry.get("fastest_shot", 0.0)
+		
+		# Convert to expected history data format
+		var drill_data = {
+			"drill_number": drill_number,
+			"total_time": "%.2fs" % total_time,
+			"fastest_shot": "%.2fs" % fastest_shot if fastest_shot > 0.0 else "N/A",
+			"total_score": "%.1f" % total_score,
+			"hf": "%.2f" % hf,
+			"records": []  # Empty records array since we don't have individual shot data
+		}
+		
+		history_data.append(drill_data)
+		if DEBUG_PRINTS:
+			print("[History] Converted entry - Drill: ", drill_number, ", HF: ", hf, ", Score: ", total_score, ", Time: ", total_time)
+	
+	if DEBUG_PRINTS:
+		print("[History] Converted ", history_data.size(), " leaderboard entries to history format")
+	
+	finish_loading()
 
 func load_next_file():
 	if current_file_index >= files_to_load.size():
@@ -128,7 +180,7 @@ func load_next_file():
 		load_next_file()
 
 func finish_loading():
-	"""Complete the loading process and update UI"""
+	# Complete the loading process and update UI
 	if DEBUG_PRINTS:
 		print("[History] Loading finished - found ", history_data.size(), " drill records")
 	
@@ -290,9 +342,8 @@ func hide_loading_overlay():
 		is_loading = false
 
 func update_loading_progress():
-	if loading_label and files_to_load.size() > 0:
-		var progress_text = "(" + str(current_file_index + 1) + "/" + str(files_to_load.size()) + ")"
-		loading_label.text = tr("loading") + " " + progress_text
+	if loading_label:
+		loading_label.text = tr("loading")
 
 func _on_loading_timer_timeout():
 	if not is_loading:
@@ -304,9 +355,6 @@ func _on_loading_timer_timeout():
 		dots += "."
 	
 	var base_text = tr("loading")
-	if files_to_load.size() > 0:
-		base_text += " (" + str(current_file_index + 1) + "/" + str(files_to_load.size()) + ")"
-	
 	loading_label.text = base_text + dots
 
 func populate_list():

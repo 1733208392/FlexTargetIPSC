@@ -52,11 +52,21 @@ func _ready():
 		if global_data.selected_drill_data.size() > 0:
 			if DEBUG_LOGGING:
 				print("[Drill Replay] Found selected drill data in GlobalData")
-			load_selected_drill_data(global_data.selected_drill_data)
-			# Clear the data after loading to prevent reuse
-			global_data.selected_drill_data = {}
-			# Initialize UI after data load
-			initialize_ui()
+			
+			# Check if we need to load detailed performance data
+			var drill_data = global_data.selected_drill_data
+			if drill_data.has("records") and drill_data["records"].size() == 0 and drill_data.has("drill_number"):
+				# Data came from leaderboard index - need to load full performance file
+				if DEBUG_LOGGING:
+					print("[Drill Replay] Empty records detected, loading performance file for drill ", drill_data["drill_number"])
+				load_performance_from_http(drill_data["drill_number"])
+			else:
+				# Data already contains records (legacy path or direct performance data)
+				load_selected_drill_data(global_data.selected_drill_data)
+				# Clear the data after loading to prevent reuse
+				global_data.selected_drill_data = {}
+				# Initialize UI after data load
+				initialize_ui()
 			return
 	
 	# Fallback: use latest performance data from memory
@@ -95,6 +105,78 @@ func load_latest_performance_from_memory():
 	
 	if DEBUG_LOGGING:
 		print("[Drill Replay] No latest performance data in memory, nothing to display")
+
+func load_performance_from_http(drill_index: int):
+	# Load the detailed performance data from performance_[index].json file
+	if DEBUG_LOGGING:
+		print("[Drill Replay] Loading performance file for drill index: ", drill_index)
+	
+	var http_service = get_node_or_null("/root/HttpService")
+	if not http_service:
+		if DEBUG_LOGGING:
+			print("[Drill Replay] HttpService not found, cannot load performance file")
+		# Fallback to fallback loading
+		load_latest_performance_from_memory()
+		initialize_ui()
+		return
+	
+	var file_id = "performance_" + str(drill_index)
+	if DEBUG_LOGGING:
+		print("[Drill Replay] Loading file: ", file_id)
+	
+	http_service.load_game(_on_performance_file_loaded, file_id)
+
+func _on_performance_file_loaded(result, response_code, _headers, body):
+	# Handle the loaded performance file
+	if DEBUG_LOGGING:
+		print("[Drill Replay] Performance file load response - Result: ", result, ", Code: ", response_code)
+	
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		var body_str = body.get_string_from_utf8()
+		var json = JSON.new()
+		var parse_result = json.parse(body_str)
+		
+		if parse_result == OK:
+			var response_data = json.data
+			if response_data.has("data") and response_data["code"] == 0:
+				var content_json = JSON.new()
+				var content_parse = content_json.parse(response_data["data"])
+				if content_parse == OK:
+					var performance_data = content_json.data
+					if DEBUG_LOGGING:
+						print("[Drill Replay] Successfully loaded performance file with ", performance_data.get("records", []).size(), " records")
+					load_selected_drill_data(performance_data)
+					
+					# Clear the selected drill data from GlobalData
+					var global_data = get_node("/root/GlobalData")
+					if global_data:
+						global_data.selected_drill_data = {}
+					
+					# Initialize UI after successful load
+					initialize_ui()
+					return
+				else:
+					if DEBUG_LOGGING:
+						print("[Drill Replay] Failed to parse performance file content")
+			else:
+				if DEBUG_LOGGING:
+					print("[Drill Replay] Invalid response data structure")
+		else:
+			if DEBUG_LOGGING:
+				print("[Drill Replay] Failed to parse performance file response")
+	else:
+		if response_code == 404:
+			if DEBUG_LOGGING:
+				print("[Drill Replay] Performance file not found (404) - drill may not have detailed records")
+		else:
+			if DEBUG_LOGGING:
+				print("[Drill Replay] Failed to load performance file - Response code: ", response_code)
+	
+	# Fallback: try to load from memory or show error
+	if DEBUG_LOGGING:
+		print("[Drill Replay] Falling back to memory data or empty display")
+	load_latest_performance_from_memory()
+	initialize_ui()
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
@@ -216,7 +298,7 @@ func clear_all_sequence_labels():
 func load_performance_file(file_path: String):
 	"""Load drill data from a performance file"""
 	if DEBUG_LOGGING:
-						print("Loading performance file: ", file_path)
+		print("Loading performance file: ", file_path)
 	
 	# Load the data
 	var file = FileAccess.open(file_path, FileAccess.READ)
