@@ -257,7 +257,10 @@ func _on_menu_control(directive: String):
 			press_focused_button()
 		"back", "homepage":
 			print("[Option] ", directive, " - navigating to main menu")
-			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			if is_inside_tree():
+				get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			else:
+				print("[Option] Warning: Node not in tree, cannot change scene")
 		"volume_up":
 			print("[Option] Volume up")
 			volume_up()

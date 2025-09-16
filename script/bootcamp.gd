@@ -176,7 +176,11 @@ func _on_menu_control(directive: String):
 		"back", "homepage":
 			if DEBUG_LOGGING:
 				print("[Bootcamp] ", directive, " - navigating to main menu")
-			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			if is_inside_tree():
+				get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			else:
+				if DEBUG_LOGGING:
+					print("[Bootcamp] Warning: Node not in tree, cannot change scene")
 		"volume_up":
 			if DEBUG_LOGGING:
 				print("[Bootcamp] Volume up")

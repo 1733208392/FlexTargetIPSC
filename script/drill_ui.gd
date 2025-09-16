@@ -338,7 +338,11 @@ func _on_review_replay_button_pressed():
 		print("Review and replay button pressed - navigating to drill replay")
 	
 	# Navigate to the drill replay scene
-	get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
+	if is_inside_tree():
+		get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
+	else:
+		if DEBUG_LOGGING:
+			print("Warning: Node not in tree, cannot change scene")
 
 func _on_show_shot_timer():
 	"""Show the shot timer overlay"""

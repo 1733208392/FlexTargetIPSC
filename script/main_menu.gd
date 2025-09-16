@@ -110,7 +110,10 @@ func on_start_pressed():
 		http_service.start_game(_on_start_response)
 	else:
 		print("[Menu] HttpService singleton not found!")
-		get_tree().change_scene_to_file("res://scene/intro.tscn")
+		if is_inside_tree():
+			get_tree().change_scene_to_file("res://scene/intro.tscn")
+		else:
+			print("[Menu] Warning: Node not in tree, cannot change scene")
 
 func _on_start_response(result, response_code, headers, body):
 	var body_str = body.get_string_from_utf8()
@@ -118,7 +121,10 @@ func _on_start_response(result, response_code, headers, body):
 	var json = JSON.parse_string(body_str)
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
 		print("[Menu] Start game success, changing scene.")
-		get_tree().change_scene_to_file("res://scene/intro.tscn")
+		if is_inside_tree():
+			get_tree().change_scene_to_file("res://scene/intro.tscn")
+		else:
+			print("[Menu] Warning: Node not in tree, cannot change scene")
 	else:
 		print("[Menu] Start game failed or invalid response.")
 
@@ -138,17 +144,26 @@ func _on_bootcamp_response(result, response_code, headers, body):
 	var json = JSON.parse_string(body_str)
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
 		print("[Menu] Bootcamp Start game success, changing scene.")
-		get_tree().change_scene_to_file("res://scene/bootcamp.tscn")
+		if is_inside_tree():
+			get_tree().change_scene_to_file("res://scene/bootcamp.tscn")
+		else:
+			print("[Menu] Warning: Node not in tree, cannot change scene")
 	else:
 		print("[Menu] Start bootcamp failed or invalid response.")
 
 func _on_leaderboard_pressed():
 	# Load the history scene
-	get_tree().change_scene_to_file("res://scene/history.tscn")
+	if is_inside_tree():
+		get_tree().change_scene_to_file("res://scene/history.tscn")
+	else:
+		print("[Menu] Warning: Node not in tree, cannot change scene")
 
 func _on_option_pressed():
 	# Load the options scene
-	get_tree().change_scene_to_file("res://scene/option.tscn")
+	if is_inside_tree():
+		get_tree().change_scene_to_file("res://scene/option.tscn")
+	else:
+		print("[Menu] Warning: Node not in tree, cannot change scene")
 
 func power_off():
 	# Call the HTTP service to power off the system

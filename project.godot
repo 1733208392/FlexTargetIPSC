@@ -12,7 +12,7 @@ config_version=5
 
 config/name="GODotTetris"
 config/version="1.0"
-run/main_scene="res://scene/splash_loading.tscn"
+run/main_scene="uid://d0r0jmdp4nky3"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 run/max_fps=10
 boot_splash/image="uid://cipq0m36i6v83"
