@@ -15,8 +15,8 @@ var target_scenes = {
 	"ipsc_mini_black_2": "res://scene/ipsc_mini_black_2.tscn",
 	"hostage": "res://scene/hostage.tscn",
 	"ipsc_mini_rotate": "res://scene/ipsc_mini_rotate.tscn",
-	"3paddles": "res://scene/3paddles.tscn",
-	"2poppers": "res://scene/2poppers.tscn",
+	"3paddles": "res://scene/3paddles_simple.tscn",
+	"2poppers": "res://scene/2poppers_simple.tscn",
 	# Add more as needed
 }
 

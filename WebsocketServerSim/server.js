@@ -12,6 +12,8 @@ const wss = new WebSocket.Server({ port: 8080 });
 
 const randomDataOptions = [
   { t: 630, x: 100, y: 200, a: 1069 },
+  { t: 630, x: 40, y: 300, a: 1069 },
+  { t: 630, x: 250, y: 300, a: 1069 },
   { t: 630, x: 200, y: 300, a: 1069 },
   { t: 630, x: 200, y: 200, a: 1069 },
   { t: 630, x: 200, y: 100, a: 1069 },
