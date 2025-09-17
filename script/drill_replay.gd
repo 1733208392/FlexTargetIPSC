@@ -22,6 +22,7 @@ var target_scenes = {
 
 # UI references
 var target_type_title: Label
+var navigation_instruction_label: Label
 var bullet_hole_labels = []  # Store sequence number labels for bullet holes
 
 func _ready():
@@ -532,6 +533,11 @@ func initialize_ui():
 	"""Initialize UI references and setup highlight system"""
 	# Get UI references
 	target_type_title = get_node_or_null("CanvasLayer/HeaderContainer/TargetTypeTitle")
+	navigation_instruction_label = get_node_or_null("CanvasLayer/NavigationInstructions")
+	
+	# Update navigation instruction text with translation
+	if navigation_instruction_label:
+		navigation_instruction_label.text = tr("navigate_instruction")
 	
 	# Update title initially
 	update_progress_title()
@@ -564,9 +570,9 @@ func update_progress_title():
 			target_found = true
 	
 	# Format: "Shots: 3/41 on Target 2/7"
-	var shots_text = "Shots: " + str(current_index + 1) + "/" + str(records.size())
-	var target_text = "Target " + str(current_target_index) + "/" + str(unique_targets.size())
-	var progress_text = shots_text + " on " + target_text
+	var shots_text = tr("shots") + ": " + str(current_index + 1) + "/" + str(records.size())
+	var target_text = tr("target_text") + " " + str(current_target_index) + "/" + str(unique_targets.size())
+	var progress_text = shots_text + " " + tr("on_text") + " " + target_text
 	
 	target_type_title.text = progress_text
 

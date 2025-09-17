@@ -252,3 +252,7 @@ Strategy:
 策略:
 • 平衡速度與準確度
 • 追求最小懲罰""}"
+shots,Shots,射击,ショット,射擊
+on_text,on,于,で,於
+target_text,Target,标靶,ターゲット,標靶
+navigate_instruction,▲ ▼ Browse bullet shots,▲ ▼ 浏览弹着点,▲ ▼ 弾丸射撃をナビゲート,▲ ▼ ショットを閲覧する
