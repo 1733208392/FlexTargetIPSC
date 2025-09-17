@@ -459,12 +459,22 @@ func setup_clickable_items():
 			# Connect resize signal to update panel sizes
 			item.resized.connect(_on_item_resized.bind(item))
 	
-	# Set focus to first item by default
+	# Set focus to latest record by default
 	if list_container.get_child_count() > 0:
-		var first_item = list_container.get_child(0)
-		if first_item is HBoxContainer:
-			first_item.grab_focus()
-			current_focused_index = 0
+		var latest_index = find_latest_record_index()
+		if latest_index < list_container.get_child_count():
+			var latest_item = list_container.get_child(latest_index)
+			if latest_item is HBoxContainer:
+				latest_item.grab_focus()
+				current_focused_index = latest_index
+				if DEBUG_PRINTS:
+					print("[History] Focused on latest record at index ", latest_index)
+		else:
+			# Fallback to first item if latest index is out of bounds
+			var first_item = list_container.get_child(0)
+			if first_item is HBoxContainer:
+				first_item.grab_focus()
+				current_focused_index = 0
 
 func _on_item_clicked(event: InputEvent, item_index: int):
 	if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) or (event is InputEventKey and event.keycode == KEY_ENTER and event.pressed):
@@ -700,6 +710,25 @@ func sort_history_data():
 	else:
 		# Sort by drill number in ascending order
 		history_data.sort_custom(func(a, b): return a["drill_number"] < b["drill_number"])
+
+func find_latest_record_index() -> int:
+	"""Find the index of the latest record (highest drill number) in the current sorted list"""
+	if history_data.size() == 0:
+		return 0
+	
+	var latest_drill_number = -1
+	var latest_index = 0
+	
+	for i in range(history_data.size()):
+		var drill_number = history_data[i]["drill_number"]
+		if drill_number > latest_drill_number:
+			latest_drill_number = drill_number
+			latest_index = i
+	
+	if DEBUG_PRINTS:
+		print("[History] Latest record found at index ", latest_index, " with drill number ", latest_drill_number)
+	
+	return latest_index
 
 func update_hf_header_visual():
 	"""Update the HF header to show visual indication of sorting mode"""
