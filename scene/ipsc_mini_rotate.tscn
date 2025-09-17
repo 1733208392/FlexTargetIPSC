@@ -54,7 +54,7 @@ scale = Vector2(1.2, 1.2)
 texture = ExtResource("2_fco47")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BarrelWall"]
-position = Vector2(-8.33333, -2.77776)
+position = Vector2(3.33333, -2.22222)
 shape = SubResource("RectangleShape2D_barrel")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]

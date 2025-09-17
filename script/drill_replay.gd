@@ -410,6 +410,16 @@ func load_record(index):
 		# Show current target
 		loaded_targets[target_type]["scene"].visible = true
 	
+	# Apply rotation angle for the current shot if it's a rotating target
+	if target_type == "ipsc_mini_rotate":
+		var rotation_angle = record.get("rotation_angle", 0.0)
+		var target_scene = loaded_targets[target_type]["scene"]
+		var rotation_center = target_scene.get_node("RotationCenter")
+		if rotation_center:
+			rotation_center.rotation = rotation_angle
+			if DEBUG_LOGGING:
+				print("Drill Replay: Applied rotation angle ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for current shot ", index + 1)
+	
 	add_bullet_hole_for_record(index)
 	update_shot_list()
 	update_progress_title()
@@ -648,6 +658,33 @@ func _input(event):
 						disable_target_input(target_scene)
 						loaded_targets[current_target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
 				loaded_targets[current_target_type]["scene"].visible = true
+			
+			# Apply rotation angle for the current shot if it's a rotating target (for same target navigation)
+			if current_target_type == "ipsc_mini_rotate":
+				var current_record = records[current_index]
+				var rotation_angle = current_record.get("rotation_angle", 0.0)
+				var target_scene = loaded_targets[current_target_type]["scene"]
+				var rotation_center = target_scene.get_node("RotationCenter")
+				if rotation_center:
+					rotation_center.rotation = rotation_angle
+					if DEBUG_LOGGING:
+						print("Drill Replay (Previous): Applied rotation angle ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", current_index + 1)
+			
+			update_shot_list()
+			update_progress_title()
+			update_bullet_hole_highlight()
+		else:
+			# Target type didn't change - just apply rotation for rotating targets
+			if current_target_type == "ipsc_mini_rotate":
+				var current_record = records[current_index]
+				var rotation_angle = current_record.get("rotation_angle", 0.0)
+				var target_scene = loaded_targets[current_target_type]["scene"]
+				var rotation_center = target_scene.get_node("RotationCenter")
+				if rotation_center:
+					rotation_center.rotation = rotation_angle
+					if DEBUG_LOGGING:
+						print("Drill Replay (Previous, Same Target): Applied rotation angle ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", current_index + 1)
+			
 			update_shot_list()
 			update_progress_title()
 			update_bullet_hole_highlight()

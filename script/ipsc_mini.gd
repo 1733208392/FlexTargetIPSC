@@ -5,9 +5,9 @@ var last_click_frame = -1
 # Animation state tracking
 var is_disappearing: bool = false
 
-# Shot tracking for disappearing animation
+# Shot tracking for disappearing animation - only valid target hits count
 var shot_count: int = 0
-var max_shots: int = 2
+var max_shots: int = 2  # Target ends after 2 valid target hits (not misses, not barrel hits)
 
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
@@ -29,7 +29,19 @@ var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_LOGGING = true  # Set to true for verbose debugging
+
+# Performance optimization for rotating targets
+var rotation_cache_angle: float = 0.0
+var rotation_cache_time: float = 0.0
+var rotation_cache_duration: float = 0.1  # Cache rotation for 100ms
+
+# Bullet activity monitoring for animation pausing
+var bullet_activity_count: int = 0
+var activity_threshold: int = 3  # Pause rotation if 3+ bullets in flight
+var activity_cooldown_timer: float = 0.0
+var activity_cooldown_duration: float = 1.0  # Resume after 1 second of low activity
+var animation_paused: bool = false
 
 # Scoring system
 var total_score: int = 0
@@ -170,14 +182,18 @@ func handle_bullet_collision(bullet_position: Vector2):
 	
 	# Note: Bullet hole is now spawned by bullet script before this method is called
 	
-	# Increment shot count and check for disappearing animation
-	shot_count += 1
-	print("Shot count: ", shot_count, "/", max_shots)
-	
-	# Check if we've reached the maximum shots
-	if shot_count >= max_shots:
-		print("Maximum shots reached! Triggering disappearing animation...")
-		play_disappearing_animation()
+	# Increment shot count and check for disappearing animation (only for valid target hits)
+	var is_target_hit = zone_hit != "miss" and zone_hit != "barrel_miss" and points > 0
+	if is_target_hit:
+		shot_count += 1
+		print("Valid target hit count: ", shot_count, "/", max_shots)
+		
+		# Check if we've reached the maximum valid target hits
+		if shot_count >= max_shots:
+			print("Maximum valid target hits reached! Triggering disappearing animation...")
+			play_disappearing_animation()
+	else:
+		print("Miss/barrel hit - shot count not incremented")
 	
 	return zone_hit
 
@@ -192,6 +208,9 @@ func reset_score():
 
 func play_disappearing_animation():
 	"""Start the disappearing animation and disable collision detection"""
+	print("=== DISAPPEARING ANIMATION TRIGGERED ===")
+	print("Shot count: ", shot_count, "/", max_shots)
+	print("Call stack trace available in debug mode")
 	print("Starting disappearing animation for ipsc_mini")
 	is_disappearing = true
 	
@@ -355,14 +374,13 @@ func _on_websocket_bullet_hit(pos: Vector2):
 		return
 	
 	# Check if this target is part of a rotating scene (ipsc_mini_rotate)
-	# If so, use bullet collision detection instead of fast path
+	# Use optimized rotation-aware processing instead of bullet spawning
 	var parent_node = get_parent()
 	while parent_node:
 		if parent_node.name.contains("IPSCMiniRotate") or parent_node.name.contains("RotationCenter"):
-			if DEBUG_LOGGING:
-				print("[ipsc_mini] Rotating target detected - using bullet collision system instead of fast path")
-			# Spawn bullet for proper collision detection with rotation
-			spawn_bullet_at_position(pos)
+			print("[ipsc_mini] Rotating target detected - using optimized rotation-aware processing")
+			# Use optimized direct hit processing for rotating targets
+			handle_websocket_bullet_hit_rotating(pos)
 			return
 		parent_node = parent_node.get_parent()
 	
@@ -436,20 +454,20 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	if DEBUG_LOGGING:
 		print("[ipsc_mini] FAST: Total score: ", total_score)
 	
-	# 5. Increment shot count and check for disappearing animation (only for hits)
+	# 5. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
 		shot_count += 1
 		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: Shot count: ", shot_count, "/", max_shots)
+			print("[ipsc_mini] FAST: Valid target hit count: ", shot_count, "/", max_shots)
 		
-		# Check if we've reached the maximum shots
+		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
 			if DEBUG_LOGGING:
-				print("[ipsc_mini] FAST: Maximum shots reached! Triggering disappearing animation...")
+				print("[ipsc_mini] FAST: Maximum valid target hits reached! Triggering disappearing animation...")
 			play_disappearing_animation()
 	else:
 		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: Miss - shot count not incremented")
+			print("[ipsc_mini] FAST: Miss/barrel hit - shot count not incremented")
 
 func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = true):
 	"""Spawn bullet smoke and impact effects with throttling for performance"""
@@ -562,3 +580,180 @@ func play_impact_sound_at_position(world_pos: Vector2):
 		print("[ipsc_mini] Steel impact sound played at: ", world_pos)
 	else:
 		print("[ipsc_mini] No impact sound found!")
+
+# ROTATION PERFORMANCE OPTIMIZATIONS
+
+func get_cached_rotation_angle() -> float:
+	"""Get the current rotation angle with caching for performance"""
+	var current_time = Time.get_ticks_msec() / 1000.0
+	
+	# Use cached value if still valid
+	if (current_time - rotation_cache_time) < rotation_cache_duration:
+		return rotation_cache_angle
+	
+	# Update cache with current rotation
+	var rotation_center = get_parent()
+	if rotation_center and rotation_center.name == "RotationCenter":
+		rotation_cache_angle = rotation_center.rotation
+		rotation_cache_time = current_time
+		return rotation_cache_angle
+	
+	return 0.0
+
+func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
+	"""Optimized hit processing for rotating targets without bullet spawning"""
+	if DEBUG_LOGGING:
+		print("[ipsc_mini] ROTATING: Processing WebSocket bullet hit at: ", world_pos)
+	
+	# Don't process if target is disappearing
+	if is_disappearing:
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] Target is disappearing - ignoring WebSocket hit")
+		return
+	
+	# Track bullet activity for animation pausing
+	bullet_activity_count += 1
+	monitor_bullet_activity()
+	
+	# Convert world position to local coordinates (this handles rotation automatically)
+	var local_pos = to_local(world_pos)
+	if DEBUG_LOGGING:
+		print("[ipsc_mini] ROTATING: World pos: ", world_pos, " -> Local pos: ", local_pos)
+	
+	# 1. FIRST: Check if bullet hit the BarrelWall (for rotating targets)
+	var barrel_wall_hit = false
+	var parent_scene = get_parent().get_parent()  # Get the IPSCMiniRotate scene
+	if parent_scene and parent_scene.name.contains("IPSCMiniRotate"):
+		var barrel_wall = parent_scene.get_node_or_null("BarrelWall")
+		if barrel_wall:
+			var collision_shape = barrel_wall.get_node_or_null("CollisionShape2D")
+			if collision_shape and collision_shape.shape:
+				# Convert world position to barrel wall's local coordinate system
+				var barrel_local_pos = barrel_wall.to_local(world_pos)
+				# Check if point is inside barrel wall collision shape
+				var shape = collision_shape.shape
+				if shape is RectangleShape2D:
+					var rect_shape = shape as RectangleShape2D
+					var half_extents = rect_shape.size / 2.0
+					var shape_pos = collision_shape.position
+					var relative_pos = barrel_local_pos - shape_pos
+					if abs(relative_pos.x) <= half_extents.x and abs(relative_pos.y) <= half_extents.y:
+						barrel_wall_hit = true
+						if DEBUG_LOGGING:
+							print("[ipsc_mini] ROTATING: Bullet hit BarrelWall - counting as miss")
+	
+	# 2. SECOND: Determine hit zone and scoring
+	var zone_hit = ""
+	var points = 0
+	var is_target_hit = false
+	
+	if barrel_wall_hit:
+		# Barrel wall hit - count as miss
+		zone_hit = "barrel_miss"
+		points = 0
+		is_target_hit = false
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] ROTATING: BarrelWall hit - no bullet hole, no points")
+	else:
+		# Check target zones (highest score first)
+		if is_point_in_zone("AZone", local_pos):
+			zone_hit = "AZone"
+			points = 5
+			is_target_hit = true
+			if DEBUG_LOGGING:
+				print("[ipsc_mini] ROTATING: Zone A hit - 5 points!")
+		elif is_point_in_zone("CZone", local_pos):
+			zone_hit = "CZone"
+			points = 3
+			is_target_hit = true
+			if DEBUG_LOGGING:
+				print("[ipsc_mini] ROTATING: Zone C hit - 3 points!")
+		elif is_point_in_zone("DZone", local_pos):
+			zone_hit = "DZone"
+			points = 1
+			is_target_hit = true
+			if DEBUG_LOGGING:
+				print("[ipsc_mini] ROTATING: Zone D hit - 1 point!")
+		else:
+			zone_hit = "miss"
+			points = 0
+			is_target_hit = false
+			if DEBUG_LOGGING:
+				print("[ipsc_mini] ROTATING: Bullet missed target - no bullet hole")
+	
+	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
+	if is_target_hit:
+		spawn_bullet_hole(local_pos)
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] ROTATING: Bullet hole spawned for target hit")
+	else:
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] ROTATING: No bullet hole - bullet missed target or hit barrel")
+	
+	# 4. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
+	spawn_bullet_effects_at_position(world_pos, is_target_hit)
+	
+	# 5. Update score and emit signal
+	total_score += points
+	target_hit.emit(zone_hit, points, world_pos)
+	if DEBUG_LOGGING:
+		print("[ipsc_mini] ROTATING: Total score: ", total_score)
+	
+	# 6. Increment shot count and check for disappearing animation (only for valid target hits)
+	if is_target_hit:
+		shot_count += 1
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] ROTATING: Valid target hit count: ", shot_count, "/", max_shots)
+		
+		# Check if we've reached the maximum valid target hits
+		if shot_count >= max_shots:
+			if DEBUG_LOGGING:
+				print("[ipsc_mini] ROTATING: Maximum valid target hits reached! Triggering disappearing animation...")
+			play_disappearing_animation()
+	else:
+		if DEBUG_LOGGING:
+			print("[ipsc_mini] ROTATING: Miss/barrel hit - shot count not incremented")
+	
+	# Decrease activity after a short delay (simulate bullet lifetime)
+	get_tree().create_timer(0.2).timeout.connect(func():
+		bullet_activity_count = max(0, bullet_activity_count - 1)
+		monitor_bullet_activity()
+	)
+
+func monitor_bullet_activity():
+	"""Monitor bullet activity and pause/resume animation accordingly"""
+	# Pause animation if activity is high
+	if bullet_activity_count >= activity_threshold and not animation_paused:
+		pause_rotation_animation()
+	
+	# Reset cooldown timer when activity increases
+	if bullet_activity_count > 0:
+		activity_cooldown_timer = 0.0
+	else:
+		# Increment cooldown timer when no activity
+		activity_cooldown_timer += get_process_delta_time()
+		
+		# Resume animation after cooldown period
+		if activity_cooldown_timer >= activity_cooldown_duration and animation_paused:
+			resume_rotation_animation()
+
+func pause_rotation_animation():
+	"""Pause the rotation animation to improve performance"""
+	var rotation_center = get_parent()
+	if rotation_center and rotation_center.name == "RotationCenter":
+		var animation_player = rotation_center.get_parent().get_node_or_null("AnimationPlayer")
+		if animation_player and animation_player.is_playing():
+			animation_player.pause()
+			animation_paused = true
+			print("[ipsc_mini] Rotation animation paused due to high bullet activity (", bullet_activity_count, " bullets)")
+
+func resume_rotation_animation():
+	"""Resume the rotation animation"""
+	var rotation_center = get_parent()
+	if rotation_center and rotation_center.name == "RotationCenter":
+		var animation_player = rotation_center.get_parent().get_node_or_null("AnimationPlayer")
+		if animation_player and not animation_player.is_playing():
+			animation_player.play()
+			animation_paused = false
+			activity_cooldown_timer = 0.0
+			print("[ipsc_mini] Rotation animation resumed after cooldown")

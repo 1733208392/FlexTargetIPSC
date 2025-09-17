@@ -14,10 +14,21 @@ func set_spawn_position(pos: Vector2):
 	global_position = pos
 	print("Bullet spawn position set to: ", spawn_position)
 
+# Performance optimization flags
+var optimized_collision: bool = false
+
 func _ready():
 	# Set up collision detection
 	collision_layer = 8  # Bullet layer
 	collision_mask = 15  # Target layer (7) + Wall layer (8) = 15 (binary 1111)
+	
+	# Optimize collision mask for non-rotating targets when WebSocket is available
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		# Use more specific collision mask since rotating targets use WebSocket direct path
+		collision_mask = 8  # Only check walls/obstacles (layer 8)
+		optimized_collision = true
+		print("[bullet] Using optimized collision detection - WebSocket handles target hits")
 	
 	# Connect area_entered signal for collision detection with targets
 	area_entered.connect(_on_area_entered)
@@ -34,6 +45,11 @@ func _ready():
 	call_deferred("trigger_impact")
 
 func _on_area_entered(area: Area2D):
+	# Performance optimization: Skip area collision processing when using optimized collision
+	if optimized_collision:
+		print("[bullet] Skipping area collision - using WebSocket optimization")
+		return
+	
 	# Handle collision with target areas
 	if not has_collided and area.has_method("handle_bullet_collision"):
 		has_collided = true

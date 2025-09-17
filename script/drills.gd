@@ -677,16 +677,24 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 	# Emit the enhanced target_hit signal for performance tracking
 	emit_signal("target_hit", current_target_type, hit_position, hit_area, rotation_angle)
 	
-	# Special handling for rotating target
+	# Special handling for rotating target - only count valid target hits (not misses or barrel hits)
 	if current_target_type == "ipsc_mini_rotate":
-		rotating_target_hits += 1
-		if DEBUG_LOGGING:
-			print("Rotating target hit count: ", rotating_target_hits)
+		# Check if this is a valid target hit (not a miss or barrel_miss)
+		var zone = hit_area  # hit_area was set above to the zone value
+		var actual_points = param2 if current_target_type != "3paddles" else param3
 		
-		# Check if we've reached 2 hits on the rotating target
+		if zone != "miss" and zone != "barrel_miss" and actual_points > 0:
+			rotating_target_hits += 1
+			if DEBUG_LOGGING:
+				print("Rotating target VALID hit count: ", rotating_target_hits, " (zone: ", zone, ", points: ", actual_points, ")")
+		else:
+			if DEBUG_LOGGING:
+				print("Rotating target miss/barrel hit - not counted (zone: ", zone, ", points: ", actual_points, ")")
+		
+		# Check if we've reached 2 VALID hits on the rotating target
 		if rotating_target_hits >= 2:
 			if DEBUG_LOGGING:
-				print("2 hits on rotating target reached! Moving to next target.")
+				print("2 VALID hits on rotating target reached! Moving to next target.")
 			
 			# Reset the counter for potential future rotating targets
 			rotating_target_hits = 0
