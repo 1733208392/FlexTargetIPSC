@@ -10,8 +10,8 @@ extends Control
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
 # Drill sequence and progress tracking
-#var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
-var base_target_sequence: Array[String] = ["ipsc_mini_rotate"]
+var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+#var base_target_sequence: Array[String] = ["ipsc_mini_rotate","ipsc_mini_black_1"]
 
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0

@@ -139,8 +139,14 @@ func update_ui_texts():
 	
 	if replay_btn:
 		replay_btn.text = tr("replay")
+		# Ensure replay button is enabled for normal completion
+		replay_btn.disabled = false
+		replay_btn.modulate = Color.WHITE
+		# Re-enable the collision area for the replay button
+		if area_replay:
+			area_replay.monitoring = true
 		if DEBUG_LOGGING:
-			print("[DrillComplete] Updated replay button to: ", replay_btn.text)
+			print("[DrillComplete] Updated and enabled replay button: ", replay_btn.text)
 	else:
 		if DEBUG_LOGGING:
 			print("[DrillComplete] ERROR: replay button not found at VBoxContainer/ReviewReplayButton")
@@ -299,6 +305,12 @@ func _on_area_restart_hit(area: Area2D):
 
 func _on_area_replay_hit(area: Area2D):
 	"""Handle bullet collision with replay area"""
+	var replay_btn = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	if replay_btn and replay_btn.disabled:
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Replay button is disabled, ignoring hit")
+		return
+	
 	if DEBUG_LOGGING:
 		print("[drill_complete_overlay] Bullet hit AreaReplay - navigating to drill replay")
 	
@@ -413,6 +425,21 @@ func update_ui_texts_with_timeout(timed_out: bool):
 	
 	if replay_btn:
 		replay_btn.text = tr("replay")
+		# Disable the replay button if drill timed out
+		if timed_out:
+			replay_btn.disabled = true
+			replay_btn.modulate = Color.GRAY
+			# Also disable the collision area for the replay button
+			if area_replay:
+				area_replay.monitoring = false
+			if DEBUG_LOGGING:
+				print("[DrillComplete] Disabled replay button and collision area due to timeout")
+		else:
+			replay_btn.disabled = false
+			replay_btn.modulate = Color.WHITE
+			# Re-enable the collision area for the replay button
+			if area_replay:
+				area_replay.monitoring = true
 		if DEBUG_LOGGING:
 			print("[DrillComplete] Updated replay button to: ", replay_btn.text)
 
@@ -466,12 +493,12 @@ func _navigate_up():
 		restart_button.grab_focus()
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Navigated up to RestartButton")
-	elif focused_control == restart_button and replay_button:
+	elif focused_control == restart_button and replay_button and not replay_button.disabled:
 		replay_button.grab_focus()
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Wrapped around to ReviewReplayButton")
 	else:
-		# Default to restart button if nothing focused
+		# Default to restart button if nothing focused or replay button is disabled
 		if restart_button:
 			restart_button.grab_focus()
 			if DEBUG_LOGGING:
@@ -483,7 +510,7 @@ func _navigate_down():
 	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
 	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	
-	if focused_control == restart_button and replay_button:
+	if focused_control == restart_button and replay_button and not replay_button.disabled:
 		replay_button.grab_focus()
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Navigated down to ReviewReplayButton")
@@ -492,7 +519,7 @@ func _navigate_down():
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Wrapped around to RestartButton")
 	else:
-		# Default to restart button if nothing focused
+		# Default to restart button if nothing focused or replay button is disabled
 		if restart_button:
 			restart_button.grab_focus()
 			if DEBUG_LOGGING:
@@ -515,10 +542,14 @@ func _activate_focused_button():
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Activating RestartButton via WebSocket")
 		_on_area_restart_hit(null)  # Trigger restart action
-	elif focused_control == replay_button:
+	elif focused_control == replay_button and not replay_button.disabled:
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Activating ReviewReplayButton via WebSocket")
 		_on_area_replay_hit(null)  # Trigger replay action
+	elif focused_control == replay_button and replay_button.disabled:
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Replay button is disabled, defaulting to restart")
+		_on_area_restart_hit(null)  # Default to restart
 	else:
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] No button focused, defaulting to restart")

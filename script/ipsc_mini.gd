@@ -715,10 +715,12 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 			print("[ipsc_mini] ROTATING: Miss/barrel hit - shot count not incremented")
 	
 	# Decrease activity after a short delay (simulate bullet lifetime)
-	get_tree().create_timer(0.2).timeout.connect(func():
-		bullet_activity_count = max(0, bullet_activity_count - 1)
-		monitor_bullet_activity()
-	)
+	var tree = get_tree()
+	if tree:
+		tree.create_timer(0.2).timeout.connect(func():
+			bullet_activity_count = max(0, bullet_activity_count - 1)
+			monitor_bullet_activity()
+		)
 
 func monitor_bullet_activity():
 	"""Monitor bullet activity and pause/resume animation accordingly"""

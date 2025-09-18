@@ -19,18 +19,22 @@ func _ready():
 
 func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float = 0.0):
 	var current_time_usec = Time.get_ticks_usec()  # Use microsecond precision
-	var time_diff = 0.0  # Initialize to 0 for first shot
+	var time_diff = 0.0  # Initialize to 0
 	
 	if first_shot:
-		# First shot of the drill - just record the time, don't calculate interval
-		last_shot_time_usec = current_time_usec
+		# First shot of the drill - calculate time from drill start (reset_shot_timer)
+		time_diff = (current_time_usec - last_shot_time_usec) / 1000000.0  # Convert to seconds
 		first_shot = false
+		
+		# Update fastest time if this first shot is realistic
+		if time_diff >= minimum_shot_interval and time_diff < fastest_time_diff:
+			fastest_time_diff = time_diff
+		
 		if DEBUG_LOGGING:
-			print("PERFORMANCE TRACKER: First shot recorded at time:", current_time_usec)
+			print("PERFORMANCE TRACKER: First shot at time:", current_time_usec, ", time from drill start:", time_diff, "seconds")
 	else:
 		# Subsequent shots - calculate interval with microsecond precision
 		time_diff = (current_time_usec - last_shot_time_usec) / 1000000.0  # Convert to seconds
-		last_shot_time_usec = current_time_usec
 		
 		# Apply minimum time threshold to prevent unrealistic 0.0s intervals
 		if time_diff < minimum_shot_interval:
@@ -44,6 +48,9 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		
 		if DEBUG_LOGGING:
 			print("PERFORMANCE TRACKER: Shot interval:", time_diff, "seconds, fastest:", fastest_time_diff)
+	
+	# Update last shot time for next calculation
+	last_shot_time_usec = current_time_usec
 	
 	# Get score from settings_dict.target_rule
 	var score = _get_score_for_hit_area(hit_area)
