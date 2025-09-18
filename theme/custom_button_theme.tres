@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=5 format=3 uid="uid://b1xuwasqtx311"]
+[gd_resource type="Theme" load_steps=6 format=3 uid="uid://b1xuwasqtx311"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_disabled"]
 bg_color = Color(0.5, 0.5, 0.5, 0.5)
@@ -12,13 +12,25 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_orange_focus"]
+bg_color = Color(1, 0.75, 0.35, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0, 1, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_orange_hover"]
-bg_color = Color(1, 0.7, 0.3, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.9, 0.5, 0.2, 1)
+bg_color = Color(1, 0.8, 0.4, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 1, 1, 1)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
@@ -57,6 +69,7 @@ Button/colors/font_pressed_color = Color(0.9, 0.9, 0.9, 1)
 Button/constants/outline_size = 2
 Button/font_sizes/font_size = 16
 Button/styles/disabled = SubResource("StyleBoxFlat_disabled")
+Button/styles/focus = SubResource("StyleBoxFlat_orange_focus")
 Button/styles/hover = SubResource("StyleBoxFlat_orange_hover")
 Button/styles/normal = SubResource("StyleBoxFlat_orange_normal")
 Button/styles/pressed = SubResource("StyleBoxFlat_orange_pressed")

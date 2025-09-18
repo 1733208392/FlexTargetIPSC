@@ -24,23 +24,27 @@ func _ready():
 func initialize_styles():
 	# Orange theme styles
 	orange_styles["normal"] = create_style_box(Color(1, 0.6, 0.2, 1), Color(0.8, 0.4, 0.1, 1))
-	orange_styles["hover"] = create_style_box(Color(1, 0.7, 0.3, 1), Color(0.9, 0.5, 0.2, 1))
+	orange_styles["hover"] = create_enhanced_style_box(Color(1, 0.8, 0.4, 1), Color(1, 1, 1, 1))
 	orange_styles["pressed"] = create_style_box(Color(0.8, 0.5, 0.1, 1), Color(0.6, 0.3, 0.05, 1))
+	orange_styles["focus"] = create_enhanced_style_box(Color(1, 0.75, 0.35, 1), Color(0, 1, 1, 1))
 	
 	# Dark theme styles
 	dark_styles["normal"] = create_style_box(Color(0.3, 0.3, 0.3, 1), Color(0.5, 0.5, 0.5, 1))
-	dark_styles["hover"] = create_style_box(Color(0.4, 0.4, 0.4, 1), Color(0.6, 0.6, 0.6, 1))
+	dark_styles["hover"] = create_enhanced_style_box(Color(0.5, 0.5, 0.5, 1), Color(1, 1, 1, 1))
 	dark_styles["pressed"] = create_style_box(Color(0.2, 0.2, 0.2, 1), Color(0.4, 0.4, 0.4, 1))
+	dark_styles["focus"] = create_enhanced_style_box(Color(0.45, 0.45, 0.45, 1), Color(0, 1, 1, 1))
 	
 	# Yellow theme styles
 	yellow_styles["normal"] = create_style_box(Color(1, 0.9, 0.2, 1), Color(0.8, 0.7, 0.1, 1))
-	yellow_styles["hover"] = create_style_box(Color(1, 0.95, 0.3, 1), Color(0.9, 0.8, 0.2, 1))
+	yellow_styles["hover"] = create_enhanced_style_box(Color(1, 0.95, 0.4, 1), Color(1, 1, 1, 1))
 	yellow_styles["pressed"] = create_style_box(Color(0.8, 0.7, 0.1, 1), Color(0.6, 0.5, 0.05, 1))
+	yellow_styles["focus"] = create_enhanced_style_box(Color(1, 0.92, 0.35, 1), Color(0, 1, 1, 1))
 	
 	# Grey theme styles
 	grey_styles["normal"] = create_style_box(Color(0.6, 0.6, 0.6, 1), Color(0.4, 0.4, 0.4, 1))
-	grey_styles["hover"] = create_style_box(Color(0.7, 0.7, 0.7, 1), Color(0.5, 0.5, 0.5, 1))
+	grey_styles["hover"] = create_enhanced_style_box(Color(0.8, 0.8, 0.8, 1), Color(1, 1, 1, 1))
 	grey_styles["pressed"] = create_style_box(Color(0.5, 0.5, 0.5, 1), Color(0.3, 0.3, 0.3, 1))
+	grey_styles["focus"] = create_enhanced_style_box(Color(0.75, 0.75, 0.75, 1), Color(0, 1, 1, 1))
 
 func create_style_box(bg_color: Color, border_color: Color) -> StyleBoxFlat:
 	var style = StyleBoxFlat.new()
@@ -49,6 +53,20 @@ func create_style_box(bg_color: Color, border_color: Color) -> StyleBoxFlat:
 	style.border_width_top = 2
 	style.border_width_right = 2
 	style.border_width_bottom = 2
+	style.border_color = border_color
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_right = 8
+	style.corner_radius_bottom_left = 8
+	return style
+
+func create_enhanced_style_box(bg_color: Color, border_color: Color) -> StyleBoxFlat:
+	var style = StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.border_width_left = 4
+	style.border_width_top = 4
+	style.border_width_right = 4
+	style.border_width_bottom = 4
 	style.border_color = border_color
 	style.corner_radius_top_left = 8
 	style.corner_radius_top_right = 8
@@ -78,6 +96,7 @@ func set_theme_mode(mode: ThemeMode):
 	add_theme_stylebox_override("normal", styles_to_use["normal"])
 	add_theme_stylebox_override("hover", styles_to_use["hover"])
 	add_theme_stylebox_override("pressed", styles_to_use["pressed"])
+	add_theme_stylebox_override("focus", styles_to_use["focus"])
 	
 	# Set text colors based on theme
 	match mode:
