@@ -15,6 +15,11 @@ const DEBUG_LOGGING = true  # Set to true for verbose debugging
 @onready var restart_button = get_node_or_null("VBoxContainer/RestartButton")
 @onready var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
 
+# Countdown timer variables
+var countdown_timer: Timer = null
+var countdown_seconds: int = 0
+var original_restart_text: String = ""
+
 func _ready():
 	"""Initialize the drill complete overlay"""
 	if DEBUG_LOGGING:
@@ -163,6 +168,11 @@ func _notification(what):
 				print("[drill_complete_overlay] Overlay is now visible and ready for input")
 			# Grab focus for the restart button when overlay becomes visible
 			grab_restart_button_focus()
+		else:
+			# Cleanup when overlay becomes invisible
+			if DEBUG_LOGGING:
+				print("[drill_complete_overlay] Overlay hidden - cleaning up countdown")
+			stop_countdown()
 
 func setup_collision_areas():
 	"""Setup collision detection for the restart and replay areas"""
@@ -305,12 +315,22 @@ func spawn_bullet_at_position(world_pos: Vector2):
 
 func _on_area_restart_hit(area: Area2D):
 	"""Handle bullet collision with restart area"""
+	# Check if restart button is disabled (auto restart enabled)
+	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
+	if restart_btn and restart_btn.disabled:
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Restart button is disabled (auto restart enabled), ignoring hit")
+		return
+	
 	if DEBUG_LOGGING:
 		print("[drill_complete_overlay] Bullet hit AreaRestart - restarting drill")
 		if area:
 			print("[drill_complete_overlay] Hit by area: ", area.name, " at position: ", area.global_position)
 		else:
 			print("[drill_complete_overlay] Hit triggered without area (likely WebSocket control)")
+	
+	# Stop countdown if running
+	stop_countdown()
 	
 	# Hide the completion overlay
 	visible = false
@@ -398,6 +418,9 @@ func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: 
 	# Update the results
 	update_drill_results(score, hit_factor, fastest_shot)
 	
+	# Check auto restart setting and disable restart button if enabled
+	_check_and_disable_restart_button()
+	
 	if DEBUG_LOGGING:
 		print("[drill_complete_overlay] Drill complete overlay shown with results")
 
@@ -414,6 +437,9 @@ func show_drill_complete_with_timeout(score: int = 0, hit_factor: float = 0.0, f
 	
 	# Update the results
 	update_drill_results(score, hit_factor, fastest_shot)
+	
+	# Check auto restart setting and disable restart button if enabled
+	_check_and_disable_restart_button()
 	
 	if DEBUG_LOGGING:
 		print("[drill_complete_overlay] Drill complete overlay shown with timeout state: %s" % timed_out)
@@ -494,15 +520,22 @@ func _update_ui_after_visible():
 	update_ui_texts()
 
 func grab_restart_button_focus():
-	"""Grab focus for the restart button"""
+	"""Grab focus for the restart button, or replay button if restart is disabled"""
 	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
-	if restart_button:
+	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	
+	# Prefer restart button if it's enabled, otherwise use replay button
+	if restart_button and not restart_button.disabled:
 		restart_button.grab_focus()
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] RestartButton focus grabbed")
+	elif replay_button and not replay_button.disabled:
+		replay_button.grab_focus()
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Restart button disabled, focusing ReviewReplayButton")
 	else:
 		if DEBUG_LOGGING:
-			print("[drill_complete_overlay] RestartButton not found for focus grab")
+			print("[drill_complete_overlay] No available button to focus")
 
 func _on_websocket_menu_control(directive: String):
 	"""Handle WebSocket control directives for menu navigation"""
@@ -526,7 +559,7 @@ func _navigate_up():
 	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
 	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	
-	if focused_control == replay_button and restart_button:
+	if focused_control == replay_button and restart_button and not restart_button.disabled:
 		restart_button.grab_focus()
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Navigated up to RestartButton")
@@ -534,12 +567,20 @@ func _navigate_up():
 		replay_button.grab_focus()
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Wrapped around to ReviewReplayButton")
+	elif focused_control == replay_button and restart_button and restart_button.disabled:
+		# If restart button is disabled, stay on replay button
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Restart button disabled, staying on ReviewReplayButton")
 	else:
-		# Default to restart button if nothing focused or replay button is disabled
-		if restart_button:
+		# Default focus logic - prefer restart button if enabled, otherwise replay button
+		if restart_button and not restart_button.disabled:
 			restart_button.grab_focus()
 			if DEBUG_LOGGING:
 				print("[drill_complete_overlay] Default focus to RestartButton")
+		elif replay_button and not replay_button.disabled:
+			replay_button.grab_focus()
+			if DEBUG_LOGGING:
+				print("[drill_complete_overlay] Restart button disabled, default focus to ReviewReplayButton")
 
 func _navigate_down():
 	"""Navigate to next button"""
@@ -551,16 +592,24 @@ func _navigate_down():
 		replay_button.grab_focus()
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Navigated down to ReviewReplayButton")
-	elif focused_control == replay_button and restart_button:
+	elif focused_control == replay_button and restart_button and not restart_button.disabled:
 		restart_button.grab_focus()
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Wrapped around to RestartButton")
+	elif focused_control == restart_button and replay_button and replay_button.disabled:
+		# If replay button is disabled, stay on restart button
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Replay button disabled, staying on RestartButton")
 	else:
-		# Default to restart button if nothing focused or replay button is disabled
-		if restart_button:
+		# Default focus logic - prefer restart button if enabled, otherwise replay button
+		if restart_button and not restart_button.disabled:
 			restart_button.grab_focus()
 			if DEBUG_LOGGING:
 				print("[drill_complete_overlay] Default focus to RestartButton")
+		elif replay_button and not replay_button.disabled:
+			replay_button.grab_focus()
+			if DEBUG_LOGGING:
+				print("[drill_complete_overlay] Restart button disabled, default focus to ReviewReplayButton")
 
 func _on_global_settings_loaded():
 	"""Handle when GlobalData settings are loaded/updated"""
@@ -591,3 +640,121 @@ func _activate_focused_button():
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] No button focused, defaulting to restart")
 		_on_area_restart_hit(null)  # Default to restart
+
+func _check_and_disable_restart_button():
+	"""Check if auto restart is enabled and disable the restart button accordingly"""
+	# Get auto restart setting from GlobalData
+	var global_data = get_node_or_null("/root/GlobalData")
+	if not global_data:
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] GlobalData not found")
+		return
+	
+	# Check if auto restart is enabled
+	var auto_restart_enabled = global_data.settings_dict.get("auto_restart", false)
+	if DEBUG_LOGGING:
+		print("[drill_complete_overlay] Auto restart enabled: ", auto_restart_enabled)
+	
+	# Get the restart button
+	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
+	if not restart_btn:
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Restart button not found")
+		return
+	
+	if auto_restart_enabled:
+		# Store original text before modifying
+		if original_restart_text == "":
+			original_restart_text = restart_btn.text
+		
+		# Keep the restart button enabled but visually indicate auto restart mode
+		restart_btn.disabled = false
+		restart_btn.modulate = Color.LIGHT_GRAY  # Different color to show it's in auto mode
+		# Keep the collision area enabled for potential bullet interactions
+		if area_restart:
+			area_restart.monitoring = true
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Restart button set to auto restart mode")
+		
+		# Update focus to the available button
+		grab_restart_button_focus()
+	else:
+		# Stop any running countdown
+		stop_countdown()
+		
+		# Ensure the restart button is enabled and normal
+		restart_btn.disabled = false
+		restart_btn.modulate = Color.WHITE
+		# Re-enable the collision area for the restart button
+		if area_restart:
+			area_restart.monitoring = true
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Restart button enabled in manual mode")
+
+func start_countdown(total_seconds: int):
+	"""Start countdown timer on the restart button"""
+	if DEBUG_LOGGING:
+		print("[drill_complete_overlay] Starting countdown: ", total_seconds, " seconds")
+	
+	# Get the restart button
+	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
+	if not restart_btn:
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Restart button not found for countdown")
+		return
+	
+	# Store original text if not already stored
+	if original_restart_text == "":
+		original_restart_text = restart_btn.text
+	
+	# Initialize countdown
+	countdown_seconds = total_seconds
+	
+	# Create and setup countdown timer if it doesn't exist
+	if not countdown_timer:
+		countdown_timer = Timer.new()
+		countdown_timer.wait_time = 1.0
+		countdown_timer.timeout.connect(_on_countdown_timeout)
+		add_child(countdown_timer)
+	
+	# Update button text immediately and start timer
+	_update_countdown_text()
+	countdown_timer.start()
+
+func _on_countdown_timeout():
+	"""Handle countdown timer timeout"""
+	countdown_seconds -= 1
+	
+	if countdown_seconds <= 0:
+		# Countdown finished
+		countdown_timer.stop()
+		_restore_restart_button_text()
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Countdown finished")
+	else:
+		# Update countdown display
+		_update_countdown_text()
+
+func _update_countdown_text():
+	"""Update the restart button text with countdown"""
+	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
+	if restart_btn:
+		restart_btn.text = "Auto Restart in " + str(countdown_seconds)
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Updated countdown text: ", restart_btn.text)
+
+func _restore_restart_button_text():
+	"""Restore the original restart button text"""
+	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
+	if restart_btn and original_restart_text != "":
+		restart_btn.text = original_restart_text
+		if DEBUG_LOGGING:
+			print("[drill_complete_overlay] Restored restart button text: ", restart_btn.text)
+
+func stop_countdown():
+	"""Stop the countdown timer and restore button text"""
+	if countdown_timer and countdown_timer.is_connected("timeout", _on_countdown_timeout):
+		countdown_timer.stop()
+	_restore_restart_button_text()
+	if DEBUG_LOGGING:
+		print("[drill_complete_overlay] Countdown stopped")

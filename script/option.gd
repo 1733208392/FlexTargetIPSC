@@ -6,6 +6,10 @@ static var current_language = "English"
 # Global variable for current drill sequence
 static var current_drill_sequence = "Fixed"
 
+# Global variables for auto restart settings
+static var auto_restart_enabled = false
+static var auto_restart_pause_time = 5  # Changed to store the selected time (5 or 10)
+
 # References to language buttons
 @onready var chinese_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/SimplifiedChineseButton"
 @onready var japanese_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/JapaneseButton"
@@ -19,6 +23,12 @@ static var current_drill_sequence = "Fixed"
 
 # References to drill button (single CheckButton)
 @onready var random_sequence_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/RandomSequenceButton"
+
+# References to auto restart controls
+@onready var auto_restart_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/AutoRestartButton"
+@onready var pause_5s_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/AutoRestartPauseContainer/Pause5sButton"
+@onready var pause_10s_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/AutoRestartPauseContainer/Pause10sButton"
+@onready var auto_restart_pause_container = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/AutoRestartPauseContainer"
 
 @onready var language_buttons = []
 
@@ -39,6 +49,14 @@ func _ready():
 	# Connect signals for drill sequence CheckButton
 	if random_sequence_check:
 		random_sequence_check.toggled.connect(_on_drill_sequence_toggled)
+	
+	# Connect signals for auto restart controls
+	if auto_restart_check:
+		auto_restart_check.toggled.connect(_on_auto_restart_toggled)
+	if pause_5s_check:
+		pause_5s_check.toggled.connect(_on_pause_time_changed.bind(5))
+	if pause_10s_check:
+		pause_10s_check.toggled.connect(_on_pause_time_changed.bind(10))
 	
 	# Initialize language buttons array
 	# Order: Traditional Chinese (0), Chinese (1), Japanese (2), English (3)
@@ -98,7 +116,44 @@ func _on_drill_sequence_toggled(button_pressed: bool):
 		print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	save_settings()
-	print("[Option] Drill sequence changed to: ", sequence)
+
+func _on_auto_restart_toggled(button_pressed: bool):
+	print("[Option] Auto restart toggled to: ", button_pressed)
+	auto_restart_enabled = button_pressed
+	
+	# Show/hide pause time container based on auto restart state
+	if auto_restart_pause_container:
+		auto_restart_pause_container.visible = button_pressed
+	
+	# Enable/disable pause time buttons based on auto restart state
+	if pause_5s_check:
+		pause_5s_check.disabled = !button_pressed
+	if pause_10s_check:
+		pause_10s_check.disabled = !button_pressed
+	
+	# Update GlobalData immediately to ensure consistency
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.settings_dict["auto_restart"] = auto_restart_enabled
+		print("[Option] Immediately updated GlobalData.settings_dict[auto_restart] to: ", auto_restart_enabled)
+	else:
+		print("[Option] Warning: GlobalData not found, cannot update settings_dict")
+	
+	save_settings()
+
+func _on_pause_time_changed(selected_time: int):
+	print("[Option] Pause time changed to: ", selected_time)
+	auto_restart_pause_time = selected_time
+	
+	# Update GlobalData immediately to ensure consistency
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.settings_dict["auto_restart_pause_time"] = auto_restart_pause_time
+		print("[Option] Immediately updated GlobalData.settings_dict[auto_restart_pause_time] to: ", auto_restart_pause_time)
+	else:
+		print("[Option] Warning: GlobalData not found, cannot update settings_dict")
+	
+	save_settings()
 
 func set_locale_from_language(language: String):
 	var locale = ""
@@ -144,6 +199,21 @@ func set_drill_button_pressed():
 	if random_sequence_check:
 		random_sequence_check.button_pressed = (current_drill_sequence == "Random")
 
+func set_auto_restart_button_pressed():
+	# Set CheckButton state for auto restart
+	if auto_restart_check:
+		auto_restart_check.button_pressed = auto_restart_enabled
+		# Show/hide pause time container based on auto restart state
+		if auto_restart_pause_container:
+			auto_restart_pause_container.visible = auto_restart_enabled
+		# Set pause time button states based on auto restart state and selected time
+		if pause_5s_check:
+			pause_5s_check.disabled = !auto_restart_enabled
+			pause_5s_check.button_pressed = (auto_restart_enabled and auto_restart_pause_time == 5)
+		if pause_10s_check:
+			pause_10s_check.disabled = !auto_restart_enabled
+			pause_10s_check.button_pressed = (auto_restart_enabled and auto_restart_pause_time == 10)
+
 func set_focus_to_current_language():
 	# Set focus to the button corresponding to the current language
 	match current_language:
@@ -177,79 +247,21 @@ func update_ui_texts():
 		random_sequence_check.text = tr("random_sequence")
 
 func save_settings():
-	# First load current settings to preserve other fields
-	var http_service = get_node("/root/HttpService")
-	if http_service:
-		print("Loading current settings before saving language...")
-		http_service.load_game(_on_load_before_save_callback, "settings")
-	else:
-		print("HttpService not found!")
-
-func _on_load_before_save_callback(_result, response_code, _headers, body):
+	# Save settings directly using current GlobalData
 	var http_service = get_node("/root/HttpService")
 	if not http_service:
 		print("HttpService not found!")
 		return
-		
-	var settings_data = {}
 	
-	# Try to get existing settings from HTTP first
-	if response_code == 200:
-		# Parse existing settings
-		var body_str = body.get_string_from_utf8()
-		var json = JSON.new()
-		var error = json.parse(body_str)
-		if error == OK:
-			var data = json.data
-			var settings = data.get("data", "{}")
-			var settings_json = JSON.new()
-			var settings_error = settings_json.parse(settings)
-			if settings_error == OK:
-				settings_data = settings_json.data
-				print("Loaded existing settings from HTTP: ", settings_data)
-			else:
-				print("Failed to parse existing settings JSON from HTTP")
-		else:
-			print("Failed to parse HTTP response JSON")
-	else:
-		print("Failed to load existing settings from HTTP (", response_code, ")")
+	var global_data = get_node_or_null("/root/GlobalData")
+	if not global_data or global_data.settings_dict.size() == 0:
+		print("GlobalData not available, cannot save settings")
+		return
 	
-	# If HTTP failed or parsed empty, fallback to GlobalData.settings_dict
-	if settings_data.size() == 0:
-		var global_data = get_node_or_null("/root/GlobalData")
-		if global_data and global_data.settings_dict.size() > 0:
-			settings_data = global_data.settings_dict.duplicate()
-			print("Using GlobalData.settings_dict as fallback: ", settings_data)
-		else:
-			print("GlobalData.settings_dict not available, creating minimal settings")
-			# Create minimal settings with essential fields
-			settings_data = {
-				"language": "English",
-				"drill_sequence": "Fixed",
-				"http_service_url": "http://127.0.0.1",
-				"websocket_url": "ws://127.0.0.1/websocket",
-				"max_index": 1,
-				"spots": ["ipsc_mini", "hostage", "2poppers", "3paddles", "ipsc_mini_rotation"],
-				"target_rule": {
-					"AZone": 5.0,
-					"CZone": 2.0,
-					"DZone": 1.0,
-					"WhiteZone": -10.0,
-					"miss": 1.0,
-					"paddles": 5.0,
-					"popper": 5.0
-				}
-			}
-	
-	# Update only the language field
-	settings_data["language"] = current_language
-	settings_data["drill_sequence"] = current_drill_sequence
-	print("[Option] Updated settings with language: ", current_language, " and drill_sequence: ", current_drill_sequence)
-	print("[Option] Full settings to save: ", settings_data)
-	
-	# Save the merged settings
+	var settings_data = global_data.settings_dict.duplicate()
 	var content = JSON.stringify(settings_data)
-	print("[Option] JSON content to save: ", content)
+	print("[Option] Saving settings directly: ", settings_data)
+	
 	http_service.save_game(_on_save_settings_callback, "settings", content)
 
 func _on_save_settings_callback(_result, response_code, _headers, _body):
@@ -285,9 +297,25 @@ func load_settings_from_global_data():
 		print("[Option] No drill_sequence setting, using default Fixed")
 		current_drill_sequence = "Fixed"
 	
+	# Load auto restart settings
+	if global_data and global_data.settings_dict.has("auto_restart"):
+		auto_restart_enabled = global_data.settings_dict.get("auto_restart", false)
+		print("[Option] Loaded auto_restart from GlobalData: ", auto_restart_enabled)
+	else:
+		print("[Option] No auto_restart setting, using default false")
+		auto_restart_enabled = false
+	
+	if global_data and global_data.settings_dict.has("auto_restart_pause_time"):
+		auto_restart_pause_time = global_data.settings_dict.get("auto_restart_pause_time", 5)
+		print("[Option] Loaded auto_restart_pause_time from GlobalData: ", auto_restart_pause_time)
+	else:
+		print("[Option] No auto_restart_pause_time setting, using default 5")
+		auto_restart_pause_time = 5
+	
 	# Update UI to reflect the loaded settings
 	set_language_button_pressed()
 	set_drill_button_pressed()
+	set_auto_restart_button_pressed()
 	update_ui_texts()
 	
 	# Use call_deferred to ensure focus is set after all UI updates are complete
@@ -300,6 +328,13 @@ static func get_current_language() -> String:
 # Function to get current drill sequence (can be called from other scripts)
 static func get_current_drill_sequence() -> String:
 	return current_drill_sequence
+
+# Functions to get current auto restart settings (can be called from other scripts)
+static func get_auto_restart_enabled() -> bool:
+	return auto_restart_enabled
+
+static func get_auto_restart_pause_time() -> int:
+	return auto_restart_pause_time
 
 func _on_menu_control(directive: String):
 	print("[Option] Received menu_control signal with directive: ", directive)
@@ -372,12 +407,53 @@ func navigate_buttons(direction: String):
 	print("[Option] No other valid buttons found for navigation")
 
 func navigate_drill_buttons(direction: String):
-	# With only one drill button, just focus on it if it exists
+	# With multiple drill buttons, we need to handle navigation between them
+	var drill_buttons = []
 	if random_sequence_check:
-		random_sequence_check.grab_focus()
-		print("[Option] Focus set to drill CheckButton: ", random_sequence_check.name)
-	else:
-		print("[Option] No drill CheckButton found for navigation")
+		drill_buttons.append(random_sequence_check)
+	if auto_restart_check:
+		drill_buttons.append(auto_restart_check)
+	if pause_5s_check and auto_restart_enabled:
+		drill_buttons.append(pause_5s_check)
+	if pause_10s_check and auto_restart_enabled:
+		drill_buttons.append(pause_10s_check)
+	
+	if drill_buttons.is_empty():
+		print("[Option] No drill buttons found for navigation")
+		return
+	
+	# Find current focused button
+	var current_index = -1
+	for i in range(drill_buttons.size()):
+		if drill_buttons[i].has_focus():
+			current_index = i
+			break
+	
+	if current_index == -1:
+		# If no button has focus, focus the first one
+		if drill_buttons[0]:
+			drill_buttons[0].grab_focus()
+			print("[Option] Focus set to first drill button")
+		return
+	
+	# Find the next valid button in the specified direction
+	var attempts = 0
+	var target_index = current_index
+	while attempts < drill_buttons.size():
+		if direction == "up":
+			target_index = (target_index - 1 + drill_buttons.size()) % drill_buttons.size()
+		else:  # down
+			target_index = (target_index + 1) % drill_buttons.size()
+		
+		# Check if the target button exists and is valid
+		if drill_buttons[target_index]:
+			drill_buttons[target_index].grab_focus()
+			print("[Option] Focus moved to drill button at index: ", target_index)
+			return
+		
+		attempts += 1
+	
+	print("[Option] No other valid drill buttons found for navigation")
 
 func press_focused_button():
 	for button in language_buttons:
@@ -401,6 +477,25 @@ func press_focused_button():
 		random_sequence_check.button_pressed = !random_sequence_check.button_pressed
 		# This will trigger the toggled signal which calls _on_drill_sequence_toggled
 		print("[Option] Toggled drill CheckButton to: ", random_sequence_check.button_pressed)
+	
+	# Handle auto restart CheckButton
+	if auto_restart_check and auto_restart_check.has_focus():
+		# Toggle the CheckButton
+		auto_restart_check.button_pressed = !auto_restart_check.button_pressed
+		# This will trigger the toggled signal which calls _on_auto_restart_toggled
+		print("[Option] Toggled auto restart CheckButton to: ", auto_restart_check.button_pressed)
+	
+	# Handle pause time check buttons
+	if pause_5s_check and pause_5s_check.has_focus():
+		# Toggle the 5s button (this will automatically untoggle the 10s button due to ButtonGroup)
+		pause_5s_check.button_pressed = true
+		print("[Option] Selected pause time: 5s")
+		_on_pause_time_changed(5)
+	if pause_10s_check and pause_10s_check.has_focus():
+		# Toggle the 10s button (this will automatically untoggle the 5s button due to ButtonGroup)
+		pause_10s_check.button_pressed = true
+		print("[Option] Selected pause time: 10s")
+		_on_pause_time_changed(10)
 
 func volume_up():
 	var http_service = get_node("/root/HttpService")
@@ -463,7 +558,7 @@ func switch_tab(direction: String):
 				if japanese_button:
 					japanese_button.grab_focus()
 	elif current == 1:  # Drills
-		# Grab focus on the drill CheckButton
+		# Grab focus on the first drill CheckButton
 		if random_sequence_check:
 			random_sequence_check.grab_focus()
 		else:

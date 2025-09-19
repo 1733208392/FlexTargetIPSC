@@ -49,6 +49,8 @@ func _ready():
 			drills_manager.ui_show_completion.connect(_on_show_completion)
 		if drills_manager.has_signal("ui_show_completion_with_timeout"):
 			drills_manager.ui_show_completion_with_timeout.connect(_on_show_completion_with_timeout)
+		if drills_manager.has_signal("ui_hide_completion"):
+			drills_manager.ui_hide_completion.connect(_on_hide_completion)
 		if drills_manager.has_signal("ui_timeout_warning"):
 			drills_manager.ui_timeout_warning.connect(_on_timeout_warning)
 		if drills_manager.has_signal("ui_score_update"):
@@ -407,3 +409,11 @@ func setup_overlay_focus():
 		replay_button.focus_mode = Control.FOCUS_ALL
 		if DEBUG_LOGGING:
 			print("[drill_ui] Set up focus for replay button")
+
+func _on_hide_completion():
+	"""Hide the completion overlay"""
+	if DEBUG_LOGGING:
+		print("[DrillUI] Hiding completion overlay")
+	
+	if drill_complete_overlay:
+		drill_complete_overlay.visible = false

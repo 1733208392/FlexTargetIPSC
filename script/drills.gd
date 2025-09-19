@@ -57,6 +57,7 @@ signal ui_target_title_update(target_index: int, total_targets: int)
 signal ui_fastest_time_update(fastest_time: float)
 signal ui_show_completion(final_time: float, fastest_time: float, final_score: int)
 signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool)
+signal ui_hide_completion()
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
 signal ui_theme_change(theme_name: String)
@@ -600,6 +601,13 @@ func connect_target_signals():
 			print("WARNING: No current target instance to connect signals")
 		return
 	
+	# Check bounds before accessing target_sequence
+	if current_target_index >= target_sequence.size():
+		if DEBUG_LOGGING:
+			print("WARNING: current_target_index out of bounds in connect_target_signals")
+			print("Index: ", current_target_index, " Size: ", target_sequence.size())
+		return
+	
 	var current_target_type = target_sequence[current_target_index]
 	
 	# Handle composite targets that contain child targets
@@ -621,7 +629,10 @@ func connect_simple_target_signals():
 	if current_target_instance:
 		if DEBUG_LOGGING:
 			print("Target name: ", current_target_instance.name)
-			print("Target type: ", target_sequence[current_target_index])
+			if current_target_index < target_sequence.size():
+				print("Target type: ", target_sequence[current_target_index])
+			else:
+				print("Target type: INDEX OUT OF BOUNDS (", current_target_index, ")")
 	else:
 		if DEBUG_LOGGING:
 			print("Target name: None")
@@ -655,6 +666,15 @@ func connect_simple_target_signals():
 
 func _on_target_disappeared(target_id: String = ""):
 	"""Handle when a target has completed its disappear animation"""
+	# Check bounds before accessing target_sequence
+	if current_target_index >= target_sequence.size():
+		if DEBUG_LOGGING:
+			print("=== TARGET DISAPPEARED - INDEX OUT OF BOUNDS ===")
+			print("Target index: ", current_target_index)
+			print("Target sequence size: ", target_sequence.size())
+			print("Drill should already be completed, ignoring target_disappeared signal")
+		return
+	
 	var current_target_type = target_sequence[current_target_index]
 	if DEBUG_LOGGING:
 		print("=== TARGET DISAPPEARED ===")
@@ -696,11 +716,11 @@ func connect_ipsc_mini_rotate_signals():
 		if DEBUG_LOGGING:
 			print("Connected to ipsc_mini_rotate signals")
 		
-		# Connect disappear signal
-		if ipsc_mini.has_signal("target_disappeared"):
-			if ipsc_mini.target_disappeared.is_connected(_on_target_disappeared):
-				ipsc_mini.target_disappeared.disconnect(_on_target_disappeared)
-			ipsc_mini.target_disappeared.connect(_on_target_disappeared)
+		# DO NOT connect target_disappeared signal for rotating targets
+		# Rotating targets handle their own completion logic in _on_target_hit
+		# Connecting target_disappeared would cause double incrementation of current_target_index
+		if DEBUG_LOGGING:
+			print("Skipping target_disappeared connection for rotating target (handled manually)")
 
 func connect_paddle_signals():
 	"""Connect signals for paddle targets (3paddles composite target)"""
@@ -748,6 +768,13 @@ func connect_2poppers_signals():
 
 func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 	"""Handle when a target is hit - supports both simple targets and composite targets"""
+	# Check bounds before accessing target_sequence
+	if current_target_index >= target_sequence.size():
+		if DEBUG_LOGGING:
+			print("WARNING: target hit but current_target_index out of bounds")
+			print("Index: ", current_target_index, " Size: ", target_sequence.size())
+		return
+	
 	var current_target_type = target_sequence[current_target_index]
 	var hit_area = ""
 	var hit_position = Vector2.ZERO
@@ -897,6 +924,27 @@ func complete_drill():
 	if not drill_timed_out:
 		emit_signal("drills_finished")
 	
+	# Check for auto restart setting
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("auto_restart") and global_data.settings_dict.get("auto_restart", false):
+		var pause_time = global_data.settings_dict.get("auto_restart_pause_time", 5)
+		if DEBUG_LOGGING:
+			print("=== AUTO RESTART ENABLED - RESTARTING DRILL ===")
+			print("Auto restart pause time: ", pause_time, " seconds")
+		
+		# Start countdown display on the restart button
+		var drill_ui = get_node_or_null("DrillUI")
+		if drill_ui:
+			var drill_complete_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
+			if drill_complete_overlay and drill_complete_overlay.has_method("start_countdown"):
+				drill_complete_overlay.start_countdown(pause_time)
+		
+		# Wait for the configured pause time to let the completion overlay be visible
+		await get_tree().create_timer(pause_time).timeout
+		# Restart the drill after the pause
+		restart_drill()
+		return
+	
 	# Clear the current target to prevent further interactions
 	clear_current_target()
 	
@@ -969,6 +1017,27 @@ func complete_drill_with_timeout():
 	# DON'T emit drills_finished signal - this prevents performance data saving
 	# emit_signal("drills_finished")
 	
+	# Check for auto restart setting
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("auto_restart") and global_data.settings_dict.get("auto_restart", false):
+		var pause_time = global_data.settings_dict.get("auto_restart_pause_time", 5)
+		if DEBUG_LOGGING:
+			print("=== AUTO RESTART ENABLED - RESTARTING DRILL AFTER TIMEOUT ===")
+			print("Auto restart pause time: ", pause_time, " seconds")
+		
+		# Start countdown display on the restart button
+		var drill_ui = get_node_or_null("DrillUI")
+		if drill_ui:
+			var drill_complete_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
+			if drill_complete_overlay and drill_complete_overlay.has_method("start_countdown"):
+				drill_complete_overlay.start_countdown(pause_time)
+		
+		# Wait for the configured pause time to let the completion overlay be visible
+		await get_tree().create_timer(pause_time).timeout
+		# Restart the drill after the pause
+		restart_drill()
+		return
+	
 	# Clear the current target to prevent further interactions
 	clear_current_target()
 	
@@ -996,6 +1065,9 @@ func restart_drill():
 	"""Restart the drill from the beginning"""
 	if DEBUG_LOGGING:
 		print("=== RESTARTING DRILL ===")
+	
+	# Hide the completion overlay if it's visible
+	emit_signal("ui_hide_completion")
 	
 	# Reset all tracking variables
 	current_target_index = 0

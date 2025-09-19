@@ -30,6 +30,11 @@ func _on_settings_loaded(result, response_code, headers, body):
 				# Ensure max_index is always an integer
 				if settings_dict.has("max_index"):
 					settings_dict["max_index"] = int(settings_dict["max_index"])
+				# Ensure new auto restart fields have defaults
+				if not settings_dict.has("auto_restart"):
+					settings_dict["auto_restart"] = false
+				if not settings_dict.has("auto_restart_pause_time"):
+					settings_dict["auto_restart_pause_time"] = 5
 				print("GlobalData: Settings loaded into dictionary: ", settings_dict)
 				print("GlobalData: drill_sequence value: ", settings_dict.get("drill_sequence", "NOT_FOUND"))
 				print("GlobalData: Settings keys: ", settings_dict.keys())
