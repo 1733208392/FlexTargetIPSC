@@ -17,13 +17,10 @@ static var current_drill_sequence = "Fixed"
 @onready var description_label = $"VBoxContainer/MarginContainer/tab_container/About/Left/MarginContainer/DescriptionLabel"
 @onready var copyright_label = $"CopyrightLabel"
 
-# References to drill buttons
-@onready var random_sequence_button = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/RandomSequenceButton"
-@onready var fixed_sequence_button = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/FixedSequenceButton"
+# References to drill button (single CheckButton)
+@onready var random_sequence_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/RandomSequenceButton"
 
 @onready var language_buttons = []
-
-@onready var drill_buttons = []
 
 func _ready():
 	# Load saved settings from GlobalData
@@ -39,18 +36,13 @@ func _ready():
 	if traditional_chinese_button:
 		traditional_chinese_button.pressed.connect(_on_language_changed.bind("Traditional Chinese"))
 	
-	# Connect signals for drill sequence buttons
-	if random_sequence_button:
-		random_sequence_button.pressed.connect(_on_drill_sequence_changed.bind("Random"))
-	if fixed_sequence_button:
-		fixed_sequence_button.pressed.connect(_on_drill_sequence_changed.bind("Fixed"))
+	# Connect signals for drill sequence CheckButton
+	if random_sequence_check:
+		random_sequence_check.toggled.connect(_on_drill_sequence_toggled)
 	
 	# Initialize language buttons array
 	# Order: Traditional Chinese (0), Chinese (1), Japanese (2), English (3)
 	language_buttons = [traditional_chinese_button, chinese_button, japanese_button, english_button]
-	
-	# Initialize drill buttons array
-	drill_buttons = [random_sequence_button, fixed_sequence_button]
 	
 	# Debug: Check which buttons are properly loaded
 	print("[Option] Language buttons initialization:")
@@ -90,8 +82,9 @@ func _on_language_changed(language: String):
 	update_ui_texts()
 	print("Language changed to: ", language)
 
-func _on_drill_sequence_changed(sequence: String):
-	print("[Option] Drill sequence change requested: ", sequence)
+func _on_drill_sequence_toggled(button_pressed: bool):
+	var sequence = "Random" if button_pressed else "Fixed"
+	print("[Option] Drill sequence toggled to: ", sequence)
 	print("[Option] Current drill_sequence before change: ", current_drill_sequence)
 	current_drill_sequence = sequence
 	print("[Option] Current drill_sequence after change: ", current_drill_sequence)
@@ -105,7 +98,6 @@ func _on_drill_sequence_changed(sequence: String):
 		print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	save_settings()
-	set_drill_button_pressed()
 	print("[Option] Drill sequence changed to: ", sequence)
 
 func set_locale_from_language(language: String):
@@ -148,25 +140,9 @@ func set_language_button_pressed():
 				english_button.button_pressed = true
 
 func set_drill_button_pressed():
-	# First reset all drill buttons
-	if random_sequence_button:
-		random_sequence_button.button_pressed = false
-	if fixed_sequence_button:
-		fixed_sequence_button.button_pressed = false
-	
-	# Then set the current drill sequence button as pressed
-	match current_drill_sequence:
-		"Random":
-			if random_sequence_button:
-				random_sequence_button.button_pressed = true
-		"Fixed":
-			if fixed_sequence_button:
-				fixed_sequence_button.button_pressed = true
-		_:
-			# Default to Fixed if invalid
-			if fixed_sequence_button:
-				fixed_sequence_button.button_pressed = true
-			current_drill_sequence = "Fixed"
+	# Set CheckButton state: checked = Random, unchecked = Fixed
+	if random_sequence_check:
+		random_sequence_check.button_pressed = (current_drill_sequence == "Random")
 
 func set_focus_to_current_language():
 	# Set focus to the button corresponding to the current language
@@ -197,10 +173,8 @@ func update_ui_texts():
 		description_label.text = tr("description")
 	if copyright_label:
 		copyright_label.text = tr("copyright")
-	if random_sequence_button:
-		random_sequence_button.text = tr("random_sequence")
-	if fixed_sequence_button:
-		fixed_sequence_button.text = tr("fixed_sequence")
+	if random_sequence_check:
+		random_sequence_check.text = tr("random_sequence")
 
 func save_settings():
 	# First load current settings to preserve other fields
@@ -398,38 +372,12 @@ func navigate_buttons(direction: String):
 	print("[Option] No other valid buttons found for navigation")
 
 func navigate_drill_buttons(direction: String):
-	var current_index = -1
-	for i in range(drill_buttons.size()):
-		if drill_buttons[i] and drill_buttons[i].has_focus():
-			current_index = i
-			break
-	if current_index == -1:
-		# If no button has focus, start with the first valid button
-		for i in range(drill_buttons.size()):
-			if drill_buttons[i]:
-				drill_buttons[i].grab_focus()
-				print("[Option] Focus set to first valid drill button: ", drill_buttons[i].name)
-				return
-		return
-	
-	# Find the next valid button in the specified direction
-	var attempts = 0
-	var target_index = current_index
-	while attempts < drill_buttons.size():
-		if direction == "up":
-			target_index = (target_index - 1 + drill_buttons.size()) % drill_buttons.size()
-		else:  # down
-			target_index = (target_index + 1) % drill_buttons.size()
-		
-		# Check if the target button exists and is valid
-		if drill_buttons[target_index] and drill_buttons[target_index] != drill_buttons[current_index]:
-			drill_buttons[target_index].grab_focus()
-			print("[Option] Focus moved to ", drill_buttons[target_index].name)
-			return
-		
-		attempts += 1
-	
-	print("[Option] No other valid drill buttons found for navigation")
+	# With only one drill button, just focus on it if it exists
+	if random_sequence_check:
+		random_sequence_check.grab_focus()
+		print("[Option] Focus set to drill CheckButton: ", random_sequence_check.name)
+	else:
+		print("[Option] No drill CheckButton found for navigation")
 
 func press_focused_button():
 	for button in language_buttons:
@@ -447,29 +395,12 @@ func press_focused_button():
 			set_language_button_pressed()
 			break
 	
-	# Handle drill buttons
-	for button in drill_buttons:
-		if button and button.has_focus():
-			# Check if this is the only pressed button
-			var other_button = fixed_sequence_button if button == random_sequence_button else random_sequence_button
-			if button.button_pressed and (not other_button or not other_button.button_pressed):
-				# Don't unpress if it's the only selected option
-				print("[Option] Cannot unpress the only selected drill option")
-				break
-			else:
-				# Toggle the button and determine new sequence
-				button.button_pressed = !button.button_pressed
-				var new_sequence = ""
-				if button == random_sequence_button:
-					new_sequence = "Random" if button.button_pressed else "Fixed"
-				elif button == fixed_sequence_button:
-					new_sequence = "Fixed" if button.button_pressed else "Random"
-				
-				print("[Option] Toggled drill button: ", button.name, " - New sequence: ", new_sequence)
-				
-				# Use the proper drill sequence change function to ensure settings are saved
-				_on_drill_sequence_changed(new_sequence)
-				break
+	# Handle drill CheckButton
+	if random_sequence_check and random_sequence_check.has_focus():
+		# Toggle the CheckButton
+		random_sequence_check.button_pressed = !random_sequence_check.button_pressed
+		# This will trigger the toggled signal which calls _on_drill_sequence_toggled
+		print("[Option] Toggled drill CheckButton to: ", random_sequence_check.button_pressed)
 
 func volume_up():
 	var http_service = get_node("/root/HttpService")
@@ -532,11 +463,9 @@ func switch_tab(direction: String):
 				if japanese_button:
 					japanese_button.grab_focus()
 	elif current == 1:  # Drills
-		# Grab focus on the pressed drill button or default to fixed
-		if fixed_sequence_button and fixed_sequence_button.button_pressed:
-			fixed_sequence_button.grab_focus()
-		elif random_sequence_button:
-			random_sequence_button.grab_focus()
+		# Grab focus on the drill CheckButton
+		if random_sequence_check:
+			random_sequence_check.grab_focus()
 		else:
 			tab_container.grab_focus()
 	else:  # About

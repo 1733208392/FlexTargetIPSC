@@ -25,9 +25,6 @@ corner_radius_top_right = 4
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_language"]
 
-[sub_resource type="ButtonGroup" id="ButtonGroup_sequence"]
-allow_unpress = true
-
 [sub_resource type="SystemFont" id="SystemFont_lkh8f"]
 font_names = PackedStringArray("SF Pro")
 
@@ -78,9 +75,10 @@ theme_override_fonts/font = ExtResource("3_i838a")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
-current_tab = 0
+current_tab = 1
 
 [node name="Languages" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -130,7 +128,6 @@ button_group = SubResource("ButtonGroup_language")
 text = "English"
 
 [node name="Drills" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
@@ -148,17 +145,8 @@ theme_override_constants/separation = 20
 layout_mode = 2
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 24
-button_group = SubResource("ButtonGroup_sequence")
 text = "Random Sequence
 "
-
-[node name="FixedSequenceButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 24
-button_pressed = true
-button_group = SubResource("ButtonGroup_sequence")
-text = "Fixed Sequence"
 
 [node name="About" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
