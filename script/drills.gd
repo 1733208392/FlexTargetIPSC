@@ -68,6 +68,26 @@ signal ui_timeout_warning(remaining_seconds: float)
 
 func _ready():
 	"""Initialize the drill with the first target"""
+	# Set initial randomization based on current drill sequence setting
+	var current_sequence = "Fixed"  # Default
+	
+	# Fallback: Try to load from GlobalData
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("drill_sequence"):
+		current_sequence = global_data.settings_dict.get("drill_sequence", "Fixed")
+		print("[Drills] Loaded drill sequence from GlobalData: ", current_sequence)
+		print("[Drills] Full GlobalData.settings_dict: ", global_data.settings_dict)
+	else:
+		print("[Drills] No drill sequence setting found, using default Fixed")
+		if global_data:
+			print("[Drills] GlobalData exists but no drill_sequence key. Available keys: ", global_data.settings_dict.keys())
+		else:
+			print("[Drills] GlobalData is null")
+	
+	randomize_sequence = (current_sequence == "Random")
+	if DEBUG_LOGGING:
+		print("[Drills] Initial randomization setting: ", randomize_sequence, " (from sequence: ", current_sequence, ")")
+	
 	# Initialize the target sequence (randomized or not)
 	initialize_target_sequence()
 	
@@ -204,7 +224,7 @@ func start_drill_timer():
 	
 	if DEBUG_LOGGING:
 		print("=== DRILL TIMER STARTED ===")
-		print("=== TIMEOUT TIMER STARTED (30 seconds) ===")
+		print("=== TIMEOUT TIMER STARTED (40 seconds) ===")
 
 func _on_timeout_timer_timeout():
 	"""Handle timeout when 30 seconds have elapsed"""
@@ -212,19 +232,6 @@ func _on_timeout_timer_timeout():
 		print("=== DRILL TIMEOUT! ===")
 	drill_timed_out = true
 	complete_drill_with_timeout()
-
-func initialize_target_sequence():
-	"""Initialize the target sequence - randomized if enabled"""
-	if randomize_sequence:
-		randomize_target_sequence()
-	else:
-		# Use the base sequence as-is
-		target_sequence = base_target_sequence.duplicate()
-	
-	if DEBUG_LOGGING:
-		print("=== TARGET SEQUENCE INITIALIZED ===")
-		print("Randomization enabled: ", randomize_sequence)
-		print("Target sequence: ", target_sequence)
 
 func randomize_target_sequence():
 	"""Randomize the target sequence using Fisher-Yates shuffle algorithm"""
@@ -263,37 +270,28 @@ func set_randomization(enabled: bool):
 		print("=== RANDOMIZATION SET TO: ", "ENABLED" if enabled else "DISABLED", " ===")
 		print("Current sequence: ", target_sequence)
 
-func test_randomization():
-	"""Test function to verify randomization works correctly"""
-	print("=== TESTING RANDOMIZATION ===")
-	print("Base sequence: ", base_target_sequence)
-	
-	# Test multiple randomizations
-	for i in range(5):
+func initialize_target_sequence():
+	"""Initialize the target sequence based on randomization setting"""
+	if randomize_sequence:
 		randomize_target_sequence()
-		print("Test ", i + 1, ": ", target_sequence)
-		
-		# Verify all elements are present
-		var base_copy = base_target_sequence.duplicate()
-		var randomized_copy = target_sequence.duplicate()
-		base_copy.sort()
-		randomized_copy.sort()
-		
-		if base_copy == randomized_copy:
-			print("✓ All targets preserved")
-		else:
-			print("✗ ERROR: Missing or extra targets!")
-			print("Expected: ", base_copy)
-			print("Got: ", randomized_copy)
-	
-	print("=== RANDOMIZATION TEST COMPLETE ===")
+	else:
+		# Use fixed sequence
+		target_sequence = base_target_sequence.duplicate()
+		if DEBUG_LOGGING:
+			print("=== TARGET SEQUENCE INITIALIZED (FIXED) ===")
+			print("Sequence: ", target_sequence)
 
-# Call test function in debug mode
-func _input(event):
-	"""Handle debug input for testing"""
-	if DEBUG_LOGGING and event is InputEventKey and event.pressed:
-		if event.keycode == KEY_T:
-			test_randomization()
+func find_option_node(node: Node) -> Node:
+	"""Recursively search for an option node in the scene tree"""
+	if node.name == "Option" or node.get_script() and str(node.get_script()).contains("option.gd"):
+		return node
+	
+	for child in node.get_children():
+		var result = find_option_node(child)
+		if result:
+			return result
+	
+	return null
 
 func stop_drill_timer():
 	"""Stop the drill elapsed time timer"""

@@ -5,6 +5,9 @@ const url = require('url');
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
+  
+  // Log all incoming requests
+  console.log(`[HttpServer] ${new Date().toISOString()} - ${req.method} ${pathname}`);
 
   if (pathname === '/game/save' && req.method === 'POST') {
     let body = '';
@@ -23,12 +26,28 @@ const server = http.createServer((req, res) => {
         }
 
         const fileName = `${data_id}.json`;
+        
+        // Debug logging for settings save
+        console.log(`[HttpServer] Saving file: ${fileName}`);
+        console.log(`[HttpServer] Content to save: ${content}`);
+        if (data_id === 'settings') {
+          console.log(`[HttpServer] SETTINGS UPDATE DETECTED!`);
+          try {
+            const parsedContent = JSON.parse(content);
+            console.log(`[HttpServer] Settings drill_sequence: ${parsedContent.drill_sequence}`);
+            console.log(`[HttpServer] Settings language: ${parsedContent.language}`);
+          } catch (e) {
+            console.log(`[HttpServer] Failed to parse settings content for debugging: ${e.message}`);
+          }
+        }
+        
         fs.writeFile(fileName, content, 'utf8', (err) => {
           if (err) {
             console.error('Error saving file:', err);
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ code: 1, msg: "Failed to save file" }));
           } else {
+            console.log(`[HttpServer] Successfully saved: ${fileName}`);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ code: 0, msg: "" }));
           }
@@ -55,12 +74,30 @@ const server = http.createServer((req, res) => {
         }
 
         const fileName = `${data_id}.json`;
+        
+        // Debug logging for settings load
+        console.log(`[HttpServer] Loading file: ${fileName}`);
+        if (data_id === 'settings') {
+          console.log(`[HttpServer] SETTINGS LOAD REQUEST DETECTED!`);
+        }
+        
         fs.readFile(fileName, 'utf8', (err, content) => {
           if (err) {
             console.error('Error loading file:', err);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ code: 0, data: "{}", msg: "OK" }));
           } else {
+            console.log(`[HttpServer] Successfully loaded: ${fileName}`);
+            if (data_id === 'settings') {
+              console.log(`[HttpServer] Settings content loaded: ${content}`);
+              try {
+                const parsedContent = JSON.parse(content);
+                console.log(`[HttpServer] Loaded settings drill_sequence: ${parsedContent.drill_sequence}`);
+                console.log(`[HttpServer] Loaded settings language: ${parsedContent.language}`);
+              } catch (e) {
+                console.log(`[HttpServer] Failed to parse loaded settings for debugging: ${e.message}`);
+              }
+            }
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ code: 0, data: content }));
           }

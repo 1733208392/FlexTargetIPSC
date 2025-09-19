@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://dus614khw11h2"]
+[gd_scene load_steps=15 format=3 uid="uid://dus614khw11h2"]
 
 [ext_resource type="Script" uid="uid://crika1mdfvjsw" path="res://script/option.gd" id="1_jx2e8"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
@@ -7,6 +7,11 @@
 [ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://font/Inter/Inter-VariableFont_opsz,wght.ttf" id="3_i838a"]
 [ext_resource type="Texture2D" uid="uid://c2l6gc1ro012y" path="res://asset/SmallCntnrs3.png" id="6_70qle"]
 [ext_resource type="Texture2D" uid="uid://bphdbktqgumws" path="res://asset/contact.png" id="7_fyn3v"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_tab_unselected"]
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_tab_selected"]
 bg_color = Color(0.2, 0.2, 0.2, 0.5)
@@ -18,12 +23,10 @@ border_color = Color(0.956863, 0.521569, 0.007843, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_tab_unselected"]
-bg_color = Color(0, 0, 0, 0)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-
 [sub_resource type="ButtonGroup" id="ButtonGroup_language"]
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_sequence"]
+allow_unpress = true
 
 [sub_resource type="SystemFont" id="SystemFont_lkh8f"]
 font_names = PackedStringArray("SF Pro")
@@ -73,8 +76,8 @@ layout_mode = 2
 theme_override_constants/side_margin = 100
 theme_override_fonts/font = ExtResource("3_i838a")
 theme_override_font_sizes/font_size = 32
-theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
 theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
+theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
 current_tab = 0
 
 [node name="Languages" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
@@ -126,10 +129,41 @@ button_pressed = true
 button_group = SubResource("ButtonGroup_language")
 text = "English"
 
-[node name="About" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+[node name="Drills" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/Drills"]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+
+[node name="DrillContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="RandomSequenceButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
+button_group = SubResource("ButtonGroup_sequence")
+text = "Random Sequence
+"
+
+[node name="FixedSequenceButton" type="CheckButton" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
+button_pressed = true
+button_group = SubResource("ButtonGroup_sequence")
+text = "Fixed Sequence"
+
+[node name="About" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
 
 [node name="Right" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
 layout_mode = 2

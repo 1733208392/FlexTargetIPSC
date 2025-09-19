@@ -30,6 +30,9 @@ func _ready():
 	# Load and apply current language setting from global settings
 	load_language_from_global_settings()
 	
+	# Load drill sequence setting from global settings
+	load_drill_sequence_from_global_settings()
+	
 	apply_title_theme("golden")  # Set default theme
 	
 	# Connect to the parent drills manager signals
@@ -74,6 +77,19 @@ func load_language_from_global_settings():
 		if DEBUG_LOGGING:
 			print("[DrillUI] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
+
+func load_drill_sequence_from_global_settings():
+	# Read drill sequence setting from GlobalData.settings_dict
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("drill_sequence"):
+		var drill_sequence = global_data.settings_dict.get("drill_sequence", "Fixed")
+		if DEBUG_LOGGING:
+			print("[DrillUI] Loaded drill_sequence from GlobalData: ", drill_sequence)
+		return drill_sequence
+	else:
+		if DEBUG_LOGGING:
+			print("[DrillUI] GlobalData not found or no drill_sequence setting, using default Fixed")
+		return "Fixed"
 
 func set_locale_from_language(language: String):
 	var locale = ""
