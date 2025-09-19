@@ -506,7 +506,7 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 		if DEBUG_LOGGING:
 			print("[ipsc_mini] Impact effect throttled (too fast)")
 	
-	# Throttled sound effect - ALWAYS play (for both hits and misses)
+	# Throttled sound effect - only plays for hits since this function is only called for hits
 	play_impact_sound_at_position_throttled(world_pos, time_stamp)
 
 func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: float):
@@ -523,8 +523,8 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 			print("[ipsc_mini] Sound effect throttled (too many concurrent sounds: ", active_sounds, "/", max_concurrent_sounds, ")")
 		return
 	
-	# Load the impact sound (same as bullet script)
-	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	# Load the paper impact sound for paper targets
+	var impact_sound = preload("res://audio/paper_hit.MP3")
 	
 	if impact_sound:
 		# Create AudioStreamPlayer2D for positional audio
@@ -557,9 +557,9 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 		print("[ipsc_mini] No impact sound found!")  # Keep this as it indicates an error
 
 func play_impact_sound_at_position(world_pos: Vector2):
-	"""Play steel impact sound effect at specific position (legacy - non-throttled)"""
-	# Load the impact sound (same as bullet script)
-	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	"""Play paper impact sound effect at specific position (legacy - non-throttled)"""
+	# Load the paper impact sound for paper targets
+	var impact_sound = preload("res://audio/paper_hit.MP3")
 	
 	if impact_sound:
 		# Create AudioStreamPlayer2D for positional audio

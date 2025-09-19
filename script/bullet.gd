@@ -26,9 +26,10 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		# Use more specific collision mask since rotating targets use WebSocket direct path
-		collision_mask = 8  # Only check walls/obstacles (layer 8)
+		# But still include UI targets (layer 7) for menu interactions
+		collision_mask = 15  # Include both walls (8) and UI targets (7) = 8 + 7 = 15
 		optimized_collision = true
-		print("[bullet] Using optimized collision detection - WebSocket handles target hits")
+		print("[bullet] Using optimized collision detection - WebSocket handles target hits, UI targets still detected")
 	
 	# Connect area_entered signal for collision detection with targets
 	area_entered.connect(_on_area_entered)
@@ -45,12 +46,21 @@ func _ready():
 	call_deferred("trigger_impact")
 
 func _on_area_entered(area: Area2D):
-	# Performance optimization: Skip area collision processing when using optimized collision
-	if optimized_collision:
-		print("[bullet] Skipping area collision - using WebSocket optimization")
+	# Performance optimization: Skip game target collision processing when using optimized collision
+	# But still handle UI areas (like menu buttons)
+	if optimized_collision and area.has_method("handle_bullet_collision"):
+		print("[bullet] Skipping game target collision - using WebSocket optimization")
 		return
 	
-	# Handle collision with target areas
+	# Handle collision with UI areas (menu buttons, etc.) - these don't have handle_bullet_collision method
+	if not has_collided and not area.has_method("handle_bullet_collision"):
+		has_collided = true
+		print("Bullet collided with UI area: ", area.name)
+		# Trigger impact effects for UI collisions
+		on_impact()
+		return
+	
+	# Handle collision with target areas (game targets)
 	if not has_collided and area.has_method("handle_bullet_collision"):
 		has_collided = true
 		print("Bullet collided with target: ", area.name)

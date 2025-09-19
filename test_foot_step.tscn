@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://oo5s80tcme2o"]
+
+[ext_resource type="PackedScene" uid="uid://bqjy8d7x2h5na" path="res://scene/footsteps.tscn" id="1_65pib"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="Footsteps" parent="." instance=ExtResource("1_65pib")]
+position = Vector2(-16, 664)

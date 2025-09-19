@@ -549,8 +549,8 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 			print("[paddle %s] Sound effect throttled (too many concurrent sounds: %d/%d)" % [paddle_id, active_sounds, max_concurrent_sounds])
 		return
 	
-	# Load the impact sound (same as bullet script)
-	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	# Load the metal impact sound for steel targets
+	var impact_sound = preload("res://audio/metal_hit.WAV")
 	
 	if impact_sound:
 		# Create AudioStreamPlayer2D for positional audio
@@ -584,8 +584,8 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 
 func play_impact_sound_at_position(world_pos: Vector2):
 	"""Play steel impact sound effect at specific position (legacy - non-throttled)"""
-	# Load the impact sound (same as bullet script)
-	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	# Load the metal impact sound for steel targets
+	var impact_sound = preload("res://audio/metal_hit.WAV")
 	
 	if impact_sound:
 		# Create AudioStreamPlayer2D for positional audio

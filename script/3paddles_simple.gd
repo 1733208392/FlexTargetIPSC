@@ -9,7 +9,7 @@ var websocket_listener = null
 
 # Bullet impact scene
 const BulletImpactScene = preload("res://scene/bullet_impact.tscn")
-const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
+# Note: BulletHoleScene removed - paddles are steel targets and don't create bullet holes
 
 # Paddle references
 @onready var paddle1_area = $Paddle1Area
@@ -31,8 +31,7 @@ var hit_counter = 0
 var total_paddles = 3
 var paddles_disappeared = []
 
-# Track bullet holes for cleanup
-var bullet_holes = []
+# Note: bullet_holes array removed - paddles are steel targets and don't create bullet holes
 
 # Points per hit
 const PADDLE_POINTS = 5
@@ -140,10 +139,6 @@ func _on_websocket_bullet_hit(world_pos: Vector2):
 	var hit_paddle2 = is_point_in_area(world_pos, paddle2_area)
 	var hit_paddle3 = is_point_in_area(world_pos, paddle3_area)
 	
-	# Create bullet impact visual effect at hit position (after hit detection)
-	var is_hit = hit_paddle1 or hit_paddle2 or hit_paddle3
-	create_bullet_impact(world_pos, is_hit)
-	
 	print("3PADDLES_SIMPLE: Area test results:")
 	print("  - Paddle1Area hit: ", hit_paddle1)
 	print("  - Paddle2Area hit: ", hit_paddle2)
@@ -185,6 +180,10 @@ func _on_websocket_bullet_hit(world_pos: Vector2):
 	var should_hit_paddle1 = hit_paddle1 and not paddle1_hit
 	var should_hit_paddle2 = hit_paddle2 and not paddle2_hit
 	var should_hit_paddle3 = hit_paddle3 and not paddle3_hit
+	
+	# Create bullet impact visual effect - only consider it a hit if the target hasn't fallen
+	var is_hit = should_hit_paddle1 or should_hit_paddle2 or should_hit_paddle3
+	create_bullet_impact(world_pos, is_hit)
 	
 	print("3PADDLES_SIMPLE: Hit tests - Paddle1: ", should_hit_paddle1, ", Paddle2: ", should_hit_paddle2, ", Paddle3: ", should_hit_paddle3)
 	
@@ -259,8 +258,7 @@ func trigger_paddle1_hit(hit_position: Vector2):
 	print("3PADDLES_SIMPLE: 🎯 TRIGGERING PADDLE1 HIT")
 	paddle1_hit = true
 	
-	# Clear bullet holes when target falls
-	clear_bullet_holes()
+	# Note: clear_bullet_holes() removed - paddles don't create bullet holes
 	
 	# Trigger the animation on paddle_simple
 	if paddle1_simple and paddle1_simple.has_method("trigger_fall_animation"):
@@ -283,8 +281,7 @@ func trigger_paddle2_hit(hit_position: Vector2):
 	print("3PADDLES_SIMPLE: 🎯 TRIGGERING PADDLE2 HIT")
 	paddle2_hit = true
 	
-	# Clear bullet holes when target falls
-	clear_bullet_holes()
+	# Note: clear_bullet_holes() removed - paddles don't create bullet holes
 	
 	# Trigger the animation on paddle_simple
 	if paddle2_simple and paddle2_simple.has_method("trigger_fall_animation"):
@@ -307,8 +304,7 @@ func trigger_paddle3_hit(hit_position: Vector2):
 	print("3PADDLES_SIMPLE: 🎯 TRIGGERING PADDLE3 HIT")
 	paddle3_hit = true
 	
-	# Clear bullet holes when target falls
-	clear_bullet_holes()
+	# Note: clear_bullet_holes() removed - paddles don't create bullet holes
 	
 	# Trigger the animation on paddle_simple
 	if paddle3_simple and paddle3_simple.has_method("trigger_fall_animation"):
@@ -350,8 +346,7 @@ func reset_scene():
 	paddles_disappeared.clear()
 	hit_counter = 0
 	
-	# Clear bullet holes on reset
-	clear_bullet_holes()
+	# Note: clear_bullet_holes() removed - paddles don't create bullet holes
 	
 	if paddle1_simple:
 		paddle1_simple.reset_paddle()
@@ -359,17 +354,6 @@ func reset_scene():
 		paddle2_simple.reset_paddle()
 	if paddle3_simple:
 		paddle3_simple.reset_paddle()
-
-func clear_bullet_holes():
-	"""Remove all bullet holes from the scene"""
-	print("3PADDLES_SIMPLE: Clearing ", bullet_holes.size(), " bullet holes")
-	
-	for hole in bullet_holes:
-		if is_instance_valid(hole):
-			hole.queue_free()
-	
-	bullet_holes.clear()
-	print("3PADDLES_SIMPLE: All bullet holes cleared")
 
 func create_bullet_impact(world_pos: Vector2, is_hit: bool = false):
 	"""Create bullet impact visual effects at the hit position"""
@@ -382,23 +366,27 @@ func create_bullet_impact(world_pos: Vector2, is_hit: bool = false):
 		impact.global_position = world_pos
 		print("3PADDLES_SIMPLE: Bullet impact visual created")
 	
-	# Always play impact sound (both hits and misses)
-	play_impact_sound_at_position(world_pos)
+	# Only play impact sound for hits (not misses)
+	if is_hit:
+		play_impact_sound_at_position(world_pos)
+		print("3PADDLES_SIMPLE: Impact sound played for hit")
+	else:
+		print("3PADDLES_SIMPLE: No sound played for miss")
 	
 	# No bullet holes created for paddles (steel targets don't create holes)
 	print("3PADDLES_SIMPLE: No bullet hole created - steel target")
 
 func play_impact_sound_at_position(world_pos: Vector2):
 	"""Play steel impact sound effect at specific position"""
-	# Load the impact sound (same as other targets)
-	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	# Load the metal impact sound for steel targets
+	var impact_sound = preload("res://audio/metal_hit.WAV")
 	
 	if impact_sound:
 		# Create AudioStreamPlayer2D for positional audio
 		var audio_player = AudioStreamPlayer2D.new()
 		audio_player.stream = impact_sound
 		audio_player.volume_db = -5  # Adjust volume as needed
-		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
+		audio_player.pitch_scale = randf_range(0.8, 1)  # Add slight pitch variation for realism
 		
 		# Add to scene and play
 		var scene_root = get_tree().current_scene

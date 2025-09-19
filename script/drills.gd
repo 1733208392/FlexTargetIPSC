@@ -11,7 +11,7 @@ extends Control
 
 # Drill sequence and progress tracking
 var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
-#var base_target_sequence: Array[String] = ["ipsc_mini_rotate","ipsc_mini_black_1"]
+#var base_target_sequence: Array[String] = ["2poppers"]
 
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
@@ -756,10 +756,13 @@ func complete_drill():
 	await get_tree().create_timer(0.1).timeout
 	
 	# Re-enable bullet spawning for overlay interactions
+	bullets_allowed = true  # Enable local bullets flag for overlay interactions
 	if ws_listener:
 		ws_listener.set_bullet_spawning_enabled(true)
 		if DEBUG_LOGGING:
 			print("=== BULLETS RE-ENABLED FOR COMPLETION OVERLAY ===")
+			print("bullets_allowed: ", bullets_allowed)
+			print("WebSocket bullet_spawning_enabled: ", ws_listener.bullet_spawning_enabled)
 	
 	# Only emit drills finished signal if not timed out (to save performance data)
 	if not drill_timed_out:
@@ -816,10 +819,13 @@ func complete_drill_with_timeout():
 	await get_tree().create_timer(0.1).timeout
 	
 	# Re-enable bullet spawning for overlay interactions
+	bullets_allowed = true  # Enable local bullets flag for overlay interactions
 	if ws_listener:
 		ws_listener.set_bullet_spawning_enabled(true)
 		if DEBUG_LOGGING:
-			print("=== BULLETS RE-ENABLED FOR COMPLETION OVERLAY ===")
+			print("=== BULLETS RE-ENABLED FOR COMPLETION OVERLAY (TIMEOUT) ===")
+			print("bullets_allowed: ", bullets_allowed)
+			print("WebSocket bullet_spawning_enabled: ", ws_listener.bullet_spawning_enabled)
 	
 	# DON'T emit drills_finished signal - this prevents performance data saving
 	# emit_signal("drills_finished")

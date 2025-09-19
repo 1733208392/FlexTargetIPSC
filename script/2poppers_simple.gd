@@ -9,7 +9,7 @@ var websocket_listener = null
 
 # Bullet impact scene
 const BulletImpactScene = preload("res://scene/bullet_impact.tscn")
-const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
+# Note: BulletHoleScene removed - poppers are steel targets and don't create bullet holes
 
 # Popper references
 @onready var popper1_area = $Popper1Area
@@ -28,8 +28,7 @@ var hit_counter = 0
 var total_poppers = 2
 var poppers_disappeared = []
 
-# Track bullet holes for cleanup
-var bullet_holes = []
+# Note: bullet_holes array removed - poppers are steel targets and don't create bullet holes
 
 # Points per hit
 const POPPER_POINTS = 5
@@ -122,10 +121,6 @@ func _on_websocket_bullet_hit(world_pos: Vector2):
 	var hit_popper1 = is_point_in_area(world_pos, popper1_area)
 	var hit_popper2 = is_point_in_area(world_pos, popper2_area)
 	
-	# Create bullet impact visual effect at hit position (after hit detection)
-	var is_hit = hit_popper1 or hit_popper2
-	create_bullet_impact(world_pos, is_hit)
-	
 	print("2POPPERS_SIMPLE: Area test results:")
 	print("  - Popper1Area hit: ", hit_popper1)
 	print("  - Popper2Area hit: ", hit_popper2)
@@ -157,6 +152,10 @@ func _on_websocket_bullet_hit(world_pos: Vector2):
 	# Check which area was hit - prioritize closer hits and prevent double hits
 	var should_hit_popper1 = hit_popper1 and not popper1_hit
 	var should_hit_popper2 = hit_popper2 and not popper2_hit
+	
+	# Create bullet impact visual effect - only consider it a hit if the target hasn't fallen
+	var is_hit = should_hit_popper1 or should_hit_popper2
+	create_bullet_impact(world_pos, is_hit)
 	
 	print("2POPPERS_SIMPLE: Hit tests - Popper1: ", should_hit_popper1, ", Popper2: ", should_hit_popper2)
 	
@@ -227,8 +226,7 @@ func trigger_popper1_hit(hit_position: Vector2):
 	print("2POPPERS_SIMPLE: 🎯 TRIGGERING POPPER1 HIT")
 	popper1_hit = true
 	
-	# Clear bullet holes when target falls
-	clear_bullet_holes()
+	# Note: clear_bullet_holes() removed - poppers don't create bullet holes
 	
 	# Trigger the animation on popper_simple
 	if popper1_simple and popper1_simple.has_method("trigger_fall_animation"):
@@ -251,8 +249,7 @@ func trigger_popper2_hit(hit_position: Vector2):
 	print("2POPPERS_SIMPLE: 🎯 TRIGGERING POPPER2 HIT")
 	popper2_hit = true
 	
-	# Clear bullet holes when target falls
-	clear_bullet_holes()
+	# Note: clear_bullet_holes() removed - poppers don't create bullet holes
 	
 	# Trigger the animation on popper_simple
 	if popper2_simple and popper2_simple.has_method("trigger_fall_animation"):
@@ -293,24 +290,12 @@ func reset_scene():
 	poppers_disappeared.clear()
 	hit_counter = 0
 	
-	# Clear bullet holes on reset
-	clear_bullet_holes()
+	# Note: clear_bullet_holes() removed - poppers don't create bullet holes
 	
 	if popper1_simple:
 		popper1_simple.reset_popper()
 	if popper2_simple:
 		popper2_simple.reset_popper()
-
-func clear_bullet_holes():
-	"""Remove all bullet holes from the scene"""
-	print("2POPPERS_SIMPLE: Clearing ", bullet_holes.size(), " bullet holes")
-	
-	for hole in bullet_holes:
-		if is_instance_valid(hole):
-			hole.queue_free()
-	
-	bullet_holes.clear()
-	print("2POPPERS_SIMPLE: All bullet holes cleared")
 
 func create_bullet_impact(world_pos: Vector2, is_hit: bool = false):
 	"""Create bullet impact visual effects at the hit position"""
@@ -323,23 +308,20 @@ func create_bullet_impact(world_pos: Vector2, is_hit: bool = false):
 		impact.global_position = world_pos
 		print("2POPPERS_SIMPLE: Bullet impact visual created")
 	
-	# Always play impact sound (both hits and misses)
-	play_impact_sound_at_position(world_pos)
+	# Only play impact sound for hits (not misses)
+	if is_hit:
+		play_impact_sound_at_position(world_pos)
+		print("2POPPERS_SIMPLE: Impact sound played for hit")
+	else:
+		print("2POPPERS_SIMPLE: No sound played for miss")
 	
-	# Only create bullet hole effect for hits
-	if is_hit and BulletHoleScene:
-		var hole = BulletHoleScene.instantiate()
-		get_parent().add_child(hole)  # Add to parent so it's not affected by this node's transform
-		hole.global_position = world_pos
-		bullet_holes.append(hole)  # Track bullet hole for cleanup
-		print("2POPPERS_SIMPLE: Bullet hole created for hit")
-	elif not is_hit:
-		print("2POPPERS_SIMPLE: No bullet hole created for miss")
+	# NO BULLET HOLES: Poppers are steel targets, don't create bullet holes
+	print("2POPPERS_SIMPLE: No bullet hole created - steel target")
 
 func play_impact_sound_at_position(world_pos: Vector2):
 	"""Play steel impact sound effect at specific position"""
-	# Load the impact sound (same as other targets)
-	var impact_sound = preload("res://audio/rifle_steel_plate.mp3")
+	# Load the metal impact sound for steel targets
+	var impact_sound = preload("res://audio/metal_hit.WAV")
 	
 	if impact_sound:
 		# Create AudioStreamPlayer2D for positional audio

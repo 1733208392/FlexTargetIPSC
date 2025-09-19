@@ -1,7 +1,7 @@
 extends Control
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_LOGGING = true  # Set to true for verbose debugging
 
 # Bullet system
 @export var bullet_scene: PackedScene = preload("res://scene/bullet.tscn")
@@ -170,9 +170,14 @@ func setup_collision_areas():
 		# Set collision properties for bullets
 		area_restart.collision_layer = 7  # Target layer
 		area_restart.collision_mask = 8   # Bullet layer
+		area_restart.monitoring = true
+		area_restart.monitorable = true
 		area_restart.area_entered.connect(_on_area_restart_hit)
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] AreaRestart collision setup complete")
+			print("[drill_complete_overlay] AreaRestart global position: ", area_restart.global_position)
+			print("[drill_complete_overlay] AreaRestart collision_layer: ", area_restart.collision_layer)
+			print("[drill_complete_overlay] AreaRestart collision_mask: ", area_restart.collision_mask)
 	else:
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] AreaRestart not found!")
@@ -181,9 +186,14 @@ func setup_collision_areas():
 		# Set collision properties for bullets
 		area_replay.collision_layer = 7  # Target layer
 		area_replay.collision_mask = 8   # Bullet layer
+		area_replay.monitoring = true
+		area_replay.monitorable = true
 		area_replay.area_entered.connect(_on_area_replay_hit)
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] AreaReplay collision setup complete")
+			print("[drill_complete_overlay] AreaReplay global position: ", area_replay.global_position)
+			print("[drill_complete_overlay] AreaReplay collision_layer: ", area_replay.collision_layer)
+			print("[drill_complete_overlay] AreaReplay collision_mask: ", area_replay.collision_mask)
 	else:
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] AreaReplay not found!")
@@ -261,12 +271,22 @@ func spawn_bullet_at_position(world_pos: Vector2):
 	"""Spawn a bullet at the specified world position"""
 	if DEBUG_LOGGING:
 		print("[drill_complete_overlay] Spawning bullet at world position: ", world_pos)
+		print("[drill_complete_overlay] Overlay global_position: ", global_position)
+		print("[drill_complete_overlay] Overlay size: ", size)
+		if area_restart:
+			print("[drill_complete_overlay] AreaRestart global_position: ", area_restart.global_position)
+		if area_replay:
+			print("[drill_complete_overlay] AreaReplay global_position: ", area_replay.global_position)
 	
 	if bullet_scene:
 		var bullet = bullet_scene.instantiate()
 		
-		# Add the bullet to the scene
-		add_child(bullet)
+		# Add the bullet to the scene root to avoid Control node hierarchy issues
+		var scene_root = get_tree().current_scene
+		if scene_root:
+			scene_root.add_child(bullet)
+		else:
+			add_child(bullet)
 		
 		# Set the bullet's spawn position
 		if bullet.has_method("set_spawn_position"):
@@ -276,6 +296,9 @@ func spawn_bullet_at_position(world_pos: Vector2):
 		
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Bullet spawned successfully")
+			print("[drill_complete_overlay] Bullet global_position: ", bullet.global_position)
+			print("[drill_complete_overlay] Bullet collision_layer: ", bullet.collision_layer)
+			print("[drill_complete_overlay] Bullet collision_mask: ", bullet.collision_mask)
 	else:
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] ERROR: No bullet scene loaded!")
@@ -284,6 +307,10 @@ func _on_area_restart_hit(area: Area2D):
 	"""Handle bullet collision with restart area"""
 	if DEBUG_LOGGING:
 		print("[drill_complete_overlay] Bullet hit AreaRestart - restarting drill")
+		if area:
+			print("[drill_complete_overlay] Hit by area: ", area.name, " at position: ", area.global_position)
+		else:
+			print("[drill_complete_overlay] Hit triggered without area (likely WebSocket control)")
 	
 	# Hide the completion overlay
 	visible = false
@@ -313,6 +340,10 @@ func _on_area_replay_hit(area: Area2D):
 	
 	if DEBUG_LOGGING:
 		print("[drill_complete_overlay] Bullet hit AreaReplay - navigating to drill replay")
+		if area:
+			print("[drill_complete_overlay] Hit by area: ", area.name, " at position: ", area.global_position)
+		else:
+			print("[drill_complete_overlay] Hit triggered without area (likely WebSocket control)")
 	
 	# Navigate to the drill replay scene
 	get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
@@ -358,6 +389,9 @@ func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: 
 	# First make sure we're visible so the nodes are available
 	visible = true
 	
+	# Re-setup collision areas to ensure they're properly positioned
+	call_deferred("setup_collision_areas")
+	
 	# Update UI texts with current language (wait one frame to ensure visibility is processed)
 	call_deferred("_update_ui_after_visible")
 	
@@ -371,6 +405,9 @@ func show_drill_complete_with_timeout(score: int = 0, hit_factor: float = 0.0, f
 	"""Show the drill complete overlay with timeout handling"""
 	# First make sure we're visible so the nodes are available
 	visible = true
+	
+	# Re-setup collision areas to ensure they're properly positioned
+	call_deferred("setup_collision_areas")
 	
 	# Update UI texts with current language (wait one frame to ensure visibility is processed)
 	call_deferred("_update_ui_after_visible_with_timeout", timed_out)
