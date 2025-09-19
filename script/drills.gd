@@ -8,14 +8,16 @@ extends Control
 @export var two_poppers_scene: PackedScene = preload("res://scene/2poppers_simple.tscn")
 @export var three_paddles_scene: PackedScene = preload("res://scene/3paddles_simple.tscn")
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
+@export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
 var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
-#var base_target_sequence: Array[String] = ["2poppers"]
+#var base_target_sequence: Array[String] = ["2poppers","3paddles"]
 
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
 var current_target_instance: Node = null
+var footsteps_instance: Node = null  # Reference to the footsteps transition scene
 var total_drill_score: int = 0
 var drill_completed: bool = false
 var bullets_allowed: bool = false  # Track if bullet spawning is allowed
@@ -32,7 +34,7 @@ var drill_start_time: float = 0.0
 
 # Timeout functionality
 var timeout_timer: Timer = null
-var timeout_seconds: float = 30.0
+var timeout_seconds: float = 40.0
 var drill_timed_out: bool = false
 var timeout_beep_player: AudioStreamPlayer = null
 var last_beep_second: int = -1  # Track last second we beeped
@@ -40,6 +42,7 @@ var last_beep_second: int = -1  # Track last second we beeped
 # Node references
 @onready var center_container = $CenterContainer
 @onready var drill_timer = $DrillUI/DrillTimer
+@onready var footsteps_node = $Footsteps
 
 # Performance tracking
 signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float)
@@ -150,7 +153,7 @@ func _on_shot_timer_ready():
 	await get_tree().create_timer(0.5).timeout
 	# Start the drill timer
 	start_drill_timer()
-	# Now spawn the target normally (this will enable bullet spawning when ready)
+	# Now spawn the first target directly (no footsteps at the beginning)
 	await spawn_next_target()
 	# Hide the shot timer overlay after target is spawned
 	hide_shot_timer()
@@ -349,6 +352,14 @@ func spawn_next_target():
 	# Clear any existing target
 	clear_current_target()
 	
+	# Hide footsteps when target appears
+	if footsteps_node:
+		footsteps_node.visible = false
+		# Stop animation when hiding
+		var animation_player = footsteps_node.get_node_or_null("AnimationPlayer")
+		if animation_player:
+			animation_player.stop()
+	
 	# Create the new target based on type
 	match target_type:
 		"ipsc_mini":
@@ -472,6 +483,118 @@ func spawn_ipsc_mini_rotate():
 	if DEBUG_LOGGING:
 		print("IPSC Mini Rotate target spawned and positioned")
 
+func spawn_footsteps():
+	"""Spawn the footsteps transition scene"""
+	if footsteps_instance:
+		# Remove existing footsteps if any
+		if footsteps_instance.get_parent():
+			footsteps_instance.get_parent().remove_child(footsteps_instance)
+		footsteps_instance.queue_free()
+	
+	footsteps_instance = footsteps_scene.instantiate()
+	center_container.add_child(footsteps_instance)
+	current_target_instance = footsteps_instance
+	
+	if DEBUG_LOGGING:
+		print("Footsteps transition scene spawned")
+
+func connect_footsteps_signals():
+	"""Connect signals for footsteps transition scene"""
+	if DEBUG_LOGGING:
+		print("=== CONNECTING FOOTSTEPS SIGNALS ===")
+	
+	# Footsteps is a transition scene, so we'll auto-advance after the animation completes
+	# Get the animation player and connect to animation_finished signal
+	if footsteps_node:
+		var animation_player = footsteps_node.get_node_or_null("AnimationPlayer")
+		if animation_player:
+			# Disconnect any existing connections first
+			if animation_player.animation_finished.is_connected(_on_footsteps_animation_finished):
+				animation_player.animation_finished.disconnect(_on_footsteps_animation_finished)
+			
+			# Connect the signal
+			animation_player.animation_finished.connect(_on_footsteps_animation_finished)
+			if DEBUG_LOGGING:
+				print("Connected to footsteps animation_finished signal")
+		else:
+			if DEBUG_LOGGING:
+				print("ERROR: AnimationPlayer not found in footsteps node")
+	else:
+		if DEBUG_LOGGING:
+			print("ERROR: Footsteps node not available for signal connection")
+
+func show_footsteps_transition():
+	"""Show footsteps as a transition between targets"""
+	if DEBUG_LOGGING:
+		print("=== SHOWING FOOTSTEPS TRANSITION ===")
+	
+	# Clear current target
+	clear_current_target()
+	
+	# Show the footsteps node and start animation
+	if footsteps_node:
+		footsteps_node.visible = true
+		current_target_instance = footsteps_node
+		
+		# Reset the sprite region to initial state for animation
+		var sprite = footsteps_node.get_node_or_null("Sprite2D")
+		if sprite:
+			sprite.region_rect = Rect2(0, 0, 0, 300)  # Reset to initial state
+		
+		# Reset animation to beginning and play
+		var animation_player = footsteps_node.get_node_or_null("AnimationPlayer")
+		if animation_player:
+			animation_player.stop()  # Stop any current animation
+			animation_player.play("footstep_reveal")  # Start from beginning
+			if DEBUG_LOGGING:
+				print("Started footsteps animation")
+		
+		# Connect to footsteps animation completion to advance to next target
+		connect_footsteps_signals()
+		
+		if DEBUG_LOGGING:
+			print("Footsteps transition shown")
+	else:
+		if DEBUG_LOGGING:
+			print("ERROR: Footsteps node not found!")
+
+func _on_footsteps_animation_finished(_anim_name: String):
+	"""Handle footsteps animation completion - auto-advance to next target"""
+	if DEBUG_LOGGING:
+		print("=== FOOTSTEPS ANIMATION FINISHED ===")
+		print("Animation name: ", _anim_name)
+	
+	# Hide footsteps immediately when animation finishes
+	if footsteps_node:
+		footsteps_node.visible = false
+		# Stop animation
+		var animation_player = footsteps_node.get_node_or_null("AnimationPlayer")
+		if animation_player:
+			animation_player.stop()
+		if DEBUG_LOGGING:
+			print("Footsteps hidden after animation completion")
+	
+	# Proceed to spawn the next actual target
+	await spawn_next_target()
+
+func hide_footsteps():
+	"""Hide the footsteps transition scene"""
+	if footsteps_node:
+		footsteps_node.visible = false
+		# Stop animation when hiding
+		var animation_player = footsteps_node.get_node_or_null("AnimationPlayer")
+		if animation_player:
+			animation_player.stop()
+		if DEBUG_LOGGING:
+			print("Footsteps transition scene hidden")
+
+func show_footsteps():
+	"""Show the footsteps transition scene"""
+	if footsteps_node:
+		footsteps_node.visible = true
+		if DEBUG_LOGGING:
+			print("Footsteps transition scene shown")
+
 func connect_target_signals():
 	"""Connect to the current target's signals"""
 	if not current_target_instance:
@@ -555,7 +678,15 @@ func _on_target_disappeared(target_id: String = ""):
 	# Update progress bar - current_target_index now represents completed targets
 	emit_signal("ui_progress_update", current_target_index)
 	
-	spawn_next_target()
+	# Check if there are more targets - if so, show footsteps transition first
+	if current_target_index < target_sequence.size():
+		if DEBUG_LOGGING:
+			print("More targets remaining - showing footsteps transition")
+		show_footsteps_transition()
+	else:
+		if DEBUG_LOGGING:
+			print("No more targets - proceeding to completion")
+		spawn_next_target()
 
 func connect_ipsc_mini_rotate_signals():
 	"""Connect signals for ipsc_mini_rotate target (has child ipsc_mini)"""
@@ -771,6 +902,16 @@ func complete_drill():
 	# Clear the current target to prevent further interactions
 	clear_current_target()
 	
+	# Hide footsteps when drill completes
+	if footsteps_node:
+		footsteps_node.visible = false
+		# Stop animation
+		var animation_player = footsteps_node.get_node_or_null("AnimationPlayer")
+		if animation_player:
+			animation_player.stop()
+		if DEBUG_LOGGING:
+			print("Footsteps hidden on drill completion")
+	
 	# Reset tracking variables for next run - but keep UI state for display
 	current_target_index = 0
 	total_drill_score = 0
@@ -833,6 +974,16 @@ func complete_drill_with_timeout():
 	# Clear the current target to prevent further interactions
 	clear_current_target()
 	
+	# Hide footsteps when drill times out
+	if footsteps_node:
+		footsteps_node.visible = false
+		# Stop animation
+		var animation_player = footsteps_node.get_node_or_null("AnimationPlayer")
+		if animation_player:
+			animation_player.stop()
+		if DEBUG_LOGGING:
+			print("Footsteps hidden on drill timeout")
+	
 	# Reset tracking variables for next run - but keep UI state for display
 	current_target_index = 0
 	total_drill_score = 0
@@ -876,6 +1027,16 @@ func restart_drill():
 	
 	# Clear the current target
 	clear_current_target()
+	
+	# Hide footsteps when restarting drill
+	if footsteps_node:
+		footsteps_node.visible = false
+		# Stop animation
+		var animation_player = footsteps_node.get_node_or_null("AnimationPlayer")
+		if animation_player:
+			animation_player.stop()
+		if DEBUG_LOGGING:
+			print("Footsteps hidden on drill restart")
 	
 	# Show shot timer overlay again (which will spawn inactive target)
 	show_shot_timer()
