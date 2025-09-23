@@ -37,6 +37,10 @@ window/stretch/mode="viewport"
 window/handheld/orientation=1
 window/main_scene="res://scene/splash_loading.tscn"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/onscreenkeyboard/plugin.cfg")
+
 [gui]
 
 theme/dynamic_fonts/use_oversampling=true

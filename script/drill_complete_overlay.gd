@@ -740,6 +740,9 @@ func _update_countdown_text():
 	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
 	if restart_btn:
 		restart_btn.text = "Auto Restart in " + str(countdown_seconds)
+		# Make countdown text more visible with larger font and red color
+		restart_btn.add_theme_font_size_override("font_size", 48)
+		restart_btn.add_theme_color_override("font_color", Color.RED)
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Updated countdown text: ", restart_btn.text)
 
@@ -748,6 +751,9 @@ func _restore_restart_button_text():
 	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
 	if restart_btn and original_restart_text != "":
 		restart_btn.text = original_restart_text
+		# Restore original font size and color
+		restart_btn.add_theme_font_size_override("font_size", 36)
+		restart_btn.add_theme_color_override("font_color", Color.WHITE)
 		if DEBUG_LOGGING:
 			print("[drill_complete_overlay] Restored restart button text: ", restart_btn.text)
 
