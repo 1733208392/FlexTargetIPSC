@@ -53,6 +53,7 @@ var style_special_keys:StyleBoxFlat = null
 @export var font_color_normal:Color = Color(1,1,1)
 @export var font_color_hover:Color = Color(1,1,1)
 @export var font_color_pressed:Color = Color(1,1,1)
+@export var debug_remote: bool = true
 
 ###########################
 ## SIGNALS
@@ -68,6 +69,13 @@ func _enter_tree():
 	if not get_tree().get_root().size_changed.is_connected(size_changed):
 		get_tree().get_root().size_changed.connect(size_changed)
 	_init_keyboard()
+
+	# Connect to WebSocketListener.menu_control so remote directives can
+	# move focus around the onscreen keyboard and simulate Enter.
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		# connect directly; duplicate connects are unlikely as _enter_tree runs once
+		ws_listener.menu_control.connect(_on_ws_menu_control)
 
 #func _exit_tree():
 #    pass
@@ -99,6 +107,7 @@ var tween_position
 var tween_speed = .2
 
 var hide_position = Vector2()
+var layout_key_matrices = {} # map layout_container -> 2D array of keys
 
 func _init_keyboard():
 	if custom_layout_file == null:
@@ -122,6 +131,8 @@ func _init_keyboard():
 ###########################
 
 var focus_object = null
+var last_input_focus = null
+var last_activated_key = null
 
 func show():
 	_show_keyboard()
@@ -167,9 +178,17 @@ func _hide_keyboard(key_data=null):
 		animate_position(Vector2(position.x, new_y_pos), true)
 	else:
 		change_visibility(false)
+		# clear stored input focus when keyboard is hidden
+		last_input_focus = null
 
 
 func _show_keyboard(key_data=null):
+	# Store the current focused input control so simulated key events
+	# can be directed to it even when keyboard buttons have focus
+	var fo = get_viewport().gui_get_focus_owner()
+	if fo != null and is_keyboard_focus_object(fo):
+		last_input_focus = fo
+
 	change_visibility(true)
 	if animate:
 		var new_y_pos = get_viewport().get_visible_rect().size.y - size.y
@@ -248,6 +267,8 @@ func _switch_layout(key_data):
 
 func _set_caps_lock(value: bool):
 	uppercase = value
+	if debug_remote:
+		print("[onscreenkbd] _set_caps_lock: uppercase=", uppercase)
 	for key in capslock_keys:
 		if value:
 			if key.get_draw_mode() != BaseButton.DRAW_PRESSED:
@@ -263,6 +284,8 @@ func _set_caps_lock(value: bool):
 func _trigger_uppercase(key_data):
 	uppercase = !uppercase
 	_set_caps_lock(uppercase)
+	if debug_remote:
+		print("[onscreenkbd] _trigger_uppercase: toggled uppercase=", uppercase, " key_data=", key_data)
 
 
 func _key_released(key_data):
@@ -280,6 +303,15 @@ func _key_released(key_data):
 		input_event_key.ctrl_pressed = false
 		input_event_key.pressed = true
 
+		# If we have a stored last input focus (LineEdit/TextEdit),
+		# return focus to it so the parsed InputEventKey goes to the
+		# intended control rather than remaining on the keyboard button.
+		var target_focus = last_input_focus
+		if target_focus == null:
+			target_focus = get_viewport().gui_get_focus_owner()
+		if target_focus != null and is_keyboard_focus_object(target_focus):
+			target_focus.grab_focus()
+
 		var key = KeyListHandler.get_key_from_string(key_value)
 		if !uppercase && KeyListHandler.has_lowercase(key_value):
 			key +=32
@@ -287,12 +319,24 @@ func _key_released(key_data):
 		input_event_key.keycode = key
 		input_event_key.unicode = key
 
-		Input.parse_input_event(input_event_key)
+		# Deliver the key after the current call stack returns. Buttons call
+		# release_focus() after emitting the 'released' signal which would
+		# steal focus; deferring ensures we re-grab focus and then send the
+		# InputEvent so the target control receives it.
+		# determine proper target again (last_input_focus preferred)
+		var tgt = last_input_focus
+		if tgt == null:
+			tgt = get_viewport().gui_get_focus_owner()
+		if debug_remote:
+			print("[onscreenkbd] _key_released: key=", key_value, " last_input_focus=", last_input_focus, " current_focus=", get_viewport().gui_get_focus_owner(), " chosen_tgt=", tgt)
+		# schedule deferred delivery and pass the original key string so we
+		# can fallback to direct insertion if the InputEvent is not handled
+		call_deferred("_deliver_key_event", tgt, input_event_key, key_value)
 
 		###########################
 		## DISABLE CAPSLOCK AFTER 
 		###########################
-		_set_caps_lock(false)
+		# _set_caps_lock will be called after delivery in _deliver_key_event
 
 
 ###########################
@@ -302,6 +346,187 @@ func _key_released(key_data):
 func _set_key_style(style_name:String, key: Control, style:StyleBoxFlat):
 	if style != null:
 		key.add_theme_stylebox_override(style_name, style)
+
+
+func _deliver_key_event(target, input_event_key: InputEventKey, key_value = null):
+	# If target is a LineEdit/TextEdit, ensure it has focus then deliver
+	if target != null and is_keyboard_focus_object(target):
+		target.grab_focus()
+	# Finally, parse the input event so the focused control receives it
+	if debug_remote:
+		print("[onscreenkbd] _deliver_key_event: before parse current_focus=", get_viewport().gui_get_focus_owner(), " target=", target, " keycode=", input_event_key.keycode, " unicode=", input_event_key.unicode, " uppercase=", uppercase)
+	# If the target control exposes _gui_input, deliver directly to it so
+	# the control processes the InputEventKey as if it originated from UI.
+	var delivered = false
+	if target != null and target.has_method("_gui_input"):
+		# call directly on the control
+		target._gui_input(input_event_key)
+		delivered = true
+	else:
+		# fallback to global input parsing
+		Input.parse_input_event(input_event_key)
+		delivered = true
+	if debug_remote:
+		print("[onscreenkbd] _deliver_key_event: after parse current_focus=", get_viewport().gui_get_focus_owner(), " delivered=", delivered)
+	if debug_remote:
+		print("[onscreenkbd] _deliver_key_event: after parse current_focus=", get_viewport().gui_get_focus_owner())
+
+	# Once delivered, caps lock will be disabled in finalize step so
+	# fallback insertion can consult the correct `uppercase` state.
+
+	# Defer a finalization step so the control has time to process the event
+	# and potentially update its text before we check and perform fallback insertion
+	var before_text = null
+	if key_value != null and target != null and is_keyboard_focus_object(target):
+		if target.has_method("get_text"):
+			before_text = target.get_text()
+		elif target.has("text") or target.has_method("text"):
+			# Some controls expose `text` as a property
+			before_text = target.text
+	call_deferred("_finalize_key_delivery", target, key_value, before_text)
+
+
+func _finalize_key_delivery(target, key_value, before_text):
+	# After control processed the InputEvent, check if text changed; if not,
+	# insert it directly. This avoids timing issues where immediate checks
+	# see no change.
+	if debug_remote:
+		print("[onscreenkbd] _finalize_key_delivery: target=", target, " key_value=", key_value, " before_text=", before_text, " last_activated_key=", last_activated_key)
+
+	if target == null:
+		# Still ensure we clear last_activated_key
+		if last_activated_key != null:
+			if last_activated_key.is_inside_tree():
+				last_activated_key.grab_focus()
+			last_activated_key = null
+		return
+
+	# Read text after the event
+	var after_text = null
+	if target is LineEdit:
+		after_text = target.text
+	elif target is TextEdit:
+		after_text = target.get_text()
+	if debug_remote:
+		print("[onscreenkbd] _finalize_key_delivery: after_text=", after_text)
+
+	# If text hasn't changed, insert the character directly or perform
+	# special actions for control keys (Backspace/Delete).
+	var did_insert = false
+	if key_value != null and before_text != null:
+		if after_text == before_text:
+			# Ensure target has focus so insertion/deletion happens at cursor
+			target.grab_focus()
+
+			# Handle deletion keys specially
+			if str(key_value) == "Backspace" or str(key_value) == "Delete":
+				var text = ""
+				# Read current text safely
+				if target is LineEdit:
+					if target.has_method("get_text"):
+						text = str(target.get_text())
+					elif target.has("text"):
+						text = str(target.text)
+
+					# Try to determine caret position
+					var caret_pos = -1
+					if target.has_method("get_caret_position"):
+						caret_pos = int(target.get_caret_position())
+					elif target.has("caret_position"):
+						caret_pos = int(target.caret_position)
+					else:
+						# fallback to end of text
+						caret_pos = text.length()
+
+					if caret_pos > 0:
+						var new_text = ""
+						# remove character before caret
+						if caret_pos <= text.length():
+							new_text = text.substr(0, caret_pos - 1) + text.substr(caret_pos, text.length() - caret_pos)
+						else:
+							new_text = text.substr(0, max(0, text.length() - 1))
+
+						# Write text back safely
+						if target.has_method("set_text"):
+							target.set_text(new_text)
+						elif target.has("text"):
+							target.text = new_text
+
+						# restore caret position if possible
+						if target.has_method("set_caret_position"):
+							target.set_caret_position(max(0, caret_pos - 1))
+						elif target.has("caret_position"):
+							target.caret_position = max(0, caret_pos - 1)
+
+						did_insert = true
+					else:
+						# nothing to delete
+						did_insert = false
+
+				elif target is TextEdit:
+					# Use TextEdit get_text/set_text; try to delete at cursor if possible
+					if target.has_method("get_text") and target.has_method("set_text"):
+						var full = str(target.get_text())
+
+						# Try to get a cursor index if available (best-effort):
+						var cursor_idx = -1
+						# Godot TextEdit doesn't expose a single index in all versions,
+						# so default to deleting the last character as a safe fallback.
+						cursor_idx = full.length()
+
+						if cursor_idx > 0:
+							var new_full = full.substr(0, max(0, cursor_idx - 1)) + full.substr(cursor_idx, full.length() - cursor_idx)
+							target.set_text(new_full)
+							did_insert = true
+
+				# If target is neither LineEdit nor TextEdit, do nothing special
+
+			# Note: LeftArrow/RightArrow are intentionally disabled here
+			# to avoid conflicting with remote navigation directives.
+			# Only Backspace/Delete should be routed to input controls.
+
+			else:
+				# Regular character insertion fallback (existing behavior)
+				if target is LineEdit:
+					var out_char = str(key_value)
+					if not uppercase and KeyListHandler.has_lowercase(key_value):
+						out_char = str(key_value).to_lower()
+					if target.has_method("insert_text_at_cursor"):
+						target.insert_text_at_cursor(out_char)
+						did_insert = true
+					else:
+						# fallback: append to property or use get/set
+						if target.has("text"):
+							target.text = str(target.text) + out_char
+							did_insert = true
+						elif target.has_method("get_text") and target.has_method("set_text"):
+							target.set_text(str(target.get_text()) + out_char)
+							did_insert = true
+				elif target is TextEdit:
+					# TextEdit variations differ across Godot versions; use get/set_text fallback
+					if target.has_method("get_text") and target.has_method("set_text"):
+						var out_char = str(key_value)
+						if not uppercase and KeyListHandler.has_lowercase(key_value):
+							out_char = str(key_value).to_lower()
+						target.set_text(str(target.get_text()) + out_char)
+						did_insert = true
+
+	if debug_remote:
+		print("[onscreenkbd] _finalize_key_delivery: did_insert=", did_insert)
+
+	# Restore focus to the activated key for websocket navigation
+	if last_activated_key != null:
+		if last_activated_key.is_inside_tree():
+			last_activated_key.grab_focus()
+		last_activated_key = null
+
+	# Disable caps lock after we've finalized delivery
+	_set_caps_lock(false)
+
+
+func _refocus_last_activated_key():
+	if last_activated_key != null and last_activated_key.is_inside_tree():
+		last_activated_key.grab_focus()
 
 
 func _create_keyboard(layout_data):
@@ -351,12 +576,18 @@ func _create_keyboard(layout_data):
 		# theme override for spacing
 		base_vbox.add_theme_constant_override("separation", separation.y)
 
+		# matrix for this layout
+		var matrix = []
+
 		for row in layout.get("rows"):
 
 			var key_row = HBoxContainer.new()
 			key_row.size_flags_horizontal = SIZE_EXPAND_FILL
 			key_row.size_flags_vertical = SIZE_EXPAND_FILL
 			key_row.add_theme_constant_override("separation", separation.x)
+
+			# Collect row keys so we can support keyboard navigation via websocket
+			var row_keys = []
 
 			for key in row.get("keys"):
 				var new_key = KeyboardButton.new(key)
@@ -418,11 +649,16 @@ func _create_keyboard(layout_data):
 
 				key_row.add_child(new_key)
 				keys.push_back(new_key)
+				row_keys.push_back(new_key)
 
 			base_vbox.add_child(key_row)
+			# push the completed row into the matrix for this layout
+			matrix.push_back(row_keys)
 
 		layout_container.add_child(base_vbox)
-		index+=1
+		# store matrix for this layout container so navigation can be layout-aware
+		layout_key_matrices[layout_container] = matrix
+		index += 1
 
 
 ###########################
@@ -468,3 +704,158 @@ func is_keyboard_focus_object(focus_object):
 	if focus_object is LineEdit or focus_object is TextEdit:
 		return true
 	return false
+
+
+# --- WebSocket menu_control handling ---------------------------------
+func _on_ws_menu_control(directive: String):
+	# only handle navigation when the keyboard is visible
+	if not visible:
+		return
+
+	directive = str(directive)
+	match directive:
+		"up":
+			_move_focus("up")
+		"down":
+			_move_focus("down")
+		"left":
+			_move_focus("left")
+		"right":
+			_move_focus("right")
+		"enter":
+			_simulate_enter()
+		_:
+			# ignore other directives
+			pass
+
+
+func _move_focus(direction: String):
+	# Determine the active matrix for current_layout
+	var matrix = layout_key_matrices.get(current_layout, null)
+	if matrix == null:
+		return
+
+	# Find currently focused key in the matrix
+	var focused_row = -1
+	var focused_col = -1
+	var focus_owner = get_viewport().gui_get_focus_owner()
+	if focus_owner != null:
+		for r in range(matrix.size()):
+			for c in range(matrix[r].size()):
+				if matrix[r][c] == focus_owner:
+					focused_row = r
+					focused_col = c
+					break
+			if focused_row != -1:
+				break
+
+	# If no focus, default to top-left (0,0)
+	if focused_row == -1:
+		focused_row = 0
+		focused_col = 0
+
+	var new_row = focused_row
+	var new_col = focused_col
+
+	match direction:
+		"up":
+			new_row = max(0, focused_row - 1)
+			# keep same column if possible, otherwise clamp
+			new_col = min(focused_col, matrix[new_row].size() - 1)
+		"down":
+			new_row = min(matrix.size() - 1, focused_row + 1)
+			new_col = min(focused_col, matrix[new_row].size() - 1)
+		"left":
+			new_col = max(0, focused_col - 1)
+			# ensure row is valid
+			new_row = focused_row
+		"right":
+			new_col = min(matrix[focused_row].size() - 1, focused_col + 1)
+			new_row = focused_row
+
+	# If we didn't move, stop
+	if new_row == focused_row and new_col == focused_col:
+		return
+
+	# Move focus to the new key
+	var new_key = matrix[new_row][new_col]
+	if new_key != null:
+		new_key.grab_focus()
+
+
+func _simulate_enter():
+	var focus_owner = get_viewport().gui_get_focus_owner()
+	if focus_owner == null:
+		# If no focus, default to top-left key of current layout
+		var matrix = layout_key_matrices.get(current_layout, null)
+		if matrix == null or matrix.size() == 0:
+			return
+		var default_key = matrix[0][0]
+		if default_key:
+			# Simulate click by calling the keyboard button handler so behavior
+			# matches a real button press; remember the activated key so we
+			# can re-focus it after delivering input to the input control.
+			last_activated_key = default_key
+			default_key._on_button_up()
+		else:
+			return
+	else:
+		# If focus_owner is an input control (LineEdit/TextEdit), send an Enter key event
+		if is_keyboard_focus_object(focus_owner):
+			var ev = InputEventKey.new()
+			ev.pressed = true
+			ev.keycode = KEY_ENTER
+			ev.unicode = KEY_ENTER
+			# Prefer inserting into the focused control; ensure we remember it
+			last_input_focus = focus_owner
+			call_deferred("_deliver_key_event", focus_owner, ev)
+			return
+
+		# If focused owner is a keyboard button, emit its released
+		if focus_owner is Button:
+			# If the button is our keyboard button, simulate press and
+			# remember it so we can re-focus after delivering input.
+			last_activated_key = focus_owner
+			if focus_owner.has_method("_on_button_up"):
+				# call the button handler
+				# If this button corresponds to a key that should act on
+				# the input control (e.g. Backspace/LeftArrow/RightArrow/Delete)
+				# and we have a stored last_input_focus, then dispatch the
+				# InputEvent directly to that control so keyboard focus is
+				# preserved for websocket-driven interactions.
+				var handled_by_input_focus = false
+				var kd = null
+				if focus_owner.has_method("change_uppercase"):
+					kd = focus_owner.key_data
+				# kd may be null for generic Buttons
+				if typeof(kd) == TYPE_DICTIONARY and kd.has("output") and last_input_focus != null and is_keyboard_focus_object(last_input_focus):
+					var out = str(kd.get("output"))
+					if out == "Backspace" or out == "Delete":
+						# Build InputEventKey for this output and deliver to last_input_focus
+						var ev = InputEventKey.new()
+						ev.pressed = true
+						var sc = KeyListHandler.get_key_from_string(out)
+						if not uppercase and KeyListHandler.has_lowercase(out):
+							sc += 32
+						ev.keycode = sc
+						ev.unicode = sc
+						# deliver to stored input focus (deferred to maintain order)
+						last_input_focus.grab_focus()
+						call_deferred("_deliver_key_event", last_input_focus, ev, out)
+						handled_by_input_focus = true
+				if not handled_by_input_focus:
+					# default behavior: call the button handler so normal keyboard
+					# buttons animate and perform layout switches, etc.
+					focus_owner._on_button_up()
+					# If this is our KeyboardButton instance, check its key_data
+					# to decide whether to keep focus on it after remote activation.
+					if focus_owner.has_method("change_uppercase"):
+						var kd2 = focus_owner.key_data
+						if typeof(kd2) == TYPE_DICTIONARY and not kd2.has("output"):
+							call_deferred("_refocus_last_activated_key")
+			else:
+				# Generic emit
+				if focus_owner.has_signal("released"):
+					focus_owner.released.emit({})
+					# generic buttons may not have key_data; still try to refocus
+					call_deferred("_refocus_last_activated_key")
