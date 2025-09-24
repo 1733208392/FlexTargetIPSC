@@ -432,8 +432,6 @@ func _finalize_key_delivery(target, key_value, before_text):
 					var caret_pos = -1
 					if target.has_method("get_caret_position"):
 						caret_pos = int(target.get_caret_position())
-					elif target.has("caret_position"):
-						caret_pos = int(target.caret_position)
 					else:
 						# fallback to end of text
 						caret_pos = text.length()
@@ -455,8 +453,6 @@ func _finalize_key_delivery(target, key_value, before_text):
 						# restore caret position if possible
 						if target.has_method("set_caret_position"):
 							target.set_caret_position(max(0, caret_pos - 1))
-						elif target.has("caret_position"):
-							target.caret_position = max(0, caret_pos - 1)
 
 						did_insert = true
 					else:
