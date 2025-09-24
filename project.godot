@@ -13,7 +13,7 @@ config_version=5
 config/name="GODotTetris"
 config/version="1.0"
 run/main_scene="uid://d0r0jmdp4nky3"
-config/features=PackedStringArray("4.4", "GL Compatibility")
+config/features=PackedStringArray("4.5", "GL Compatibility")
 run/max_fps=60
 boot_splash/image="uid://cipq0m36i6v83"
 config/icon="uid://df7hy2vqfeny8"
@@ -27,6 +27,7 @@ buses/default_bus_layout="res://audio_bus_layout.tres"
 WebSocketListener="*res://script/WebSocketListener.gd"
 HttpService="*res://script/HttpService.gd"
 GlobalData="*res://script/global_data.gd"
+MenuController="*res://script/MenuController.gd"
 
 [display]
 

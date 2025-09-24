@@ -1,20 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://c3g1gp0reiltq"]
+[gd_scene load_steps=3 format=3 uid="uid://c3g1gp0reiltq"]
 
-[ext_resource type="Script" uid="uid://bag7v4s5v88jw" path="res://scene/wifi_networks.gd" id="1"]
-[ext_resource type="Script" uid="uid://dxfujov7vai6f" path="res://addons/onscreenkeyboard/onscreen_keyboard.gd" id="2_xtqbd"]
-[ext_resource type="Script" path="res://test_websocket_mock.gd" id="3_mockws"]
-
-[node name="WiFiNetworks" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-script = ExtResource("1")
-
-[node name="WebSocketListener" type="Node" parent="."]
-script = ExtResource("3_mockws")oad_steps=3 format=3 uid="uid://c3g1gp0reiltq"]
-
-[ext_resource type="Script" uid="uid://bag7v4s5v88jw" path="res://scene/wifi_networks.gd" id="1"]
+[ext_resource type="Script" uid="uid://bag7v4s5v88jw" path="res://script/wifi_networks.gd" id="1_xtqbd"]
 [ext_resource type="Script" uid="uid://dxfujov7vai6f" path="res://addons/onscreenkeyboard/onscreen_keyboard.gd" id="2_xtqbd"]
 
 [node name="WiFiNetworks" type="Control"]
@@ -22,7 +8,9 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-script = ExtResource("1")
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_xtqbd")
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 0
@@ -73,6 +61,7 @@ text = "Cancel"
 
 [node name="OnscreenKeyboard" type="PanelContainer" parent="Overlay/PanelContainer/VBoxContainer"]
 visible = false
+custom_minimum_size = Vector2(400, 200)
 layout_mode = 2
 script = ExtResource("2_xtqbd")
 metadata/_custom_type_script = "uid://dxfujov7vai6f"

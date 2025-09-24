@@ -76,6 +76,11 @@ func _enter_tree():
 	if ws_listener:
 		# connect directly; duplicate connects are unlikely as _enter_tree runs once
 		ws_listener.menu_control.connect(_on_ws_menu_control)
+	else:
+		# Try MenuController as fallback
+		var menu_controller = get_node_or_null("/root/MenuController")
+		if menu_controller:
+			menu_controller.menu_control.connect(_on_ws_menu_control)
 
 #func _exit_tree():
 #    pass
@@ -121,8 +126,10 @@ func _init_keyboard():
 	animate = false
 	if visible:
 		_hide_keyboard()
-	elif visible:
-		_show_keyboard()
+	else:
+		# Position keyboard at bottom initially (hidden)
+		var viewport_height = get_viewport().get_visible_rect().size.y
+		position.y = viewport_height + 10
 	animate = tmp_anim
 
 
@@ -189,10 +196,60 @@ func _show_keyboard(key_data=null):
 	if fo != null and is_keyboard_focus_object(fo):
 		last_input_focus = fo
 
-	change_visibility(true)
-	if animate:
-		var new_y_pos = get_viewport().get_visible_rect().size.y - size.y
-		animate_position(Vector2(position.x, new_y_pos))
+	if debug_remote:
+		print("[onscreenkbd] _show_keyboard: animate=", animate, " visible=", visible)
+
+	# Ensure the keyboard can be positioned manually by clearing anchors
+	set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	
+	# TEMPORARY: Force non-animated mode for debugging
+	var force_no_animation = true
+	
+	if animate and not force_no_animation:
+		# Position offscreen first, THEN make visible, THEN animate
+		var viewport_height = get_viewport().get_visible_rect().size.y
+		position.y = viewport_height + 10
+		change_visibility(true)
+		# Wait for the UI to be laid out before calculating final position
+		call_deferred("_animate_show_keyboard")
+	else:
+		# For non-animated, show at bottom of screen
+		change_visibility(true)
+		var viewport_height = get_viewport().get_visible_rect().size.y
+		var target_y = viewport_height - size.y
+		position.y = target_y
+		if debug_remote:
+			print("[onscreenkbd] _show_keyboard: non-animated mode, size=", size, " target_y=", target_y, " final_pos=", position)
+			print("[onscreenkbd] _show_keyboard: viewport_height=", viewport_height, " visible_rect=", get_viewport().get_visible_rect())
+
+
+func _animate_show_keyboard():
+	# Now that the UI has been laid out, size.y should be correct
+	var viewport_height = get_viewport().get_visible_rect().size.y
+	var final_y_pos = viewport_height - size.y
+	
+	if debug_remote:
+		print("[onscreenkbd] _animate_show_keyboard: viewport_height=", viewport_height, " size.y=", size.y, " final_y_pos=", final_y_pos, " current_pos=", position)
+		print("[onscreenkbd] _animate_show_keyboard: anchors - left=", anchor_left, " top=", anchor_top, " right=", anchor_right, " bottom=", anchor_bottom)
+	
+	# If size is still 0, try waiting another frame
+	if size.y <= 0:
+		if debug_remote:
+			print("[onscreenkbd] _animate_show_keyboard: size.y is 0, waiting another frame")
+		call_deferred("_animate_show_keyboard")
+		return
+	
+	# Force position offscreen again (Godot might have moved us during layout)
+	var start_y_pos = viewport_height + 10
+	position.y = start_y_pos
+	
+	if debug_remote:
+		print("[onscreenkbd] _animate_show_keyboard: forced position to ", position, " now animating to ", final_y_pos)
+		print("[onscreenkbd] _animate_show_keyboard: viewport rect=", get_viewport().get_visible_rect())
+		print("[onscreenkbd] _animate_show_keyboard: global_position=", global_position, " rect=", get_rect())
+	
+	# Animate to the final position at the bottom of screen
+	animate_position(Vector2(position.x, final_y_pos))
 
 
 func animate_position(new_position, trigger_visibility:bool=false):
@@ -207,11 +264,18 @@ func animate_position(new_position, trigger_visibility:bool=false):
 
 
 func change_visibility(value):
+	if debug_remote:
+		print("[onscreenkbd] change_visibility: value=", value, " current_visible=", visible)
 	if value:
 		super.show()
+		# Ensure we're on top of other UI elements
+		move_to_front()
 	else:
 		_set_caps_lock(false)
 		super.hide()
+	if debug_remote:
+		print("[onscreenkbd] change_visibility: after change, visible=", visible, " position=", position, " size=", size)
+		print("[onscreenkbd] change_visibility: modulate=", modulate, " z_index=", z_index, " parent=", get_parent())
 	visibility_changed.emit()
 
 
@@ -380,7 +444,7 @@ func _deliver_key_event(target, input_event_key: InputEventKey, key_value = null
 	if key_value != null and target != null and is_keyboard_focus_object(target):
 		if target.has_method("get_text"):
 			before_text = target.get_text()
-		elif target.has("text") or target.has_method("text"):
+		elif "text" in target or target.has_method("text"):
 			# Some controls expose `text` as a property
 			before_text = target.text
 	call_deferred("_finalize_key_delivery", target, key_value, before_text)
@@ -425,7 +489,7 @@ func _finalize_key_delivery(target, key_value, before_text):
 				if target is LineEdit:
 					if target.has_method("get_text"):
 						text = str(target.get_text())
-					elif target.has("text"):
+					elif "text" in target:
 						text = str(target.text)
 
 					# Try to determine caret position
@@ -447,7 +511,7 @@ func _finalize_key_delivery(target, key_value, before_text):
 						# Write text back safely
 						if target.has_method("set_text"):
 							target.set_text(new_text)
-						elif target.has("text"):
+						elif "text" in target:
 							target.text = new_text
 
 						# restore caret position if possible
@@ -492,7 +556,7 @@ func _finalize_key_delivery(target, key_value, before_text):
 						did_insert = true
 					else:
 						# fallback: append to property or use get/set
-						if target.has("text"):
+						if "text" in target:
 							target.text = str(target.text) + out_char
 							did_insert = true
 						elif target.has_method("get_text") and target.has_method("set_text"):

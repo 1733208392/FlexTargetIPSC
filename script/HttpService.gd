@@ -112,3 +112,26 @@ func load_game(callback: Callable, data_id: String, ns: String = "default"):
 	if not DEBUG_DISABLED:
 		print("[HttpService] load_game request data: ", json_data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
+
+func wifi_scan(callback: Callable):
+	var url = base_url + "/netlink/wifi/scan"
+	if not DEBUG_DISABLED:
+		print("[HttpService] Sending wifi scan request to ", url)
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(callback)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
+
+func wifi_connect(callback: Callable, ssid: String, password: String):
+	var url = base_url + "/netlink/wifi/connect"
+	var data = {
+		"ssid": ssid,
+		"password": password
+	}
+	if not DEBUG_DISABLED:
+		print("[HttpService] Sending wifi connect request to ", url, " with data: ", data)
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(callback)
+	var json_data = JSON.stringify(data)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
