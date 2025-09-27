@@ -1,10 +1,11 @@
 extends Node
 
-const DEBUG_DISABLED = true
+const DEBUG_DISABLED = false
 
 signal data_received(data)
 signal bullet_hit(pos: Vector2)
 signal menu_control(directive: String)
+signal ble_ready_command(content: Dictionary)
 
 var socket: WebSocketPeer
 var bullet_spawning_enabled: bool = true
@@ -95,6 +96,11 @@ func _process_websocket_json(json_string):
 		menu_control.emit(parsed["directive"])
 		return
 	
+	# Handle BLE forwarded commands
+	if parsed and parsed.has("type") and parsed["type"] == "netlink" and parsed.has("action") and parsed["action"] == "forward":
+		_handle_ble_forwarded_command(parsed)
+		return
+	
 	# Handle bullet hit data
 	if parsed and parsed.has("data"):
 		# print("[WebSocket] Found data array with ", parsed["data"].size(), " entries")
@@ -133,6 +139,36 @@ func _process_websocket_json(json_string):
 			else:
 				if not DEBUG_DISABLED:
 					print("[WebSocket] Entry missing x or y: ", entry)
+
+func _handle_ble_forwarded_command(parsed):
+	"""Handle BLE forwarded commands"""
+	if not parsed.has("dest"):
+		if not DEBUG_DISABLED:
+			print("[WebSocket] BLE forwarded command missing dest field")
+		return
+	
+	var dest = parsed["dest"]
+	# TODO: Implement proper dest validation
+	if dest != "B":
+		if not DEBUG_DISABLED:
+			print("[WebSocket] BLE forwarded command dest validation failed: ", dest)
+		return  # For now, only accept dest "B"
+	
+	if not parsed.has("content"):
+		if not DEBUG_DISABLED:
+			print("[WebSocket] BLE forwarded command missing content field")
+		return
+	
+	var content = parsed["content"]
+	if not DEBUG_DISABLED:
+		print("[WebSocket] BLE forwarded command content: ", content)
+	
+	# Add dest to content for UI display
+	content["dest"] = dest
+	
+	# Emit signal for BLE ready command
+	print("[WebSocket] Emitting ble_ready_command signal with content: ", content)
+	ble_ready_command.emit(content)
 
 func clear_queued_signals():
 	"""Clear all queued WebSocket packets and pending bullet hit signals"""

@@ -7,6 +7,10 @@ const SERVICE_UUID = '0000ffc9-0000-1000-8000-00805f9b34fb';
 const NOTIFY_CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
 const WRITE_CHARACTERISTIC_UUID = '0000ffe2-0000-1000-8000-00805f9b34fb';
 
+// BLE Advertising Configuration
+const BLE_DEVICE_NAME = 'BLE-WS-SIM Proxy';
+const ADVERTISING_INTERVAL_MS = 10000; // Re-advertise every 10 seconds
+
 // WebSocket Configuration
 const WS_PORT = 8080;
 
@@ -16,6 +20,7 @@ let godotWSClient = null;
 const connectedGodotClients = new Set();
 
 console.log('[BLE_WS_SIM] Starting BLE-WebSocket Proxy Simulation...');
+console.log('[BLE_WS_SIM] Will actively advertise service UUID:', SERVICE_UUID);
 
 // ============================================================================
 // WEBSOCKET SERVER (for Godot Game communication)
@@ -223,21 +228,20 @@ class WriteCharacteristic extends bleno.Characteristic {
 
   onWriteRequest(data, offset, withoutResponse, callback) {
     const receivedData = data.toString('utf8');
-    console.log('[BLE_WS_SIM] Received from Mobile App via BLE:', receivedData);
+    console.log('[BLE_WS_SIM] ===========================================');
+    console.log('[BLE_WS_SIM] BLE MESSAGE RECEIVED');
+    console.log('[BLE_WS_SIM] Raw data:', receivedData);
+    console.log('[BLE_WS_SIM] ===========================================');
 
     try {
       const parsedData = JSON.parse(receivedData);
+      console.log('[BLE_WS_SIM] Parsed BLE message:');
+      console.log(JSON.stringify(parsedData, null, 2));
+      console.log('[BLE_WS_SIM] ===========================================');
       
       // Handle netlink forward messages from Mobile App to Godot
       if (parsedData.type === 'netlink' && parsedData.action === 'forward' && parsedData.content) {
         console.log('[BLE_WS_SIM] Forwarding netlink message from Mobile App to Godot');
-        const wsMessage = {
-          type: 'netlink',
-          data: parsedData.content
-        };
-        sendToGodot(wsMessage);
-      } else {
-        // Forward other messages from Mobile App to Godot via WebSocket
         sendToGodot(parsedData);
       }
       
@@ -264,7 +268,9 @@ class WriteCharacteristic extends bleno.Characteristic {
       }
 
     } catch (error) {
-      console.log('[BLE_WS_SIM] Failed to parse BLE data from Mobile App:', error.message);
+      console.log('[BLE_WS_SIM] ERROR: Failed to parse BLE data from Mobile App:', error.message);
+      console.log('[BLE_WS_SIM] Raw data was:', receivedData);
+      console.log('[BLE_WS_SIM] ===========================================');
     }
 
     callback(bleno.Characteristic.RESULT_SUCCESS);
@@ -292,31 +298,89 @@ const bleService = new bleno.PrimaryService({
   ]
 });
 
+// BLE advertising management
+let advertisingInterval = null;
+
+function startActiveAdvertising() {
+  console.log('[BLE_WS_SIM] Starting active advertising with service UUID:', SERVICE_UUID);
+  
+  // Start advertising with service UUID prominently featured
+  bleno.startAdvertising(BLE_DEVICE_NAME, [SERVICE_UUID], (error) => {
+    if (error) {
+      console.error('[BLE_WS_SIM] Advertising error:', error);
+    } else {
+      console.log('[BLE_WS_SIM] Successfully advertising service UUID:', SERVICE_UUID);
+    }
+  });
+  
+  // Set up periodic re-advertising to ensure visibility
+  if (advertisingInterval) {
+    clearInterval(advertisingInterval);
+  }
+  
+  advertisingInterval = setInterval(() => {
+    if (bleno.state === 'poweredOn') {
+      console.log('[BLE_WS_SIM] Re-advertising service UUID:', SERVICE_UUID);
+      bleno.startAdvertising(BLE_DEVICE_NAME, [SERVICE_UUID]);
+    }
+  }, ADVERTISING_INTERVAL_MS);
+}
+
+function stopActiveAdvertising() {
+  console.log('[BLE_WS_SIM] Stopping active advertising');
+  
+  if (advertisingInterval) {
+    clearInterval(advertisingInterval);
+    advertisingInterval = null;
+  }
+  
+  bleno.stopAdvertising();
+}
+
 // BLE event handlers
 bleno.on('stateChange', (state) => {
   console.log('[BLE_WS_SIM] BLE state change:', state);
 
   if (state === 'poweredOn') {
-    bleno.startAdvertising('BLE-WS-SIM Proxy', [SERVICE_UUID]);
+    startActiveAdvertising();
   } else {
-    bleno.stopAdvertising();
+    stopActiveAdvertising();
   }
 });
 
 bleno.on('advertisingStart', (error) => {
   console.log('[BLE_WS_SIM] BLE advertising started:', error ? error : 'success');
-
+  
   if (!error) {
-    bleno.setServices([bleService]);
+    bleno.setServices([bleService], (error) => {
+      if (error) {
+        console.error('[BLE_WS_SIM] Error setting services:', error);
+      } else {
+        console.log('[BLE_WS_SIM] BLE services set successfully');
+        console.log('[BLE_WS_SIM] Service UUID actively advertised:', SERVICE_UUID);
+      }
+    });
   }
+});
+
+bleno.on('advertisingStop', () => {
+  console.log('[BLE_WS_SIM] Advertising stopped');
 });
 
 bleno.on('accept', (clientAddress) => {
   console.log('[BLE_WS_SIM] Mobile App connected via BLE:', clientAddress);
+  // Continue advertising even when connected to remain discoverable
+  console.log('[BLE_WS_SIM] Maintaining advertising for discoverability');
 });
 
 bleno.on('disconnect', (clientAddress) => {
   console.log('[BLE_WS_SIM] Mobile App disconnected from BLE:', clientAddress);
+  // Ensure we restart advertising after disconnect
+  if (bleno.state === 'poweredOn') {
+    setTimeout(() => {
+      startActiveAdvertising();
+    }, 1000);
+  }
 });
 
 // ============================================================================
@@ -324,15 +388,22 @@ bleno.on('disconnect', (clientAddress) => {
 // ============================================================================
 
 console.log('[BLE_WS_SIM] Configuration:');
-console.log('[BLE_WS_SIM] - BLE Service UUID:', SERVICE_UUID);
+console.log('[BLE_WS_SIM] - BLE Device Name:', BLE_DEVICE_NAME);
+console.log('[BLE_WS_SIM] - BLE Service UUID (Actively Advertised):', SERVICE_UUID);
 console.log('[BLE_WS_SIM] - BLE Notify Characteristic UUID:', NOTIFY_CHARACTERISTIC_UUID);
 console.log('[BLE_WS_SIM] - BLE Write Characteristic UUID:', WRITE_CHARACTERISTIC_UUID);
 console.log('[BLE_WS_SIM] - WebSocket Server Port:', WS_PORT);
+console.log('[BLE_WS_SIM] - Advertising Interval:', ADVERTISING_INTERVAL_MS + 'ms');
 console.log('[BLE_WS_SIM] ');
 console.log('[BLE_WS_SIM] Proxy Functions:');
 console.log('[BLE_WS_SIM] 1. Low Level HW → WebSocket → Godot Game');
 console.log('[BLE_WS_SIM] 2. Mobile App → BLE → WebSocket → Godot Game');
 console.log('[BLE_WS_SIM] 3. Godot Game → WebSocket → BLE → Mobile App');
+console.log('[BLE_WS_SIM] ');
+console.log('[BLE_WS_SIM] BLE Advertising Features:');
+console.log('[BLE_WS_SIM] - Service UUID actively advertised before and during connections');
+console.log('[BLE_WS_SIM] - Periodic re-advertising for maximum discoverability');
+console.log('[BLE_WS_SIM] - Automatic restart of advertising after disconnection');
 console.log('[BLE_WS_SIM] ');
 console.log('[BLE_WS_SIM] Keyboard Controls:');
 console.log('[BLE_WS_SIM]   B - Send single random bullet');

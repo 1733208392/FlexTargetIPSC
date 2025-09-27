@@ -38,6 +38,10 @@ window/stretch/mode="viewport"
 window/handheld/orientation=1
 window/main_scene="res://scene/splash_loading.tscn"
 
+[dotnet]
+
+project/assembly_name="GODotTetris"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/onscreenkeyboard/plugin.cfg")

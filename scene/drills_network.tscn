@@ -1,0 +1,44 @@
+[gd_scene load_steps=5 format=3 uid="uid://113obd774o70"]
+
+[ext_resource type="PackedScene" uid="uid://cx4ygwpmsuiyn" path="res://scene/drill_network_ui.tscn" id="2_1dbv7"]
+[ext_resource type="Texture2D" uid="uid://gpyjow0hb5mh" path="res://asset/drills_back.jpg" id="2_6482l"]
+[ext_resource type="Script" uid="uid://bq6ni24vtgdh" path="res://script/drills_network.gd" id="2_abc123"]
+[ext_resource type="PackedScene" path="res://scene/drill_network_complete_overlay.tscn" id="4_da2b7"]
+
+[node name="drills_network" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_abc123")
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BackgroundImage" type="TextureRect" parent="."]
+z_index = -4
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_6482l")
+stretch_mode = 6
+
+[node name="DrillUI" parent="." instance=ExtResource("2_1dbv7")]
+layout_mode = 1
+
+[node name="DrillNetworkCompleteOverlay" parent="." instance=ExtResource("4_da2b7")]
+visible = false
+layout_mode = 1
