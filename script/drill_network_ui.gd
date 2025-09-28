@@ -20,6 +20,9 @@ var timeout_warning_active: bool = false
 @onready var timer_label = $TopContainer/TopLayout/TimerContainer/Timer
 @onready var score_label = $TopContainer/TopLayout/HeaderContainer/ScoreContainer/Score
 
+# Fastest time tracking
+var fastest_time_diff: float = 999.0
+
 func _ready():
 	"""Initialize the drill UI"""
 	if DEBUG_LOGGING:
@@ -161,6 +164,7 @@ func apply_title_theme(theme_name: String):
 
 func _on_fastest_time_update(fastest_time: float):
 	"""Update the fastest interval label with the current fastest time"""
+	fastest_time_diff = fastest_time
 	if fastest_time < 999.0:  # Only update if we have a valid time
 		fastest_interval_label.text = "%.2fs" % fastest_time
 	else:

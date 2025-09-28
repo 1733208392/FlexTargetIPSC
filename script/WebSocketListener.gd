@@ -130,12 +130,12 @@ func _process_websocket_json(json_string):
 				
 				if bullet_spawning_enabled:
 					# Emit immediately when enabled
-					# print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
+					print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
 					bullet_hit.emit(transformed_pos)
 				else:
 					# When disabled, don't add to pending queue - just ignore
 					pass
-					# print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
+					print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
 			else:
 				if not DEBUG_DISABLED:
 					print("[WebSocket] Entry missing x or y: ", entry)

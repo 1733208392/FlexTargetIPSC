@@ -367,6 +367,7 @@ func spawn_bullet_hole(local_position: Vector2):
 			print("[ipsc_mini] POOL ERROR: Failed to get bullet hole from pool!")
 
 func _on_websocket_bullet_hit(pos: Vector2):
+	print("[ipsc_mini] Received websocket bullet hit at position: ", pos)
 	# Check if bullet spawning is enabled
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener and not ws_listener.bullet_spawning_enabled:

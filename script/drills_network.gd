@@ -25,6 +25,7 @@ var target_instance: Node = null
 var total_score: int = 0
 var drill_completed: bool = false
 var shot_timer_visible: bool = false
+var current_target_type: String = "ipsc_mini"  # Default fallback
 
 # Elapsed time tracking
 var elapsed_seconds: float = 0.0
@@ -41,6 +42,7 @@ var delay_seconds: float = 5.0
 
 # Performance tracking
 signal drills_finished
+signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float)
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
@@ -52,11 +54,17 @@ signal ui_theme_change(theme_name: String)
 signal ui_score_update(score: int)
 signal ui_progress_update(targets_completed: int)
 
-@onready var performance_tracker = preload("res://script/performance_tracker.gd").new()
+@onready var performance_tracker = preload("res://script/performance_tracker_network.gd").new()
 
 func _ready():
 	"""Initialize the network drill with a single target"""
 	print("[DrillsNetwork] Starting network drill")
+	
+	# Add performance tracker to scene tree first
+	add_child(performance_tracker)
+	
+	# Connect performance tracker
+	target_hit.connect(performance_tracker._on_target_hit)
 	
 	# Connect to WebSocketListener for menu control
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
@@ -64,9 +72,6 @@ func _ready():
 		ws_listener.menu_control.connect(_on_menu_control)
 		ws_listener.ble_ready_command.connect(_on_ble_ready_command)
 		print("[DrillsNetwork] Connected to WebSocketListener menu_control and ble_ready_command")
-	
-	# Connect performance tracker
-	# target_hit.connect(performance_tracker._on_target_hit)
 	
 	# Set theme
 	emit_signal("ui_theme_change", "golden")
@@ -97,6 +102,9 @@ func spawn_target():
 	else:
 		print("[DrillsNetwork] WARNING: Target does not have target_hit signal")
 	
+	# Connect performance tracker to our target_hit signal
+	target_hit.connect(performance_tracker._on_target_hit)
+	
 	# Start drill timer
 	start_drill_timer()
 	
@@ -108,8 +116,24 @@ func start_drill():
 	print("[DrillsNetwork] Starting drill after delay")
 	spawn_target()
 
-func _on_target_hit(zone, points, hit_position):
-	"""Handle target hit"""
+func _on_target_hit(arg1, arg2, arg3, arg4 = null):
+	"""Handle target hit - supports different target signal signatures"""
+	var zone: String
+	var points: int
+	var hit_position: Vector2
+	
+	# Handle different target signal signatures
+	if arg4 == null:
+		# ipsc_mini style: (zone, points, hit_position)
+		zone = arg1
+		points = arg2
+		hit_position = arg3
+	else:
+		# 2poppers style: (popper_id, zone, points, hit_position)
+		zone = arg2
+		points = arg3
+		hit_position = arg4
+	
 	print("[DrillsNetwork] Target hit: zone=", zone, " points=", points, " pos=", hit_position)
 	
 	# Hide shot timer on first shot
@@ -121,11 +145,12 @@ func _on_target_hit(zone, points, hit_position):
 	emit_signal("ui_score_update", total_score)
 	
 	# Emit for performance tracking
-	# emit_signal("target_hit", "ipsc_mini", hit_position, zone, 0.0)
+	print("[DrillsNetwork] Emitting target_hit signal to performance tracker")
+	emit_signal("target_hit", current_target_type, hit_position, zone, 0.0)
 	
 	# Update fastest time
-	# var fastest_time = performance_tracker.get_fastest_time_diff()
-	# emit_signal("ui_fastest_time_update", fastest_time)
+	var fastest_time = performance_tracker.get_fastest_time_diff()
+	emit_signal("ui_fastest_time_update", fastest_time)
 	
 	# Drill continues until timeout
 
@@ -133,6 +158,9 @@ func start_drill_timer():
 	"""Start the drill timer"""
 	drill_start_time = Time.get_ticks_msec() / 1000.0
 	elapsed_seconds = 0.0
+	
+	# Reset performance tracker for new drill
+	performance_tracker.reset_shot_timer()
 	
 	# Create timeout timer
 	if timeout_timer:
@@ -227,6 +255,7 @@ func _on_ble_ready_command(content: Dictionary):
 	# Set target scene based on targetType
 	if content.has("targetType"):
 		var target_type = content["targetType"]
+		current_target_type = target_type  # Store for later use
 		if target_type_to_scene.has(target_type):
 			target_scene = load(target_type_to_scene[target_type])
 			print("[DrillsNetwork] Set target scene for type '", target_type, "' to: ", target_type_to_scene[target_type])
