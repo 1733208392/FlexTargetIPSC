@@ -3,6 +3,17 @@ extends Control
 # Single target for network drills
 @export var target_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
 
+# Target type to scene mapping
+var target_type_to_scene = {
+	"ipsc": "res://scene/ipsc_mini.tscn",
+	"special_1": "res://scene/ipsc_mini_black_1.tscn",
+	"special_2": "res://scene/ipsc_mini_black_2.tscn",
+	"hostage": "res://scene/hostage.tscn",
+	"rotation": "res://scene/ipsc_mini_rotate.tscn",
+	"paddle": "res://scene/3paddles.tscn",
+	"popper": "res://scene/2poppers.tscn"
+}
+
 # Node references
 @onready var center_container = $CenterContainer
 @onready var drill_timer = $DrillUI/DrillTimer
@@ -212,6 +223,17 @@ func power_off():
 func _on_ble_ready_command(content: Dictionary):
 	"""Handle BLE ready command"""
 	print("[DrillsNetwork] Received BLE ready command: ", content)
+	
+	# Set target scene based on targetType
+	if content.has("targetType"):
+		var target_type = content["targetType"]
+		if target_type_to_scene.has(target_type):
+			target_scene = load(target_type_to_scene[target_type])
+			print("[DrillsNetwork] Set target scene for type '", target_type, "' to: ", target_type_to_scene[target_type])
+		else:
+			print("[DrillsNetwork] Unknown targetType: ", target_type, ", using default")
+	else:
+		print("[DrillsNetwork] No targetType in command, using default target scene")
 	
 	# Parse dest and update target name
 	if content.has("dest"):
