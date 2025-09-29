@@ -22,7 +22,7 @@ func _init():
 				[],
 				"asdfghjkl",
 				[{
-					"output": "Return",
+					"type": "special-hide-keyboard",
 					"display": "Enter",
 					"stretch-ratio": 1.5
 				}]
@@ -101,8 +101,7 @@ func _init():
 				[],
 				"@#$%&-+=~()",
 				[{
-					"type": "special",
-					"output": "Return",
+					"type": "special-hide-keyboard",
 					"display": "Enter",
 					"stretch-ratio": 2
 				}]

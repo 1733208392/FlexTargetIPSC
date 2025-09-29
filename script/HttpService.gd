@@ -2,7 +2,7 @@ extends Node
 
 # Add this script as an autoload (singleton) in Project Settings > Autoload
 
-const DEBUG_DISABLED = true
+const DEBUG_DISABLED = false
 
 var base_url: String = "http://127.0.0.1"
 
@@ -135,3 +135,28 @@ func wifi_connect(callback: Callable, ssid: String, password: String):
 	http.request_completed.connect(callback)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
+
+func netlink_config(callback: Callable, channel: int, target_name: String, workmode: String):
+	var url = base_url + "/netlink/config"
+	var data = {
+		"channel": channel,
+		"work_mode": workmode,
+		"device_name": target_name
+
+	}
+	if not DEBUG_DISABLED:
+		print("[HttpService] Sending netlink config request to ", url, " with data: ", data)
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(callback)
+	var json_data = JSON.stringify(data)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
+
+func netlink_start(callback: Callable):
+	var url = base_url + "/netlink/start"
+	if not DEBUG_DISABLED:
+		print("[HttpService] Sending netlink start request to ", url)
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(callback)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")

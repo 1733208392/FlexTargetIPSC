@@ -68,10 +68,18 @@ func _send_to_websocket(record: Dictionary):
 	if ws_listener and ws_listener.socket and ws_listener.socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
 		var content = {"command": "shot"}
 		content.merge(record, true)  # Merge record into content
+		
+		# Get target name from global data
+		var global_data = get_node_or_null("/root/GlobalData")
+		var target_name = ""
+		if global_data and global_data.settings_dict.has("target_name"):
+			target_name = global_data.settings_dict["target_name"]
+		
 		var message = {
 			"type": "netlink",
 			"action": "forward",
 			"device": "B",
+			"target": target_name,
 			"content": content
 		}
 		var json_string = JSON.stringify(message)
