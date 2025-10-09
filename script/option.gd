@@ -31,6 +31,9 @@ static var auto_restart_pause_time = 5  # Changed to store the selected time (5 
 @onready var auto_restart_pause_container = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/AutoRestartPauseContainer"
 
 @onready var language_buttons = []
+@onready var wifi_button = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/WifiButton"
+@onready var network_button = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkButton"
+@onready var networking_buttons = []
 
 func _ready():
 	# Load saved settings from GlobalData
@@ -73,6 +76,24 @@ func _ready():
 	# Set tab_container focusable
 	if tab_container:
 		tab_container.focus_mode = Control.FOCUS_ALL
+
+	# Initialize networking buttons array (wifi, network)
+	networking_buttons = []
+	if wifi_button:
+		networking_buttons.append(wifi_button)
+	if network_button:
+		networking_buttons.append(network_button)
+
+	print("[Option] Networking buttons initialization:")
+	for i in range(networking_buttons.size()):
+		if networking_buttons[i]:
+			print("[Option]   Net Button ", i, ": ", networking_buttons[i].name, " - OK")
+		else:
+			print("[Option]   Net Button ", i, ": NULL - MISSING!")
+
+	# Connect wifi button pressed to open overlay (also handled by press_focused_button)
+	if wifi_button:
+		wifi_button.pressed.connect(_on_wifi_pressed)
 	
 	# Focus will be set by load_settings_from_global_data() based on current language
 	
@@ -236,9 +257,11 @@ func set_focus_to_current_language():
 
 func update_ui_texts():
 	if tab_container:
-		tab_container.set_tab_title(0, tr("languages"))
-		tab_container.set_tab_title(1, tr("drill"))
-		tab_container.set_tab_title(2, tr("about"))
+		# New tab order: 0 Networking, 1 Languages, 2 Drills, 3 About
+		tab_container.set_tab_title(0, tr("networking"))
+		tab_container.set_tab_title(1, tr("languages"))
+		tab_container.set_tab_title(2, tr("drill"))
+		tab_container.set_tab_title(3, tr("about"))
 	if description_label:
 		description_label.text = tr("description")
 	if copyright_label:
@@ -340,14 +363,19 @@ func _on_menu_control(directive: String):
 	print("[Option] Received menu_control signal with directive: ", directive)
 	match directive:
 		"up", "down":
-			if tab_container and tab_container.current_tab == 0:
-				print("[Option] Navigation: ", directive, " on Languages tab")
-				navigate_buttons(directive)
-			elif tab_container and tab_container.current_tab == 1:
-				print("[Option] Navigation: ", directive, " on Drills tab")
-				navigate_drill_buttons(directive)
-			else:
-				print("[Option] Navigation: ", directive, " ignored - not on navigable tab (current tab: ", tab_container.current_tab if tab_container else "N/A", ")")
+			if tab_container:
+				match tab_container.current_tab:
+					0:
+						print("[Option] Navigation: ", directive, " on Networking tab")
+						navigate_network_buttons(directive)
+					1:
+						print("[Option] Navigation: ", directive, " on Languages tab")
+						navigate_buttons(directive)
+					2:
+						print("[Option] Navigation: ", directive, " on Drills tab")
+						navigate_drill_buttons(directive)
+					_:
+						print("[Option] Navigation: ", directive, " ignored - current tab has no navigation")
 		"left", "right":
 			print("[Option] Tab switch: ", directive)
 			switch_tab(directive)
@@ -455,7 +483,43 @@ func navigate_drill_buttons(direction: String):
 	
 	print("[Option] No other valid drill buttons found for navigation")
 
+func navigate_network_buttons(direction: String):
+	if networking_buttons.is_empty():
+		print("[Option] No networking buttons available")
+		return
+
+	var current_index = -1
+	for i in range(networking_buttons.size()):
+		if networking_buttons[i] and networking_buttons[i].has_focus():
+			current_index = i
+			break
+
+	if current_index == -1:
+		networking_buttons[0].grab_focus()
+		print("[Option] Focus set to first networking button")
+		return
+
+	var target_index = current_index
+	if direction == "up":
+		target_index = (target_index - 1 + networking_buttons.size()) % networking_buttons.size()
+	else:
+		target_index = (target_index + 1) % networking_buttons.size()
+
+	if networking_buttons[target_index]:
+		networking_buttons[target_index].grab_focus()
+		print("[Option] Networking focus moved to ", networking_buttons[target_index].name)
+
 func press_focused_button():
+	# Networking tab
+	if tab_container and tab_container.current_tab == 0:
+		for button in networking_buttons:
+			if button and button.has_focus():
+				if button == wifi_button:
+					_on_wifi_pressed()
+				elif button == network_button:
+					print("[Option] Network button pressed (placeholder)")
+				return
+
 	for button in language_buttons:
 		if button and button.has_focus():
 			var language = ""
@@ -542,27 +606,29 @@ func switch_tab(direction: String):
 	else:
 		current = (current - 1 + tab_container.get_tab_count()) % tab_container.get_tab_count()
 	tab_container.current_tab = current
-	if current == 0:  # Languages
-		# Grab focus on current language button
-		match current_language:
-			"English":
-				if english_button:
-					english_button.grab_focus()
-			"Chinese":
-				if chinese_button:
-					chinese_button.grab_focus()
-			"Traditional Chinese":
-				if traditional_chinese_button:
-					traditional_chinese_button.grab_focus()
-			"Japanese":
-				if japanese_button:
-					japanese_button.grab_focus()
-	elif current == 1:  # Drills
-		# Grab focus on the first drill CheckButton
-		if random_sequence_check:
-			random_sequence_check.grab_focus()
-		else:
+	match current:
+		0:
+			if wifi_button:
+				wifi_button.grab_focus()
+			else:
+				tab_container.grab_focus()
+		1:
+			set_focus_to_current_language()
+		2:
+			if random_sequence_check:
+				random_sequence_check.grab_focus()
+			else:
+				tab_container.grab_focus()
+		_:
 			tab_container.grab_focus()
-	else:  # About
-		tab_container.grab_focus()
 	print("[Option] Switched to tab: ", tab_container.get_tab_title(current))
+
+func _on_wifi_pressed():
+	_show_wifi_networks()
+
+func _show_wifi_networks():
+	if not is_inside_tree():
+		print("[Option] Cannot change scene, node not inside tree")
+		return
+	print("[Option] Switching to WiFi networks scene")
+	get_tree().change_scene_to_file("res://scene/wifi_networks.tscn")

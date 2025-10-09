@@ -77,12 +77,37 @@ theme_override_fonts/font = ExtResource("3_i838a")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
-current_tab = 1
+current_tab = 0
+
+[node name="Networking" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking"]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_right = 50
+
+[node name="NetworkContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="WifiButton" type="Button" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
+text = "wifi"
+
+[node name="NetworkButton" type="Button" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 24
+text = "network"
 
 [node name="Languages" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
 layout_mode = 2
-metadata/_tab_index = 0
+metadata/_tab_index = 1
 
 [node name="Language" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Languages"]
 layout_mode = 2
@@ -130,8 +155,9 @@ button_group = SubResource("ButtonGroup_language")
 text = "English"
 
 [node name="Drills" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+visible = false
 layout_mode = 2
-metadata/_tab_index = 1
+metadata/_tab_index = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/Drills"]
 layout_mode = 2
@@ -174,7 +200,7 @@ text = "Pause 10s"
 [node name="About" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
 layout_mode = 2
-metadata/_tab_index = 2
+metadata/_tab_index = 3
 
 [node name="Right" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
 layout_mode = 2

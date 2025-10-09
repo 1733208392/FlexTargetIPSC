@@ -127,30 +127,41 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const requestData = JSON.parse(body);
-        const { type, action, device, content } = requestData;
 
-        if (type !== 'netlink' || action !== 'forward' || device !== 'A') {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ type: 'netlink', data: { code: 1, msg: 'Invalid request format' } }));
-          return;
+        // Accept both simple payload and legacy wrapped payload
+        let ssid = null;
+        let password = null;
+
+        if (requestData && typeof requestData === 'object') {
+          if (requestData.ssid && requestData.password) {
+            ssid = requestData.ssid;
+            password = requestData.password;
+          } else if (requestData.type === 'netlink' && requestData.action === 'forward' && requestData.content) {
+            try {
+              const parsedContent = JSON.parse(requestData.content);
+              ssid = parsedContent.ssid;
+              password = parsedContent.password;
+            } catch (e) {
+              // content was not valid JSON
+              ssid = null;
+              password = null;
+            }
+          }
         }
-
-        const wifiData = JSON.parse(content);
-        const { ssid, password } = wifiData;
 
         if (!ssid || !password) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ type: 'netlink', data: { code: 1, msg: 'Missing ssid or password' } }));
+          res.end(JSON.stringify({ code: 1, msg: 'Missing ssid or password' }));
           return;
         }
 
         // Simulate WiFi connection - always succeed for simulation
         console.log(`[HttpServer] Connecting to WiFi: SSID=${ssid}`);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ type: 'netlink', data: { code: 0, msg: '' } }));
+        res.end(JSON.stringify({ code: 0, msg: '' }));
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ type: 'netlink', data: { code: 1, msg: 'Invalid JSON' } }));
+        res.end(JSON.stringify({ code: 1, msg: 'Invalid JSON' }));
       }
     });
   } else if (pathname === '/netlink/config' && req.method === 'POST') {

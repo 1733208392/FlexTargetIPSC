@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://c3g1gp0reiltq"]
+[gd_scene load_steps=4 format=3 uid="uid://c3g1gp0reiltq"]
 
 [ext_resource type="Script" uid="uid://bag7v4s5v88jw" path="res://script/wifi_networks.gd" id="1_xtqbd"]
 [ext_resource type="Script" uid="uid://dxfujov7vai6f" path="res://addons/onscreenkeyboard/onscreen_keyboard.gd" id="2_xtqbd"]
+[ext_resource type="Texture2D" uid="uid://c06ckj0xlnm25" path="res://asset/container_frame.png" id="3_xtqbd"]
 
 [node name="WiFiNetworks" type="Control"]
 layout_mode = 3
@@ -12,6 +13,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_xtqbd")
 
+[node name="BackgroundColor" type="ColorRect" parent="."]
+z_index = -1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0784314, 0.129411, 0.149019, 1)
+
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 0
 anchor_left = 0.15
@@ -19,18 +30,36 @@ anchor_top = 0.1
 anchor_right = 0.85
 anchor_bottom = 0.9
 
+[node name="BackgroundFrame" type="TextureRect" parent="CenterContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("3_xtqbd")
+stretch_mode = 4
+
 [node name="NetworksVBox" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -19.5
+offset_top = 400.0
+offset_right = 19.5
+offset_bottom = 423.0
+grow_horizontal = 2
+text = "WI-FI"
+horizontal_alignment = 1
+
 [node name="Overlay" type="PanelContainer" parent="."]
-visible = false
 layout_mode = 0
 anchor_left = 0.1
-anchor_top = 0.15
 anchor_right = 0.9
-anchor_bottom = 0.85
+anchor_bottom = 0.95
 
 [node name="PanelContainer" type="PanelContainer" parent="Overlay"]
 layout_mode = 2
@@ -40,24 +69,18 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[node name="Spacer" type="Control" parent="Overlay/PanelContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 800)
+layout_mode = 2
+
 [node name="Label" type="Label" parent="Overlay/PanelContainer/VBoxContainer"]
 layout_mode = 2
-text = "Enter WiFi Password"
+text = "Enter Password for {wifi_name}"
+horizontal_alignment = 1
 
 [node name="PasswordLine" type="LineEdit" parent="Overlay/PanelContainer/VBoxContainer"]
 layout_mode = 2
 placeholder_text = "Password"
-
-[node name="HBoxContainer" type="HBoxContainer" parent="Overlay/PanelContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="SubmitButton" type="Button" parent="Overlay/PanelContainer/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "Submit"
-
-[node name="CancelButton" type="Button" parent="Overlay/PanelContainer/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-text = "Cancel"
 
 [node name="OnscreenKeyboard" type="PanelContainer" parent="Overlay/PanelContainer/VBoxContainer"]
 visible = false

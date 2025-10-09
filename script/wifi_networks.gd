@@ -5,26 +5,25 @@ extends Control
 # focus between network buttons. Pressing Enter on a network opens an
 # overlay where user can input a password using the onscreen keyboard.
 
+const WIFI_ICON = preload("res://asset/wifi.fill.idle.png")
+const WIFI_CONNECTED_ICON = preload("res://asset/wifi.fill.connect.png")
+
 @onready var list_vbox = $CenterContainer/NetworksVBox
 @onready var overlay = $Overlay
 @onready var password_line = $Overlay/PanelContainer/VBoxContainer/PasswordLine
-@onready var submit_btn = $Overlay/PanelContainer/VBoxContainer/SubmitButton
-@onready var cancel_btn = $Overlay/PanelContainer/VBoxContainer/CancelButton
+@onready var title_label = $Overlay/PanelContainer/VBoxContainer/Label
 @onready var keyboard = $Overlay/PanelContainer/VBoxContainer/OnscreenKeyboard
 
 var networks = []
 var selected_network = ""
 var focused_index = 0
 var network_buttons = []
+var connected_network = ""
 
 func _ready():
+	print("[WiFi Networks] _ready called, list_vbox: ", list_vbox)
 	_scan_networks()
 	overlay.visible = false
-	# connect overlay buttons
-	if submit_btn:
-		submit_btn.connect("pressed", Callable(self, "_on_submit_pressed"))
-	if cancel_btn:
-		cancel_btn.connect("pressed", Callable(self, "_on_cancel_pressed"))
 	
 	# Connect to MenuController signals
 	var menu_controller = get_node_or_null("/root/MenuController")
@@ -40,14 +39,18 @@ func _ready():
 		print("[WiFi Networks] MenuController singleton not found!")
 
 func _scan_networks():
+	print("[WiFi Networks] Starting network scan")
 	HttpService.wifi_scan(Callable(self, "_on_wifi_scan_completed"))
 
-func _on_wifi_scan_completed(result, response_code, headers, body):
+func _on_wifi_scan_completed(result, response_code, _headers, body):
+	print("[WiFi Networks] Scan completed: result=", result, " code=", response_code)
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		var body_str = body.get_string_from_utf8()
+		print("[WiFi Networks] Response body: ", body_str)
 		var json = JSON.parse_string(body_str)
 		if json and json.has("data") and json["data"].has("ssid_list"):
 			networks = json["data"]["ssid_list"]
+			print("[WiFi Networks] Networks found: ", networks)
 			_build_list()
 		else:
 			print("Invalid response format")
@@ -55,6 +58,7 @@ func _on_wifi_scan_completed(result, response_code, headers, body):
 		print("WiFi scan failed: ", result, " code: ", response_code)
 
 func _build_list():
+	print("[WiFi Networks] Building list with ", networks.size(), " networks")
 	# clear existing children
 	for c in list_vbox.get_children():
 		c.queue_free()
@@ -62,6 +66,7 @@ func _build_list():
 	for net_name in networks:
 		var b = Button.new()
 		b.text = net_name
+		b.icon = WIFI_CONNECTED_ICON if net_name == connected_network else WIFI_ICON
 		b.focus_mode = Control.FOCUS_ALL
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.connect("pressed", Callable(self, "_on_network_selected").bind(net_name))
@@ -73,10 +78,22 @@ func _build_list():
 		focused_index = 0
 		network_buttons[focused_index].grab_focus()
 
-func _on_network_selected(name):
-	selected_network = name
+func _set_connected_network(ssid: String):
+	connected_network = ssid
+	for button in network_buttons:
+		if not button:
+			continue
+		if button.text == connected_network:
+			button.icon = WIFI_CONNECTED_ICON
+		else:
+			button.icon = WIFI_ICON
+
+func _on_network_selected(network_name):
+	selected_network = network_name
 	# Show overlay and focus password field
 	overlay.visible = true
+	if title_label:
+		title_label.text = "Enter Password for %s" % selected_network
 	password_line.text = ""
 	password_line.grab_focus()
 	if keyboard:
@@ -100,10 +117,55 @@ func _show_keyboard_for_input():
 			print("[WiFi Networks] Manually set keyboard last_input_focus to password LineEdit")
 		
 		# Then connect to keyboard's key release signal as additional backup
-		if keyboard.has_signal("released"):
-			if not keyboard.released.is_connected(_on_keyboard_key_released):
-				keyboard.released.connect(_on_keyboard_key_released)
-				print("[WiFi Networks] Connected to keyboard released signal")
+		# Attach handlers to individual keyboard buttons so we can detect Enter
+		# presses (the keyboard internal signal flow doesn't expose a global
+		# "key pressed" signal externally).
+		_attach_keyboard_handlers()
+		print("[WiFi Networks] Attached keyboard button handlers")
+
+func _attach_keyboard_handlers(node = null):
+	if not keyboard:
+		return
+	if node == null:
+		node = keyboard
+	# recursively traverse children and connect 'released' signals
+	for child in node.get_children():
+		# If child has a 'released' signal (KeyboardButton), connect to it
+		if child.has_signal("released"):
+			var cb = Callable(self, "_on_keyboard_button_released")
+			if not child.is_connected("released", cb):
+				child.connect("released", cb)
+		# Recurse into containers
+		_attach_keyboard_handlers(child)
+
+func _on_keyboard_button_released(key_data):
+	# key_data is a dictionary describing the key (may contain 'output')
+	if key_data and typeof(key_data) == TYPE_DICTIONARY:
+		var out = ""
+		if key_data.has("output") and key_data["output"] != null:
+			out = str(key_data["output"]).strip_edges()
+		var display_text = ""
+		if key_data.has("display") and key_data["display"] != null:
+			display_text = str(key_data["display"]).strip_edges()
+		var display_icon = ""
+		if key_data.has("display-icon") and key_data["display-icon"] != null:
+			display_icon = str(key_data["display-icon"]).strip_edges()
+		var key_type = ""
+		if key_data.has("type") and key_data["type"] != null:
+			key_type = str(key_data["type"]).strip_edges()
+		var is_enter = false
+		if out.to_lower() == "enter" or out.to_lower() == "return":
+			is_enter = true
+		elif display_text.to_lower() == "enter":
+			is_enter = true
+		elif display_icon == "PREDEFINED:ENTER":
+			is_enter = true
+		elif key_type == "special-hide-keyboard" and display_text.to_lower() == "enter":
+			is_enter = true
+		if is_enter:
+			print("[WiFi Networks] Onscreen keyboard Enter pressed")
+			_commit_password()
+			return
 
 func _on_keyboard_key_released(key_data):
 	if overlay.visible and password_line and key_data and key_data.has("output"):
@@ -122,22 +184,40 @@ func _ensure_password_focus():
 		password_line.grab_focus()
 		print("[WiFi Networks] Password LineEdit focus ensured")
 
-func _on_submit_pressed():
+
+func _commit_password():
 	var password = password_line.text
 	print("[WiFi Networks] Submit pressed with password: '", password, "' (length: ", password.length(), ")")
 	HttpService.wifi_connect(Callable(self, "_on_wifi_connect_completed"), selected_network, password)
-	overlay.visible = false
-	if keyboard:
-		keyboard.visible = false
+	_cancel_password(false)
 
-func _on_wifi_connect_completed(result, response_code, headers, body):
+func _on_wifi_connect_completed(result, response_code, _headers, body):
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		var body_str = body.get_string_from_utf8()
 		var json = JSON.parse_string(body_str)
-		if json and json.has("code") and json["code"] == 0:
-			print("Successfully connected to WiFi: ", selected_network)
+		var success = false
+		var error_msg = "Unknown error"
+		if typeof(json) == TYPE_DICTIONARY:
+			if json.has("data") and typeof(json["data"]) == TYPE_DICTIONARY:
+				var data_section = json["data"]
+				if data_section.has("code") and int(data_section["code"]) == 0:
+					success = true
+					print("Successfully connected to WiFi: ", selected_network)
+				else:
+					error_msg = data_section.get("msg", error_msg)
+			elif json.has("code") and int(json["code"]) == 0:
+				success = true
+				print("Successfully connected to WiFi: ", selected_network)
+			else:
+				error_msg = json.get("msg", error_msg)
 		else:
-			print("Failed to connect to WiFi: ", json.get("msg", "Unknown error") if json else "Invalid response")
+			print("Failed to parse WiFi connect response: ", body_str)
+		if not success:
+			print("Failed to connect to WiFi: ", error_msg)
+		else:
+			_set_connected_network(selected_network)
+			# Ensure overlay and keyboard are dismissed after successful connect
+			_cancel_password()
 	else:
 		print("WiFi connect request failed: ", result, " code: ", response_code)
 
@@ -154,11 +234,29 @@ func _on_navigate(direction: String):
 
 func _on_enter_pressed():
 	print("[WiFi Networks] Enter pressed")
-	press_focused_button()
+	if overlay.visible:
+		# If the onscreen keyboard is visible, route Enter to it so the
+		# currently-focused key is activated (inserts a char or performs special key).
+		if keyboard and keyboard.visible:
+			if keyboard.has_method("_simulate_enter"):
+				keyboard._simulate_enter()
+				return
+			# fallback: ensure keyboard is shown
+			if keyboard and keyboard.has_method("_show_keyboard"):
+				keyboard._show_keyboard()
+				return
+		# If keyboard not present, fallback to commit
+		_commit_password()
+	else:
+		press_focused_button()
 
 func _on_back_pressed():
-	print("[WiFi Networks] Back pressed - navigating to main menu")
-	get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+	if overlay.visible:
+		print("[WiFi Networks] Back pressed - cancelling password entry")
+		_cancel_password()
+	else:
+		print("[WiFi Networks] Back pressed - navigating to main menu")
+		get_tree().change_scene_to_file("res://scene/main_menu.tscn")
 
 func _on_volume_up():
 	print("[WiFi Networks] Volume up requested")
@@ -169,10 +267,14 @@ func _on_volume_down():
 func _on_power_off():
 	print("[WiFi Networks] Power off requested")
 
-func _on_cancel_pressed():
+func _cancel_password(clear_text: bool = true):
 	overlay.visible = false
+	if clear_text and password_line:
+		password_line.text = ""
 	if keyboard:
 		keyboard.visible = false
+	if network_buttons.size() > 0:
+		network_buttons[focused_index].grab_focus()
 
 func navigate_buttons(direction: int):
 	# Navigate network buttons
@@ -189,8 +291,12 @@ func navigate_buttons(direction: int):
 func press_focused_button():
 	# Simulate pressing the currently focused button
 	if overlay.visible:
-		# Could press overlay buttons
-		pass
+		# If keyboard visible, simulate enter on the keyboard (activate focused key)
+		if keyboard and keyboard.visible and keyboard.has_method("_simulate_enter"):
+			keyboard._simulate_enter()
+		else:
+			# No keyboard: submit the password
+			_commit_password()
 	else:
 		if network_buttons.size() > 0:
 			print("[WiFi Networks] Simulating network button press")
@@ -200,7 +306,5 @@ func press_focused_button():
 # Allow closing overlay with ESC
 func _input(event):
 	if overlay.visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		overlay.visible = false
-		if keyboard:
-			keyboard.visible = false
+		_cancel_password()
 		get_viewport().gui_focus(null)
