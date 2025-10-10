@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://dus614khw11h2"]
+[gd_scene load_steps=21 format=3 uid="uid://dus614khw11h2"]
 
 [ext_resource type="Script" uid="uid://crika1mdfvjsw" path="res://script/option.gd" id="1_jx2e8"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
@@ -7,6 +7,7 @@
 [ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://font/Inter/Inter-VariableFont_opsz,wght.ttf" id="3_i838a"]
 [ext_resource type="Texture2D" uid="uid://c2l6gc1ro012y" path="res://asset/SmallCntnrs3.png" id="6_70qle"]
 [ext_resource type="Texture2D" uid="uid://bphdbktqgumws" path="res://asset/contact.png" id="7_fyn3v"]
+[ext_resource type="Theme" uid="uid://b1xuwasqtx311" path="res://theme/custom_button_theme.tres" id="8_custom_button_theme"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_tab_unselected"]
 bg_color = Color(0, 0, 0, 0)
@@ -22,6 +23,21 @@ border_width_bottom = 2
 border_color = Color(0.956863, 0.521569, 0.007843, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_70qle"]
+bg_color = Color(0.99607843, 0.5411765, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fyn3v"]
+bg_color = Color(0.99607843, 0.5411765, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_trtje"]
+bg_color = Color(0.99607843, 0.5411765, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_22n8n"]
+bg_color = Color(0.99607843, 0.5411765, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lnak8"]
+bg_color = Color(0.99607843, 0.5411765, 0, 1)
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_language"]
 
@@ -86,20 +102,162 @@ metadata/_tab_index = 0
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking"]
 layout_mode = 2
 theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 50
 
 [node name="NetworkContainer" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="WifiButton" type="Button" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer"]
+[node name="NetworkInfo" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer"]
 layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Row1" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title1" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "Bluetooth Name"
+
+[node name="Content1" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_70qle")
+text = "MockBluetooth-01"
+horizontal_alignment = 3
+
+[node name="Content1BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1"]
+layout_mode = 2
+color = Color(1, 0.541176, 0, 1)
+
+[node name="Row2" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title2" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "Device Name"
+
+[node name="Content2" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_fyn3v")
+text = "Device-Alpha"
+
+[node name="Content2BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2"]
+layout_mode = 2
+size_flags_horizontal = 0
+color = Color(1, 0.541176, 0, 1)
+
+[node name="Row3" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title3" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "Network Channel"
+
+[node name="Content3" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_trtje")
+text = "Channel-11"
+
+[node name="Content3BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3"]
+layout_mode = 2
+size_flags_horizontal = 0
+color = Color(1, 0.541176, 0, 1)
+
+[node name="Row4" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title4" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "IP Address"
+
+[node name="Content4" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_22n8n")
+text = "192.168.1.100"
+
+[node name="Content4BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4"]
+layout_mode = 2
+size_flags_horizontal = 0
+color = Color(1, 0.541176, 0, 1)
+
+[node name="Row5" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title5" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+text = "Working Mode"
+
+[node name="Content5" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_lnak8")
+text = "Client"
+
+[node name="Content5BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5"]
+layout_mode = 2
+size_flags_horizontal = 0
+color = Color(1, 0.541176, 0, 1)
+
+[node name="Control" type="Control" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+layout_mode = 2
+alignment = 1
+
+[node name="WifiButton" type="Button" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme = ExtResource("8_custom_button_theme")
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 24
 text = "wifi"
 
-[node name="NetworkButton" type="Button" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer"]
+[node name="NetworkButton" type="Button" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme = ExtResource("8_custom_button_theme")
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 24
 text = "network"
