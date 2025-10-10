@@ -215,17 +215,21 @@ func _show_keyboard(key_data=null):
 	else:
 		# For non-animated, show at bottom of screen
 		change_visibility(true)
-		var viewport_height = get_viewport().get_visible_rect().size.y
+		var viewport_rect = get_viewport().get_visible_rect()
+		size.x = viewport_rect.size.x
+		var viewport_height = viewport_rect.size.y
 		var target_y = viewport_height - size.y
 		position.y = target_y
 		if debug_remote:
 			print("[onscreenkbd] _show_keyboard: non-animated mode, size=", size, " target_y=", target_y, " final_pos=", position)
-			print("[onscreenkbd] _show_keyboard: viewport_height=", viewport_height, " visible_rect=", get_viewport().get_visible_rect())
+			print("[onscreenkbd] _show_keyboard: viewport_height=", viewport_height, " visible_rect=", viewport_rect)
 
 
 func _animate_show_keyboard():
 	# Now that the UI has been laid out, size.y should be correct
-	var viewport_height = get_viewport().get_visible_rect().size.y
+	var viewport_rect = get_viewport().get_visible_rect()
+	size.x = viewport_rect.size.x
+	var viewport_height = viewport_rect.size.y
 	var final_y_pos = viewport_height - size.y
 	
 	if debug_remote:
@@ -245,13 +249,11 @@ func _animate_show_keyboard():
 	
 	if debug_remote:
 		print("[onscreenkbd] _animate_show_keyboard: forced position to ", position, " now animating to ", final_y_pos)
-		print("[onscreenkbd] _animate_show_keyboard: viewport rect=", get_viewport().get_visible_rect())
+		print("[onscreenkbd] _animate_show_keyboard: viewport rect=", viewport_rect)
 		print("[onscreenkbd] _animate_show_keyboard: global_position=", global_position, " rect=", get_rect())
 	
 	# Animate to the final position at the bottom of screen
 	animate_position(Vector2(position.x, final_y_pos))
-
-
 func animate_position(new_position, trigger_visibility:bool=false):
 	var tween = get_tree().create_tween()
 	if trigger_visibility:

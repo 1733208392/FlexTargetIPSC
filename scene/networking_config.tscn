@@ -1,7 +1,12 @@
-[gd_scene load_steps=3 format=3 uid="uid://6et1tlqxfrdx"]
+[gd_scene load_steps=6 format=3 uid="uid://6et1tlqxfrdx"]
 
 [ext_resource type="Script" uid="uid://bpdye6y5c5yaw" path="res://script/networking_config.gd" id="1_networking"]
+[ext_resource type="Texture2D" uid="uid://c06ckj0xlnm25" path="res://asset/container_frame.png" id="2_gax0u"]
 [ext_resource type="Script" uid="uid://dxfujov7vai6f" path="res://addons/onscreenkeyboard/onscreen_keyboard.gd" id="2_keyboard"]
+[ext_resource type="Theme" uid="uid://b1xuwasqtx311" path="res://theme/custom_button_theme.tres" id="3_qb65s"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gax0u"]
+bg_color = Color(0.99607843, 0.5411765, 0, 1)
 
 [node name="NetworkingConfig" type="Control"]
 layout_mode = 3
@@ -12,30 +17,70 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_networking")
 
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.078431375, 0.12941177, 0.14901961, 1)
+
 [node name="CenterContainer" type="CenterContainer" parent="."]
-layout_mode = 0
-anchor_left = 0.15
-anchor_top = 0.1
-anchor_right = 0.85
-anchor_bottom = 0.9
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.5
+offset_top = -80.0
+offset_right = 50.5
+offset_bottom = 80.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BackgroundFrame" type="TextureRect" parent="CenterContainer"]
+layout_mode = 2
+texture = ExtResource("2_gax0u")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="ChannelLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Channel"
+text = "Channel                                    "
 
 [node name="ChannelDropdown" type="OptionButton" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_gax0u")
+toggle_mode = false
+
+[node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
 [node name="WorkMode" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Workmode"
+text = "Workmode                              "
 
 [node name="WorkModeDropdown" type="OptionButton" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(24, 32)
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
+theme_override_styles/hover = SubResource("StyleBoxFlat_gax0u")
+
+[node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
 [node name="NameLabel" type="Label" parent="CenterContainer/VBoxContainer"]
@@ -43,33 +88,30 @@ layout_mode = 2
 text = "Target Name"
 
 [node name="NameLineEdit" type="LineEdit" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(24, 32)
 layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
+
+[node name="Spacer" type="Control" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+
+[node name="DoneButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme = ExtResource("3_qb65s")
+text = "Done"
 
 [node name="OnscreenKeyboard" type="PanelContainer" parent="."]
 visible = false
-custom_minimum_size = Vector2(400, 200)
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.1
 anchor_top = 0.7
-anchor_right = 0.9
-anchor_bottom = 0.95
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_top = -16.0
 offset_bottom = -16.0
 script = ExtResource("2_keyboard")
 metadata/_custom_type_script = "uid://dxfujov7vai6f"
-
-[node name="DoneButton" type="Button" parent="."]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -50.0
-offset_top = -60.0
-offset_right = 50.0
-offset_bottom = -20.0
-grow_horizontal = 2
-grow_vertical = 0
-text = "Done"

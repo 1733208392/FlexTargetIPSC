@@ -7,7 +7,7 @@ extends Control
 @onready var workmode_dropdown = $CenterContainer/VBoxContainer/WorkModeDropdown
 @onready var name_line_edit = $CenterContainer/VBoxContainer/NameLineEdit
 @onready var keyboard = $OnscreenKeyboard
-@onready var done_button = $DoneButton
+@onready var done_button = $CenterContainer/VBoxContainer/DoneButton
 
 var focused_control = 0  # 0 = channel dropdown, 1 = workmode dropdown, 2 = name line edit, 3 = done button
 var controls = []
@@ -257,7 +257,7 @@ func _on_netlink_config_callback(result, response_code, _headers, _body):
 func _on_netlink_start_callback(result, response_code, _headers, _body):
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		print("[NetworkingConfig] Netlink start successful")
-		# Maybe navigate back or show success message
+		get_tree().change_scene_to_file("res://scene/option.tscn")
 	else:
 		print("[NetworkingConfig] Netlink start failed - Result: ", result, ", Code: ", response_code)
 
