@@ -28,6 +28,8 @@ WebSocketListener="*res://script/WebSocketListener.gd"
 HttpService="*res://script/HttpService.gd"
 GlobalData="*res://script/global_data.gd"
 MenuController="*res://script/MenuController.gd"
+SignalBus="*res://script/signal_bus.gd"
+StatusBar="*res://scene/StatusBar.tscn"
 
 [display]
 
