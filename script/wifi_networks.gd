@@ -208,11 +208,11 @@ func _on_wifi_connect_completed(result, response_code, _headers, body):
 			elif json.has("code") and int(json["code"]) == 0:
 				success = true
 				print("Successfully connected to WiFi: ", selected_network)
-				get_tree().change_scene_to_file("res://scene/main_menu.tscn")
 			else:
 				error_msg = json.get("msg", error_msg)
 		else:
 			print("Failed to parse WiFi connect response: ", body_str)
+		
 		if not success:
 			print("Failed to connect to WiFi: ", error_msg)
 		else:
@@ -221,6 +221,7 @@ func _on_wifi_connect_completed(result, response_code, _headers, body):
 			if signal_bus:
 				print("WiFi Networks: Emitting wifi_connected signal for SSID: ", selected_network)
 				signal_bus.emit_wifi_connected(selected_network)
+				get_tree().change_scene_to_file("res://scene/option.tscn")
 			else:
 				print("WiFi Networks: SignalBus not found, cannot emit signal")
 			# Ensure overlay and keyboard are dismissed after successful connect

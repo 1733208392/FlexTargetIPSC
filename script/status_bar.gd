@@ -66,8 +66,6 @@ func _on_network_started() -> void:
 func _set_network_started(connected: bool) -> void:
 	print("StatusBar: _set_network_started called, connected=", connected)
 	if network_icon:
-		print("StatusBar: network_icon found: ", network_icon)
 		network_icon.texture = NET_CONNECTED if connected else NET_IDLE
-		print("StatusBar: network_icon.texture set to ", network_icon.texture)
 	else:
 		print("StatusBar: network_icon NOT found.")
