@@ -257,6 +257,12 @@ func _on_netlink_config_callback(result, response_code, _headers, _body):
 func _on_netlink_start_callback(result, response_code, _headers, _body):
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		print("[NetworkingConfig] Netlink start successful")
+		var signal_bus = get_node_or_null("/root/SignalBus")
+		if signal_bus:
+			print("[NetworkingConfig] Emitting network_started via SignalBus")
+			signal_bus.emit_network_started()
+		else:
+			print("[NetworkingConfig] SignalBus not found, cannot emit wifi_connected signal")
 		get_tree().change_scene_to_file("res://scene/option.tscn")
 	else:
 		print("[NetworkingConfig] Netlink start failed - Result: ", result, ", Code: ", response_code)

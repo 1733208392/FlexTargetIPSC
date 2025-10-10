@@ -517,7 +517,7 @@ func press_focused_button():
 				if button == wifi_button:
 					_on_wifi_pressed()
 				elif button == network_button:
-					print("[Option] Network button pressed (placeholder)")
+					_on_network_pressed()
 				return
 
 	for button in language_buttons:
@@ -632,3 +632,6 @@ func _show_wifi_networks():
 		return
 	print("[Option] Switching to WiFi networks scene")
 	get_tree().change_scene_to_file("res://scene/wifi_networks.tscn")
+
+func _on_network_pressed():
+	get_tree().change_scene_to_file("res://scene/networking_config.tscn")
