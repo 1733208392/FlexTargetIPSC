@@ -41,6 +41,18 @@ func _ready():
 	else:
 		print("[NetworkingConfig] MenuController singleton not found!")
 
+	# Connect to GlobalData netlink status signal to populate fields when available
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		if global_data.has_signal("netlink_status_loaded"):
+			global_data.netlink_status_loaded.connect(_on_netlink_status_loaded)
+			print("[NetworkingConfig] Connected to GlobalData.netlink_status_loaded signal")
+		# If netlink_status is already present, populate immediately
+		if global_data.netlink_status and global_data.netlink_status.size() > 0:
+			_on_netlink_status_loaded()
+	else:
+		print("[NetworkingConfig] GlobalData singleton not found; will not auto-populate netlink info")
+
 func load_current_settings():
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data and global_data.settings_dict.size() > 0:
@@ -196,6 +208,30 @@ func _on_enter_pressed():
 func _on_back_pressed():
 	print("[NetworkingConfig] Back pressed - navigating to main menu")
 	get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+
+func _on_netlink_status_loaded():
+	print("[NetworkingConfig] Received netlink_status_loaded signal, populating UI")
+	var global_data = get_node_or_null("/root/GlobalData")
+	if not global_data:
+		print("[NetworkingConfig] GlobalData not found in _on_netlink_status_loaded")
+		return
+	var status = global_data.netlink_status
+	# Populate channel if present and within 1-10
+	if status.has("channel"):
+		var ch = int(status["channel"])
+		if ch >= 1 and ch <= 10:
+			channel_dropdown.select(ch - 1)
+	# Populate work_mode if present
+	if status.has("work_mode"):
+		var wm = str(status["work_mode"]).to_lower()
+		if wm == "slave":
+			workmode_dropdown.select(1)
+		else:
+			workmode_dropdown.select(0)
+	# Populate device name
+	if status.has("device_name"):
+		name_line_edit.text = str(status["device_name"])
+	print("[NetworkingConfig] Populated netlink info from GlobalData: ", status)
 
 func save_settings():
 	var global_data = get_node_or_null("/root/GlobalData")

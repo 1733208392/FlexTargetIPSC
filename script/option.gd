@@ -34,6 +34,11 @@ static var auto_restart_pause_time = 5  # Changed to store the selected time (5 
 @onready var wifi_button = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/WifiButton"
 @onready var network_button = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkButton"
 @onready var networking_buttons = []
+@onready var content1_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1/Content1"
+@onready var content2_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2/Content2"
+@onready var content3_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3/Content3"
+@onready var content4_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4/Content4"
+@onready var content5_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5/Content5"
 
 func _ready():
 	# Load saved settings from GlobalData
@@ -104,6 +109,23 @@ func _ready():
 		print("[Option] Connecting to WebSocketListener.menu_control signal")
 	else:
 		print("[Option] WebSocketListener singleton not found!")
+
+	# Listen for netlink status updates from GlobalData
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		var cb = Callable(self, "_on_netlink_status_loaded")
+		if not global_data.is_connected("netlink_status_loaded", cb):
+			global_data.connect("netlink_status_loaded", cb)
+			print("[Option] Connected to GlobalData.netlink_status_loaded signal")
+		else:
+			print("[Option] Already connected to GlobalData.netlink_status_loaded signal")
+
+		# Immediate-populate fallback: if GlobalData already has netlink_status populated, update UI now
+		if global_data.netlink_status and typeof(global_data.netlink_status) == TYPE_DICTIONARY and global_data.netlink_status.size() > 0:
+			print("[Option] GlobalData.netlink_status already present at _ready, populating UI immediately")
+			_on_netlink_status_loaded()
+	else:
+		print("[Option] GlobalData singleton not found; cannot listen for netlink status")
 
 func _on_language_changed(language: String):
 	current_language = language
@@ -343,6 +365,33 @@ func load_settings_from_global_data():
 	
 	# Use call_deferred to ensure focus is set after all UI updates are complete
 	call_deferred("set_focus_to_current_language")
+
+func _on_netlink_status_loaded():
+	print("[Option] Received GlobalData.netlink_status_loaded signal")
+	var global_data = get_node_or_null("/root/GlobalData")
+	if not global_data:
+		print("[Option] GlobalData not found in _on_netlink_status_loaded")
+		return
+
+	var s = global_data.netlink_status
+	if s == null or typeof(s) != TYPE_DICTIONARY:
+		print("[Option] GlobalData.netlink_status is empty or invalid: ", s)
+		return
+
+	# Map expected fields from netlink_status -> UI labels
+	# Content1: bluetooth_name, Content2: device_name, Content3: channel, Content4: wifi_ip, Content5: work_mode
+	if content1_label:
+		content1_label.text = str(s.get("bluetooth_name", ""))
+	if content2_label:
+		content2_label.text = str(s.get("device_name", ""))
+	if content3_label:
+		content3_label.text = str(s.get("channel", ""))
+	if content4_label:
+		content4_label.text = str(s.get("wifi_ip", ""))
+	if content5_label:
+		content5_label.text = str(s.get("work_mode", ""))
+
+	print("[Option] Populated networking fields from GlobalData.netlink_status: ", s)
 
 # Function to get current language (can be called from other scripts)
 static func get_current_language() -> String:

@@ -160,3 +160,17 @@ func netlink_start(callback: Callable):
 	add_child(http)
 	http.request_completed.connect(callback)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
+
+func netlink_status(callback: Callable):
+	var url = base_url + "/netlink/status"
+	if not DEBUG_DISABLED:
+		print("[HttpService] Sending netlink status request to ", url)
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(result, response_code, headers, body):
+		if not DEBUG_DISABLED:
+			print("[HttpService] netlink_status response - Result:", result, " Code:", response_code)
+		# Forward raw response to caller
+		callback.call(result, response_code, headers, body)
+	)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
