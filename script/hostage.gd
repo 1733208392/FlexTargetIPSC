@@ -7,7 +7,7 @@ var is_disappearing: bool = false
 
 # Shot tracking for disappearing animation
 var shot_count: int = 0
-var max_shots: int = 2
+@export var max_shots: int = 2  # Exported so scenes can override in the editor; default 2
 
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
@@ -39,6 +39,16 @@ var drills_manager = null
 func _ready():
 	# Try to find the drills manager
 	drills_manager = get_node("/root/drills") if get_node_or_null("/root/drills") else null
+
+	# If loaded by drills_network (networked drills loader), set max_shots high for testing
+	var drills_network = get_node_or_null("/root/drills_network")
+	if drills_network:
+		max_shots = 1000
+		print("[hostage] drills_network detected at /root/drills_network - max_shots set to ", max_shots)
+	# Fallback: if drills_manager name suggests it's networked, also set
+	elif drills_manager and typeof(drills_manager.name) == TYPE_STRING and drills_manager.name.to_lower().find("network") != -1:
+		max_shots = 1000
+		print("[hostage] drills_manager with 'network' in name detected - max_shots set to ", max_shots)
 	if not drills_manager:
 		# Try to find it in the scene tree
 		var current = get_parent()

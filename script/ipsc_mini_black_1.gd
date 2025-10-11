@@ -7,7 +7,7 @@ var is_disappearing: bool = false
 
 # Shot tracking for disappearing animation
 var shot_count: int = 0
-var max_shots: int = 2
+@export var max_shots: int = 2  # Exported to allow editor override; default 2
 
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
@@ -55,6 +55,12 @@ func _ready():
 	# NOTE: Collision detection is now obsolete due to WebSocket fast path
 	# collision_layer = 7  # Target layer
 	# collision_mask = 0   # Don't detect other targets
+
+	# If loaded by drills_network, set max_shots high for network drills
+	var drills_network = get_node_or_null("/root/drills_network")
+	if drills_network:
+		max_shots = 1000
+		print("[ipsc_mini_black_1] drills_network detected - max_shots set to ", max_shots)
 
 func _unhandled_input(event):
 	# Handle mouse clicks for bullet spawning

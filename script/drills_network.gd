@@ -56,8 +56,6 @@ signal ui_target_name_update(target_name: String)
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
 signal ui_theme_change(theme_name: String)
-signal ui_score_update(score: int)
-signal ui_progress_update(targets_completed: int)
 
 @onready var performance_tracker = preload("res://script/performance_tracker_network.gd").new()
 
@@ -85,8 +83,15 @@ func _ready():
 	emit_signal("ui_theme_change", "golden")
 	
 	# Initialize progress (1 target)
-	emit_signal("ui_progress_update", 0)
+	# Note: progress UI updates are not emitted for network drills
 	emit_signal("ui_target_title_update", 1, 1)
+
+	# Hide only the HeaderContainer inside TopContainer for network drills
+	var drill_ui_node = get_node_or_null("DrillUI")
+	if drill_ui_node and drill_ui_node.has_node("TopContainer/TopLayout/HeaderContainer"):
+		var header = drill_ui_node.get_node("TopContainer/TopLayout/HeaderContainer")
+		if header:
+			header.visible = false
 	
 	# If a BLE ready command was stored on GlobalData by the previous scene, load it now
 	var gd = get_node_or_null("/root/GlobalData")
@@ -157,6 +162,10 @@ func start_drill():
 
 func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	"""Handle target hit - supports different target signal signatures"""
+	# Ignore any shots after the drill has completed
+	if drill_completed:
+		print("[DrillsNetwork] Ignoring target hit because drill is completed")
+		return
 	var zone: String
 	var points: int
 	var hit_position: Vector2
@@ -181,15 +190,13 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 		shot_timer_visible = false
 	
 	total_score += points
-	emit_signal("ui_score_update", total_score)
 	
 	# Emit for performance tracking
 	print("[DrillsNetwork] Emitting target_hit signal to performance tracker")
 	emit_signal("target_hit", current_target_type, hit_position, zone, 0.0)
 	
 	# Update fastest time
-	var fastest_time = performance_tracker.get_fastest_time_diff()
-	emit_signal("ui_fastest_time_update", fastest_time)
+	# Note: fastest time UI update removed per request
 	
 	# Drill continues until timeout
 
