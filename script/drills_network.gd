@@ -1,5 +1,7 @@
 extends Control
 
+const DEBUG_DISABLED = false
+
 # Single target for network drills
 @export var target_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
 
@@ -40,6 +42,9 @@ var drill_timed_out: bool = false
 var delay_timer: Timer = null
 var delay_seconds: float = 5.0
 
+# Saved parameters from BLE 'ready' until a 'start' is received
+var saved_ble_ready_content: Dictionary = {}
+
 # Performance tracking
 signal drills_finished
 signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float)
@@ -71,6 +76,9 @@ func _ready():
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
 		ws_listener.ble_ready_command.connect(_on_ble_ready_command)
+		# Connect to ble_start_command so the drill only starts when an explicit 'start' is received
+		if ws_listener.has_signal("ble_start_command"):
+			ws_listener.ble_start_command.connect(_on_ble_start_command)
 		print("[DrillsNetwork] Connected to WebSocketListener menu_control and ble_ready_command")
 	
 	# Set theme
@@ -80,7 +88,38 @@ func _ready():
 	emit_signal("ui_progress_update", 0)
 	emit_signal("ui_target_title_update", 1, 1)
 	
-	# Drill will be started by BLE ready command
+	# If a BLE ready command was stored on GlobalData by the previous scene, load it now
+	var gd = get_node_or_null("/root/GlobalData")
+	if gd:
+		var content = null
+		var settings = gd.get("settings_dict")
+		if settings != null and typeof(settings) == TYPE_DICTIONARY and settings.has("ble_ready_content"):
+			content = settings["ble_ready_content"]
+			settings.erase("ble_ready_content")
+		elif gd.get("ble_ready_content") != null:
+			content = gd.get("ble_ready_content")
+			gd.set("ble_ready_content", null)
+		if content != null:
+			print("[DrillsNetwork] Loaded ble_ready_content from GlobalData: ", content)
+			# Merge into saved_ble_ready_content
+			saved_ble_ready_content.clear()
+			for k in content.keys():
+				saved_ble_ready_content[k] = content[k]
+			if saved_ble_ready_content.has("targetType"):
+				current_target_type = saved_ble_ready_content["targetType"]
+			print("[DrillsNetwork] Merged saved BLE ready params from GlobalData: ", saved_ble_ready_content)
+			# Send ready ack to the sender as if we had just received the ready command
+			var ws_listener_ack = get_node_or_null("/root/WebSocketListener")
+			if ws_listener_ack and ws_listener_ack.has_method("send_netlink_forward"):
+				var err_ack = ws_listener_ack.send_netlink_forward("B", "ready")
+				if err_ack != OK:
+					print("[DrillsNetwork] Failed to send ready ack on startup: ", err_ack)
+				else:
+					print("[DrillsNetwork] Sent ready ack on startup via helper")
+			else:
+				print("[DrillsNetwork] WebSocketListener not available or missing helper; cannot send ready ack on startup")
+	
+	# Drill will be started by BLE ready command (or a stored ready command merged above)
 
 func spawn_target():
 	"""Spawn the single target"""
@@ -250,35 +289,75 @@ func power_off():
 
 func _on_ble_ready_command(content: Dictionary):
 	"""Handle BLE ready command"""
-	print("[DrillsNetwork] Received BLE ready command: ", content)
-	
-	# Set target scene based on targetType
-	if content.has("targetType"):
-		var target_type = content["targetType"]
-		current_target_type = target_type  # Store for later use
+	print("[DrillsNetwork] Received BLE ready command (saved, not starting): ", content)
+
+	# Save the ready content for later use when a 'start' arrives.
+	# We store only relevant keys so they can be merged at start time.
+	saved_ble_ready_content.clear()
+	for k in content.keys():
+		saved_ble_ready_content[k] = content[k]
+
+	# Update current_target_type for informational purposes but do not instantiate or start anything
+	if saved_ble_ready_content.has("targetType"):
+		current_target_type = saved_ble_ready_content["targetType"]
+
+	if not DEBUG_DISABLED:
+		print("[DrillsNetwork] BLE ready parameters saved: ", saved_ble_ready_content)
+
+	# Acknowledge the ready command back to sender by forwarding a netlink message
+	# Format: {"type":"netlink","action":"forward","device":"A","content":"ready"}
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener and ws_listener.has_method("send_netlink_forward"):
+		var err = ws_listener.send_netlink_forward("B", "ready")
+		if err != OK:
+			print("[DrillsNetwork] Failed to send ready ack: ", err)
+		else:
+			print("[DrillsNetwork] Sent ready ack via helper")
+	else:
+		print("[DrillsNetwork] WebSocketListener not available or missing helper; cannot send ready ack")
+
+func _on_delay_timeout():
+	"""Handle delay timeout - start the drill"""
+	print("[DrillsNetwork] Delay timeout - starting drill")
+	start_drill()
+	shot_timer_visible = true
+
+
+func _on_ble_start_command(content: Dictionary) -> void:
+	"""Handle BLE start command: merge saved ready params with start payload and begin delay/start sequence."""
+	print("[DrillsNetwork] Received BLE start command: ", content)
+
+	# Merge saved ready params (lowest priority) with start content (highest priority)
+	var merged: Dictionary = {}
+	for k in saved_ble_ready_content.keys():
+		merged[k] = saved_ble_ready_content[k]
+	for k in content.keys():
+		merged[k] = content[k]
+
+	# Apply merged parameters similar to original ready behavior
+	if merged.has("targetType"):
+		var target_type = merged["targetType"]
+		current_target_type = target_type
 		if target_type_to_scene.has(target_type):
 			target_scene = load(target_type_to_scene[target_type])
 			print("[DrillsNetwork] Set target scene for type '", target_type, "' to: ", target_type_to_scene[target_type])
 		else:
 			print("[DrillsNetwork] Unknown targetType: ", target_type, ", using default")
-	else:
-		print("[DrillsNetwork] No targetType in command, using default target scene")
-	
-	# Parse dest and update target name
-	if content.has("dest"):
-		var dest = content["dest"]
-		emit_signal("ui_target_name_update", dest)
-		print("[DrillsNetwork] Updated target name to: ", dest)
-	
-	# Parse timeout and delay from content
-	if content.has("timeout"):
-		timeout_seconds = float(content["timeout"])
+
+	# Update UI target name if provided
+	if merged.has("dest"):
+		emit_signal("ui_target_name_update", merged["dest"])
+		print("[DrillsNetwork] Updated target name to: ", merged["dest"])
+
+	# Parse timeout and delay from merged content
+	if merged.has("timeout"):
+		timeout_seconds = float(merged["timeout"])
 		print("[DrillsNetwork] Set timeout to: ", timeout_seconds)
-	
-	delay_seconds = content.get("delay", delay_seconds)
+
+	delay_seconds = float(merged.get("delay", delay_seconds))
 	print("[DrillsNetwork] Set delay to: ", delay_seconds)
-	
-	# Start delay timer
+
+	# Start delay timer (one-shot)
 	if delay_timer:
 		delay_timer.queue_free()
 	delay_timer = Timer.new()
@@ -287,11 +366,5 @@ func _on_ble_ready_command(content: Dictionary):
 	delay_timer.timeout.connect(_on_delay_timeout)
 	add_child(delay_timer)
 	delay_timer.start()
-	
-	print("[DrillsNetwork] Delay timer started for ", delay_seconds, " seconds")
 
-func _on_delay_timeout():
-	"""Handle delay timeout - start the drill"""
-	print("[DrillsNetwork] Delay timeout - starting drill")
-	start_drill()
-	shot_timer_visible = true
+	print("[DrillsNetwork] Delay timer started for ", delay_seconds, " seconds (triggered by start command)")

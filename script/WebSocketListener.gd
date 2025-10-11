@@ -6,6 +6,7 @@ signal data_received(data)
 signal bullet_hit(pos: Vector2)
 signal menu_control(directive: String)
 signal ble_ready_command(content: Dictionary)
+signal ble_start_command(content: Dictionary)
 
 var socket: WebSocketPeer
 var bullet_spawning_enabled: bool = true
@@ -162,13 +163,36 @@ func _handle_ble_forwarded_command(parsed):
 	var content = parsed["content"]
 	if not DEBUG_DISABLED:
 		print("[WebSocket] BLE forwarded command content: ", content)
-	
+
 	# Add dest to content for UI display
 	content["dest"] = dest
-	
-	# Emit signal for BLE ready command
-	print("[WebSocket] Emitting ble_ready_command signal with content: ", content)
-	ble_ready_command.emit(content)
+
+	#     let content: [String: Any] = [
+	#     "command": "ready"/"start",
+	#     "delay": delay,
+	#     "targetType": target.targetType ?? "",
+	#     "timeout": target.timeout,
+	#     "countedShots": target.countedShots]
+
+	# Determine command type from content. Common keys: 'command', 'cmd', or 'type'
+	var command = null
+
+	command = content["command"]
+
+	if not DEBUG_DISABLED:
+		print("[WebSocket] BLE forwarded command determined command: ", command)
+
+	# Emit the appropriate signal based on the command value
+	match command:
+		"ready":
+			print("[WebSocket] Emitting ble_ready_command signal with content: ", content)
+			ble_ready_command.emit(content)
+		"start":
+			print("[WebSocket] Emitting ble_start_command signal with content: ", content)
+			ble_start_command.emit(content)
+		_:
+			if not DEBUG_DISABLED:
+				print("[WebSocket] BLE forwarded command unknown or unsupported command: ", command)
 
 func clear_queued_signals():
 	"""Clear all queued WebSocket packets and pending bullet hit signals"""
@@ -197,6 +221,30 @@ func clear_queued_signals():
 	
 	# Reset shot processing timer for clean restart
 	last_shot_processing_time = 0.0
+
+func send_netlink_forward(device: String, content_val) -> int:
+	"""Helper to send a netlink forward message over the websocket socket.
+	Returns OK on success, or the error code otherwise."""
+	if socket and socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
+		var ack_message = {
+			"type": "netlink",
+			"action": "forward",
+			"device": device,
+			"content": content_val
+		}
+		var json_string = JSON.stringify(ack_message)
+		var err = socket.send_text(json_string)
+		if err != OK:
+			if not DEBUG_DISABLED:
+				print("[WebSocket] send_netlink_forward failed: ", err)
+			return err
+		if not DEBUG_DISABLED:
+			print("[WebSocket] send_netlink_forward sent: ", json_string)
+		return OK
+	else:
+		if not DEBUG_DISABLED:
+			print("[WebSocket] send_netlink_forward: socket not available or not open")
+		return ERR_UNAVAILABLE
 
 func set_bullet_spawning_enabled(enabled: bool):
 	"""Set bullet spawning enabled state and clear queues when disabled"""

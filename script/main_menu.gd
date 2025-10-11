@@ -1,6 +1,7 @@
 extends Control
 
 @onready var start_button = $VBoxContainer/ipsc
+@onready var network_button = $VBoxContainer/network
 @onready var bootcamp_button = $VBoxContainer/boot_camp
 @onready var leaderboard_button = $VBoxContainer/learder_board
 @onready var option_button = $VBoxContainer/option
@@ -40,14 +41,8 @@ func set_locale_from_language(language: String):
 
 func update_ui_texts():
 	# Update button texts with current language
-	print("[Menu] Updating UI texts with locale: ", TranslationServer.get_locale())
-	print("[Menu] Translation for 'start': ", tr("start"))
-	print("[Menu] Translation for 'boot_camp': ", tr("boot_camp"))
-	print("[Menu] Translation for 'leaderboard': ", tr("leaderboard"))
-	print("[Menu] Translation for 'options': ", tr("options"))
-	print("[Menu] Translation for 'copyright': ", tr("copyright"))
-	
 	start_button.text = tr("start")
+	network_button.text = tr("network")
 	bootcamp_button.text = tr("boot_camp")
 	leaderboard_button.text = tr("leaderboard")
 	option_button.text = tr("options")
@@ -63,6 +58,7 @@ func _ready():
 	focused_index = 0
 	buttons = [
 		start_button,
+		network_button,
 		bootcamp_button,
 		leaderboard_button,
 		option_button]
@@ -73,11 +69,18 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
+		# Connect BLE ready command signal to jump to network scene
+		if ws_listener.has_signal("ble_ready_command"):
+			ws_listener.ble_ready_command.connect(_on_ble_ready_command)
+			print("[Menu] Connected to WebSocketListener.ble_ready_command signal")
+		else:
+			print("[Menu] WebSocketListener has no ble_ready_command signal")
 		print("[Menu] Connecting to WebSocketListener.menu_control signal")
 	else:
 		print("[Menu] WebSocketListener singleton not found!")
 
 	start_button.pressed.connect(on_start_pressed)
+	network_button.pressed.connect(_on_network_pressed)
 	bootcamp_button.pressed.connect(_on_bootcamp_pressed)
 	leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 	option_button.pressed.connect(_on_option_pressed)
@@ -115,7 +118,7 @@ func on_start_pressed():
 		else:
 			print("[Menu] Warning: Node not in tree, cannot change scene")
 
-func _on_start_response(result, response_code, headers, body):
+func _on_start_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	print("[Menu] Start game HTTP response:", result, response_code, body_str)
 	var json = JSON.parse_string(body_str)
@@ -128,6 +131,13 @@ func _on_start_response(result, response_code, headers, body):
 	else:
 		print("[Menu] Start game failed or invalid response.")
 
+func _on_network_pressed():
+	# Load the network scene
+	if is_inside_tree():
+		get_tree().change_scene_to_file("res://scene/drills_network.tscn")
+	else:
+		print("[Menu] Warning: Node not in tree, cannot change scene")
+
 func _on_bootcamp_pressed():
 	# Call the HTTP service to start the game
 	var http_service = get_node("/root/HttpService")
@@ -138,7 +148,7 @@ func _on_bootcamp_pressed():
 		print("[Menu] HttpService singleton not found!")
 	print("Boot Camp button pressed - Load training mode")
 
-func _on_bootcamp_response(result, response_code, headers, body):
+func _on_bootcamp_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	print("[Menu] Start game HTTP response:", result, response_code, body_str)
 	var json = JSON.parse_string(body_str)
@@ -174,6 +184,28 @@ func power_off():
 	else:
 		print("[Menu] HttpService singleton not found!")
 
-func _on_shutdown_response(result, response_code, headers, body):
+func _on_ble_ready_command(content: Dictionary) -> void:
+	print("[Menu] Received ble_ready_command with content: ", content)
+	# Optionally inspect content to decide target scene or additional behavior
+	# Store content on GlobalData.settings_dict so the drills_network scene can read it on startup
+	var gd = get_node_or_null("/root/GlobalData")
+	if gd:
+		var settings = gd.get("settings_dict")
+		if settings != null and typeof(settings) == TYPE_DICTIONARY:
+			settings["ble_ready_content"] = content
+			print("[Menu] Stored ble_ready_content in GlobalData.settings_dict")
+		else:
+			# fallback: attach directly on GlobalData
+			gd.set("ble_ready_content", content)
+			print("[Menu] Stored ble_ready_content directly on GlobalData")
+	else:
+		print("[Menu] GlobalData not available; cannot persist ble content")
+
+	if is_inside_tree():
+		get_tree().change_scene_to_file("res://scene/drills_network.tscn")
+	else:
+		print("[Menu] Warning: Node not in tree, cannot change scene")
+
+func _on_shutdown_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	print("[Menu] Shutdown HTTP response:", result, response_code, body_str)
