@@ -242,25 +242,30 @@ color = Color(1, 0.541176, 0, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 
-[node name="ButtonRow" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+[node name="ButtonRow" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
 layout_mode = 2
+size_flags_horizontal = 4
 alignment = 1
 
 [node name="WifiButton" type="Button" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(300, 48)
 layout_mode = 2
 theme = ExtResource("8_custom_button_theme")
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 24
-text = "wifi"
+text = "WIFI Configure"
+
+[node name="Control" type="Control" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
 
 [node name="NetworkButton" type="Button" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(200, 48)
 layout_mode = 2
 theme = ExtResource("8_custom_button_theme")
 theme_override_fonts/font = ExtResource("2_font")
 theme_override_font_sizes/font_size = 24
-text = "network"
+text = "Network Configure"
 
 [node name="Languages" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
