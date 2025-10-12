@@ -113,6 +113,9 @@ var tween_speed = .2
 
 var hide_position = Vector2()
 var layout_key_matrices = {} # map layout_container -> 2D array of keys
+var last_focused_key: Button = null
+var toggle_debounce_button: Button = null
+var toggle_debounce_active: bool = false
 
 func _init_keyboard():
 	if custom_layout_file == null:
@@ -195,6 +198,9 @@ func _show_keyboard(key_data=null):
 	var fo = get_viewport().gui_get_focus_owner()
 	if fo != null and is_keyboard_focus_object(fo):
 		last_input_focus = fo
+		# reset the last focused key so remote directives start from top-left
+		if last_focused_key == null or not last_focused_key.is_inside_tree():
+			last_focused_key = _get_first_key_for_layout(current_layout)
 
 	if debug_remote:
 		print("[onscreenkbd] _show_keyboard: animate=", animate, " visible=", visible)
@@ -275,6 +281,7 @@ func change_visibility(value):
 	else:
 		_set_caps_lock(false)
 		super.hide()
+		last_focused_key = null
 	if debug_remote:
 		print("[onscreenkbd] change_visibility: after change, visible=", visible, " position=", position, " size=", size)
 		print("[onscreenkbd] change_visibility: modulate=", modulate, " z_index=", z_index, " parent=", get_parent())
@@ -300,6 +307,9 @@ func set_active_layout_by_name(name):
 func _show_layout(layout):
 	layout.show()
 	current_layout = layout
+	# Ensure the last focused key belongs to the active layout
+	if last_focused_key == null or not last_focused_key.is_inside_tree() or not keys.has(last_focused_key):
+		last_focused_key = _get_first_key_for_layout(layout)
 
 
 func _hide_layout(layout):
@@ -668,6 +678,7 @@ func _create_keyboard(layout_data):
 					new_key.set('theme_override_colors/font_disabled_color', font_color_normal)
 
 				new_key.released.connect(_key_released)
+				new_key.focus_entered.connect(Callable(self, "_on_keyboard_button_focus_entered").bind(new_key))
 
 				if key.has("type"):
 					if key.get("type") == "switch-layout":
@@ -791,6 +802,35 @@ func _on_ws_menu_control(directive: String):
 			pass
 
 
+func _on_keyboard_button_focus_entered(button: Button):
+	if button == null:
+		return
+	if not button.is_inside_tree():
+		return
+	if not keys.has(button):
+		return
+	last_focused_key = button
+
+
+func _get_first_key_for_layout(layout: Control):
+	if layout == null:
+		return null
+	var matrix = layout_key_matrices.get(layout, null)
+	if matrix == null:
+		return null
+	for row in matrix:
+		if row.size() == 0:
+			continue
+		return row[0]
+	return null
+
+
+func _get_default_key_for_activation():
+	if last_focused_key != null and last_focused_key.is_inside_tree() and keys.has(last_focused_key):
+		return last_focused_key
+	return _get_first_key_for_layout(current_layout)
+
+
 func _move_focus(direction: String):
 	# Determine the active matrix for current_layout
 	var matrix = layout_key_matrices.get(current_layout, null)
@@ -843,81 +883,110 @@ func _move_focus(direction: String):
 	var new_key = matrix[new_row][new_col]
 	if new_key != null:
 		new_key.grab_focus()
+		last_focused_key = new_key
 
 
 func _simulate_enter():
 	var focus_owner = get_viewport().gui_get_focus_owner()
-	if focus_owner == null:
-		# If no focus, default to top-left key of current layout
-		var matrix = layout_key_matrices.get(current_layout, null)
-		if matrix == null or matrix.size() == 0:
-			return
-		var default_key = matrix[0][0]
-		if default_key:
-			# Simulate click by calling the keyboard button handler so behavior
-			# matches a real button press; remember the activated key so we
-			# can re-focus it after delivering input to the input control.
-			last_activated_key = default_key
-			default_key._on_button_up()
-		else:
-			return
-	else:
-		# If focus_owner is an input control (LineEdit/TextEdit), send an Enter key event
-		if is_keyboard_focus_object(focus_owner):
-			var ev = InputEventKey.new()
-			ev.pressed = true
-			ev.keycode = KEY_ENTER
-			ev.unicode = KEY_ENTER
-			# Prefer inserting into the focused control; ensure we remember it
-			last_input_focus = focus_owner
-			call_deferred("_deliver_key_event", focus_owner, ev)
-			return
+	var key_to_activate: Button = null
 
-		# If focused owner is a keyboard button, emit its released
-		if focus_owner is Button:
-			# If the button is our keyboard button, simulate press and
-			# remember it so we can re-focus after delivering input.
-			last_activated_key = focus_owner
-			if focus_owner.has_method("_on_button_up"):
-				# call the button handler
-				# If this button corresponds to a key that should act on
-				# the input control (e.g. Backspace/LeftArrow/RightArrow/Delete)
-				# and we have a stored last_input_focus, then dispatch the
-				# InputEvent directly to that control so keyboard focus is
-				# preserved for websocket-driven interactions.
-				var handled_by_input_focus = false
-				var kd = null
-				if focus_owner.has_method("change_uppercase"):
-					kd = focus_owner.key_data
-				# kd may be null for generic Buttons
-				if typeof(kd) == TYPE_DICTIONARY and kd.has("output") and last_input_focus != null and is_keyboard_focus_object(last_input_focus):
-					var out = str(kd.get("output"))
-					if out == "Backspace" or out == "Delete":
-						# Build InputEventKey for this output and deliver to last_input_focus
-						var ev = InputEventKey.new()
-						ev.pressed = true
-						var sc = KeyListHandler.get_key_from_string(out)
-						if not uppercase and KeyListHandler.has_lowercase(out):
-							sc += 32
-						ev.keycode = sc
-						ev.unicode = sc
-						# deliver to stored input focus (deferred to maintain order)
-						last_input_focus.grab_focus()
-						call_deferred("_deliver_key_event", last_input_focus, ev, out)
-						handled_by_input_focus = true
-				if not handled_by_input_focus:
-					# default behavior: call the button handler so normal keyboard
-					# buttons animate and perform layout switches, etc.
-					focus_owner._on_button_up()
-					# If this is our KeyboardButton instance, check its key_data
-					# to decide whether to keep focus on it after remote activation.
-					if focus_owner.has_method("change_uppercase"):
-						var kd2 = focus_owner.key_data
-						if typeof(kd2) == TYPE_DICTIONARY and not kd2.has("output"):
-							call_deferred("_refocus_last_activated_key")
+	if focus_owner is Button and keys.has(focus_owner):
+		key_to_activate = focus_owner
+	else:
+		if focus_owner != null and is_keyboard_focus_object(focus_owner):
+			last_input_focus = focus_owner
+			# fall back to last known keyboard key when focus lies on input control
+		key_to_activate = _get_default_key_for_activation()
+
+	if key_to_activate == null:
+		return
+
+	if debug_remote:
+		print("[onscreenkbd] _simulate_enter: activating key=", key_to_activate, " from focus_owner=", focus_owner)
+
+	if _should_debounce_toggle_activation(key_to_activate):
+		if debug_remote:
+			print("[onscreenkbd] _simulate_enter: debounced duplicate activation for ", key_to_activate)
+		return
+
+	_activate_keyboard_button(key_to_activate)
+
+
+func _should_debounce_toggle_activation(button: Button) -> bool:
+	if button == null or not button.is_inside_tree():
+		return false
+	if not (button is BaseButton and button.toggle_mode):
+		return false
+	var is_keyboard_button = button.has_method("change_uppercase") and button.has_method("_on_button_up")
+	if not is_keyboard_button:
+		return false
+	var key_data = button.key_data if button.has_method("change_uppercase") else null
+	var has_output = typeof(key_data) == TYPE_DICTIONARY and key_data.has("output")
+	if has_output:
+		return false
+	if toggle_debounce_active and toggle_debounce_button == button:
+		return true
+	toggle_debounce_active = true
+	toggle_debounce_button = button
+	call_deferred("_clear_toggle_debounce", button)
+	return false
+
+
+func _clear_toggle_debounce(button: Button):
+	if toggle_debounce_button == button:
+		toggle_debounce_active = false
+		toggle_debounce_button = null
+
+
+func _activate_keyboard_button(button: Button):
+	if button == null:
+		return
+	if not button.is_inside_tree():
+		return
+
+	var key_data = null
+	var is_keyboard_button = button.has_method("change_uppercase") and button.has_method("_on_button_up")
+	if is_keyboard_button:
+		key_data = button.key_data
+
+	if debug_remote:
+		print("[onscreenkbd] _activate_keyboard_button: button=", button, " toggle_mode=", button.toggle_mode if button is BaseButton else "n/a", " key_data=", key_data)
+
+	# Remember this button only if it will dispatch output so finalize flow can restore focus
+	var has_output = typeof(key_data) == TYPE_DICTIONARY and key_data.has("output")
+	if has_output:
+		last_activated_key = button
+	else:
+		last_activated_key = null
+
+	button.grab_focus()
+
+	# Simulate the internal toggle that Godot performs before emitting button_up
+	if button is BaseButton and button.toggle_mode:
+		button.button_pressed = not button.button_pressed
+
+	# Emit down/up in the same order as a real click so connected handlers fire
+	if is_keyboard_button:
+		if button.has_method("_on_button_down"):
+			button._on_button_down()
+		button._on_button_up()
+	else:
+		if button.has_signal("pressed"):
+			button.emit_signal("pressed")
+		if button.has_signal("released"):
+			if typeof(key_data) == TYPE_DICTIONARY:
+				button.emit_signal("released", key_data)
 			else:
-				# Generic emit
-				if focus_owner.has_signal("released"):
-					focus_owner.released.emit({})
-					# generic buttons may not have key_data; still try to refocus
-					call_deferred("_refocus_last_activated_key")
+				button.emit_signal("released")
+
+	# For keys without output (e.g., shift) immediately restore focus so navigation continues
+	if not has_output:
+		call_deferred("_grab_focus_after_activation", button)
+
+
+func _grab_focus_after_activation(button: Button):
+	if button != null and button.is_inside_tree():
+		button.grab_focus()
+	# ensure last_focused_key stays in sync for remote navigation
+	if button != null and keys.has(button):
+		last_focused_key = button
