@@ -142,6 +142,8 @@ if (process.stdin.isTTY) {
     directive = 'enter';
   } else if (keyStr === 'H' || keyStr === 'h') { // H - homepage
     directive = 'homepage';
+  } else if (keyStr === 'M' || keyStr === 'm') { // M - compose
+    directive = 'compose';
   } else if (keyStr === 'V' || keyStr === 'v') { // V - volume_up
     directive = 'volume_up';
   } else if (keyStr === 'D' || keyStr === 'd') { // D - volume_down

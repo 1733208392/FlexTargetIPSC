@@ -437,6 +437,12 @@ func _on_menu_control(directive: String):
 				get_tree().change_scene_to_file("res://scene/main_menu.tscn")
 			else:
 				print("[Option] Warning: Node not in tree, cannot change scene")
+		"compose":
+			print("[Option] compose directive received - navigating to onboard_debug")
+			if is_inside_tree():
+				get_tree().change_scene_to_file("res://scene/onboard_debug.tscn")
+			else:
+				print("[Option] Warning: Node not in tree, cannot change scene to onboard_debug")
 		"volume_up":
 			print("[Option] Volume up")
 			volume_up()
