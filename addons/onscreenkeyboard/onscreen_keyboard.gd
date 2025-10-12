@@ -895,7 +895,14 @@ func _simulate_enter():
 	else:
 		if focus_owner != null and is_keyboard_focus_object(focus_owner):
 			last_input_focus = focus_owner
-			# fall back to last known keyboard key when focus lies on input control
+			# When remote enter is pressed while the input field still owns focus,
+			# move focus onto the keyboard but avoid typing immediately.
+			var default_key = _get_default_key_for_activation()
+			if default_key != null:
+				default_key.grab_focus()
+				last_focused_key = default_key
+			return
+		# fall back to last known keyboard key when there is no focus owner
 		key_to_activate = _get_default_key_for_activation()
 
 	if key_to_activate == null:
