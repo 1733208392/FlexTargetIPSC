@@ -41,7 +41,7 @@ func set_locale_from_language(language: String):
 
 func update_ui_texts():
 	# Update button texts with current language
-	start_button.text = tr("start")
+	start_button.text = tr("ipsc")
 	network_button.text = tr("network")
 	bootcamp_button.text = tr("boot_camp")
 	leaderboard_button.text = tr("leaderboard")
@@ -53,6 +53,9 @@ func update_ui_texts():
 func _ready():
 	# Load and apply current language setting
 	load_language_setting()
+	
+	# Initially hide the network button until network is started
+	network_button.visible = false
 	
 	# Connect button signals
 	focused_index = 0
@@ -78,6 +81,16 @@ func _ready():
 		print("[Menu] Connecting to WebSocketListener.menu_control signal")
 	else:
 		print("[Menu] WebSocketListener singleton not found!")
+
+	# Connect to GlobalData netlink_status_loaded signal
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.netlink_status_loaded.connect(_on_netlink_status_loaded)
+		print("[Menu] Connected to GlobalData.netlink_status_loaded signal")
+		# Check if network is already started
+		_check_network_button_visibility()
+	else:
+		print("[Menu] GlobalData not found!")
 
 	start_button.pressed.connect(on_start_pressed)
 	network_button.pressed.connect(_on_network_pressed)
@@ -205,6 +218,26 @@ func _on_ble_ready_command(content: Dictionary) -> void:
 		get_tree().change_scene_to_file("res://scene/drills_network.tscn")
 	else:
 		print("[Menu] Warning: Node not in tree, cannot change scene")
+
+func _on_network_started() -> void:
+	print("[Menu] Network started, making network button visible")
+	network_button.visible = true
+
+func _on_netlink_status_loaded() -> void:
+	print("[Menu] Netlink status loaded, checking network button visibility")
+	_check_network_button_visibility()
+
+func _check_network_button_visibility() -> void:
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.netlink_status.has("started"):
+		if global_data.netlink_status["started"] == true:
+			print("[Menu] Network is started, making network button visible")
+			network_button.visible = true
+		else:
+			print("[Menu] Network is not started, keeping network button hidden")
+			network_button.visible = false
+	else:
+		print("[Menu] Netlink status not available or missing 'started' key")
 
 func _on_shutdown_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()

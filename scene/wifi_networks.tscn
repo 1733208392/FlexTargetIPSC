@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://c3g1gp0reiltq"]
+[gd_scene load_steps=5 format=3 uid="uid://c3g1gp0reiltq"]
 
 [ext_resource type="Script" uid="uid://bag7v4s5v88jw" path="res://script/wifi_networks.gd" id="1_xtqbd"]
 [ext_resource type="Script" uid="uid://dxfujov7vai6f" path="res://addons/onscreenkeyboard/onscreen_keyboard.gd" id="2_xtqbd"]
 [ext_resource type="Texture2D" uid="uid://c06ckj0xlnm25" path="res://asset/container_frame.png" id="3_xtqbd"]
+[ext_resource type="Theme" uid="uid://b1xuwasqtx311" path="res://theme/custom_button_theme.tres" id="4_custom_button_theme"]
 
 [node name="WiFiNetworks" type="Control"]
 layout_mode = 3
@@ -21,7 +22,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.0784314, 0.129411, 0.149019, 1)
+color = Color(0.0784314, 0.129412, 0.14902, 0.588235)
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 0
@@ -55,6 +56,30 @@ grow_horizontal = 2
 text = "WI-FI"
 horizontal_alignment = 1
 
+[node name="ScanningContainer" type="VBoxContainer" parent="."]
+z_index = 10
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 450.0
+offset_right = 150.0
+offset_bottom = 550.0
+grow_horizontal = 2
+alignment = 1
+
+[node name="ScanningLabel" type="Label" parent="ScanningContainer"]
+layout_mode = 2
+text = "Scanning for networks"
+horizontal_alignment = 1
+
+[node name="RetryButton" type="Button" parent="ScanningContainer"]
+visible = false
+layout_mode = 2
+theme = ExtResource("4_custom_button_theme")
+text = "Retry WIFI Scan"
+
 [node name="Overlay" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 0
@@ -84,6 +109,7 @@ layout_mode = 2
 placeholder_text = "Password"
 
 [node name="OnscreenKeyboard" type="PanelContainer" parent="Overlay/PanelContainer/VBoxContainer"]
+visible = false
 custom_minimum_size = Vector2(400, 200)
 layout_mode = 2
 script = ExtResource("2_xtqbd")

@@ -117,8 +117,13 @@ const server = http.createServer((req, res) => {
     });
   } else if (pathname === '/netlink/wifi/scan' && req.method === 'POST') {
     const ssidList = ["cjyw", "cjyw2", "cjyw5G"];
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ code: 0, msg: "", data: { ssid_list: ssidList } }));
+    console.log(`[HttpServer] Starting WiFi scan simulation (15s delay)...`);
+    // Simulate 15 second delay for WiFi scanning
+    setTimeout(() => {
+      console.log(`[HttpServer] WiFi scan completed`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ code: 0, msg: "", data: { ssid_list: ssidList } }));
+    }, 15000);
   } else if (pathname === '/netlink/wifi/connect' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => {
@@ -226,6 +231,8 @@ const server = http.createServer((req, res) => {
   } else if (pathname === '/netlink/status' && req.method === 'POST') {
     // Get netlink service status
     console.log(`[HttpServer] Netlink status requested`);
+    // Commented out original response to simulate started=false scenario
+    /*
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       code: 0,
@@ -237,6 +244,21 @@ const server = http.createServer((req, res) => {
         device_name: netlinkDeviceName,
         bluetooth_name: netlinkBluetoothName,
         started: netlinkStarted
+      }
+    }));
+    */
+    // Simulate started=false scenario
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      code: 0,
+      msg: "",
+      data: {
+        wifi_ip: netlinkWifiIp,
+        channel: 0,
+        work_mode: null,
+        device_name: null,
+        bluetooth_name: null,
+        started: false
       }
     }));
   } else {

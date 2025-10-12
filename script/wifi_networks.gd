@@ -13,17 +13,24 @@ const WIFI_CONNECTED_ICON = preload("res://asset/wifi.fill.connect.png")
 @onready var password_line = $Overlay/PanelContainer/VBoxContainer/PasswordLine
 @onready var title_label = $Overlay/PanelContainer/VBoxContainer/Label
 @onready var keyboard = $Overlay/PanelContainer/VBoxContainer/OnscreenKeyboard
+@onready var scanning_container = $ScanningContainer
+@onready var scanning_label = $ScanningContainer/ScanningLabel
+@onready var retry_button = $ScanningContainer/RetryButton
 
 var networks = []
 var selected_network = ""
 var focused_index = 0
 var network_buttons = []
 var connected_network = ""
+var scan_timer: Timer
+var timeout_timer: Timer
+var dot_count = 0
 
 func _ready():
 	print("[WiFi Networks] _ready called, list_vbox: ", list_vbox)
-	_scan_networks()
 	overlay.visible = false
+	scanning_container.visible = false
+	_scan_networks()
 	
 	# Connect to MenuController signals
 	var menu_controller = get_node_or_null("/root/MenuController")
@@ -38,12 +45,79 @@ func _ready():
 	else:
 		print("[WiFi Networks] MenuController singleton not found!")
 
+	# Connect retry button signal
+	retry_button.pressed.connect(_on_retry_button_pressed)
+
 func _scan_networks():
 	print("[WiFi Networks] Starting network scan")
+	scanning_container.visible = true
+	retry_button.visible = false
+	print("[WiFi Networks] Scanning container visible: ", scanning_container.visible)
+	dot_count = 0
+	scanning_label.text = "Scanning for networks"
+	
+	# Create and start timer for dot animation (every 0.5 seconds)
+	scan_timer = Timer.new()
+	scan_timer.wait_time = 0.5
+	scan_timer.one_shot = false
+	scan_timer.connect("timeout", Callable(self, "_on_scan_timer_timeout"))
+	add_child(scan_timer)
+	scan_timer.start()
+	
+	# Create timeout timer (20 seconds)
+	timeout_timer = Timer.new()
+	timeout_timer.wait_time = 20.0
+	timeout_timer.one_shot = true
+	timeout_timer.connect("timeout", Callable(self, "_on_scan_timeout"))
+	add_child(timeout_timer)
+	timeout_timer.start()
+	
 	HttpService.wifi_scan(Callable(self, "_on_wifi_scan_completed"))
+
+func _on_scan_timeout():
+	print("[WiFi Networks] Scan timeout occurred")
+	
+	# Stop both timers
+	if scan_timer:
+		scan_timer.stop()
+		scan_timer.queue_free()
+		scan_timer = null
+	if timeout_timer:
+		timeout_timer.stop()
+		timeout_timer.queue_free()
+		timeout_timer = null
+	
+	# Update UI for timeout - static text, no animation
+	scanning_label.text = "WIFI Scan Timeout"
+	retry_button.visible = true
+	retry_button.grab_focus()
+	print("[WiFi Networks] Timeout UI updated")
+
+func _on_scan_timer_timeout():
+	dot_count = (dot_count + 1) % 4  # Cycle through 0, 1, 2, 3
+	var dots = ""
+	for i in range(dot_count):
+		dots += "."
+	scanning_label.text = "Scanning for networks" + dots
+	print("[WiFi Networks] Scanning animation: ", scanning_label.text)
+
+func _on_retry_button_pressed():
+	print("[WiFi Networks] Retry button pressed")
+	_scan_networks()
 
 func _on_wifi_scan_completed(result, response_code, _headers, body):
 	print("[WiFi Networks] Scan completed: result=", result, " code=", response_code)
+	
+	# Stop and cleanup timers
+	if scan_timer:
+		scan_timer.stop()
+		scan_timer.queue_free()
+		scan_timer = null
+	if timeout_timer:
+		timeout_timer.stop()
+		timeout_timer.queue_free()
+		timeout_timer = null
+	
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		var body_str = body.get_string_from_utf8()
 		print("[WiFi Networks] Response body: ", body_str)
@@ -51,11 +125,21 @@ func _on_wifi_scan_completed(result, response_code, _headers, body):
 		if json and json.has("data") and json["data"].has("ssid_list"):
 			networks = json["data"]["ssid_list"]
 			print("[WiFi Networks] Networks found: ", networks)
+			# Hide scanning indicator on success
+			scanning_container.visible = false
 			_build_list()
 		else:
 			print("Invalid response format")
+			# Show failure state
+			scanning_label.text = "WIFI Scan Failed"
+			retry_button.visible = true
+			retry_button.grab_focus()
 	else:
 		print("WiFi scan failed: ", result, " code: ", response_code)
+		# Show failure state for HTTP errors
+		scanning_label.text = "WIFI Scan Failed"
+		retry_button.visible = true
+		retry_button.grab_focus()
 
 func _build_list():
 	print("[WiFi Networks] Building list with ", networks.size(), " networks")
@@ -231,14 +315,21 @@ func _on_wifi_connect_completed(result, response_code, _headers, body):
 
 func _on_navigate(direction: String):
 	print("[WiFi Networks] Navigation: ", direction)
-	if not overlay.visible:
-		# Navigate network list
-		match direction:
-			"up":
-				navigate_buttons(-1)
-			"down", "left", "right":
-				navigate_buttons(1)
-	# Keyboard navigation is handled by the onscreen keyboard itself via menu_control signal
+	if overlay.visible:
+		# Keyboard navigation is handled by the onscreen keyboard itself via menu_control signal
+		pass
+	else:
+		# Check if retry button is visible (scanning failed/timed out)
+		if retry_button.visible:
+			# If retry button is visible, give it focus
+			retry_button.grab_focus()
+		else:
+			# Navigate network list
+			match direction:
+				"up":
+					navigate_buttons(-1)
+				"down", "left", "right":
+					navigate_buttons(1)
 
 func _on_enter_pressed():
 	print("[WiFi Networks] Enter pressed")
@@ -256,7 +347,11 @@ func _on_enter_pressed():
 		# If keyboard not present, fallback to commit
 		_commit_password()
 	else:
-		press_focused_button()
+		# Check if retry button is visible and focused
+		if retry_button.visible and retry_button.has_focus():
+			_on_retry_button_pressed()
+		else:
+			press_focused_button()
 
 func _on_back_pressed():
 	if overlay.visible:
