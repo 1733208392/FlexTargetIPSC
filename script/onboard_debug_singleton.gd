@@ -15,16 +15,20 @@ func _ready() -> void:
         if not sb.is_connected("onboard_debug_info", cb):
             sb.connect("onboard_debug_info", cb)
             print("OnboardDebugSingleton: connected to SignalBus.onboard_debug_info")
+        else:
+            print("OnboardDebugSingleton: already connected to SignalBus.onboard_debug_info")
     else:
         print("OnboardDebugSingleton: SignalBus not found; will not receive onboard debug messages")
 
 func _on_onboard_debug_info(priority: int, content: String, sender: String) -> void:
+    print("OnboardDebugSingleton: Received debug info - priority:", priority, "sender:", sender, "content:", content)
     var entry = {
         "priority": int(priority),
         "content": str(content),
         "sender": str(sender)
     }
     messages.append(entry)
+    print("OnboardDebugSingleton: Messages count now:", messages.size())
     # Notify any open UI to display the new entry
     message_appended.emit(entry.priority, entry.content, entry.sender)
 

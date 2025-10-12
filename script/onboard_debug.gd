@@ -149,7 +149,7 @@ func _update_selection_visuals() -> void:
 	for i in range(children.size()):
 		var row = children[i]
 		if i == selected_index:
-			row.modulate = Color(0.15, 0.25, 0.35, 1)
+			# row.modulate = Color(0.15, 0.25, 0.35, 1)
 			# update text color to make sure it's readable
 			var child0 = row.get_child(0)
 			var hbox = child0
@@ -158,7 +158,7 @@ func _update_selection_visuals() -> void:
 				hbox = child0.get_child(0)
 			for label in hbox.get_children():
 				if label is Label:
-					label.add_theme_color_override("font_color", Color(1, 1, 1))
+					label.add_theme_color_override("font_color", Color(1, 0.8, 0))
 		else:
 			row.modulate = Color(1, 1, 1, 1)
 			var child02 = row.get_child(0)
