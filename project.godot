@@ -24,13 +24,13 @@ buses/default_bus_layout="res://audio_bus_layout.tres"
 
 [autoload]
 
+GlobalData="*res://script/global_data.gd"
+SignalBus="*res://script/signal_bus.gd"
 WebSocketListener="*res://script/WebSocketListener.gd"
 HttpService="*res://script/HttpService.gd"
-GlobalData="*res://script/global_data.gd"
 MenuController="*res://script/MenuController.gd"
-SignalBus="*res://script/signal_bus.gd"
-StatusBar="*res://scene/StatusBar.tscn"
 OnboardDebugSingleton="*res://script/onboard_debug_singleton.gd"
+StatusBar="*res://scene/StatusBar.tscn"
 
 [display]
 

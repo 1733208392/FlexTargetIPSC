@@ -1,6 +1,8 @@
 extends Node
 
 const DEBUG_DISABLED = false
+#"ws://127.0.0.1/websocket"
+const WEBSOCKET_URL = "ws://localhost:8080"
 
 signal data_received(data)
 signal bullet_hit(pos: Vector2)
@@ -10,6 +12,7 @@ signal ble_start_command(content: Dictionary)
 
 var socket: WebSocketPeer
 var bullet_spawning_enabled: bool = true
+var prev_socket_state: int = -1
 
 # Message rate limiting for performance optimization
 var last_message_time: float = 0.0
@@ -27,7 +30,7 @@ var pending_bullet_hits: Array[Vector2] = []  # Track pending bullet hit signals
 func _ready():
 	socket = WebSocketPeer.new()
 	#var err = socket.connect_to_url("ws://127.0.0.1/websocket")
-	var err = socket.connect_to_url("ws://localhost:8080")
+	var err = socket.connect_to_url(WEBSOCKET_URL)
 	if err != OK:
 		if not DEBUG_DISABLED:
 			print("Unable to connect")
@@ -38,9 +41,51 @@ func _ready():
 		if not DEBUG_DISABLED:
 			print("[WebSocket] Process priority set to maximum for immediate message processing")
 
+	# Reconnect timer for retrying closed connections
+	var reconnect_timer = Timer.new()
+	reconnect_timer.set_name("WebSocketReconnectTimer")
+	reconnect_timer.one_shot = true
+	reconnect_timer.wait_time = 2.0 # seconds; initial retry delay
+	reconnect_timer.connect("timeout", Callable(self, "_on_reconnect_timer_timeout"))
+	add_child(reconnect_timer)
+
+	# Connect watchdog timer: ensures a connect attempt actually reaches OPEN within a short timeout
+	var connect_watchdog = Timer.new()
+	connect_watchdog.set_name("WebSocketConnectWatchdog")
+	connect_watchdog.one_shot = true
+	connect_watchdog.wait_time = 3.0 # seconds; watchdog timeout for connect attempts
+	connect_watchdog.connect("timeout", Callable(self, "_on_connect_watchdog_timeout"))
+	add_child(connect_watchdog)
+
 func _process(_delta):
 	socket.poll()
 	var state = socket.get_ready_state()
+
+	# Detect state transitions and only announce real OPEN events
+	if state != prev_socket_state:
+		# When transitioning to OPEN, emit onboard debug and reset reconnect backoff/timers
+		if state == WebSocketPeer.STATE_OPEN:
+			var open_msg = "WebSocket connection opened"
+			var sb = get_node_or_null("/root/SignalBus")
+			if sb:
+				sb.emit_onboard_debug_info(1, open_msg, "Godot Game")
+			else:
+				if not DEBUG_DISABLED:
+					print(open_msg)
+
+			# Reset timing trackers and reconnect timer backoff on real open
+			last_message_time = Time.get_ticks_msec() / 1000.0
+			last_shot_processing_time = 0.0
+			var rt = get_node_or_null("WebSocketReconnectTimer")
+			if rt:
+				rt.wait_time = 2.0
+
+			# Stop the connect watchdog if it is running
+			var wd = get_node_or_null("WebSocketConnectWatchdog")
+			if wd and wd.is_stopped() == false:
+				wd.stop()
+
+		prev_socket_state = state
 	
 	# Reset per-frame message counter
 	processed_this_frame = 0
@@ -74,9 +119,21 @@ func _process(_delta):
 	elif state == WebSocketPeer.STATE_CLOSED:
 		var code = socket.get_close_code()
 		var reason = socket.get_close_reason()
+		# Emit onboard debug info about the closure
+		var close_msg = "WebSocket closed with code: %d, reason %s. Clean: %s" % [code, reason, code != -1]
 		if not DEBUG_DISABLED:
-			print("WebSocket closed with code: %d, reason %s. Clean: %s" % [code, reason, code != -1])
-		set_process(false) # Stop processing.
+			print(close_msg)
+
+		var sb = get_node_or_null("/root/SignalBus")
+		if sb:
+			sb.emit_onboard_debug_info(3, close_msg, "Websocket Listener")
+		else:
+			if not DEBUG_DISABLED:
+				print("[WebSocket] SignalBus not available - close debug: ", close_msg)
+
+		# Attempt immediate reconnect and schedule retries
+		_attempt_reconnect()
+		set_process(false) # Stop processing until reconnect attempt
 
 # Parse JSON and emit bullet_hit for each (x, y)
 func _process_websocket_json(json_string):
@@ -167,6 +224,15 @@ func _handle_ble_forwarded_command(parsed):
 	# Add dest to content for UI display
 	content["dest"] = dest
 
+	# Emit onboard debug info for forwarded BLE commands (sender: Mobile App)
+	var sb = get_node_or_null("/root/SignalBus")
+	var content_str = JSON.stringify(content)
+	if sb:
+		sb.emit_onboard_debug_info(2, "BLE forwarded: " + content_str, "Mobile App")
+	else:
+		if not DEBUG_DISABLED:
+			print("[WebSocket] SignalBus not available - BLE forwarded debug: ", content_str)
+
 	#     let content: [String: Any] = [
 	#     "command": "ready"/"start",
 	#     "delay": delay,
@@ -240,6 +306,14 @@ func send_netlink_forward(device: String, content_val) -> int:
 			return err
 		if not DEBUG_DISABLED:
 			print("[WebSocket] send_netlink_forward sent: ", json_string)
+
+		# Emit onboard debug info for outgoing netlink forwards (sender: Godot Game)
+		var sb = get_node_or_null("/root/SignalBus")
+		if sb:
+			sb.emit_onboard_debug_info(1, "Netlink forward sent to device: " + str(device) + ", content: " + json_string, "Godot Game")
+		else:
+			if not DEBUG_DISABLED:
+				print("[WebSocket] SignalBus not available - netlink forward debug: ", json_string)
 		return OK
 	else:
 		if not DEBUG_DISABLED:
@@ -261,3 +335,70 @@ func set_bullet_spawning_enabled(enabled: bool):
 func get_bullet_spawning_enabled() -> bool:
 	"""Get current bullet spawning enabled state"""
 	return bullet_spawning_enabled
+
+
+func _attempt_reconnect() -> void:
+	"""Try to reopen the websocket connection immediately. If it fails, schedule the reconnect timer."""
+	if not DEBUG_DISABLED:
+		print("[WebSocket] Attempting reconnect...")
+
+		# Try to create a fresh WebSocketPeer and initiate connection
+		var new_socket = WebSocketPeer.new()
+		var err = new_socket.connect_to_url(WEBSOCKET_URL)
+
+		# If connect_to_url returns OK it means the connection process started successfully
+		if err == OK:
+			socket = new_socket
+			# Enable processing so poll() can drive the connection state machine
+			set_process(true)
+			if not DEBUG_DISABLED:
+				print("[WebSocket] Reconnect attempt started (connection in progress)")
+
+			# Start the connect watchdog to ensure the connect finishes in a timely manner
+			var watchdog = get_node_or_null("WebSocketConnectWatchdog")
+			if watchdog:
+				watchdog.start()
+			return
+
+		# If connect_to_url returned an error, schedule retry with backoff
+		var timer = get_node_or_null("WebSocketReconnectTimer")
+		if timer:
+			var next = clamp(timer.wait_time * 2.0, 2.0, 60.0)
+			timer.wait_time = next
+			if not DEBUG_DISABLED:
+				print("[WebSocket] Reconnect attempt failed to start (err=", err, ") - scheduling retry in ", timer.wait_time, "s")
+			timer.start()
+
+
+func _on_reconnect_timer_timeout() -> void:
+	"""Handler called when reconnect timer fires; attempt reconnect."""
+	_attempt_reconnect()
+
+
+func _on_connect_watchdog_timeout() -> void:
+	"""Called when a connect attempt didn't reach OPEN within the watchdog timeout.
+	Schedules backoff retry and emits onboard debug info."""
+	var state = socket.get_ready_state()
+	if state == WebSocketPeer.STATE_OPEN:
+		# Connection succeeded just before watchdog fired; nothing to do
+		if not DEBUG_DISABLED:
+			print("[WebSocket] Connect watchdog fired but socket already OPEN")
+		return
+
+	# Not open: schedule backoff retry
+	var timer = get_node_or_null("WebSocketReconnectTimer")
+	if timer:
+		var next = clamp(timer.wait_time * 2.0, 2.0, 60.0)
+		timer.wait_time = next
+		if not DEBUG_DISABLED:
+			print("[WebSocket] Connect watchdog timeout - scheduling retry in ", timer.wait_time, "s")
+		timer.start()
+
+	# Emit onboard debug info about the connect timeout
+	var sb = get_node_or_null("/root/SignalBus")
+	var msg = "WebSocket connect watchdog timeout: connection did not reach OPEN"
+	if sb:
+		sb.emit_onboard_debug_info(3, msg, "Websocket Listener")
+	else:
+		if not DEBUG_DISABLED:
+			print("[WebSocket] SignalBus not available - watchdog timeout: ", msg)

@@ -61,7 +61,7 @@ func _append_row(_priority: int, content: String, sender: String) -> void:
 	# Create a new panel row showing sender and content (allows background highlight)
 	var row = Panel.new()
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.custom_minimum_size = Vector2(0, 36) # reasonable row height
+	row.custom_minimum_size = Vector2(0, 100) # reasonable row height
 
 	var margin = MarginContainer.new()
 	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -74,12 +74,13 @@ func _append_row(_priority: int, content: String, sender: String) -> void:
 	var sender_label = Label.new()
 	sender_label.text = sender
 	sender_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sender_label.custom_minimum_size = Vector2(200, 0)
+	sender_label.custom_minimum_size = Vector2(48, 0)
 	sender_label.add_theme_color_override("font_color", Color(0.8, 0.9, 1))
 
 	var content_label = Label.new()
+	content_label.custom_minimum_size = Vector2(500, 0)
+	content_label.autowrap_mode = 3 # Smart Word
 	content_label.text = content
-	content_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	hbox.add_child(sender_label)
 	hbox.add_child(content_label)
