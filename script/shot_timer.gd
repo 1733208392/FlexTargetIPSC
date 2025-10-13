@@ -152,7 +152,7 @@ func _on_timer_timeout():
 	current_state = TimerState.READY
 	
 	# Update visual feedback
-	standby_label.text = "SHOOT!"
+	standby_label.text = tr("shoot_command")
 	standby_label.label_settings.font_color = Color.GREEN
 	
 	# Stop pulsing animation and start flash animation

@@ -735,10 +735,10 @@ func update_hf_header_visual():
 	var hf_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/HFLabel")
 	if hf_label:
 		if sort_by_hit_factor:
-			hf_label.text = "  HF ↓"  # Down arrow indicates descending sort
+			hf_label.text = tr("hf_descending")  # Down arrow indicates descending sort
 			hf_label.modulate = Color(1.0, 0.8, 0.2)  # Golden color to indicate active sorting
 		else:
-			hf_label.text = "  HF  "
+			hf_label.text = tr("hf_ascending")
 			hf_label.modulate = Color.WHITE  # Default color
 
 func power_off():

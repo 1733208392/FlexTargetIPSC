@@ -25,7 +25,7 @@ func _ready():
 	controls = [channel_dropdown, workmode_dropdown, name_line_edit, done_button]
 	
 	# Initialize status label
-	status_label.text = "Netlink Config"
+	status_label.text = tr("netlink_config")
 	
 	# Setup timers
 	setup_timers()
@@ -375,7 +375,7 @@ func _on_netlink_start_callback(result, response_code, _headers, _body):
 
 # Timer and animation functions
 func start_progress_animation():
-	status_label.text = "Netlink Config In Progress"
+	status_label.text = tr("netlink_config_progress")
 	animation_dots = 0
 	animation_timer.start()
 
@@ -397,14 +397,14 @@ func _on_guard_timer_timeout():
 func _on_animation_timer_timeout():
 	animation_dots = (animation_dots + 1) % 4
 	var dots = ".".repeat(animation_dots)
-	status_label.text = "Netlink Config In Progress" + dots
+	status_label.text = tr("netlink_config_progress") + dots
 
 func set_status_failed():
 	stop_timers()
-	status_label.text = "Netlink Config Failed"
+	status_label.text = tr("netlink_config_failed")
 
 func set_status_timeout():
-	status_label.text = "Netlink Config Timeout"
+	status_label.text = tr("netlink_config_timeout")
 
 # Allow closing with ESC
 func _input(event):

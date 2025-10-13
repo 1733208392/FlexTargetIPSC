@@ -125,7 +125,7 @@ func _on_timeout_warning(remaining_seconds: float):
 func _process(_delta):
 	"""Update FPS counter every frame"""
 	var fps = Engine.get_frames_per_second()
-	fps_label.text = "FPS: " + str(fps)
+	fps_label.text = tr("fps_display") + str(fps)
 
 func _on_target_title_update(target_index: int, total_targets: int):
 	"""Update the target title based on the current target number"""

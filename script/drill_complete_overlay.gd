@@ -739,7 +739,7 @@ func _update_countdown_text():
 	"""Update the restart button text with countdown"""
 	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
 	if restart_btn:
-		restart_btn.text = "Auto Restart in " + str(countdown_seconds)
+		restart_btn.text = tr("auto_restart_in") + str(countdown_seconds)
 		# Make countdown text more visible with larger font and red color
 		restart_btn.add_theme_font_size_override("font_size", 48)
 		restart_btn.add_theme_color_override("font_color", Color.RED)

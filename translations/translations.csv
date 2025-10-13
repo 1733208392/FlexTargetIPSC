@@ -262,3 +262,44 @@ shots,Shots,射击,ショット,射擊
 on_text,on,于,で,於
 target_text,Target,标靶,ターゲット,標靶
 navigate_instruction,▲ ▼ Browse bullet shots,▲ ▼ 浏览弹着点,▲ ▼ 弾丸射撃をナビゲート,▲ ▼ ショットを閲覧する
+networking,Networking,网络配置,ネットワーキング,網路配置
+auto_restart_in,Auto Restart in,自动重启倒计时,自動再起動まで,自動重新啟動倒數
+failed_open_settings,Failed to open settings.json,无法打开设置文件,設定ファイルを開けません,無法開啟設定檔案
+sending_save_request,Sending save request...,正在发送保存请求...,保存リクエストを送信中...,正在傳送儲存請求...
+http_service_not_found,HttpService not found,未找到HttpService,HttpServiceが見つかりません,未找到HttpService
+sending_load_request,Sending load request...,正在发送加载请求...,読み込みリクエストを送信中...,正在傳送載入請求...
+failed_open_leaderboard,Failed to open leader_board_index.json,无法打开排行榜文件,リーダーボードファイルを開けません,無法開啟排行榜檔案
+sending_save_leaderboard,Sending save leaderboard request...,正在发送保存排行榜请求...,リーダーボード保存リクエストを送信中...,正在傳送儲存排行榜請求...
+sending_load_leaderboard,Sending load leaderboard request...,正在发送加载排行榜请求...,リーダーボード読み込みリクエストを送信中...,正在傳送載入排行榜請求...
+timeout_loading,Timeout - Loading anyway...,超时 - 继续加载...,タイムアウト - 読み込みを継続...,超時 - 繼續載入...
+hf_descending,  HF ↓,  系数 ↓,  HF ↓,  係數 ↓
+hf_ascending,  HF  ,  系数  ,  HF  ,  係數  
+fps_display,FPS: ,FPS: ,FPS: ,FPS: 
+content_not_available,Content not available,内容不可用,コンテンツが利用できません,內容不可用
+page_data_invalid,Page data invalid,页面数据无效,ページデータが無効です,頁面資料無效
+shoot_command,SHOOT!,开火！,シュート！,開火！
+wifi_title,WI-FI,WI-FI,WI-FI,WI-FI
+scanning_networks,Scanning for networks,正在扫描网络,ネットワークをスキャン中,正在掃描網路
+retry_wifi_scan,Retry WIFI Scan,重试WIFI扫描,WIFIスキャンを再試行,重試WIFI掃描
+enter_password,Enter Password for {wifi_name},输入 {wifi_name} 的密码,{wifi_name} のパスワードを入力,輸入 {wifi_name} 的密碼
+password_placeholder,Password,密码,パスワード,密碼
+target_details,Target Details,目标详情,ターゲット詳細,目標詳情
+statistics,Statistics,统计,統計,統計
+fastest_shot,Fastest Shot:,最快击发:,最速ショット:,最快擊發:
+total_time,Total Time:,总时间:,合計時間:,總時間:
+total_shots,Total Shots:,总射击数:,合計ショット数:,總射擊數:
+average_time,Average Time:,平均时间:,平均時間:,平均時間:
+accuracy,Accuracy:,准确度:,精度:,準確度:
+points_scored,Points Scored:,得分:,得点:,得分:
+back_button,Back,返回,戻る,返回
+bluetooth_name,Bluetooth Name,蓝牙名称,Bluetooth名,藍牙名稱
+device_name,Device Name,设备名称,デバイス名,設備名稱
+network_channel,Network Channel,网络频道,ネットワークチャンネル,網路頻道
+ip_address,IP Address,IP地址,IPアドレス,IP位址
+working_mode,Working Mode,工作模式,動作モード,工作模式
+netlink_config,Netlink Config,网络配置,ネットリンク設定,網路配置
+netlink_config_progress,Netlink Config In Progress,网络配置进行中,ネットリンク設定進行中,網路配置進行中
+netlink_config_failed,Netlink Config Failed,网络配置失败,ネットリンク設定失敗,網路配置失敗
+netlink_config_timeout,Netlink Config Timeout,网络配置超时,ネットリンク設定タイムアウト,網路配置超時
+wifi_scan_timeout,WIFI Scan Timeout,WIFI扫描超时,WIFIスキャンタイムアウト,WIFI掃描超時
+wifi_scan_failed,WIFI Scan Failed,WIFI扫描失败,WIFIスキャン失敗,WIFI掃描失敗

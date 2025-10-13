@@ -63,7 +63,7 @@ func _on_settings_loaded():
 
 func _on_timeout():
 	print("[Splash] Loading timeout reached, proceeding to main menu anyway")
-	loading_label.text = "Timeout - Loading anyway..."
+	loading_label.text = tr("timeout_loading")
 	await get_tree().create_timer(1.0).timeout
 	proceed_to_main_menu()
 

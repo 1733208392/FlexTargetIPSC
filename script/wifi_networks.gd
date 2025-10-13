@@ -54,7 +54,7 @@ func _scan_networks():
 	retry_button.visible = false
 	print("[WiFi Networks] Scanning container visible: ", scanning_container.visible)
 	dot_count = 0
-	scanning_label.text = "Scanning for networks"
+	scanning_label.text = tr("scanning_networks")
 	
 	# Create and start timer for dot animation (every 0.5 seconds)
 	scan_timer = Timer.new()
@@ -88,7 +88,7 @@ func _on_scan_timeout():
 		timeout_timer = null
 	
 	# Update UI for timeout - static text, no animation
-	scanning_label.text = "WIFI Scan Timeout"
+	scanning_label.text = tr("wifi_scan_timeout")
 	retry_button.visible = true
 	retry_button.grab_focus()
 	print("[WiFi Networks] Timeout UI updated")
@@ -98,7 +98,7 @@ func _on_scan_timer_timeout():
 	var dots = ""
 	for i in range(dot_count):
 		dots += "."
-	scanning_label.text = "Scanning for networks" + dots
+	scanning_label.text = tr("scanning_networks") + dots
 	print("[WiFi Networks] Scanning animation: ", scanning_label.text)
 
 func _on_retry_button_pressed():
@@ -131,13 +131,13 @@ func _on_wifi_scan_completed(result, response_code, _headers, body):
 		else:
 			print("Invalid response format")
 			# Show failure state
-			scanning_label.text = "WIFI Scan Failed"
+			scanning_label.text = tr("wifi_scan_failed")
 			retry_button.visible = true
 			retry_button.grab_focus()
 	else:
 		print("WiFi scan failed: ", result, " code: ", response_code)
 		# Show failure state for HTTP errors
-		scanning_label.text = "WIFI Scan Failed"
+		scanning_label.text = tr("wifi_scan_failed")
 		retry_button.visible = true
 		retry_button.grab_focus()
 
@@ -177,7 +177,7 @@ func _on_network_selected(network_name):
 	# Show overlay and focus password field
 	overlay.visible = true
 	if title_label:
-		title_label.text = "Enter Password for %s" % selected_network
+		title_label.text = tr("enter_password").replace("{wifi_name}", selected_network)
 	password_line.text = ""
 	password_line.grab_focus()
 	if keyboard:

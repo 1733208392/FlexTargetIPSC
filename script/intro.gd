@@ -160,10 +160,10 @@ func update_page_display():
 		if current_page_data.has("content"):
 			main_text.text = current_page_data.content
 		else:
-			main_text.text = "Content not available"
+			main_text.text = tr("content_not_available")
 			print("[Intro] Page ", current_page, " missing content field")
 	else:
-		main_text.text = "Page data invalid"
+		main_text.text = tr("page_data_invalid")
 		print("[Intro] Page ", current_page, " has invalid data: ", current_page_data)
 	
 	# Update page indicator
