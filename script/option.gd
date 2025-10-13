@@ -110,22 +110,13 @@ func _ready():
 	else:
 		print("[Option] WebSocketListener singleton not found!")
 
-	# Listen for netlink status updates from GlobalData
-	var global_data = get_node_or_null("/root/GlobalData")
-	if global_data:
-		var cb = Callable(self, "_on_netlink_status_loaded")
-		if not global_data.is_connected("netlink_status_loaded", cb):
-			global_data.connect("netlink_status_loaded", cb)
-			print("[Option] Connected to GlobalData.netlink_status_loaded signal")
-		else:
-			print("[Option] Already connected to GlobalData.netlink_status_loaded signal")
-
-		# Immediate-populate fallback: if GlobalData already has netlink_status populated, update UI now
-		if global_data.netlink_status and typeof(global_data.netlink_status) == TYPE_DICTIONARY and global_data.netlink_status.size() > 0:
-			print("[Option] GlobalData.netlink_status already present at _ready, populating UI immediately")
-			_on_netlink_status_loaded()
+	# Request fresh netlink status from server instead of relying on GlobalData cache
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		http_service.netlink_status(Callable(self, "_on_netlink_status_response"))
+		print("[Option] Requested fresh netlink status from server")
 	else:
-		print("[Option] GlobalData singleton not found; cannot listen for netlink status")
+		print("[Option] HttpService singleton not found; cannot request netlink status")
 
 func _on_language_changed(language: String):
 	current_language = language
@@ -378,20 +369,52 @@ func _on_netlink_status_loaded():
 		print("[Option] GlobalData.netlink_status is empty or invalid: ", s)
 		return
 
+	_populate_networking_fields(s)
+	print("[Option] Populated networking fields from GlobalData.netlink_status: ", s)
+
+func _populate_networking_fields(data: Dictionary):
 	# Map expected fields from netlink_status -> UI labels
 	# Content1: bluetooth_name, Content2: device_name, Content3: channel, Content4: wifi_ip, Content5: work_mode
 	if content1_label:
-		content1_label.text = str(s.get("bluetooth_name", ""))
+		content1_label.text = str(data.get("bluetooth_name", ""))
 	if content2_label:
-		content2_label.text = str(s.get("device_name", ""))
+		content2_label.text = str(data.get("device_name", ""))
 	if content3_label:
-		content3_label.text = str(s.get("channel", ""))
+		content3_label.text = str(data.get("channel", ""))
 	if content4_label:
-		content4_label.text = str(s.get("wifi_ip", ""))
+		content4_label.text = str(data.get("wifi_ip", ""))
 	if content5_label:
-		content5_label.text = str(s.get("work_mode", ""))
+		content5_label.text = str(data.get("work_mode", ""))
 
-	print("[Option] Populated networking fields from GlobalData.netlink_status: ", s)
+func _on_netlink_status_response(result, response_code, _headers, body):
+	print("[Option] Received netlink_status HTTP response - Code:", response_code)
+	if response_code == 200 and result == HTTPRequest.RESULT_SUCCESS:
+		var body_str = body.get_string_from_utf8()
+		print("[Option] netlink_status body: ", body_str)
+		
+		# Parse the response similar to GlobalData.update_netlink_status_from_response
+		var json = JSON.parse_string(body_str)
+		if json and json.has("data"):
+			var data_field = json["data"]
+			var parsed_data = null
+			
+			if typeof(data_field) == TYPE_STRING:
+				parsed_data = JSON.parse_string(data_field)
+			else:
+				parsed_data = data_field
+			
+			if parsed_data and typeof(parsed_data) == TYPE_DICTIONARY:
+				print("[Option] Parsed netlink_status data: ", parsed_data)
+				# Populate UI directly with parsed data instead of using GlobalData
+				_populate_networking_fields(parsed_data)
+			else:
+				print("[Option] Failed to parse netlink_status data field")
+		else:
+			print("[Option] netlink_status response missing data field or failed to parse")
+	else:
+		print("[Option] netlink_status request failed with code:", response_code)
+
+# Functions to get current auto restart settings (can be called from other scripts)
 
 # Function to get current language (can be called from other scripts)
 static func get_current_language() -> String:

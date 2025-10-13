@@ -6,7 +6,7 @@
 [ext_resource type="Theme" uid="uid://b1xuwasqtx311" path="res://theme/custom_button_theme.tres" id="3_qb65s"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gax0u"]
-bg_color = Color(0.99607843, 0.5411765, 0, 1)
+bg_color = Color(0.996078, 0.541176, 0, 1)
 
 [node name="NetworkingConfig" type="Control"]
 layout_mode = 3
@@ -24,7 +24,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.078431375, 0.12941177, 0.14901961, 1)
+color = Color(0.0784314, 0.129412, 0.14902, 1)
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -50,6 +50,15 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Status"
+horizontal_alignment = 1
+
+[node name="Spacer4" type="Control" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
 [node name="ChannelLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 text = "Channel                                    "
@@ -59,8 +68,8 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_gax0u")
+theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 toggle_mode = false
 
 [node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer"]
@@ -76,8 +85,8 @@ custom_minimum_size = Vector2(24, 32)
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 theme_override_styles/hover = SubResource("StyleBoxFlat_gax0u")
+theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 
 [node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 16)

@@ -3,6 +3,7 @@ extends Control
 # Networking configuration UI for setting channel and target name
 # Features remote control navigation and onscreen keyboard for input
 
+@onready var status_label = $CenterContainer/VBoxContainer/StatusLabel
 @onready var channel_dropdown = $CenterContainer/VBoxContainer/ChannelDropdown
 @onready var workmode_dropdown = $CenterContainer/VBoxContainer/WorkModeDropdown
 @onready var name_line_edit = $CenterContainer/VBoxContainer/NameLineEdit
@@ -13,9 +14,21 @@ var focused_control = 0  # 0 = channel dropdown, 1 = workmode dropdown, 2 = name
 var controls = []
 var dropdown_open = false
 
+# Status handling variables
+var guard_timer: Timer
+var animation_timer: Timer
+var animation_dots = 0
+var is_configuring = false
+
 func _ready():
 	# Initialize controls array
 	controls = [channel_dropdown, workmode_dropdown, name_line_edit, done_button]
+	
+	# Initialize status label
+	status_label.text = "Netlink Config"
+	
+	# Setup timers
+	setup_timers()
 	
 	# Populate channel dropdown with values 1-10
 	for i in range(1, 11):
@@ -52,6 +65,20 @@ func _ready():
 			_on_netlink_status_loaded()
 	else:
 		print("[NetworkingConfig] GlobalData singleton not found; will not auto-populate netlink info")
+
+func setup_timers():
+	# Setup guard timer (15 seconds)
+	guard_timer = Timer.new()
+	guard_timer.wait_time = 15.0
+	guard_timer.one_shot = true
+	guard_timer.timeout.connect(_on_guard_timer_timeout)
+	add_child(guard_timer)
+	
+	# Setup animation timer (for dots animation)
+	animation_timer = Timer.new()
+	animation_timer.wait_time = 0.5
+	animation_timer.timeout.connect(_on_animation_timer_timeout)
+	add_child(animation_timer)
 
 func load_current_settings():
 	var global_data = get_node_or_null("/root/GlobalData")
@@ -267,10 +294,19 @@ func _on_save_settings_callback(result, response_code, _headers, _body):
 		print("[NetworkingConfig] Failed to save settings - Result: ", result, ", Code: ", response_code)
 
 func configure_network():
+	if is_configuring:
+		print("[NetworkingConfig] Configuration already in progress, ignoring request")
+		return
+		
 	var http_service = get_node_or_null("/root/HttpService")
 	if not http_service:
 		print("[NetworkingConfig] HttpService not found, cannot configure network")
 		return
+	
+	# Start configuration process
+	is_configuring = true
+	start_progress_animation()
+	start_guard_timer()
 	
 	# Get values from UI
 	var channel = channel_dropdown.get_selected_id()
@@ -282,17 +318,49 @@ func configure_network():
 	http_service.netlink_config(_on_netlink_config_callback, channel, target_name, workmode)
 
 func _on_netlink_config_callback(result, response_code, _headers, _body):
+	stop_timers()
+	
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-		print("[NetworkingConfig] Netlink config successful, starting netlink...")
+		print("[NetworkingConfig] Netlink config successful, updating GlobalData and starting netlink...")
+		
+		# Update GlobalData.netlink_status with the new configuration
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data:
+			var channel = channel_dropdown.get_selected_id()
+			var workmode_index = workmode_dropdown.get_selected_id()
+			var workmode = "master" if workmode_index == 0 else "slave"
+			var target_name = name_line_edit.text.strip_edges()
+			
+			# Update netlink_status with new configuration
+			global_data.netlink_status["channel"] = channel
+			global_data.netlink_status["work_mode"] = workmode
+			global_data.netlink_status["device_name"] = target_name
+			global_data.netlink_status["bluetooth_name"] = target_name
+			global_data.netlink_status["started"] = false  # Will be updated when start succeeds
+			
+			print("[NetworkingConfig] Updated GlobalData.netlink_status: ", global_data.netlink_status)
+		
 		var http_service = get_node_or_null("/root/HttpService")
 		if http_service:
 			http_service.netlink_start(_on_netlink_start_callback)
 	else:
 		print("[NetworkingConfig] Netlink config failed - Result: ", result, ", Code: ", response_code)
+		set_status_failed()
+		is_configuring = false
 
 func _on_netlink_start_callback(result, response_code, _headers, _body):
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		print("[NetworkingConfig] Netlink start successful")
+		
+		# Update GlobalData to mark netlink as started
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data:
+			global_data.netlink_status["started"] = true
+			print("[NetworkingConfig] Updated GlobalData.netlink_status.started to true")
+			# Emit the signal to notify other components
+			global_data.netlink_status_loaded.emit()
+		
+		is_configuring = false
 		var signal_bus = get_node_or_null("/root/SignalBus")
 		if signal_bus:
 			print("[NetworkingConfig] Emitting network_started via SignalBus")
@@ -302,6 +370,41 @@ func _on_netlink_start_callback(result, response_code, _headers, _body):
 		get_tree().change_scene_to_file("res://scene/option.tscn")
 	else:
 		print("[NetworkingConfig] Netlink start failed - Result: ", result, ", Code: ", response_code)
+		set_status_failed()
+		is_configuring = false
+
+# Timer and animation functions
+func start_progress_animation():
+	status_label.text = "Netlink Config In Progress"
+	animation_dots = 0
+	animation_timer.start()
+
+func start_guard_timer():
+	guard_timer.start()
+
+func stop_timers():
+	if guard_timer:
+		guard_timer.stop()
+	if animation_timer:
+		animation_timer.stop()
+
+func _on_guard_timer_timeout():
+	print("[NetworkingConfig] Guard timer timed out (15s)")
+	stop_timers()
+	set_status_timeout()
+	is_configuring = false
+
+func _on_animation_timer_timeout():
+	animation_dots = (animation_dots + 1) % 4
+	var dots = ".".repeat(animation_dots)
+	status_label.text = "Netlink Config In Progress" + dots
+
+func set_status_failed():
+	stop_timers()
+	status_label.text = "Netlink Config Failed"
+
+func set_status_timeout():
+	status_label.text = "Netlink Config Timeout"
 
 # Allow closing with ESC
 func _input(event):

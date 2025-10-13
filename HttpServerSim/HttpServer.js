@@ -3,11 +3,11 @@ const fs = require('fs');
 const url = require('url');
 
 // Netlink state variables
-let netlinkStarted = false;
+let netlinkStarted = true;
 let netlinkChannel = 0;
-let netlinkWorkMode = null;
-let netlinkDeviceName = null;
-let netlinkBluetoothName = null;
+let netlinkWorkMode = "master";
+let netlinkDeviceName = "B";
+let netlinkBluetoothName = "BleB";
 let netlinkWifiIp = "192.168.1.100"; // Mock IP for simulation
 
 const server = http.createServer((req, res) => {
@@ -200,17 +200,20 @@ const server = http.createServer((req, res) => {
           return;
         }
 
-        // Simulate configuration - always succeed for simulation
-        console.log(`[HttpServer] Configuring netlink: channel=${channel}, work_mode=${work_mode}, device_name=${device_name}`);
+        // Simulate configuration with 10 second delay
+        console.log(`[HttpServer] Starting netlink configuration: channel=${channel}, work_mode=${work_mode}, device_name=${device_name} (10s delay)...`);
         
-        // Store the configuration
-        netlinkChannel = channel;
-        netlinkWorkMode = work_mode;
-        netlinkDeviceName = device_name;
-        netlinkBluetoothName = device_name; // Use device_name as bluetooth_name for simulation
-        
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ code: 0, msg: "Configuration successful" }));
+        setTimeout(() => {
+          // Store the configuration
+          netlinkChannel = channel;
+          netlinkWorkMode = work_mode;
+          netlinkDeviceName = device_name;
+          netlinkBluetoothName = device_name; // Use device_name as bluetooth_name for simulation
+          
+          console.log(`[HttpServer] Netlink configuration completed`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 0, msg: "Configuration successful" }));
+        }, 10000);
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ code: 1, msg: "Invalid JSON" }));
@@ -232,7 +235,7 @@ const server = http.createServer((req, res) => {
     // Get netlink service status
     console.log(`[HttpServer] Netlink status requested`);
     // Commented out original response to simulate started=false scenario
-    /*
+    
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       code: 0,
@@ -246,21 +249,21 @@ const server = http.createServer((req, res) => {
         started: netlinkStarted
       }
     }));
-    */
+    
     // Simulate started=false scenario
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      code: 0,
-      msg: "",
-      data: {
-        wifi_ip: netlinkWifiIp,
-        channel: 0,
-        work_mode: null,
-        device_name: null,
-        bluetooth_name: null,
-        started: false
-      }
-    }));
+    // res.writeHead(200, { 'Content-Type': 'application/json' });
+    // res.end(JSON.stringify({
+    //   code: 0,
+    //   msg: "",
+    //   data: {
+    //     wifi_ip: netlinkWifiIp,
+    //     channel: 0,
+    //     work_mode: null,
+    //     device_name: null,
+    //     bluetooth_name: null,
+    //     started: false
+    //   }
+    // }));
   } else {
     let body = '';
     req.on('data', chunk => {
