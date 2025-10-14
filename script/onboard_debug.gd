@@ -121,7 +121,7 @@ func _on_menu_control(directive: String) -> void:
 		"homepage", "home":
 			# Navigate to main menu
 			print("OnboardDebug: homepage -> navigating to main menu")
-			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"up":
 			# Move selection up one row (wrap to last if none selected)
 			if selected_index == -1:

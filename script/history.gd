@@ -611,7 +611,7 @@ func _on_menu_control(directive: String):
 		"back", "homepage":
 			if DEBUG_PRINTS:
 				print("[History] ", directive, " - navigating to main menu")
-			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"up":
 			if DEBUG_PRINTS:
 				print("[History] Moving focus up")

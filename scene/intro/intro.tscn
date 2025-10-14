@@ -1,11 +1,11 @@
 [gd_scene load_steps=7 format=3 uid="uid://rtls33j2jr4q"]
 
-[ext_resource type="Script" uid="uid://bhvruqf68yix4" path="res://script/intro.gd" id="1_nc68o"]
-[ext_resource type="LabelSettings" uid="uid://bw22f0mtic4xe" path="res://theme/target_title_tactical.tres" id="1_srnjo"]
-[ext_resource type="Texture2D" uid="uid://beqbg7e01j16p" path="res://asset/dialog_cntnrs.png" id="2_wk1th"]
-[ext_resource type="FontFile" uid="uid://b6nrcit1qskc6" path="res://font/Inter/static/Inter_24pt-Light.ttf" id="3_lf28b"]
-[ext_resource type="Theme" uid="uid://b1xuwasqtx311" path="res://theme/custom_button_theme.tres" id="4_tdcom"]
-[ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="5_volumn"]
+[ext_resource type="Script" uid="uid://bhvruqf68yix4" path="res://scene/intro/intro.gd" id="1_y6sgv"]
+[ext_resource type="LabelSettings" uid="uid://bw22f0mtic4xe" path="res://theme/target_title_tactical.tres" id="2_1kmu5"]
+[ext_resource type="Texture2D" uid="uid://beqbg7e01j16p" path="res://asset/dialog_cntnrs.png" id="3_48x57"]
+[ext_resource type="FontFile" uid="uid://b6nrcit1qskc6" path="res://font/Inter/static/Inter_24pt-Light.ttf" id="4_s5wda"]
+[ext_resource type="Theme" uid="uid://b1xuwasqtx311" path="res://theme/custom_button_theme.tres" id="5_rvvlv"]
+[ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="6_ncd3m"]
 
 [node name="intro" type="Control"]
 layout_mode = 3
@@ -14,7 +14,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_nc68o")
+script = ExtResource("1_y6sgv")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -35,7 +35,7 @@ offset_top = 40.0
 offset_right = 182.5
 offset_bottom = 77.0
 grow_horizontal = 2
-label_settings = ExtResource("1_srnjo")
+label_settings = ExtResource("2_1kmu5")
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -55,7 +55,7 @@ grow_vertical = 2
 
 [node name="Border" type="TextureRect" parent="CenterContainer"]
 layout_mode = 2
-texture = ExtResource("2_wk1th")
+texture = ExtResource("3_48x57")
 
 [node name="ContentVBox" type="VBoxContainer" parent="CenterContainer"]
 custom_minimum_size = Vector2(500, 0)
@@ -65,7 +65,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 450)
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_fonts/normal_font = ExtResource("3_lf28b")
+theme_override_fonts/normal_font = ExtResource("4_s5wda")
 theme_override_font_sizes/normal_font_size = 22
 bbcode_enabled = true
 text = "
@@ -96,7 +96,7 @@ alignment = 1
 [node name="PrevButton" type="Button" parent="CenterContainer/ContentVBox/NavigationContainer"]
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
-theme = ExtResource("4_tdcom")
+theme = ExtResource("5_rvvlv")
 disabled = true
 
 [node name="PageIndicator" type="Label" parent="CenterContainer/ContentVBox/NavigationContainer"]
@@ -107,7 +107,7 @@ vertical_alignment = 1
 [node name="NextButton" type="Button" parent="CenterContainer/ContentVBox/NavigationContainer"]
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
-theme = ExtResource("4_tdcom")
+theme = ExtResource("5_rvvlv")
 
 [node name="StartButton" type="Button" parent="."]
 layout_mode = 1
@@ -124,10 +124,10 @@ grow_horizontal = 2
 grow_vertical = 0
 size_flags_horizontal = 4
 size_flags_vertical = 3
-theme = ExtResource("4_tdcom")
+theme = ExtResource("5_rvvlv")
 theme_override_font_sizes/font_size = 36
 
-[node name="Volume" parent="." instance=ExtResource("5_volumn")]
+[node name="Volume" parent="." instance=ExtResource("6_ncd3m")]
 visible = false
 layout_mode = 1
 anchors_preset = 3

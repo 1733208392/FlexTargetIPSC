@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://70u53cag842n"]
 
-[ext_resource type="PackedScene" uid="uid://cjkeemu421bdp" path="res://scene/main_menu.tscn" id="1_d7aqm"]
+[ext_resource type="PackedScene" uid="uid://cjkeemu421bdp" path="res://scene/main_menu/main_menu.tscn" id="1_d7aqm"]
 [ext_resource type="Script" uid="uid://csiwto5502a0n" path="res://script/test_onboard_debug_runner.gd" id="2_runner"]
 
 [node name="TestOnboardDebug" type="Control"]

@@ -116,14 +116,14 @@ const server = http.createServer((req, res) => {
       }
     });
   } else if (pathname === '/netlink/wifi/scan' && req.method === 'POST') {
-    const ssidList = ["cjyw", "cjyw2", "cjyw5G"];
+    const ssidList = ["cjyw", "cjyw2", "cjyw5G", "cjyw", "cjyw2", "cjyw5G", "cjyw", "cjyw2", "cjyw5G", "cjyw", "cjyw2", "cjyw5G", "cjyw", "cjyw2", "cjyw5G"];
     console.log(`[HttpServer] Starting WiFi scan simulation (15s delay)...`);
     // Simulate 15 second delay for WiFi scanning
     setTimeout(() => {
       console.log(`[HttpServer] WiFi scan completed`);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ code: 0, msg: "", data: { ssid_list: ssidList } }));
-    }, 15000);
+    }, 60000);
   } else if (pathname === '/netlink/wifi/connect' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => {
@@ -160,10 +160,13 @@ const server = http.createServer((req, res) => {
           return;
         }
 
-        // Simulate WiFi connection - always succeed for simulation
-        console.log(`[HttpServer] Connecting to WiFi: SSID=${ssid}`);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ code: 0, msg: '' }));
+        // Simulate WiFi connection with 10 second delay
+        console.log(`[HttpServer] Connecting to WiFi: SSID=${ssid} (10s delay)...`);
+        setTimeout(() => {
+          console.log(`[HttpServer] WiFi connection completed for SSID=${ssid}`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 0, msg: '' }));
+        }, 10000);
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ code: 1, msg: 'Invalid JSON' }));

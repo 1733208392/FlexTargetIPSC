@@ -1,5 +1,5 @@
 keys,en,zh_CN,ja,zh_TW
-languages,Languages,语言,言語,語言
+languages,Locale,语言,言語,語言
 about,About,关于,約,關於
 drill,Drill,训练,ドリル,訓練
 random_sequence,"Random Sequence
@@ -17,7 +17,7 @@ description,"The Grwolf Smart Target is designed for shooting enthusiasts who wa
 * 同一裝置可選擇不同的練習方式，例如槍枝練習和自由射擊，提升您的射擊體驗。 "
 copyright,© 2025 FlexTarget IPSC@Grwolf.com,© 2025 FlexTarget IPSC@Grwolf.com,© 2025 FlexTarget IPSC@Grwolf.com,2025 FlexTarget IPSC@Grwolf.com
 ipsc,IPSC Drill,IPSC训练,IPSC,IPSC訓練
-network,Multi Targets Drill,多靶训练,マルチターゲットドリル,多靶訓練
+network,Netlink Drill,多靶训练,マルチターゲットドリル,多靶訓練
 boot_camp,Boot Camp,训练营,ブートキャンプ,訓練營
 leaderboard,Leaderboard,排行榜,リーダーボード,排行榜
 options,Options,选项,オプション,選項
@@ -262,7 +262,7 @@ shots,Shots,射击,ショット,射擊
 on_text,on,于,で,於
 target_text,Target,标靶,ターゲット,標靶
 navigate_instruction,▲ ▼ Browse bullet shots,▲ ▼ 浏览弹着点,▲ ▼ 弾丸射撃をナビゲート,▲ ▼ ショットを閲覧する
-networking,Networking,网络配置,ネットワーキング,網路配置
+networking,Netlink,网络配置,ネットワーキング,網路配置
 auto_restart_in,Auto Restart in,自动重启倒计时,自動再起動まで,自動重新啟動倒數
 failed_open_settings,Failed to open settings.json,无法打开设置文件,設定ファイルを開けません,無法開啟設定檔案
 sending_save_request,Sending save request...,正在发送保存请求...,保存リクエストを送信中...,正在傳送儲存請求...
@@ -283,7 +283,7 @@ scanning_networks,Scanning for networks,正在扫描网络,ネットワークを
 retry_wifi_scan,Retry WIFI Scan,重试WIFI扫描,WIFIスキャンを再試行,重試WIFI掃描
 enter_password,Enter Password for {wifi_name},输入 {wifi_name} 的密码,{wifi_name} のパスワードを入力,輸入 {wifi_name} 的密碼
 password_placeholder,Password,密码,パスワード,密碼
-target_details,Target Details,目标详情,ターゲット詳細,目標詳情
+target_details,Target Details,目标详情,ターゲット詳細,標靶詳情
 statistics,Statistics,统计,統計,統計
 fastest_shot,Fastest Shot:,最快击发:,最速ショット:,最快擊發:
 total_time,Total Time:,总时间:,合計時間:,總時間:
@@ -303,3 +303,15 @@ netlink_config_failed,Netlink Config Failed,网络配置失败,ネットリン�
 netlink_config_timeout,Netlink Config Timeout,网络配置超时,ネットリンク設定タイムアウト,網路配置超時
 wifi_scan_timeout,WIFI Scan Timeout,WIFI扫描超时,WIFIスキャンタイムアウト,WIFI掃描超時
 wifi_scan_failed,WIFI Scan Failed,WIFI扫描失败,WIFIスキャン失敗,WIFI掃描失敗
+wifi_configure,WIFI Configure,WIFI配置,WIFI設定,WIFI配置
+network_configure,Netlink Configure,网络配置,ネットワーク設定,網路配置
+auto_restart,Auto Restart,自动重启,自動再起動,自動重新啟動
+pause_5s,Pause 5s,暂停5秒,5秒一時停止,暫停5秒
+pause_10s,Pause 10s,暂停10秒,10秒一時停止,暫停10秒
+auto_restart_note,NOTE: This setting only applies to the Single Target IPSC Drill.,注意：此设置仅适用于单靶IPSC训练。,注意：この設定はシングルターゲットIPSCドリルのみに適用されます。,注意：此設定僅適用於單靶IPSC訓練。
+net_config_status,Status,状态,ステータス,狀態
+net_config_channel,Channel,频道,チャンネル,頻道
+net_config_workmode,Workmode,工作模式,動作モード,工作模式
+net_config_target_name,Target Name,设备名称,ターゲット名,標靶名稱
+net_config_done,Confirm,确认,完了,完成
+wifi_connecting,Connecting,连接中,接続中,連線中

@@ -729,7 +729,7 @@ func _on_menu_control(directive: String):
 		"homepage":
 			if DEBUG_LOGGING:
 						print("[Drill Replay] Back to main menu")
-			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"left", "up":
 			if DEBUG_LOGGING:
 						print("[Drill Replay] Previous bullet/target")

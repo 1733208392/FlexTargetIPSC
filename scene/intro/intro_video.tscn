@@ -1,12 +1,12 @@
 [gd_scene load_steps=14 format=3 uid="uid://d0t8jrtwrccmx"]
 
-[ext_resource type="Script" uid="uid://bhvruqf68yix4" path="res://script/intro.gd" id="1_intro"]
+[ext_resource type="Script" uid="uid://bhvruqf68yix4" path="res://scene/intro/intro.gd" id="1_intro"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
 [ext_resource type="FontFile" uid="uid://plipxs2shsey" path="res://font/Inter/static/Inter_18pt-Bold.ttf" id="2_yv8ol"]
 [ext_resource type="Texture2D" uid="uid://gk17ni6p470s" path="res://asset/SmallCntnrs.png" id="3_srnjo"]
 [ext_resource type="Texture2D" uid="uid://cxgfbk1um5rac" path="res://asset/SmallCntnrs1.png" id="4_lf28b"]
 [ext_resource type="FontFile" uid="uid://w674bdq23bld" path="res://font/Inter/static/Inter_24pt-Bold.ttf" id="4_wk1th"]
-[ext_resource type="VideoStream" uid="uid://c7ln8at3cyppd" path="res://video/ipsc.ogv" id="5_video"]
+[ext_resource type="VideoStream" path="res://video/ipsc.ogv" id="5_video"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_lf28b"]
 texture = ExtResource("3_srnjo")

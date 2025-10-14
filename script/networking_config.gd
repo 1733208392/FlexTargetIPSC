@@ -4,13 +4,15 @@ extends Control
 # Features remote control navigation and onscreen keyboard for input
 
 @onready var status_label = $CenterContainer/VBoxContainer/StatusLabel
+@onready var channel_label = $CenterContainer/VBoxContainer/ChannelLabel
+@onready var workmode_label = $CenterContainer/VBoxContainer/WorkMode
+@onready var name_label = $CenterContainer/VBoxContainer/NameLabel
 @onready var channel_dropdown = $CenterContainer/VBoxContainer/ChannelDropdown
 @onready var workmode_dropdown = $CenterContainer/VBoxContainer/WorkModeDropdown
 @onready var name_line_edit = $CenterContainer/VBoxContainer/NameLineEdit
-@onready var keyboard = $OnscreenKeyboard
-@onready var done_button = $CenterContainer/VBoxContainer/DoneButton
+@onready var keyboard = $BottomContainer/OnscreenKeyboard
 
-var focused_control = 0  # 0 = channel dropdown, 1 = workmode dropdown, 2 = name line edit, 3 = done button
+var focused_control = 0  # 0 = channel dropdown, 1 = workmode dropdown, 2 = name line edit
 var controls = []
 var dropdown_open = false
 
@@ -22,10 +24,10 @@ var is_configuring = false
 
 func _ready():
 	# Initialize controls array
-	controls = [channel_dropdown, workmode_dropdown, name_line_edit, done_button]
+	controls = [channel_dropdown, workmode_dropdown, name_line_edit]
 	
-	# Initialize status label
-	status_label.text = tr("netlink_config")
+	# Update UI texts with translations
+	update_ui_texts()
 	
 	# Setup timers
 	setup_timers()
@@ -65,6 +67,16 @@ func _ready():
 			_on_netlink_status_loaded()
 	else:
 		print("[NetworkingConfig] GlobalData singleton not found; will not auto-populate netlink info")
+
+func update_ui_texts():
+	if status_label:
+		status_label.text = tr("netlink_config")
+	if channel_label:
+		channel_label.text = tr("net_config_channel")
+	if workmode_label:
+		workmode_label.text = tr("net_config_workmode")
+	if name_label:
+		name_label.text = tr("net_config_target_name")
 
 func setup_timers():
 	# Setup guard timer (15 seconds)
@@ -106,7 +118,9 @@ func load_current_settings():
 func set_focused_control(index: int):
 	if index >= 0 and index < controls.size():
 		focused_control = index
-		controls[focused_control].grab_focus()
+		
+		# Use deferred call for focus to ensure it happens after UI updates
+		controls[index].grab_focus()
 		
 		# Handle dropdown visibility
 		if focused_control == 0 or focused_control == 1:  # Channel or Workmode dropdown
@@ -134,24 +148,95 @@ func set_focused_control(index: int):
 func show_keyboard_for_name_input():
 	if keyboard:
 		keyboard.visible = true
-		name_line_edit.grab_focus()
-		
-		# Connect to keyboard signals if not already connected
-		if keyboard.has_signal("released") and not keyboard.released.is_connected(_on_keyboard_key_released):
-			keyboard.released.connect(_on_keyboard_key_released)
 		
 		# Show keyboard
 		if keyboard.has_method("_show_keyboard"):
 			keyboard._show_keyboard()
 		
+		# Ensure name_line_edit keeps focus after keyboard is shown
+		call_deferred("_ensure_name_focus")
+		
+		# Connect keyboard button handlers
+		_attach_keyboard_handlers()
+		
 		print("[NetworkingConfig] Keyboard shown for name input")
+
+func _attach_keyboard_handlers(node = null):
+	"""
+	Recursively attach handlers to keyboard buttons
+	"""
+	if not keyboard:
+		return
+
+	if node == null:
+		node = keyboard
+
+	# Connect released signals for keyboard buttons
+	for child in node.get_children():
+		if child.has_signal("released"):
+			# Check if this is the hide keyboard button and disable it
+			var is_hide_button = false
+			if child.name.to_lower().contains("hide") or (child.has_method("get_text") and child.get_text().to_lower().contains("hide")):
+				is_hide_button = true
+			elif child.has_meta("key_type") and str(child.get_meta("key_type")).to_lower().contains("hide"):
+				is_hide_button = true
+			
+			if is_hide_button:
+				child.disabled = true
+				print("[NetworkingConfig] Disabled hide keyboard button: ", child.name)
+			else:
+				var callback = Callable(self, "_on_keyboard_key_released")
+				if not child.is_connected("released", callback):
+					child.connect("released", callback)
+		# Recurse into containers
+		_attach_keyboard_handlers(child)
+
+func _ensure_name_focus():
+	"""
+	Ensure name_line_edit maintains focus after keyboard is shown
+	"""
+	if name_line_edit:
+		name_line_edit.grab_focus()
+		print("[NetworkingConfig] Name LineEdit focus ensured")
+		
+		# Set last_input_focus as backup if keyboard supports it
+		if keyboard and "last_input_focus" in keyboard:
+			keyboard.last_input_focus = name_line_edit
+			print("[NetworkingConfig] Manually set keyboard last_input_focus to name LineEdit")
 
 func hide_keyboard():
 	if keyboard:
 		keyboard.visible = false
 
 func _on_keyboard_key_released(key_data):
-	if key_data and key_data.has("output"):
+	if not key_data or typeof(key_data) != TYPE_DICTIONARY:
+		return
+
+	# Extract key data
+	var out = key_data.get("output", "").strip_edges()
+	var display_text = key_data.get("display", "").strip_edges()
+	var display_icon = key_data.get("display-icon", "").strip_edges()
+	var key_type = key_data.get("type", "").strip_edges()
+
+	# Check for Enter key or hide keyboard
+	var is_enter = (out.to_lower() in ["enter", "return"] or
+				   display_text.to_lower() == "enter" or
+				   display_icon == "PREDEFINED:ENTER" or
+				   (key_type == "special-hide-keyboard" and display_text.to_lower() == "enter"))
+
+	var is_hide_keyboard = (key_type == "special-hide-keyboard" or
+						   display_icon == "PREDEFINED:HIDE_KEYBOARD")
+
+	if is_enter or is_hide_keyboard:
+		if is_enter:
+			print("[NetworkingConfig] Keyboard enter pressed, configuring network")
+			configure_network()
+		else:  # is_hide_keyboard
+			print("[NetworkingConfig] Hide keyboard pressed, but disabled - ignoring")
+		return
+
+	# Handle regular character input
+	if key_data.has("output"):
 		var key_value = key_data.get("output")
 		if key_value and name_line_edit.has_focus():
 			# Insert the character into the name field
@@ -227,14 +312,12 @@ func _on_enter_pressed():
 			workmode_dropdown.get_popup().hide()
 			dropdown_open = false
 			set_focused_control(2)  # Move to name field
-	elif focused_control == 2:  # Name line edit
+	else:  # focused_control == 2 (Name line edit)
 		save_settings()
-	else:  # focused_control == 3 (Done button)
-		configure_network()
 
 func _on_back_pressed():
 	print("[NetworkingConfig] Back pressed - navigating to main menu")
-	get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+	get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 
 func _on_netlink_status_loaded():
 	print("[NetworkingConfig] Received netlink_status_loaded signal, populating UI")
@@ -367,7 +450,7 @@ func _on_netlink_start_callback(result, response_code, _headers, _body):
 			signal_bus.emit_network_started()
 		else:
 			print("[NetworkingConfig] SignalBus not found, cannot emit wifi_connected signal")
-		get_tree().change_scene_to_file("res://scene/option.tscn")
+		get_tree().change_scene_to_file("res://scene/option/option.tscn")
 	else:
 		print("[NetworkingConfig] Netlink start failed - Result: ", result, ", Code: ", response_code)
 		set_status_failed()
@@ -405,8 +488,3 @@ func set_status_failed():
 
 func set_status_timeout():
 	status_label.text = tr("netlink_config_timeout")
-
-# Allow closing with ESC
-func _input(event):
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		_on_back_pressed()

@@ -1188,7 +1188,7 @@ func _on_menu_control(directive: String):
 		"back", "homepage":
 			if DEBUG_LOGGING:
 				print("[Drills] ", directive, " - navigating to main menu")
-			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:
 			if DEBUG_LOGGING:
 				print("[Drills] Unknown directive: ", directive)

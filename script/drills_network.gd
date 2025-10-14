@@ -275,7 +275,7 @@ func _on_menu_control(directive: String):
 		"power":
 			power_off()
 		"back", "homepage":
-			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:
 			print("[DrillsNetwork] Unknown directive:", directive)
 

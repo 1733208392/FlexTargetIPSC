@@ -35,6 +35,7 @@ offset_right = -16.0
 offset_bottom = -12.0
 grow_horizontal = 2
 grow_vertical = 2
+alignment = 2
 
 [node name="WifiIcon" type="TextureRect" parent="Root/Panel/HBoxContainer"]
 custom_minimum_size = Vector2(48, 48)

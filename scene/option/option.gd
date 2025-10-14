@@ -40,6 +40,16 @@ static var auto_restart_pause_time = 5  # Changed to store the selected time (5 
 @onready var content4_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4/Content4"
 @onready var content5_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5/Content5"
 
+# References to networking title labels
+@onready var title1_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1/Title1"
+@onready var title2_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2/Title2"
+@onready var title3_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3/Title3"
+@onready var title4_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4/Title4"
+@onready var title5_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5/Title5"
+
+# References to drill note label
+@onready var drill_note_label = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/Label"
+
 func _ready():
 	# Load saved settings from GlobalData
 	load_settings_from_global_data()
@@ -281,6 +291,32 @@ func update_ui_texts():
 		copyright_label.text = tr("copyright")
 	if random_sequence_check:
 		random_sequence_check.text = tr("random_sequence")
+	
+	# Networking tab labels
+	if title1_label:
+		title1_label.text = tr("bluetooth_name")
+	if title2_label:
+		title2_label.text = tr("device_name")
+	if title3_label:
+		title3_label.text = tr("network_channel")
+	if title4_label:
+		title4_label.text = tr("ip_address")
+	if title5_label:
+		title5_label.text = tr("working_mode")
+	if wifi_button:
+		wifi_button.text = tr("wifi_configure")
+	if network_button:
+		network_button.text = tr("network_configure")
+	
+	# Drills tab labels
+	if auto_restart_check:
+		auto_restart_check.text = tr("auto_restart")
+	if pause_5s_check:
+		pause_5s_check.text = tr("pause_5s")
+	if pause_10s_check:
+		pause_10s_check.text = tr("pause_10s")
+	if drill_note_label:
+		drill_note_label.text = tr("auto_restart_note")
 
 func save_settings():
 	# Save settings directly using current GlobalData
@@ -457,7 +493,7 @@ func _on_menu_control(directive: String):
 		"back", "homepage":
 			print("[Option] ", directive, " - navigating to main menu")
 			if is_inside_tree():
-				get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 			else:
 				print("[Option] Warning: Node not in tree, cannot change scene")
 		"compose":

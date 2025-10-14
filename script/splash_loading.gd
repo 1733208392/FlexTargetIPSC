@@ -76,4 +76,4 @@ func proceed_to_main_menu():
 	
 	# Transition to main menu
 	print("[Splash] Transitioning to main menu")
-	get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+	get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")

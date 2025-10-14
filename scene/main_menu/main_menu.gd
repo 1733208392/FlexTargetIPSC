@@ -184,7 +184,7 @@ func _on_leaderboard_pressed():
 func _on_option_pressed():
 	# Load the options scene
 	if is_inside_tree():
-		get_tree().change_scene_to_file("res://scene/option.tscn")
+		get_tree().change_scene_to_file("res://scene/option/option.tscn")
 	else:
 		print("[Menu] Warning: Node not in tree, cannot change scene")
 

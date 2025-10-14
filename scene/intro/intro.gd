@@ -229,7 +229,7 @@ func _on_menu_control(directive: String):
 			press_focused_button()
 		"back", "homepage":
 			print("[Intro] ", directive, " - navigating to main menu")
-			get_tree().change_scene_to_file("res://scene/main_menu.tscn")
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"volume_up":
 			print("[Intro] Volume up")
 			volume_up()
