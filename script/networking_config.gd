@@ -215,36 +215,23 @@ func _on_keyboard_key_released(key_data):
 	# Extract key data
 	var out = key_data.get("output", "").strip_edges()
 	var display_text = key_data.get("display", "").strip_edges()
-	var display_icon = key_data.get("display-icon", "").strip_edges()
+	var _display_icon = key_data.get("display-icon", "").strip_edges()
 	var key_type = key_data.get("type", "").strip_edges()
 
-	# Check for Enter key or hide keyboard
+	# Check for Enter key
 	var is_enter = (out.to_lower() in ["enter", "return"] or
 				   display_text.to_lower() == "enter" or
-				   display_icon == "PREDEFINED:ENTER" or
+				   _display_icon == "PREDEFINED:ENTER" or
 				   (key_type == "special-hide-keyboard" and display_text.to_lower() == "enter"))
 
-	var is_hide_keyboard = (key_type == "special-hide-keyboard" or
-						   display_icon == "PREDEFINED:HIDE_KEYBOARD")
-
-	if is_enter or is_hide_keyboard:
-		if is_enter:
-			print("[NetworkingConfig] Keyboard enter pressed, configuring network")
-			configure_network()
-		else:  # is_hide_keyboard
-			print("[NetworkingConfig] Hide keyboard pressed, but disabled - ignoring")
+	# Handle special keys that need custom behavior
+	if is_enter:
+		print("[NetworkingConfig] Keyboard enter pressed, configuring network")
+		configure_network()
 		return
-
-	# Handle regular character input
-	if key_data.has("output"):
-		var key_value = key_data.get("output")
-		if key_value and name_line_edit.has_focus():
-			# Insert the character into the name field
-			var current_text = name_line_edit.text
-			var caret_pos = name_line_edit.caret_position
-			name_line_edit.text = current_text.insert(caret_pos, key_value)
-			name_line_edit.caret_position = caret_pos + key_value.length()
-			print("[NetworkingConfig] Inserted key '", key_value, "' into name field")
+	
+	# For all other keys (including backspace), let the keyboard addon handle input automatically
+	# The addon sends InputEventKey to the focused LineEdit, so no manual text manipulation needed
 
 func _on_navigate(direction: String):
 	print("[NetworkingConfig] Navigation: ", direction)

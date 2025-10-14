@@ -13,13 +13,12 @@ var target_type_to_scene = {
 	"hostage": "res://scene/hostage.tscn",
 	"rotation": "res://scene/ipsc_mini_rotate.tscn",
 	"paddle": "res://scene/3paddles.tscn",
-	"popper": "res://scene/2poppers.tscn"
+	"popper": "res://scene/2poppers_simple.tscn"
 }
 
 # Node references
 @onready var center_container = $CenterContainer
 @onready var drill_timer = $DrillUI/DrillTimer
-@onready var footsteps_node = $Footsteps
 @onready var network_complete_overlay = $DrillNetworkCompleteOverlay
 
 # Target instance
@@ -116,7 +115,8 @@ func _ready():
 			# Send ready ack to the sender as if we had just received the ready command
 			var ws_listener_ack = get_node_or_null("/root/WebSocketListener")
 			if ws_listener_ack and ws_listener_ack.has_method("send_netlink_forward"):
-				var err_ack = ws_listener_ack.send_netlink_forward("B", "ready")
+				var device_name = gd.netlink_status.get("device_name", "B")
+				var err_ack = ws_listener_ack.send_netlink_forward(device_name, "ready")
 				if err_ack != OK:
 					print("[DrillsNetwork] Failed to send ready ack on startup: ", err_ack)
 				else:
@@ -315,7 +315,11 @@ func _on_ble_ready_command(content: Dictionary):
 	# Format: {"type":"netlink","action":"forward","device":"A","content":"ready"}
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener and ws_listener.has_method("send_netlink_forward"):
-		var err = ws_listener.send_netlink_forward("B", "ready")
+		var gd = get_node_or_null("/root/GlobalData")
+		var device_name = "B"
+		if gd:
+			device_name = gd.netlink_status.get("device_name", "B")
+		var err = ws_listener.send_netlink_forward(device_name, "ready")
 		if err != OK:
 			print("[DrillsNetwork] Failed to send ready ack: ", err)
 		else:

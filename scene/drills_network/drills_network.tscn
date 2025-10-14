@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://113obd774o70"]
+[gd_scene load_steps=6 format=3 uid="uid://113obd774o70"]
 
-[ext_resource type="PackedScene" uid="uid://cx4ygwpmsuiyn" path="res://scene/drill_network_ui.tscn" id="2_1dbv7"]
+[ext_resource type="PackedScene" uid="uid://cx4ygwpmsuiyn" path="res://scene/drills_network/drill_network_ui.tscn" id="2_1dbv7"]
 [ext_resource type="Texture2D" uid="uid://gpyjow0hb5mh" path="res://asset/drills_back.jpg" id="2_6482l"]
-[ext_resource type="Script" uid="uid://bq6ni24vtgdh" path="res://script/drills_network.gd" id="2_abc123"]
-[ext_resource type="PackedScene" path="res://scene/drill_network_complete_overlay.tscn" id="4_da2b7"]
+[ext_resource type="Script" uid="uid://bq6ni24vtgdh" path="res://scene/drills_network/drills_network.gd" id="2_abc123"]
+[ext_resource type="PackedScene" uid="uid://dko04tcrpugrp" path="res://scene/drills_network/drill_network_complete_overlay.tscn" id="4_da2b7"]
+[ext_resource type="Script" uid="uid://bm8y60bv6nltv" path="res://scene/drills_network/drill_network_complete_overlay.gd" id="5_0a8g6"]
 
 [node name="drills_network" type="Control"]
 layout_mode = 3
@@ -42,3 +43,4 @@ layout_mode = 1
 [node name="DrillNetworkCompleteOverlay" parent="." instance=ExtResource("4_da2b7")]
 visible = false
 layout_mode = 1
+script = ExtResource("5_0a8g6")

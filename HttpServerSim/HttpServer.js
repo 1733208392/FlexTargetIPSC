@@ -123,7 +123,7 @@ const server = http.createServer((req, res) => {
       console.log(`[HttpServer] WiFi scan completed`);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ code: 0, msg: "", data: { ssid_list: ssidList } }));
-    }, 60000);
+    }, 10000);
   } else if (pathname === '/netlink/wifi/connect' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => {
@@ -261,9 +261,9 @@ const server = http.createServer((req, res) => {
     //   data: {
     //     wifi_ip: netlinkWifiIp,
     //     channel: 0,
-    //     work_mode: null,
-    //     device_name: null,
-    //     bluetooth_name: null,
+    //     work_mode: "",
+    //     device_name: "",
+    //     bluetooth_name: "",
     //     started: false
     //   }
     // }));

@@ -10,6 +10,9 @@ static var current_drill_sequence = "Fixed"
 static var auto_restart_enabled = false
 static var auto_restart_pause_time = 5  # Changed to store the selected time (5 or 10)
 
+# Debug flag for controlling print statements
+const DEBUG_ENABLED = false
+
 # References to language buttons
 @onready var chinese_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/SimplifiedChineseButton"
 @onready var japanese_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/JapaneseButton"
@@ -81,12 +84,13 @@ func _ready():
 	language_buttons = [traditional_chinese_button, chinese_button, japanese_button, english_button]
 	
 	# Debug: Check which buttons are properly loaded
-	print("[Option] Language buttons initialization:")
-	for i in range(language_buttons.size()):
-		if language_buttons[i]:
-			print("[Option]   Button ", i, ": ", language_buttons[i].name, " - OK")
-		else:
-			print("[Option]   Button ", i, ": NULL - MISSING!")
+	if DEBUG_ENABLED:
+		print("[Option] Language buttons initialization:")
+		for i in range(language_buttons.size()):
+			if language_buttons[i]:
+				print("[Option]   Button ", i, ": ", language_buttons[i].name, " - OK")
+			else:
+				print("[Option]   Button ", i, ": NULL - MISSING!")
 	
 	# Set tab_container focusable
 	if tab_container:
@@ -99,12 +103,13 @@ func _ready():
 	if network_button:
 		networking_buttons.append(network_button)
 
-	print("[Option] Networking buttons initialization:")
-	for i in range(networking_buttons.size()):
-		if networking_buttons[i]:
-			print("[Option]   Net Button ", i, ": ", networking_buttons[i].name, " - OK")
-		else:
-			print("[Option]   Net Button ", i, ": NULL - MISSING!")
+	if DEBUG_ENABLED:
+		print("[Option] Networking buttons initialization:")
+		for i in range(networking_buttons.size()):
+			if networking_buttons[i]:
+				print("[Option]   Net Button ", i, ": ", networking_buttons[i].name, " - OK")
+			else:
+				print("[Option]   Net Button ", i, ": NULL - MISSING!")
 
 	# Connect wifi button pressed to open overlay (also handled by press_focused_button)
 	if wifi_button:
@@ -116,17 +121,23 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		print("[Option] Connecting to WebSocketListener.menu_control signal")
+		if DEBUG_ENABLED:
+			print("[Option] Connecting to WebSocketListener.menu_control signal")
 	else:
-		print("[Option] WebSocketListener singleton not found!")
+		if DEBUG_ENABLED:
+			print("[Option] WebSocketListener singleton not found!")
 
-	# Request fresh netlink status from server instead of relying on GlobalData cache
+	# Always request fresh netlink status from server
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
+		if DEBUG_ENABLED:
+			print("[Option] About to call http_service.netlink_status")
 		http_service.netlink_status(Callable(self, "_on_netlink_status_response"))
-		print("[Option] Requested fresh netlink status from server")
+		if DEBUG_ENABLED:
+			print("[Option] Called http_service.netlink_status successfully")
 	else:
-		print("[Option] HttpService singleton not found; cannot request netlink status")
+		if DEBUG_ENABLED:
+			print("[Option] HttpService singleton not found; cannot request netlink status")
 
 func _on_language_changed(language: String):
 	current_language = language
@@ -135,34 +146,42 @@ func _on_language_changed(language: String):
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.settings_dict["language"] = current_language
-		print("[Option] Immediately updated GlobalData.settings_dict[language] to: ", current_language)
+		if DEBUG_ENABLED:
+			print("[Option] Immediately updated GlobalData.settings_dict[language] to: ", current_language)
 	else:
-		print("[Option] Warning: GlobalData not found, cannot update settings_dict")
+		if DEBUG_ENABLED:
+			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	set_locale_from_language(language)
 	save_settings()
 	update_ui_texts()
-	print("Language changed to: ", language)
+	if DEBUG_ENABLED:
+		print("Language changed to: ", language)
 
 func _on_drill_sequence_toggled(button_pressed: bool):
 	var sequence = "Random" if button_pressed else "Fixed"
-	print("[Option] Drill sequence toggled to: ", sequence)
-	print("[Option] Current drill_sequence before change: ", current_drill_sequence)
+	if DEBUG_ENABLED:
+		print("[Option] Drill sequence toggled to: ", sequence)
+		print("[Option] Current drill_sequence before change: ", current_drill_sequence)
 	current_drill_sequence = sequence
-	print("[Option] Current drill_sequence after change: ", current_drill_sequence)
+	if DEBUG_ENABLED:
+		print("[Option] Current drill_sequence after change: ", current_drill_sequence)
 	
 	# Update GlobalData immediately to ensure consistency
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.settings_dict["drill_sequence"] = current_drill_sequence
-		print("[Option] Immediately updated GlobalData.settings_dict[drill_sequence] to: ", current_drill_sequence)
+		if DEBUG_ENABLED:
+			print("[Option] Immediately updated GlobalData.settings_dict[drill_sequence] to: ", current_drill_sequence)
 	else:
-		print("[Option] Warning: GlobalData not found, cannot update settings_dict")
+		if DEBUG_ENABLED:
+			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	save_settings()
 
 func _on_auto_restart_toggled(button_pressed: bool):
-	print("[Option] Auto restart toggled to: ", button_pressed)
+	if DEBUG_ENABLED:
+		print("[Option] Auto restart toggled to: ", button_pressed)
 	auto_restart_enabled = button_pressed
 	
 	# Show/hide pause time container based on auto restart state
@@ -179,23 +198,28 @@ func _on_auto_restart_toggled(button_pressed: bool):
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.settings_dict["auto_restart"] = auto_restart_enabled
-		print("[Option] Immediately updated GlobalData.settings_dict[auto_restart] to: ", auto_restart_enabled)
+		if DEBUG_ENABLED:
+			print("[Option] Immediately updated GlobalData.settings_dict[auto_restart] to: ", auto_restart_enabled)
 	else:
-		print("[Option] Warning: GlobalData not found, cannot update settings_dict")
+		if DEBUG_ENABLED:
+			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	save_settings()
 
 func _on_pause_time_changed(selected_time: int):
-	print("[Option] Pause time changed to: ", selected_time)
+	if DEBUG_ENABLED:
+		print("[Option] Pause time changed to: ", selected_time)
 	auto_restart_pause_time = selected_time
 	
 	# Update GlobalData immediately to ensure consistency
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.settings_dict["auto_restart_pause_time"] = auto_restart_pause_time
-		print("[Option] Immediately updated GlobalData.settings_dict[auto_restart_pause_time] to: ", auto_restart_pause_time)
+		if DEBUG_ENABLED:
+			print("[Option] Immediately updated GlobalData.settings_dict[auto_restart_pause_time] to: ", auto_restart_pause_time)
 	else:
-		print("[Option] Warning: GlobalData not found, cannot update settings_dict")
+		if DEBUG_ENABLED:
+			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	save_settings()
 
@@ -322,30 +346,34 @@ func save_settings():
 	# Save settings directly using current GlobalData
 	var http_service = get_node("/root/HttpService")
 	if not http_service:
-		print("HttpService not found!")
+		if DEBUG_ENABLED:
+			print("HttpService not found!")
 		return
 	
 	var global_data = get_node_or_null("/root/GlobalData")
 	if not global_data or global_data.settings_dict.size() == 0:
-		print("GlobalData not available, cannot save settings")
+		if DEBUG_ENABLED:
+			print("GlobalData not available, cannot save settings")
 		return
 	
 	var settings_data = global_data.settings_dict.duplicate()
 	var content = JSON.stringify(settings_data)
-	print("[Option] Saving settings directly: ", settings_data)
+	if DEBUG_ENABLED:
+		print("[Option] Saving settings directly: ", settings_data)
 	
 	http_service.save_game(_on_save_settings_callback, "settings", content)
 
 func _on_save_settings_callback(_result, response_code, _headers, _body):
-	print("[Option] Save settings callback - Response code: ", response_code)
-	if response_code == 200:
-		print("[Option] Settings saved successfully to HTTP server")
-		# GlobalData is already updated immediately when settings change
-		print("[Option] Settings save completed successfully")
-	else:
-		print("[Option] Failed to save settings to HTTP server: ", response_code)
-		print("[Option] Response body: ", _body.get_string_from_utf8() if _body else "NO_BODY")
-		print("[Option] Note: GlobalData has been updated locally, but HTTP save failed")
+	if DEBUG_ENABLED:
+		print("[Option] Save settings callback - Response code: ", response_code)
+		if response_code == 200:
+			print("[Option] Settings saved successfully to HTTP server")
+			# GlobalData is already updated immediately when settings change
+			print("[Option] Settings save completed successfully")
+		else:
+			print("[Option] Failed to save settings to HTTP server: ", response_code)
+			print("[Option] Response body: ", _body.get_string_from_utf8() if _body else "NO_BODY")
+			print("[Option] Note: GlobalData has been updated locally, but HTTP save failed")
 
 func load_settings_from_global_data():
 	# Load language setting from GlobalData.settings_dict
@@ -353,9 +381,11 @@ func load_settings_from_global_data():
 	if global_data and global_data.settings_dict.has("language"):
 		current_language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(current_language)
-		print("[Option] Loaded language from GlobalData: ", current_language)
+		if DEBUG_ENABLED:
+			print("[Option] Loaded language from GlobalData: ", current_language)
 	else:
-		print("[Option] GlobalData not found or no language setting, using default English")
+		if DEBUG_ENABLED:
+			print("[Option] GlobalData not found or no language setting, using default English")
 		current_language = "English"
 		set_locale_from_language(current_language)
 	
@@ -364,24 +394,30 @@ func load_settings_from_global_data():
 		current_drill_sequence = global_data.settings_dict.get("drill_sequence", "Fixed")
 		if current_drill_sequence == "":
 			current_drill_sequence = "Fixed"
-		print("[Option] Loaded drill_sequence from GlobalData: ", current_drill_sequence)
+		if DEBUG_ENABLED:
+			print("[Option] Loaded drill_sequence from GlobalData: ", current_drill_sequence)
 	else:
-		print("[Option] No drill_sequence setting, using default Fixed")
+		if DEBUG_ENABLED:
+			print("[Option] No drill_sequence setting, using default Fixed")
 		current_drill_sequence = "Fixed"
 	
 	# Load auto restart settings
 	if global_data and global_data.settings_dict.has("auto_restart"):
 		auto_restart_enabled = global_data.settings_dict.get("auto_restart", false)
-		print("[Option] Loaded auto_restart from GlobalData: ", auto_restart_enabled)
+		if DEBUG_ENABLED:
+			print("[Option] Loaded auto_restart from GlobalData: ", auto_restart_enabled)
 	else:
-		print("[Option] No auto_restart setting, using default false")
+		if DEBUG_ENABLED:
+			print("[Option] No auto_restart setting, using default false")
 		auto_restart_enabled = false
 	
 	if global_data and global_data.settings_dict.has("auto_restart_pause_time"):
 		auto_restart_pause_time = global_data.settings_dict.get("auto_restart_pause_time", 5)
-		print("[Option] Loaded auto_restart_pause_time from GlobalData: ", auto_restart_pause_time)
+		if DEBUG_ENABLED:
+			print("[Option] Loaded auto_restart_pause_time from GlobalData: ", auto_restart_pause_time)
 	else:
-		print("[Option] No auto_restart_pause_time setting, using default 5")
+		if DEBUG_ENABLED:
+			print("[Option] No auto_restart_pause_time setting, using default 5")
 		auto_restart_pause_time = 5
 	
 	# Update UI to reflect the loaded settings
@@ -392,21 +428,6 @@ func load_settings_from_global_data():
 	
 	# Use call_deferred to ensure focus is set after all UI updates are complete
 	call_deferred("set_focus_to_current_language")
-
-func _on_netlink_status_loaded():
-	print("[Option] Received GlobalData.netlink_status_loaded signal")
-	var global_data = get_node_or_null("/root/GlobalData")
-	if not global_data:
-		print("[Option] GlobalData not found in _on_netlink_status_loaded")
-		return
-
-	var s = global_data.netlink_status
-	if s == null or typeof(s) != TYPE_DICTIONARY:
-		print("[Option] GlobalData.netlink_status is empty or invalid: ", s)
-		return
-
-	_populate_networking_fields(s)
-	print("[Option] Populated networking fields from GlobalData.netlink_status: ", s)
 
 func _populate_networking_fields(data: Dictionary):
 	# Map expected fields from netlink_status -> UI labels
@@ -423,32 +444,48 @@ func _populate_networking_fields(data: Dictionary):
 		content5_label.text = str(data.get("work_mode", ""))
 
 func _on_netlink_status_response(result, response_code, _headers, body):
-	print("[Option] Received netlink_status HTTP response - Code:", response_code)
+	if DEBUG_ENABLED:
+		print("[Option] Received netlink_status HTTP response - Code:", response_code)
 	if response_code == 200 and result == HTTPRequest.RESULT_SUCCESS:
 		var body_str = body.get_string_from_utf8()
-		print("[Option] netlink_status body: ", body_str)
+		if DEBUG_ENABLED:
+			print("[Option] netlink_status body: ", body_str)
 		
-		# Parse the response similar to GlobalData.update_netlink_status_from_response
+		# Parse the response
 		var json = JSON.parse_string(body_str)
-		if json and json.has("data"):
-			var data_field = json["data"]
+		if json:
 			var parsed_data = null
 			
-			if typeof(data_field) == TYPE_STRING:
-				parsed_data = JSON.parse_string(data_field)
+			# Try different response formats
+			if json.has("data"):
+				# Format: {"data": "..."} or {"data": {...}}
+				var data_field = json["data"]
+				if typeof(data_field) == TYPE_STRING:
+					parsed_data = JSON.parse_string(data_field)
+				else:
+					parsed_data = data_field
+				if DEBUG_ENABLED:
+					print("[Option] Parsed data from 'data' field")
 			else:
-				parsed_data = data_field
+				# Direct format: {...}
+				parsed_data = json
+				if DEBUG_ENABLED:
+					print("[Option] Parsed data directly from response")
 			
 			if parsed_data and typeof(parsed_data) == TYPE_DICTIONARY:
-				print("[Option] Parsed netlink_status data: ", parsed_data)
-				# Populate UI directly with parsed data instead of using GlobalData
+				if DEBUG_ENABLED:
+					print("[Option] Parsed netlink_status data: ", parsed_data)
+				# Populate UI directly with parsed data
 				_populate_networking_fields(parsed_data)
 			else:
-				print("[Option] Failed to parse netlink_status data field")
+				if DEBUG_ENABLED:
+					print("[Option] Failed to parse netlink_status data - parsed_data: ", parsed_data, " type: ", typeof(parsed_data))
 		else:
-			print("[Option] netlink_status response missing data field or failed to parse")
+			if DEBUG_ENABLED:
+				print("[Option] Failed to parse JSON response: ", body_str)
 	else:
-		print("[Option] netlink_status request failed with code:", response_code)
+		if DEBUG_ENABLED:
+			print("[Option] netlink_status request failed with code:", response_code)
 
 # Functions to get current auto restart settings (can be called from other scripts)
 
@@ -468,51 +505,66 @@ static func get_auto_restart_pause_time() -> int:
 	return auto_restart_pause_time
 
 func _on_menu_control(directive: String):
-	print("[Option] Received menu_control signal with directive: ", directive)
+	if DEBUG_ENABLED:
+		print("[Option] Received menu_control signal with directive: ", directive)
 	match directive:
 		"up", "down":
 			if tab_container:
 				match tab_container.current_tab:
 					0:
-						print("[Option] Navigation: ", directive, " on Networking tab")
+						if DEBUG_ENABLED:
+							print("[Option] Navigation: ", directive, " on Networking tab")
 						navigate_network_buttons(directive)
 					1:
-						print("[Option] Navigation: ", directive, " on Languages tab")
+						if DEBUG_ENABLED:
+							print("[Option] Navigation: ", directive, " on Languages tab")
 						navigate_buttons(directive)
 					2:
-						print("[Option] Navigation: ", directive, " on Drills tab")
+						if DEBUG_ENABLED:
+							print("[Option] Navigation: ", directive, " on Drills tab")
 						navigate_drill_buttons(directive)
 					_:
-						print("[Option] Navigation: ", directive, " ignored - current tab has no navigation")
+						if DEBUG_ENABLED:
+							print("[Option] Navigation: ", directive, " ignored - current tab has no navigation")
 		"left", "right":
-			print("[Option] Tab switch: ", directive)
+			if DEBUG_ENABLED:
+				print("[Option] Tab switch: ", directive)
 			switch_tab(directive)
 		"enter":
-			print("[Option] Enter pressed")
+			if DEBUG_ENABLED:
+				print("[Option] Enter pressed")
 			press_focused_button()
 		"back", "homepage":
-			print("[Option] ", directive, " - navigating to main menu")
+			if DEBUG_ENABLED:
+				print("[Option] ", directive, " - navigating to main menu")
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 			else:
-				print("[Option] Warning: Node not in tree, cannot change scene")
+				if DEBUG_ENABLED:
+					print("[Option] Warning: Node not in tree, cannot change scene")
 		"compose":
-			print("[Option] compose directive received - navigating to onboard_debug")
+			if DEBUG_ENABLED:
+				print("[Option] compose directive received - navigating to onboard_debug")
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/onboard_debug.tscn")
 			else:
-				print("[Option] Warning: Node not in tree, cannot change scene to onboard_debug")
+				if DEBUG_ENABLED:
+					print("[Option] Warning: Node not in tree, cannot change scene to onboard_debug")
 		"volume_up":
-			print("[Option] Volume up")
+			if DEBUG_ENABLED:
+				print("[Option] Volume up")
 			volume_up()
 		"volume_down":
-			print("[Option] Volume down")
+			if DEBUG_ENABLED:
+				print("[Option] Volume down")
 			volume_down()
 		"power":
-			print("[Option] Power off")
+			if DEBUG_ENABLED:
+				print("[Option] Power off")
 			power_off()
 		_:
-			print("[Option] Unknown directive: ", directive)
+			if DEBUG_ENABLED:
+				print("[Option] Unknown directive: ", directive)
 
 func navigate_buttons(direction: String):
 	var current_index = -1
@@ -525,7 +577,8 @@ func navigate_buttons(direction: String):
 		for i in range(language_buttons.size()):
 			if language_buttons[i]:
 				language_buttons[i].grab_focus()
-				print("[Option] Focus set to first valid button: ", language_buttons[i].name)
+				if DEBUG_ENABLED:
+					print("[Option] Focus set to first valid button: ", language_buttons[i].name)
 				return
 		return
 	
@@ -541,12 +594,14 @@ func navigate_buttons(direction: String):
 		# Check if the target button exists and is valid
 		if language_buttons[target_index] and language_buttons[target_index] != language_buttons[current_index]:
 			language_buttons[target_index].grab_focus()
-			print("[Option] Focus moved to ", language_buttons[target_index].name)
+			if DEBUG_ENABLED:
+				print("[Option] Focus moved to ", language_buttons[target_index].name)
 			return
 		
 		attempts += 1
 	
-	print("[Option] No other valid buttons found for navigation")
+	if DEBUG_ENABLED:
+		print("[Option] No other valid buttons found for navigation")
 
 func navigate_drill_buttons(direction: String):
 	# With multiple drill buttons, we need to handle navigation between them
@@ -561,7 +616,8 @@ func navigate_drill_buttons(direction: String):
 		drill_buttons.append(pause_10s_check)
 	
 	if drill_buttons.is_empty():
-		print("[Option] No drill buttons found for navigation")
+		if DEBUG_ENABLED:
+			print("[Option] No drill buttons found for navigation")
 		return
 	
 	# Find current focused button
@@ -575,7 +631,8 @@ func navigate_drill_buttons(direction: String):
 		# If no button has focus, focus the first one
 		if drill_buttons[0]:
 			drill_buttons[0].grab_focus()
-			print("[Option] Focus set to first drill button")
+			if DEBUG_ENABLED:
+				print("[Option] Focus set to first drill button")
 		return
 	
 	# Find the next valid button in the specified direction
@@ -590,16 +647,19 @@ func navigate_drill_buttons(direction: String):
 		# Check if the target button exists and is valid
 		if drill_buttons[target_index]:
 			drill_buttons[target_index].grab_focus()
-			print("[Option] Focus moved to drill button at index: ", target_index)
+			if DEBUG_ENABLED:
+				print("[Option] Focus moved to drill button at index: ", target_index)
 			return
 		
 		attempts += 1
 	
-	print("[Option] No other valid drill buttons found for navigation")
+	if DEBUG_ENABLED:
+		print("[Option] No other valid drill buttons found for navigation")
 
 func navigate_network_buttons(direction: String):
 	if networking_buttons.is_empty():
-		print("[Option] No networking buttons available")
+		if DEBUG_ENABLED:
+			print("[Option] No networking buttons available")
 		return
 
 	var current_index = -1
@@ -610,7 +670,8 @@ func navigate_network_buttons(direction: String):
 
 	if current_index == -1:
 		networking_buttons[0].grab_focus()
-		print("[Option] Focus set to first networking button")
+		if DEBUG_ENABLED:
+			print("[Option] Focus set to first networking button")
 		return
 
 	var target_index = current_index
@@ -621,7 +682,8 @@ func navigate_network_buttons(direction: String):
 
 	if networking_buttons[target_index]:
 		networking_buttons[target_index].grab_focus()
-		print("[Option] Networking focus moved to ", networking_buttons[target_index].name)
+		if DEBUG_ENABLED:
+			print("[Option] Networking focus moved to ", networking_buttons[target_index].name)
 
 func press_focused_button():
 	# Networking tab
@@ -654,62 +716,75 @@ func press_focused_button():
 		# Toggle the CheckButton
 		random_sequence_check.button_pressed = !random_sequence_check.button_pressed
 		# This will trigger the toggled signal which calls _on_drill_sequence_toggled
-		print("[Option] Toggled drill CheckButton to: ", random_sequence_check.button_pressed)
+		if DEBUG_ENABLED:
+			print("[Option] Toggled drill CheckButton to: ", random_sequence_check.button_pressed)
 	
 	# Handle auto restart CheckButton
 	if auto_restart_check and auto_restart_check.has_focus():
 		# Toggle the CheckButton
 		auto_restart_check.button_pressed = !auto_restart_check.button_pressed
 		# This will trigger the toggled signal which calls _on_auto_restart_toggled
-		print("[Option] Toggled auto restart CheckButton to: ", auto_restart_check.button_pressed)
+		if DEBUG_ENABLED:
+			print("[Option] Toggled auto restart CheckButton to: ", auto_restart_check.button_pressed)
 	
 	# Handle pause time check buttons
 	if pause_5s_check and pause_5s_check.has_focus():
 		# Toggle the 5s button (this will automatically untoggle the 10s button due to ButtonGroup)
 		pause_5s_check.button_pressed = true
-		print("[Option] Selected pause time: 5s")
+		if DEBUG_ENABLED:
+			print("[Option] Selected pause time: 5s")
 		_on_pause_time_changed(5)
 	if pause_10s_check and pause_10s_check.has_focus():
 		# Toggle the 10s button (this will automatically untoggle the 5s button due to ButtonGroup)
 		pause_10s_check.button_pressed = true
-		print("[Option] Selected pause time: 10s")
+		if DEBUG_ENABLED:
+			print("[Option] Selected pause time: 10s")
 		_on_pause_time_changed(10)
 
 func volume_up():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Option] Sending volume up HTTP request...")
+		if DEBUG_ENABLED:
+			print("[Option] Sending volume up HTTP request...")
 		http_service.volume_up(_on_volume_up_response)
 	else:
-		print("[Option] HttpService singleton not found!")
+		if DEBUG_ENABLED:
+			print("[Option] HttpService singleton not found!")
 
 func _on_volume_up_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Option] Volume up HTTP response:", _result, response_code, body_str)
+	if DEBUG_ENABLED:
+		print("[Option] Volume up HTTP response:", _result, response_code, body_str)
 
 func volume_down():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Option] Sending volume down HTTP request...")
+		if DEBUG_ENABLED:
+			print("[Option] Sending volume down HTTP request...")
 		http_service.volume_down(_on_volume_down_response)
 	else:
-		print("[Option] HttpService singleton not found!")
+		if DEBUG_ENABLED:
+			print("[Option] HttpService singleton not found!")
 
 func _on_volume_down_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Option] Volume down HTTP response:", _result, response_code, body_str)
+	if DEBUG_ENABLED:
+		print("[Option] Volume down HTTP response:", _result, response_code, body_str)
 
 func power_off():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Option] Sending power off HTTP request...")
+		if DEBUG_ENABLED:
+			print("[Option] Sending power off HTTP request...")
 		http_service.shutdown(_on_shutdown_response)
 	else:
-		print("[Option] HttpService singleton not found!")
+		if DEBUG_ENABLED:
+			print("[Option] HttpService singleton not found!")
 
 func _on_shutdown_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Option] Shutdown HTTP response:", _result, response_code, body_str)
+	if DEBUG_ENABLED:
+		print("[Option] Shutdown HTTP response:", _result, response_code, body_str)
 
 func switch_tab(direction: String):
 	if not tab_container:

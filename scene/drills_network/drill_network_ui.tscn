@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://cx4ygwpmsuiyn"]
 
-[ext_resource type="Script" uid="uid://bkh7dxe60xxyh" path="res://script/drill_network_ui.gd" id="1_m1owd"]
+[ext_resource type="Script" uid="uid://bkh7dxe60xxyh" path="res://scene/drills_network/drill_network_ui.gd" id="1_m1owd"]
 [ext_resource type="Texture2D" uid="uid://cj5m8qdpg1amv" path="res://asset/coin.png" id="2_ueq8j"]
 [ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="3_7x8sl"]
 [ext_resource type="Texture2D" uid="uid://bhksfu7pulyjs" path="res://asset/thunder.png" id="4_mmkqu"]

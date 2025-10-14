@@ -146,8 +146,11 @@ func _on_start_response(result, response_code, _headers, body):
 
 func _on_network_pressed():
 	# Load the network scene
+	print("[Menu] _on_network_pressed called, is_inside_tree: ", is_inside_tree())
 	if is_inside_tree():
-		get_tree().change_scene_to_file("res://scene/drills_network.tscn")
+		print("[Menu] Attempting to change scene to: res://scene/drills_network/drills_network.tscn")
+		var result = get_tree().change_scene_to_file("res://scene/drills_network/drills_network.tscn")
+		print("[Menu] change_scene_to_file result: ", result)
 	else:
 		print("[Menu] Warning: Node not in tree, cannot change scene")
 
@@ -215,7 +218,7 @@ func _on_ble_ready_command(content: Dictionary) -> void:
 		print("[Menu] GlobalData not available; cannot persist ble content")
 
 	if is_inside_tree():
-		get_tree().change_scene_to_file("res://scene/drills_network.tscn")
+		get_tree().change_scene_to_file("res://scene/drills_network/drills_network.tscn")
 	else:
 		print("[Menu] Warning: Node not in tree, cannot change scene")
 

@@ -13,6 +13,7 @@ signal ble_start_command(content: Dictionary)
 var socket: WebSocketPeer
 var bullet_spawning_enabled: bool = true
 var prev_socket_state: int = -1
+var global_data: Node
 
 # Message rate limiting for performance optimization
 var last_message_time: float = 0.0
@@ -56,6 +57,8 @@ func _ready():
 	connect_watchdog.wait_time = 3.0 # seconds; watchdog timeout for connect attempts
 	connect_watchdog.connect("timeout", Callable(self, "_on_connect_watchdog_timeout"))
 	add_child(connect_watchdog)
+
+	global_data = get_node("/root/GlobalData")
 
 func _process(_delta):
 	socket.poll()
@@ -102,7 +105,7 @@ func _process(_delta):
 			
 			var packet = socket.get_packet()
 			var message = packet.get_string_from_utf8()
-			# print("[WebSocket] Received raw message: ", message)
+			print("[WebSocket] Received raw message: ", message)
 			data_received.emit(message)
 			_process_websocket_json(message)
 			
@@ -200,17 +203,26 @@ func _process_websocket_json(json_string):
 
 func _handle_ble_forwarded_command(parsed):
 	"""Handle BLE forwarded commands"""
+	var sb = get_node_or_null("/root/SignalBus")
 	if not parsed.has("dest"):
 		if not DEBUG_DISABLED:
 			print("[WebSocket] BLE forwarded command missing dest field")
 		return
 	
 	var dest = parsed["dest"]
-	# TODO: Implement proper dest validation
-	if dest != "B":
+	# Implement proper dest validation using netlink_status device_name
+	var expected_device = ""
+	if global_data:
+		expected_device = global_data.netlink_status.get("device_name", "")
+	else:
 		if not DEBUG_DISABLED:
-			print("[WebSocket] BLE forwarded command dest validation failed: ", dest)
-		return  # For now, only accept dest "B"
+			print("[WebSocket] GlobalData not available for dest validation")
+	if dest != expected_device:
+		if not DEBUG_DISABLED:
+			print("[WebSocket] BLE forwarded command dest validation failed: ", dest, " expected: ", expected_device)
+		if sb:
+			sb.emit_onboard_debug_info(3, "BLE forwarded command dest validation failed: " + str(dest) + " expected: " + str(expected_device), "Websocket Listener")
+		return
 	
 	if not parsed.has("content"):
 		if not DEBUG_DISABLED:
@@ -225,7 +237,6 @@ func _handle_ble_forwarded_command(parsed):
 	content["dest"] = dest
 
 	# Emit onboard debug info for forwarded BLE commands (sender: Mobile App)
-	var sb = get_node_or_null("/root/SignalBus")
 	var content_str = JSON.stringify(content)
 	if sb:
 		sb.emit_onboard_debug_info(2, "BLE forwarded: " + content_str, "Mobile App")
