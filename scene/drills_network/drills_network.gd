@@ -37,9 +37,8 @@ var timeout_timer: Timer = null
 var timeout_seconds: float = 40.0
 var drill_timed_out: bool = false
 
-# Delay functionality
-var delay_timer: Timer = null
-var delay_seconds: float = 5.0
+# Master/Slave mode
+var is_master: bool = false
 
 # Saved parameters from BLE 'ready' until a 'start' is received
 var saved_ble_ready_content: Dictionary = {}
@@ -77,6 +76,12 @@ func _ready():
 		if ws_listener.has_signal("ble_start_command"):
 			ws_listener.ble_start_command.connect(_on_ble_start_command)
 		print("[DrillsNetwork] Connected to WebSocketListener menu_control and ble_ready_command")
+	
+	# Connect to shot timer ready signal
+	var shot_timer = get_node("DrillUI/ShotTimerOverlay")
+	if shot_timer and shot_timer.has_signal("timer_ready"):
+		shot_timer.timer_ready.connect(_on_shot_timer_ready)
+		print("[DrillsNetwork] Connected to shot timer ready signal")
 	
 	# Set theme
 	emit_signal("ui_theme_change", "golden")
@@ -152,8 +157,9 @@ func spawn_target():
 	# Start drill timer
 	start_drill_timer()
 	
-	# Show shot timer
-	show_shot_timer()
+	# Show shot timer only in master mode
+	if is_master:
+		show_shot_timer()
 
 func start_drill():
 	"""Start the drill after delay"""
@@ -202,13 +208,10 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 
 func start_drill_timer():
 	"""Start the drill timer"""
-	drill_start_time = Time.get_ticks_msec() / 1000.0
-	elapsed_seconds = 0.0
-	
 	# Reset performance tracker for new drill
 	performance_tracker.reset_shot_timer()
 	
-	# Create timeout timer
+	# Create timeout timer (will be started when shot timer is ready in master mode, immediately in slave mode)
 	if timeout_timer:
 		timeout_timer.queue_free()
 	timeout_timer = Timer.new()
@@ -216,9 +219,15 @@ func start_drill_timer():
 	timeout_timer.one_shot = true
 	timeout_timer.timeout.connect(_on_timeout)
 	add_child(timeout_timer)
-	timeout_timer.start()
 	
-	print("[DrillsNetwork] Drill timer started")
+	if not is_master:
+		# In slave mode, start timer immediately since no shot timer
+		timeout_timer.start()
+		drill_start_time = Time.get_ticks_msec() / 1000.0
+		elapsed_seconds = 0.0
+		print("[DrillsNetwork] Slave mode: Drill timer started immediately")
+	else:
+		print("[DrillsNetwork] Master mode: Drill timer created (waiting for shot timer ready)")
 
 func _process(_delta):
 	"""Update timer"""
@@ -243,8 +252,6 @@ func complete_drill():
 	# Stop timers
 	if timeout_timer:
 		timeout_timer.stop()
-	if delay_timer:
-		delay_timer.stop()
 	
 	# Hide shot timer
 	hide_shot_timer()
@@ -327,13 +334,6 @@ func _on_ble_ready_command(content: Dictionary):
 	else:
 		print("[DrillsNetwork] WebSocketListener not available or missing helper; cannot send ready ack")
 
-func _on_delay_timeout():
-	"""Handle delay timeout - start the drill"""
-	print("[DrillsNetwork] Delay timeout - starting drill")
-	start_drill()
-	shot_timer_visible = true
-
-
 func _on_ble_start_command(content: Dictionary) -> void:
 	"""Handle BLE start command: merge saved ready params with start payload and begin delay/start sequence."""
 	print("[DrillsNetwork] Received BLE start command: ", content)
@@ -344,6 +344,14 @@ func _on_ble_start_command(content: Dictionary) -> void:
 		merged[k] = saved_ble_ready_content[k]
 	for k in content.keys():
 		merged[k] = content[k]
+
+	# Determine master/slave mode
+	var gd = get_node_or_null("/root/GlobalData")
+	if gd and gd.netlink_status.has("work_mode"):
+		is_master = (gd.netlink_status["work_mode"] == "master")
+	else:
+		is_master = false  # Default to slave mode
+	print("[DrillsNetwork] Operating in ", "master" if is_master else "slave", " mode")
 
 	# Apply merged parameters similar to original ready behavior
 	if merged.has("targetType"):
@@ -360,22 +368,25 @@ func _on_ble_start_command(content: Dictionary) -> void:
 		emit_signal("ui_target_name_update", merged["dest"])
 		print("[DrillsNetwork] Updated target name to: ", merged["dest"])
 
-	# Parse timeout and delay from merged content
+	# Parse timeout from merged content
 	if merged.has("timeout"):
-		timeout_seconds = float(merged["timeout"])
+		if is_master:
+			timeout_seconds = float(merged["timeout"])
+		else:
+			timeout_seconds = 5.0 + float(merged["timeout"])
 		print("[DrillsNetwork] Set timeout to: ", timeout_seconds)
 
-	delay_seconds = float(merged.get("delay", delay_seconds))
-	print("[DrillsNetwork] Set delay to: ", delay_seconds)
+	# Start the drill immediately
+	print("[DrillsNetwork] Starting drill immediately")
+	start_drill()
+	if is_master:
+		shot_timer_visible = true
 
-	# Start delay timer (one-shot)
-	if delay_timer:
-		delay_timer.queue_free()
-	delay_timer = Timer.new()
-	delay_timer.wait_time = delay_seconds
-	delay_timer.one_shot = true
-	delay_timer.timeout.connect(_on_delay_timeout)
-	add_child(delay_timer)
-	delay_timer.start()
-
-	print("[DrillsNetwork] Delay timer started for ", delay_seconds, " seconds (triggered by start command)")
+func _on_shot_timer_ready():
+	"""Handle shot timer ready - start the drill timeout timer and begin elapsed time tracking"""
+	print("[DrillsNetwork] Shot timer ready - starting drill timeout timer and elapsed time tracking")
+	if timeout_timer and not drill_completed:
+		timeout_timer.start()
+		# Start tracking elapsed time
+		drill_start_time = Time.get_ticks_msec() / 1000.0
+		elapsed_seconds = 0.0
