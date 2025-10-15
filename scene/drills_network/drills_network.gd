@@ -261,6 +261,37 @@ func complete_drill():
 	
 	emit_signal("drills_finished")
 
+func reset_drill_state():
+	"""Reset the drill state to fresh start"""
+	print("[DrillsNetwork] Resetting drill state to fresh start")
+	
+	drill_completed = false
+	total_score = 0
+	drill_timed_out = false
+	elapsed_seconds = 0.0
+	drill_start_time = 0.0
+	shot_timer_visible = false
+	
+	# Stop and clean up timeout timer
+	if timeout_timer:
+		timeout_timer.stop()
+		timeout_timer.queue_free()
+		timeout_timer = null
+	
+	# Remove existing target instance
+	if target_instance:
+		target_instance.queue_free()
+		target_instance = null
+	
+	# Hide completion overlay
+	network_complete_overlay.hide()
+	
+	# Reset performance tracker
+	performance_tracker.reset_shot_timer()
+	
+	# Reset UI timer
+	emit_signal("ui_timer_update", 0.0)
+
 func show_shot_timer():
 	"""Show the shot timer"""
 	emit_signal("ui_show_shot_timer")
@@ -333,6 +364,10 @@ func _on_ble_ready_command(content: Dictionary):
 			print("[DrillsNetwork] Sent ready ack via helper")
 	else:
 		print("[DrillsNetwork] WebSocketListener not available or missing helper; cannot send ready ack")
+
+	# If drill is completed, reset to fresh start
+	if drill_completed:
+		reset_drill_state()
 
 func _on_ble_start_command(content: Dictionary) -> void:
 	"""Handle BLE start command: merge saved ready params with start payload and begin delay/start sequence."""
