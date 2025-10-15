@@ -144,6 +144,10 @@ func spawn_target():
 	target_instance = target_scene.instantiate()
 	center_container.add_child(target_instance)
 	
+	# Set drill active flag to false initially
+	if target_instance.has_method("set"):
+		target_instance.set("drill_active", false)
+	
 	# Connect to target hit signal if it exists
 	if target_instance.has_signal("target_hit"):
 		target_instance.target_hit.connect(_on_target_hit)
@@ -171,6 +175,11 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	# Ignore any shots after the drill has completed
 	if drill_completed:
 		print("[DrillsNetwork] Ignoring target hit because drill is completed")
+		return
+
+	# Ignore shots that arrive before the timeout timer actually starts (e.g. master mode before shot timer ready)
+	if timeout_timer and timeout_timer.is_stopped():
+		print("[DrillsNetwork] Ignoring target hit because timeout timer has not started yet")
 		return
 	var zone: String
 	var points: int
@@ -226,6 +235,9 @@ func start_drill_timer():
 		drill_start_time = Time.get_ticks_msec() / 1000.0
 		elapsed_seconds = 0.0
 		print("[DrillsNetwork] Slave mode: Drill timer started immediately")
+		# Activate drill for target
+		if target_instance and target_instance.has_method("set"):
+			target_instance.set("drill_active", true)
 	else:
 		print("[DrillsNetwork] Master mode: Drill timer created (waiting for shot timer ready)")
 
@@ -425,3 +437,6 @@ func _on_shot_timer_ready():
 		# Start tracking elapsed time
 		drill_start_time = Time.get_ticks_msec() / 1000.0
 		elapsed_seconds = 0.0
+		# Activate drill for target
+		if target_instance and target_instance.has_method("set"):
+			target_instance.set("drill_active", true)

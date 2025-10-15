@@ -45,6 +45,7 @@ var animation_paused: bool = false
 
 # Scoring system
 var total_score: int = 0
+var drill_active: bool = false  # Flag to ignore shots before drill starts
 signal target_hit(zone: String, points: int, hit_position: Vector2)
 signal target_disappeared
 
@@ -374,6 +375,12 @@ func spawn_bullet_hole(local_position: Vector2):
 
 func _on_websocket_bullet_hit(pos: Vector2):
 	print("[ipsc_mini] Received websocket bullet hit at position: ", pos)
+	
+	# Ignore shots if drill is not active yet
+	if not drill_active:
+		print("[ipsc_mini] Ignoring shot because drill is not active yet")
+		return
+	
 	# Check if bullet spawning is enabled
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener and not ws_listener.bullet_spawning_enabled:

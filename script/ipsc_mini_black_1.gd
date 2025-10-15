@@ -33,6 +33,7 @@ const DEBUG_LOGGING = false  # Set to true for verbose debugging
 
 # Scoring system
 var total_score: int = 0
+var drill_active: bool = false  # Flag to ignore shots before drill starts
 signal target_hit(zone: String, points: int, hit_position: Vector2)
 signal target_disappeared
 
@@ -336,6 +337,13 @@ func spawn_bullet_hole(local_position: Vector2):
 
 func _on_websocket_bullet_hit(world_pos: Vector2):
 	"""Handle bullet hit from WebSocket"""
+	
+	# Ignore shots if drill is not active yet
+	if not drill_active:
+		if DEBUG_LOGGING:
+			print("[ipsc_mini_black_1] Ignoring shot because drill is not active yet")
+		return
+	
 	handle_websocket_bullet_hit_fast(world_pos)
 
 func handle_websocket_bullet_hit_fast(world_pos: Vector2):

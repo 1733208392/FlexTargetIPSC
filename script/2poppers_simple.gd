@@ -23,6 +23,7 @@ var popper2_hit = false
 
 # Debug tracking
 var hit_counter = 0
+var drill_active: bool = false  # Flag to ignore shots before drill starts
 
 # Track total poppers for target_disappeared signal
 var total_poppers = 2
@@ -103,6 +104,12 @@ func connect_popper_signals():
 
 func _on_websocket_bullet_hit(world_pos: Vector2):
 	"""Handle bullet hits from WebSocket - check which area was hit"""
+	
+	# Ignore shots if drill is not active yet
+	if not drill_active:
+		print("2POPPERS_SIMPLE: Ignoring shot because drill is not active yet")
+		return
+	
 	# Validate all nodes are ready before processing
 	if not validate_nodes():
 		print("2POPPERS_SIMPLE: ERROR - Nodes not ready, skipping WebSocket hit")

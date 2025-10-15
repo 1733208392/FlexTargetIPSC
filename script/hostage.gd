@@ -30,6 +30,7 @@ var active_sounds: int = 0
 
 # Scoring system
 var total_score: int = 0
+var drill_active: bool = false  # Flag to ignore shots before drill starts
 signal target_hit(zone: String, points: int, hit_position: Vector2)
 signal target_disappeared
 
@@ -382,6 +383,11 @@ func return_bullet_hole_to_pool(hole: Node):
 		print("[hostage] Bullet hole returned to pool, active holes: ", active_bullet_holes.size())
 
 func _on_websocket_bullet_hit(pos: Vector2):
+	# Ignore shots if drill is not active yet
+	if not drill_active:
+		print("[hostage] Ignoring shot because drill is not active yet")
+		return
+	
 	# Check if bullet spawning is enabled
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener and not ws_listener.bullet_spawning_enabled:
