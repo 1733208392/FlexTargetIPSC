@@ -21,6 +21,8 @@ var guard_timer: Timer
 var animation_timer: Timer
 var animation_dots = 0
 var is_configuring = false
+var is_stopping = false
+var progress_text_key = ""
 
 func _ready():
 	# Initialize controls array
@@ -96,7 +98,7 @@ func load_current_settings():
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data and global_data.settings_dict.size() > 0:
 		# Load channel setting (default to 1)
-		var channel = global_data.settings_dict.get("channel", 1)
+		var channel = int(global_data.settings_dict.get("channel", 1))
 		if channel >= 1 and channel <= 10:
 			channel_dropdown.select(channel - 1)  # OptionButton is 0-indexed
 		
@@ -364,8 +366,8 @@ func _on_save_settings_callback(result, response_code, _headers, _body):
 		print("[NetworkingConfig] Failed to save settings - Result: ", result, ", Code: ", response_code)
 
 func configure_network():
-	if is_configuring:
-		print("[NetworkingConfig] Configuration already in progress, ignoring request")
+	if is_configuring or is_stopping:
+		print("[NetworkingConfig] Configuration or stopping already in progress, ignoring request")
 		return
 		
 	var http_service = get_node_or_null("/root/HttpService")
@@ -373,9 +375,27 @@ func configure_network():
 		print("[NetworkingConfig] HttpService not found, cannot configure network")
 		return
 	
+	# Check if netlink is currently started
+	var global_data = get_node_or_null("/root/GlobalData")
+	var netlink_started = false
+	if global_data and global_data.netlink_status.has("started"):
+		netlink_started = global_data.netlink_status["started"]
+	
+	if netlink_started:
+		# Need to stop netlink first
+		print("[NetworkingConfig] Netlink is started, stopping first...")
+		is_stopping = true
+		start_progress_animation("stopping_netlink")
+		start_guard_timer()
+		http_service.netlink_stop(_on_netlink_stop_callback)
+	else:
+		# Proceed directly to configuration
+		do_netlink_config()
+
+func do_netlink_config():
 	# Start configuration process
 	is_configuring = true
-	start_progress_animation()
+	start_progress_animation("netlink_config_progress")
 	start_guard_timer()
 	
 	# Get values from UI
@@ -385,7 +405,30 @@ func configure_network():
 	var target_name = name_line_edit.text.strip_edges()
 	
 	print("[NetworkingConfig] Configuring network with channel: ", channel, ", workmode: ", workmode, ", target_name: ", target_name)
-	http_service.netlink_config(_on_netlink_config_callback, channel, target_name, workmode)
+	
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		http_service.netlink_config(_on_netlink_config_callback, channel, target_name, workmode)
+
+func _on_netlink_stop_callback(result, response_code, _headers, _body):
+	stop_timers()
+	
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		print("[NetworkingConfig] Netlink stop successful, proceeding to config...")
+		
+		# Update GlobalData to mark netlink as stopped
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data:
+			global_data.netlink_status["started"] = false
+			print("[NetworkingConfig] Updated GlobalData.netlink_status.started to false")
+		
+		is_stopping = false
+		# Now proceed to configuration
+		do_netlink_config()
+	else:
+		print("[NetworkingConfig] Netlink stop failed - Result: ", result, ", Code: ", response_code)
+		set_status_stop_failed()
+		is_stopping = false
 
 func _on_netlink_config_callback(result, response_code, _headers, _body):
 	stop_timers()
@@ -444,9 +487,10 @@ func _on_netlink_start_callback(result, response_code, _headers, _body):
 		is_configuring = false
 
 # Timer and animation functions
-func start_progress_animation():
-	status_label.text = tr("netlink_config_progress")
+func start_progress_animation(text_key: String):
+	status_label.text = tr(text_key)
 	animation_dots = 0
+	progress_text_key = text_key
 	animation_timer.start()
 
 func start_guard_timer():
@@ -461,13 +505,17 @@ func stop_timers():
 func _on_guard_timer_timeout():
 	print("[NetworkingConfig] Guard timer timed out (15s)")
 	stop_timers()
-	set_status_timeout()
-	is_configuring = false
+	if is_stopping:
+		set_status_stop_failed()
+		is_stopping = false
+	else:
+		set_status_timeout()
+		is_configuring = false
 
 func _on_animation_timer_timeout():
 	animation_dots = (animation_dots + 1) % 4
 	var dots = ".".repeat(animation_dots)
-	status_label.text = tr("netlink_config_progress") + dots
+	status_label.text = tr(progress_text_key) + dots
 
 func set_status_failed():
 	stop_timers()
@@ -475,3 +523,7 @@ func set_status_failed():
 
 func set_status_timeout():
 	status_label.text = tr("netlink_config_timeout")
+
+func set_status_stop_failed():
+	stop_timers()
+	status_label.text = tr("stopping_netlink_failed")

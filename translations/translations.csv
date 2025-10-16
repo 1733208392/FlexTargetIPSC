@@ -301,6 +301,8 @@ netlink_config,Netlink Config,网络配置,ネットリンク設定,網路配置
 netlink_config_progress,Netlink Config In Progress,网络配置进行中,ネットリンク設定進行中,網路配置進行中
 netlink_config_failed,Netlink Config Failed,网络配置失败,ネットリンク設定失敗,網路配置失敗
 netlink_config_timeout,Netlink Config Timeout,网络配置超时,ネットリンク設定タイムアウト,網路配置超時
+stopping_netlink,Stopping Netlink,正在停止网络连接,ネットリンク停止中,正在停止網路連接
+stopping_netlink_failed,Stopping Netlink Failed,停止网络连接失败,ネットリンク停止失敗,停止網路連接失敗
 wifi_scan_timeout,WIFI Scan Timeout,WIFI扫描超时,WIFIスキャンタイムアウト,WIFI掃描超時
 wifi_scan_failed,WIFI Scan Failed,WIFI扫描失败,WIFIスキャン失敗,WIFI掃描失敗
 wifi_configure,WIFI Configure,WIFI配置,WIFI設定,WIFI配置

@@ -24,20 +24,15 @@ border_color = Color(0.956863, 0.521569, 0.007843, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_70qle"]
-bg_color = Color(0.99607843, 0.5411765, 0, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_o2t7p"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fyn3v"]
-bg_color = Color(0.99607843, 0.5411765, 0, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pm2y3"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_trtje"]
-bg_color = Color(0.99607843, 0.5411765, 0, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a5ubv"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_22n8n"]
-bg_color = Color(0.99607843, 0.5411765, 0, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1n7n1"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lnak8"]
-bg_color = Color(0.99607843, 0.5411765, 0, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ur50w"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_language"]
 
@@ -130,9 +125,8 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_70qle")
+theme_override_styles/normal = SubResource("StyleBoxFlat_o2t7p")
 text = "MockBluetooth-01"
-horizontal_alignment = 3
 
 [node name="Content1BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1"]
 layout_mode = 2
@@ -155,7 +149,7 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_fyn3v")
+theme_override_styles/normal = SubResource("StyleBoxFlat_pm2y3")
 text = "Device-Alpha"
 
 [node name="Content2BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2"]
@@ -180,7 +174,7 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_trtje")
+theme_override_styles/normal = SubResource("StyleBoxFlat_a5ubv")
 text = "Channel-11"
 
 [node name="Content3BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3"]
@@ -205,7 +199,7 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_22n8n")
+theme_override_styles/normal = SubResource("StyleBoxFlat_1n7n1")
 text = "192.168.1.100"
 
 [node name="Content4BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4"]
@@ -230,7 +224,7 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_lnak8")
+theme_override_styles/normal = SubResource("StyleBoxFlat_ur50w")
 text = "Client"
 
 [node name="Content5BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5"]

@@ -229,6 +229,21 @@ func netlink_start(callback: Callable):
 	)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
 
+func netlink_stop(callback: Callable):
+	var url = base_url + "/netlink/stop"
+	if not DEBUG_DISABLED:
+		print("[HttpService] Sending netlink stop request to ", url)
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(result, response_code, headers, body):
+		if sb:
+			var body_str = body.get_string_from_utf8()
+			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
+			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
+		callback.call(result, response_code, headers, body)
+	)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
+
 func netlink_status(callback: Callable):
 	var url = base_url + "/netlink/status"
 	if not DEBUG_DISABLED:

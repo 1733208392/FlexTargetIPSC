@@ -165,7 +165,7 @@ const server = http.createServer((req, res) => {
         setTimeout(() => {
           console.log(`[HttpServer] WiFi connection completed for SSID=${ssid}`);
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ code: 0, msg: '' }));
+          res.end(JSON.stringify({ code: 0, data: {}, msg: '' }));
         }, 10000);
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });

@@ -57,6 +57,18 @@ func _ready():
 	# Load saved settings from GlobalData
 	load_settings_from_global_data()
 	
+	# Set title labels to left alignment
+	if title1_label:
+		title1_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	if title2_label:
+		title2_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	if title3_label:
+		title3_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	if title4_label:
+		title4_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	if title5_label:
+		title5_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	
 	# Connect signals for language buttons
 	if chinese_button:
 		chinese_button.pressed.connect(_on_language_changed.bind("Chinese"))
@@ -437,7 +449,7 @@ func _populate_networking_fields(data: Dictionary):
 	if content2_label:
 		content2_label.text = str(data.get("device_name", ""))
 	if content3_label:
-		content3_label.text = str(data.get("channel", ""))
+		content3_label.text = str(int(data.get("channel", 0)))
 	if content4_label:
 		content4_label.text = str(data.get("wifi_ip", ""))
 	if content5_label:

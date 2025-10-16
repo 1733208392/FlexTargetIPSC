@@ -445,14 +445,10 @@ func _on_wifi_connect_completed(result, response_code, _headers, body):
 		var success = false
 		var error_msg = "Unknown error"
 
+		# Bodystr "{"code":0,"data":{},"msg":"ok"}"
+
 		if typeof(json) == TYPE_DICTIONARY:
-			if json.has("data") and typeof(json["data"]) == TYPE_DICTIONARY:
-				var data_section = json["data"]
-				if data_section.has("code") and int(data_section["code"]) == 0:
-					success = true
-				else:
-					error_msg = data_section.get("msg", error_msg)
-			elif json.has("code") and int(json["code"]) == 0:
+			if json.has("code") and int(json["code"]) == 0:
 				success = true
 			else:
 				error_msg = json.get("msg", error_msg)
