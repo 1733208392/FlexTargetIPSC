@@ -242,21 +242,20 @@ class WriteCharacteristic extends bleno.Characteristic {
       console.log('[BLE_WS_SIM] ===========================================');
       
       // Handle netlink forward messages from Mobile App to Godot
-      if (parsedData.type === 'netlink' && parsedData.action === 'forward' && parsedData.content) {
+      if (parsedData.action === 'netlink_forward' && parsedData.content) {
         console.log('[BLE_WS_SIM] Forwarding netlink message from Mobile App to Godot');
-        sendToGodot(parsedData);
+        sendToGodot({ type: 'netlink', data: parsedData.content });
       }
       
       // Handle specific commands
-      if (parsedData.type === 'netlink' && parsedData.action === 'query_device_list') {
+      if (parsedData.action === 'netlink_query_device_list') {
         console.log('[BLE_WS_SIM] Processing query_device_list from Mobile App');
         const response = {
           type: 'netlink',
           action: 'device_list',
           data: [
-            { name: 'A', mode: 'master' },
-            { name: 'B', mode: 'slave' },
-            { name: 'C', mode: 'slave' }
+            { mode: 'master', name: 'yang01' },
+            { mode: 'slave', name: 'yang02' }
           ]
         };
         

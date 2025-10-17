@@ -1,8 +1,8 @@
 extends Node
 
 const DEBUG_DISABLED = false
-#const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
-const WEBSOCKET_URL = "ws://localhost:8080"
+const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
+#const WEBSOCKET_URL = "ws://localhost:8080"
 
 signal data_received(data)
 signal bullet_hit(pos: Vector2)
@@ -158,8 +158,8 @@ func _process_websocket_json(json_string):
 		return
 	
 	# Handle BLE forwarded commands
-	if parsed and parsed.has("type") and parsed["type"] == "netlink" and parsed.has("action") and parsed["action"] == "forward":
-		_handle_ble_forwarded_command(parsed)
+	if parsed and parsed.has("type") and parsed["type"] == "netlink" and parsed.has("data"):
+		_handle_ble_forwarded_command(parsed.data)
 		return
 	
 	# Handle bullet hit data
@@ -204,37 +204,11 @@ func _process_websocket_json(json_string):
 func _handle_ble_forwarded_command(parsed):
 	"""Handle BLE forwarded commands"""
 	var sb = get_node_or_null("/root/SignalBus")
-	if not parsed.has("dest"):
-		if not DEBUG_DISABLED:
-			print("[WebSocket] BLE forwarded command missing dest field")
-		return
 	
-	var dest = parsed["dest"]
-	# Implement proper dest validation using netlink_status device_name
-	var expected_device = ""
-	if global_data:
-		expected_device = global_data.netlink_status.get("device_name", "")
-	else:
-		if not DEBUG_DISABLED:
-			print("[WebSocket] GlobalData not available for dest validation")
-	if dest != expected_device:
-		if not DEBUG_DISABLED:
-			print("[WebSocket] BLE forwarded command dest validation failed: ", dest, " expected: ", expected_device)
-		if sb:
-			sb.emit_onboard_debug_info(3, "BLE forwarded command dest validation failed: " + str(dest) + " expected: " + str(expected_device), "Websocket Listener")
-		return
-	
-	if not parsed.has("content"):
-		if not DEBUG_DISABLED:
-			print("[WebSocket] BLE forwarded command missing content field")
-		return
-	
-	var content = parsed["content"]
+	# The new format has data directly as the command content, no dest/content wrapper
+	var content = parsed
 	if not DEBUG_DISABLED:
 		print("[WebSocket] BLE forwarded command content: ", content)
-
-	# Add dest to content for UI display
-	content["dest"] = dest
 
 	# Emit onboard debug info for forwarded BLE commands (sender: Mobile App)
 	var content_str = JSON.stringify(content)
@@ -299,7 +273,7 @@ func clear_queued_signals():
 	# Reset shot processing timer for clean restart
 	last_shot_processing_time = 0.0
 
-func send_netlink_forward(device: String, content_val) -> int:
+func send_netlink_forward(device: String, content_val: Dictionary) -> int:
 	"""Helper to send a netlink forward message over the websocket socket.
 	Returns OK on success, or the error code otherwise."""
 	if socket and socket.get_ready_state() == WebSocketPeer.STATE_OPEN:

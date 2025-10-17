@@ -96,41 +96,7 @@ func _ready():
 		var header = drill_ui_node.get_node("TopContainer/TopLayout/HeaderContainer")
 		if header:
 			header.visible = false
-	
-	# If a BLE ready command was stored on GlobalData by the previous scene, load it now
-	var gd = get_node_or_null("/root/GlobalData")
-	if gd:
-		var content = null
-		var settings = gd.get("settings_dict")
-		if settings != null and typeof(settings) == TYPE_DICTIONARY and settings.has("ble_ready_content"):
-			content = settings["ble_ready_content"]
-			settings.erase("ble_ready_content")
-		elif gd.get("ble_ready_content") != null:
-			content = gd.get("ble_ready_content")
-			gd.set("ble_ready_content", null)
-		if content != null:
-			print("[DrillsNetwork] Loaded ble_ready_content from GlobalData: ", content)
-			# Merge into saved_ble_ready_content
-			saved_ble_ready_content.clear()
-			for k in content.keys():
-				saved_ble_ready_content[k] = content[k]
-			if saved_ble_ready_content.has("targetType"):
-				current_target_type = saved_ble_ready_content["targetType"]
-			print("[DrillsNetwork] Merged saved BLE ready params from GlobalData: ", saved_ble_ready_content)
-			# Send ready ack to the sender as if we had just received the ready command
-			var ws_listener_ack = get_node_or_null("/root/WebSocketListener")
-			if ws_listener_ack and ws_listener_ack.has_method("send_netlink_forward"):
-				var device_name = gd.netlink_status.get("device_name", "B")
-				var err_ack = ws_listener_ack.send_netlink_forward(device_name, "ready")
-				if err_ack != OK:
-					print("[DrillsNetwork] Failed to send ready ack on startup: ", err_ack)
-				else:
-					print("[DrillsNetwork] Sent ready ack on startup via helper")
-			else:
-				print("[DrillsNetwork] WebSocketListener not available or missing helper; cannot send ready ack on startup")
-	
-	# Drill will be started by BLE ready command (or a stored ready command merged above)
-
+			
 func spawn_target():
 	"""Spawn the single target"""
 	print("[DrillsNetwork] Spawning target")
@@ -363,19 +329,18 @@ func _on_ble_ready_command(content: Dictionary):
 
 	# Acknowledge the ready command back to sender by forwarding a netlink message
 	# Format: {"type":"netlink","action":"forward","device":"A","content":"ready"}
-	var ws_listener = get_node_or_null("/root/WebSocketListener")
-	if ws_listener and ws_listener.has_method("send_netlink_forward"):
-		var gd = get_node_or_null("/root/GlobalData")
-		var device_name = "B"
-		if gd:
-			device_name = gd.netlink_status.get("device_name", "B")
-		var err = ws_listener.send_netlink_forward(device_name, "ready")
-		if err != OK:
-			print("[DrillsNetwork] Failed to send ready ack: ", err)
-		else:
-			print("[DrillsNetwork] Sent ready ack via helper")
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		var content_dict = {"ack":"ready"}
+		var content_json = JSON.stringify(content_dict)
+		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
+			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+				print("[DrillsNetwork] Sent ready ack successfully")
+			else:
+				print("[DrillsNetwork] Failed to send ready ack: ", result, response_code)
+		, content_json)
 	else:
-		print("[DrillsNetwork] WebSocketListener not available or missing helper; cannot send ready ack")
+		print("[DrillsNetwork] HttpService not available; cannot send ready ack")
 
 	# If drill is completed, reset to fresh start
 	if drill_completed:

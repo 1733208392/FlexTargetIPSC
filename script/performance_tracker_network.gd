@@ -57,42 +57,30 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 	}
 	
 	# Send to websocket server
-	_send_to_websocket(record)
+	_send_to_app(record)
 	
 	if DEBUG_LOGGING:
 		print("Performance record sent: ", record)
 
 # Send message to websocket server
-func _send_to_websocket(record: Dictionary):
-	var ws_listener = get_node_or_null("/root/WebSocketListener")
-	if ws_listener and ws_listener.socket and ws_listener.socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
+func _send_to_app(record: Dictionary):
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
 		var content = {"command": "shot"}
 		content.merge(record, true)  # Merge record into content
 		
-		# Get target name from global data
-		var global_data = get_node_or_null("/root/GlobalData")
-		var target_name = ""
-		if global_data and global_data.settings_dict.has("target_name"):
-			target_name = global_data.settings_dict["target_name"]
-		
-		var message = {
-			"type": "netlink",
-			"action": "forward",
-			"device": "B",
-			"target": target_name,
-			"content": content
-		}
-		var json_string = JSON.stringify(message)
-		var err = ws_listener.socket.send_text(json_string)
-		if err != OK:
-			if DEBUG_LOGGING:
-				print("Failed to send websocket message: ", err)
-		else:
-			if DEBUG_LOGGING:
-				print("Sent websocket message: ", json_string)
+		var json_string = JSON.stringify(content)
+		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
+			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+				if DEBUG_LOGGING:
+					print("Successfully sent performance data via HTTP")
+			else:
+				if DEBUG_LOGGING:
+					print("Failed to send performance data via HTTP: ", result, response_code)
+		, json_string)
 	else:
 		if DEBUG_LOGGING:
-			print("WebSocket not available for sending")
+			print("HttpService not available for sending")
 
 # Get the fastest time difference recorded
 func get_fastest_time_diff() -> float:
