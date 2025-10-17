@@ -18,6 +18,7 @@ var timeout_warning_active: bool = false
 @onready var shot_timer_overlay = $ShotTimerOverlay
 @onready var fastest_interval_label = $TopContainer/TopLayout/HeaderContainer/FastestContainer/FastestInterval
 @onready var timer_label = $TopContainer/TopLayout/TimerContainer/Timer
+@onready var timer_container = $TopContainer/TopLayout/TimerContainer
 @onready var score_label = $TopContainer/TopLayout/HeaderContainer/ScoreContainer/Score
 
 # Fastest time tracking
@@ -54,9 +55,14 @@ func _ready():
 			drills_manager.ui_show_shot_timer.connect(_on_show_shot_timer)
 		if drills_manager.has_signal("ui_hide_shot_timer"):
 			drills_manager.ui_hide_shot_timer.connect(_on_hide_shot_timer)
+		if drills_manager.has_signal("ui_mode_update"):
+			drills_manager.ui_mode_update.connect(_on_mode_update)
 		
 		if DEBUG_LOGGING:
 			print("[DrillUI] Connected to drills manager UI signals")
+	
+	# Timer is hidden by default until mode is determined
+	timer_container.visible = false
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
@@ -202,3 +208,9 @@ func _on_hide_shot_timer():
 	else:
 		if DEBUG_LOGGING:
 			print("[DrillUI] Warning: Shot timer overlay missing reset_timer method")
+
+func _on_mode_update(is_master: bool):
+	"""Update timer visibility based on master/slave mode"""
+	timer_container.visible = is_master
+	if DEBUG_LOGGING:
+		print("[DrillUI] Timer visibility set to: ", is_master)

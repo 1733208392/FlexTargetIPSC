@@ -38,7 +38,7 @@ var timeout_seconds: float = 40.0
 var drill_timed_out: bool = false
 
 # Master/Slave mode
-var is_master: bool = false
+var is_first: bool = false
 
 # Saved parameters from BLE 'ready' until a 'start' is received
 var saved_ble_ready_content: Dictionary = {}
@@ -53,6 +53,7 @@ signal ui_target_title_update(target_index: int, total_targets: int)
 signal ui_target_name_update(target_name: String)
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
+signal ui_mode_update(is_master: bool)
 signal ui_theme_change(theme_name: String)
 
 @onready var performance_tracker = preload("res://script/performance_tracker_network.gd").new()
@@ -168,7 +169,7 @@ func spawn_target():
 	start_drill_timer()
 	
 	# Show shot timer only in master mode
-	if is_master:
+	if is_first:
 		show_shot_timer()
 
 func start_drill():
@@ -240,7 +241,7 @@ func start_drill_timer():
 	timeout_timer.timeout.connect(_on_timeout)
 	add_child(timeout_timer)
 	
-	if not is_master:
+	if not is_first:
 		# In slave mode, start timer immediately since no shot timer
 		timeout_timer.start()
 		drill_start_time = Time.get_ticks_msec() / 1000.0
@@ -418,14 +419,13 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	for k in content.keys():
 		merged[k] = content[k]
 
-	# Determine master/slave mode
-	var gd = get_node_or_null("/root/GlobalData")
-	if gd and gd.netlink_status.has("work_mode"):
-		is_master = (gd.netlink_status["work_mode"] == "master")
-	else:
-		is_master = false  # Default to slave mode
+	# Determine master/slave mode based on isFirst from ready command
+	is_first = merged.get("isFirst", false)
 	if not DEBUG_DISABLED:
-		print("[DrillsNetwork] Operating in ", "master" if is_master else "slave", " mode")
+		print("[DrillsNetwork] Operating in ", "master" if is_first else "slave", " mode (based on isFirst: ", is_first, ")")
+	
+	# Notify UI of mode change
+	emit_signal("ui_mode_update", is_first)
 
 	# Apply merged parameters similar to original ready behavior
 	if merged.has("targetType"):
@@ -447,7 +447,7 @@ func _on_ble_start_command(content: Dictionary) -> void:
 
 	# Parse timeout from merged content
 	if merged.has("timeout"):
-		if is_master:
+		if is_first:
 			timeout_seconds = float(merged["timeout"])
 		else:
 			timeout_seconds = 5.0 + float(merged["timeout"])
@@ -458,7 +458,7 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	if not DEBUG_DISABLED:
 		print("[DrillsNetwork] Starting drill immediately")
 	start_drill()
-	if is_master:
+	if is_first:
 		shot_timer_visible = true
 
 func _on_shot_timer_ready(delay: float):
