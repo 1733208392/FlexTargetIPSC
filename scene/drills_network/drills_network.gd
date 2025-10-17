@@ -43,9 +43,12 @@ var is_first: bool = false
 # Saved parameters from BLE 'ready' until a 'start' is received
 var saved_ble_ready_content: Dictionary = {}
 
+# Current repeat tracking
+var current_repeat: int = 0
+
 # Performance tracking
 signal drills_finished
-signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float)
+signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int)
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
@@ -53,7 +56,7 @@ signal ui_target_title_update(target_index: int, total_targets: int)
 signal ui_target_name_update(target_name: String)
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
-signal ui_mode_update(is_master: bool)
+signal ui_mode_update(is_first: bool)
 signal ui_theme_change(theme_name: String)
 
 @onready var performance_tracker = preload("res://script/performance_tracker_network.gd").new()
@@ -220,7 +223,7 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	# Emit for performance tracking
 	if not DEBUG_DISABLED:
 		print("[DrillsNetwork] Emitting target_hit signal to performance tracker")
-	emit_signal("target_hit", current_target_type, hit_position, zone, 0.0)
+	emit_signal("target_hit", current_target_type, hit_position, zone, 0.0, current_repeat)
 	
 	# Update fastest time
 	# Note: fastest time UI update removed per request
@@ -423,6 +426,11 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	is_first = merged.get("isFirst", false)
 	if not DEBUG_DISABLED:
 		print("[DrillsNetwork] Operating in ", "master" if is_first else "slave", " mode (based on isFirst: ", is_first, ")")
+	
+	# Set current repeat
+	current_repeat = merged.get("repeat", 0)
+	if not DEBUG_DISABLED:
+		print("[DrillsNetwork] Current repeat set to: ", current_repeat)
 	
 	# Notify UI of mode change
 	emit_signal("ui_mode_update", is_first)

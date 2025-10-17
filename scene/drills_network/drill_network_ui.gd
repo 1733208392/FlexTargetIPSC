@@ -209,8 +209,8 @@ func _on_hide_shot_timer():
 		if DEBUG_LOGGING:
 			print("[DrillUI] Warning: Shot timer overlay missing reset_timer method")
 
-func _on_mode_update(is_master: bool):
+func _on_mode_update(is_first: bool):
 	"""Update timer visibility based on master/slave mode"""
-	timer_container.visible = is_master
+	timer_container.visible = is_first
 	if DEBUG_LOGGING:
-		print("[DrillUI] Timer visibility set to: ", is_master)
+		print("[DrillUI] Timer visibility set to: ", is_first)
