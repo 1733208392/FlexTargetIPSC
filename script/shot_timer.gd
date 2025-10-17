@@ -25,6 +25,7 @@ enum TimerState {
 var current_state: TimerState = TimerState.WAITING
 var start_time: float = 0.0
 var beep_time: float = 0.0
+var actual_delay: float = 0.0  # Store the actual delay duration
 
 func _ready():
 	"""Initialize the shot timer"""
@@ -125,11 +126,12 @@ func start_timer_sequence():
 	
 	# Set random delay between min_delay and max_delay
 	var random_delay = randf_range(min_delay, max_delay)
+	actual_delay = round(random_delay * 100.0) / 100.0  # Round to 2 decimal places
 	timer_delay.wait_time = random_delay
 	timer_delay.start()
 	
 	if DEBUG_LOGGING:
-		print("Random delay set to: ", random_delay, " seconds")
+		print("Random delay set to: ", random_delay, " seconds (rounded: ", actual_delay, ")")
 	
 	# Record start time
 	start_time = Time.get_unix_time_from_system()
@@ -160,10 +162,10 @@ func _on_timer_timeout():
 	animation_player.play("ready_flash")
 	
 	# Emit signal that timer is ready (for parent scenes to use)
-	timer_ready.emit()
+	timer_ready.emit(actual_delay)
 
 # Signals
-signal timer_ready()
+signal timer_ready(delay: float)
 signal timer_reset()
 
 func reset_timer():
@@ -180,6 +182,7 @@ func reset_timer():
 	current_state = TimerState.WAITING
 	start_time = 0.0
 	beep_time = 0.0
+	actual_delay = 0.0
 	
 	# Reset visual elements and hide them
 	standby_label.text = get_standby_text()

@@ -166,10 +166,14 @@ func hide_shot_timer():
 		print("=== HIDING SHOT TIMER OVERLAY ===")
 	emit_signal("ui_hide_shot_timer")
 
-func _on_shot_timer_ready():
+func _on_shot_timer_ready(delay: float):
 	"""Handle when shot timer beep occurs - start the drill"""
 	if DEBUG_LOGGING:
-		print("=== SHOT TIMER READY - STARTING DRILL ===")
+		print("=== SHOT TIMER READY - STARTING DRILL === Delay: ", delay, " seconds")
+	
+	# Pass the delay to performance tracker
+	performance_tracker.set_shot_timer_delay(delay)
+	
 	# Wait for the beep to finish and "Ready" text to disappear
 	await get_tree().create_timer(0.5).timeout
 	# Start the drill timer

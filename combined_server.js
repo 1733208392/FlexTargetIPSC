@@ -677,15 +677,17 @@ function sendMessageInChunks(data) {
   
   console.log(`[CombinedServer] Splitting message into ${chunks.length} chunks`);
   
-  // Send all chunks
+  // Send all chunks with delay to ensure proper ordering
   chunks.forEach((chunk, index) => {
-    const isLastChunk = index === chunks.length - 1;
-    const chunkToSend = isLastChunk ? chunk + '\r\n' : chunk;
-    
-    const buffer = Buffer.from(chunkToSend);
-    mobileAppBLEClient._updateValueCallback(buffer);
-    
-    console.log(`[CombinedServer] Sent chunk ${index + 1}/${chunks.length} (${buffer.length} bytes)${isLastChunk ? ' [END]' : ''}: ${chunkToSend}`);
+    setTimeout(() => {
+      const isLastChunk = index === chunks.length - 1;
+      const chunkToSend = isLastChunk ? chunk + '\r\n' : chunk;
+      
+      const buffer = Buffer.from(chunkToSend);
+      mobileAppBLEClient._updateValueCallback(buffer);
+      
+      console.log(`[CombinedServer] Sent chunk ${index + 1}/${chunks.length} (${buffer.length} bytes)${isLastChunk ? ' [END]' : ''}: ${chunkToSend}`);
+    }, index * 50); // 50ms delay between chunks
   });
 }
 

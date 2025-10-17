@@ -13,6 +13,7 @@ var first_shot = true  # Track if this is the first shot of the drill
 var total_elapsed_time = 0.0  # Store the total elapsed time for the drill
 var pending_drill_data = null
 var minimum_shot_interval = 0.01  # 10ms minimum realistic shot interval
+var shot_timer_delay = 0.0  # Store the shot timer delay duration
 
 func _ready():
 	pass
@@ -23,15 +24,20 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 	
 	if first_shot:
 		# First shot of the drill - calculate time from drill start (reset_shot_timer)
-		time_diff = (current_time_usec - last_shot_time_usec) / 1000000.0  # Convert to seconds
+		var total_time = (current_time_usec - last_shot_time_usec) / 1000000.0  # Convert to seconds
+		# Subtract shot timer delay to get actual reaction time after beep
+		time_diff = total_time - shot_timer_delay
+		# Ensure time_diff is not negative (in case of very fast reaction)
+		if time_diff < 0:
+			time_diff = 0.0
 		first_shot = false
 		
-		# Update fastest time if this first shot is realistic
+		# Update fastest time if this first shot is realistic (using the adjusted reaction time)
 		if time_diff >= minimum_shot_interval and time_diff < fastest_time_diff:
 			fastest_time_diff = time_diff
 		
 		if DEBUG_LOGGING:
-			print("PERFORMANCE TRACKER: First shot at time:", current_time_usec, ", time from drill start:", time_diff, "seconds")
+			print("PERFORMANCE TRACKER: First shot - total time:", total_time, "s, shot timer delay:", shot_timer_delay, "s, reaction time:", time_diff, "s")
 	else:
 		# Subsequent shots - calculate interval with microsecond precision
 		time_diff = (current_time_usec - last_shot_time_usec) / 1000000.0  # Convert to seconds
@@ -57,11 +63,12 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 	
 	var record = {
 		"target_type": target_type,
-		"time_diff": time_diff,
-		"hit_position": {"x": hit_position.x, "y": hit_position.y},
+		"time_diff": round(time_diff * 100.0) / 100.0,
+		"hit_position": {"x": round(hit_position.x * 10.0) / 10.0, "y": round(hit_position.y * 10.0) / 10.0},
 		"hit_area": hit_area,
 		"score": score,
-		"rotation_angle": rotation_angle
+		"rotation_angle": rotation_angle,
+		"shot_timer_delay": round(shot_timer_delay * 100.0) / 100.0
 	}
 	
 	records.append(record)
@@ -163,6 +170,12 @@ func set_total_elapsed_time(time_seconds: float):
 	total_elapsed_time = time_seconds
 	if DEBUG_LOGGING:
 		print("PERFORMANCE TRACKER: Total elapsed time set to:", total_elapsed_time, "seconds")
+
+# Set the shot timer delay
+func set_shot_timer_delay(delay: float):
+	shot_timer_delay = round(delay * 100.0) / 100.0  # Ensure 2 decimal precision
+	if DEBUG_LOGGING:
+		print("PERFORMANCE TRACKER: Shot timer delay set to:", shot_timer_delay, "seconds")
 
 func _on_settings_saved(result, response_code, headers, body):
 	if response_code == 200:
