@@ -393,7 +393,6 @@ func _on_ble_ready_command(content: Dictionary):
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
 		var content_dict = {"ack":"ready"}
-		var content_json = JSON.stringify(content_dict)
 		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
 			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 				if not DEBUG_DISABLED:
@@ -401,7 +400,7 @@ func _on_ble_ready_command(content: Dictionary):
 			else:
 				if not DEBUG_DISABLED:
 					print("[DrillsNetwork] Failed to send ready ack: ", result, response_code)
-		, content_json)
+		, content_dict)
 	else:
 		if not DEBUG_DISABLED:
 			print("[DrillsNetwork] HttpService not available; cannot send ready ack")

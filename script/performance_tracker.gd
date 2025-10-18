@@ -151,8 +151,8 @@ func _get_score_for_hit_area(hit_area: String) -> int:
 		"CZone": 3,
 		"Miss": 0,
 		"WhiteZone": -5,
-		"Paddle": 2,
-		"Popper": 2
+		"Paddle": 5,
+		"Popper": 5
 	}
 	return fallback_scores.get(hit_area, 0)
 

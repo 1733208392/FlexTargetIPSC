@@ -263,17 +263,19 @@ func netlink_status(callback: Callable):
 	)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
 
-func netlink_forward_data(callback: Callable, content: String):
+func netlink_forward_data(callback: Callable, data: Dictionary):
 	var url = base_url + "/netlink/forward-data"
+	var wrapped_data = {"content": data}
+	var json_data = JSON.stringify(wrapped_data)
 	if not DEBUG_DISABLED:
-		print("[HttpService] Sending netlink forward data request to ", url, " with content: ", content)
+		print("[HttpService] Sending netlink forward data request to ", url, " with data: ", data)
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
 		if sb:
 			var _body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Content: " + content
+			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Data: " + str(data)
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		callback.call(result, response_code, headers, body)
 	)
-	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, content)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)

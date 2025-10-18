@@ -55,6 +55,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 	last_shot_time_usec = current_time_usec
 	
 	var record = {
+		"command": "shot",
 		"target_type": target_type,
 		"time_diff": round(time_diff * 100.0) / 100.0,
 		"hit_position": {"x": round(hit_position.x * 10.0) / 10.0, "y": round(hit_position.y * 10.0) / 10.0},
@@ -73,11 +74,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 # Send message to websocket server
 func _send_to_app(record: Dictionary):
 	var http_service = get_node_or_null("/root/HttpService")
-	if http_service:
-		var content = {"command": "shot"}
-		content.merge(record, true)  # Merge record into content
-		
-		var json_string = JSON.stringify(content)
+	if http_service:		
 		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
 			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 				if DEBUG_LOGGING:
@@ -85,7 +82,7 @@ func _send_to_app(record: Dictionary):
 			else:
 				if DEBUG_LOGGING:
 					print("Failed to send performance data via HTTP: ", result, response_code)
-		, json_string)
+		, record)
 	else:
 		if DEBUG_LOGGING:
 			print("HttpService not available for sending")
