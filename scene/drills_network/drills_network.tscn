@@ -39,8 +39,10 @@ stretch_mode = 6
 
 [node name="DrillUI" parent="." instance=ExtResource("2_1dbv7")]
 layout_mode = 1
+z_index = 5
 
 [node name="DrillNetworkCompleteOverlay" parent="." instance=ExtResource("4_da2b7")]
 visible = false
 layout_mode = 1
+z_index = 10
 script = ExtResource("5_0a8g6")

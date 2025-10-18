@@ -1,5 +1,6 @@
-[gd_scene load_steps=7 format=3 uid="uid://uys12flus0u1"]
+[gd_scene load_steps=8 format=3 uid="uid://uys12flus0u1"]
 
+[ext_resource type="Script" uid="uid://d0k8vvwawfi16" path="res://script/ipsc_mini_rotate.gd" id="1_6qps3"]
 [ext_resource type="PackedScene" uid="uid://pxoma10oooh5" path="res://scene/ipsc_mini.tscn" id="1_ipsc_mini"]
 [ext_resource type="Texture2D" uid="uid://d0m34j6rbnble" path="res://asset/logo-barrel.png" id="2_fco47"]
 
@@ -34,7 +35,9 @@ _data = {
 }
 
 [node name="IPSCMiniRotate" type="Node2D"]
+position = Vector2(-200, 200)
 scale = Vector2(0.9, 0.9)
+script = ExtResource("1_6qps3")
 
 [node name="RotationCenter" type="Node2D" parent="."]
 position = Vector2(100, 200)
