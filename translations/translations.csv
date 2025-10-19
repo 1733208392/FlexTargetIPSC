@@ -317,3 +317,6 @@ net_config_workmode,Workmode,工作模式,動作モード,工作模式
 net_config_target_name,Target Name,设备名称,ターゲット名,標靶名稱
 net_config_done,Confirm,确认,完了,完成
 wifi_connecting,Connecting,连接中,接続中,連線中
+drill_repeat_ended,"Drill Repeat #%d Ended",训练重复 #%d 已结束,ドリルリピート #%d 終了,訓練重複 #%d 已結束
+drill_repeat_ends,"Drill Repeat Ends",训练重复结束,ドリルリピート終了,訓練重複結束
+unknown_device,"Unknown Device",未知设备,不明なデバイス,不明裝置

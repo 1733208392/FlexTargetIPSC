@@ -20,6 +20,10 @@ var target_type_to_scene = {
 @onready var center_container = $CenterContainer
 @onready var drill_timer = $DrillUI/DrillTimer
 @onready var network_complete_overlay = $DrillNetworkCompleteOverlay
+@onready var device_name_label = $DeviceNameLabel
+
+# Global data reference
+var global_data: Node = null
 
 # Target instance
 var target_instance: Node = null
@@ -66,6 +70,9 @@ func _ready():
 	if not DEBUG_DISABLED:
 		print("[DrillsNetwork] Starting network drill")
 	
+	# Get global data reference
+	global_data = get_node_or_null("/root/GlobalData")
+	
 	# Add performance tracker to scene tree first
 	add_child(performance_tracker)
 	
@@ -74,6 +81,10 @@ func _ready():
 	
 	# Connect to WebSocketListener for menu control (deferred to ensure it's ready)
 	call_deferred("_connect_to_websocket")
+	
+	# Connect to GlobalData netlink_status_loaded signal
+	if global_data:
+		global_data.netlink_status_loaded.connect(_on_netlink_status_loaded)
 	
 	# Connect to shot timer ready signal
 	var shot_timer = get_node("DrillUI/ShotTimerOverlay")
@@ -95,6 +106,12 @@ func _ready():
 		var header = drill_ui_node.get_node("TopContainer/TopLayout/HeaderContainer")
 		if header:
 			header.visible = false
+	
+	# Set device name
+	if global_data and global_data.netlink_status.has("device_name"):
+		device_name_label.text = global_data.netlink_status["device_name"]
+	else:
+		device_name_label.text = tr("unknown_device")
 
 func _connect_to_websocket():
 	"""Connect to WebSocketListener signals (called deferred to ensure WebSocketListener is ready)"""
@@ -137,6 +154,13 @@ func _connect_to_websocket():
 		# Try again after a short delay
 		await get_tree().create_timer(0.1).timeout
 		_connect_to_websocket()
+			
+func _on_netlink_status_loaded():
+	"""Update device name when netlink status is loaded"""
+	if global_data and global_data.netlink_status.has("device_name"):
+		device_name_label.text = global_data.netlink_status["device_name"]
+	else:
+		device_name_label.text = tr("unknown_device")
 			
 func spawn_target():
 	"""Spawn the single target"""
@@ -288,7 +312,7 @@ func complete_drill():
 	hide_shot_timer()
 	
 	# Show completion
-	network_complete_overlay.show()
+	network_complete_overlay.show_completion(current_repeat)
 	
 	emit_signal("drills_finished")
 
@@ -316,7 +340,7 @@ func reset_drill_state():
 		target_instance = null
 	
 	# Hide completion overlay
-	network_complete_overlay.hide()
+	network_complete_overlay.hide_completion()
 	
 	# Reset performance tracker
 	performance_tracker.reset_shot_timer()

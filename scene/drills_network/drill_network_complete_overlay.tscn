@@ -1,12 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://dko04tcrpugrp"]
+[gd_scene load_steps=4 format=3 uid="uid://dko04tcrpugrp"]
 
 [ext_resource type="Texture2D" uid="uid://coyf4yn5drgki" path="res://asset/modalCntnrs.png" id="1_8fjpi"]
-[ext_resource type="Script" uid="uid://cemltlpw7rf20" path="res://script/drill_network_complete_overlay.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cemltlpw7rf20" path="res://script/drill_complete_overlay.gd" id="1_script"]
 [ext_resource type="LabelSettings" uid="uid://codb57trfq77w" path="res://theme/target_title_competitive.tres" id="2_o6736"]
-[ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="3_m5n5t"]
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_m5n5t"]
-radius = 100.0
 
 [node name="drill_network_complete_overlay" type="Control"]
 layout_mode = 3
@@ -45,7 +41,7 @@ layout_mode = 2
 
 [node name="Title" type="Label" parent="VBoxContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Drill ENDs"
+text = "Drill Repeat Ends"
 label_settings = ExtResource("2_o6736")
 horizontal_alignment = 1
 vertical_alignment = 1
