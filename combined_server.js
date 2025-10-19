@@ -311,13 +311,11 @@ const httpServer = http.createServer((req, res) => {
           return;
         }
 
-        // Wrap the content with action, device, and type fields
-        const envelope = {
-          action: 'forward',
-          content: content,
-          device: netlinkDeviceName,
-          type: 'netlink'
-        };
+        // Use the parsed content directly as envelope, change action and ensure device/type
+        const envelope = content;
+        envelope.action = 'forward'; // Change action for BLE compatibility
+        envelope.device = netlinkDeviceName; // Ensure device is the server's device name
+        envelope.type = 'netlink'; // Ensure type is set
 
         console.log(`[HttpServer] Forwarding data to BLE:`, envelope);
 
