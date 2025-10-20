@@ -43,6 +43,8 @@ func _ready():
 		# Connect UI update signals
 		if drills_manager.has_signal("ui_timer_update"):
 			drills_manager.ui_timer_update.connect(_on_timer_update)
+		if drills_manager.has_signal("ui_timer_stopped"):
+			drills_manager.ui_timer_stopped.connect(_on_timer_stopped)
 		if drills_manager.has_signal("ui_target_name_update"):
 			drills_manager.ui_target_name_update.connect(_on_target_name_update)
 		if drills_manager.has_signal("ui_fastest_time_update"):
@@ -121,6 +123,27 @@ func _on_timer_update(time_elapsed: float):
 		timer_label.modulate = Color.RED
 	else:
 		timer_label.modulate = Color.WHITE
+
+func _on_timer_stopped(final_time: float):
+	"""Handle timer stopped - round milliseconds to one decimal place (nearest 10ms)"""
+	var minutes = int(final_time / 60)
+	var seconds = int(final_time) % 60
+	var centiseconds = int((final_time - int(final_time)) * 100)  # 0-99
+		
+	# Round centiseconds to nearest 10 (one decimal place)
+	# 0-4 → 0, 5-14 → 10, 15-24 → 20, etc.
+	var rounded_centiseconds = int(round(centiseconds / 10.0)) * 10
+		
+	# Handle overflow: if rounded >= 100, increment seconds
+	if rounded_centiseconds >= 100:
+		rounded_centiseconds = 0
+		seconds += 1
+		if seconds >= 60:
+			seconds = 0
+			minutes += 1
+	
+	var time_string = "%02d:%02d:%02d" % [minutes, seconds, rounded_centiseconds]
+	timer_label.text = time_string
 
 func _on_timeout_warning(remaining_seconds: float):
 	"""Handle timeout warning - show red timer"""

@@ -56,6 +56,7 @@ signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, 
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
+signal ui_timer_stopped(final_time: float)
 signal ui_target_title_update(target_index: int, total_targets: int)
 signal ui_target_name_update(target_name: String)
 signal ui_show_shot_timer()
@@ -303,6 +304,9 @@ func complete_drill():
 	if not DEBUG_DISABLED:
 		print("[DrillsNetwork] Drill completed! Score:", total_score)
 	drill_completed = true
+	
+	# Emit timer stopped signal with final elapsed time BEFORE stopping
+	emit_signal("ui_timer_stopped", elapsed_seconds)
 	
 	# Stop timers
 	if timeout_timer:

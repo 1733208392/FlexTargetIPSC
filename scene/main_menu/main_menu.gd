@@ -217,6 +217,19 @@ func _on_ble_ready_command(content: Dictionary) -> void:
 	else:
 		print("[Menu] GlobalData not available; cannot persist ble content")
 
+	# Send ACK back to mobile app before changing scene
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		var ack_data = {"ack": "ready"}
+		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
+			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+				print("[Menu] ACK for ready command sent successfully")
+			else:
+				print("[Menu] Failed to send ACK for ready command")
+		, ack_data)
+	else:
+		print("[Menu] HttpService not available; cannot send ACK")
+
 	if is_inside_tree():
 		get_tree().change_scene_to_file("res://scene/drills_network/drills_network.tscn")
 	else:
