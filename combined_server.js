@@ -27,6 +27,14 @@ const ADVERTISING_INTERVAL_MS = 10000; // Re-advertise every 10 seconds
 // WebSocket Configuration
 const WS_PATH = '/websocket';
 
+// Embedded System State (for /system/embedded/status endpoint)
+let embeddedSystemState = {
+  heartbeat: Math.floor(Date.now() / 1000), // Last heartbeat timestamp
+  threshold: 1000, // Sensor threshold value
+  temperature: 28, // Temperature in Celsius
+  version: "v1.0.0" // Hardware version
+};
+
 // Global state management for WS/BLE
 let mobileAppBLEClient = null;
 let godotWSClient = null;
@@ -327,6 +335,72 @@ const httpServer = http.createServer((req, res) => {
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ code: 1, msg: "Invalid JSON" }));
+      }
+    });
+  } else if (pathname === '/system/embedded/status' && req.method === 'POST') {
+    // Query embedded system status
+    // Update heartbeat to current timestamp
+    embeddedSystemState.heartbeat = Math.floor(Date.now() / 1000);
+    
+    console.log(`[HttpServer] /system/embedded/status called`);
+    console.log(`[HttpServer] Embedded system state:`, embeddedSystemState);
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      code: 0,
+      msg: "Success",
+      data: {
+        heartbeat: embeddedSystemState.heartbeat,
+        threshold: embeddedSystemState.threshold,
+        temperature: embeddedSystemState.temperature,
+        version: embeddedSystemState.version
+      }
+    }));
+  } else if (pathname === '/system/embedded/threshold' && req.method === 'POST') {
+    // Set sensor threshold
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const value = data.value;
+
+        // Validate that value is provided
+        if (value === undefined || value === null) {
+          console.log(`[HttpServer] /system/embedded/threshold - Missing 'value' parameter`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Missing 'value' parameter" }));
+          return;
+        }
+
+        // Validate that value is a number and within range (700-2000)
+        const numValue = parseInt(value);
+        if (isNaN(numValue)) {
+          console.log(`[HttpServer] /system/embedded/threshold - Invalid value type: ${value}`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Invalid value type (must be integer)" }));
+          return;
+        }
+
+        if (numValue < 700 || numValue > 2000) {
+          console.log(`[HttpServer] /system/embedded/threshold - Value out of range: ${numValue} (must be 700-2000)`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Value must be between 700 and 2000" }));
+          return;
+        }
+
+        // Update threshold value
+        embeddedSystemState.threshold = numValue;
+        console.log(`[HttpServer] /system/embedded/threshold set to: ${numValue}`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 0, msg: "Threshold set successfully" }));
+      } catch (error) {
+        console.log(`[HttpServer] /system/embedded/threshold - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
       }
     });
   } else {

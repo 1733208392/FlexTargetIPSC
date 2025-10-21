@@ -10,6 +10,11 @@ static var current_drill_sequence = "Fixed"
 static var auto_restart_enabled = false
 static var auto_restart_pause_time = 5  # Changed to store the selected time (5 or 10)
 
+# Sensor threshold tracking
+var initial_threshold = 0
+var current_threshold = 0
+var threshold_changed = false
+
 # Debug flag for controlling print statements
 const DEBUG_ENABLED = false
 
@@ -21,7 +26,7 @@ const DEBUG_ENABLED = false
 
 # References to labels that need translation
 @onready var tab_container = $"VBoxContainer/MarginContainer/tab_container"
-@onready var description_label = $"VBoxContainer/MarginContainer/tab_container/About/Left/MarginContainer/DescriptionLabel"
+@onready var description_label = $"VBoxContainer/MarginContainer/tab_container/About/HBoxContainer/Left/MarginContainer/DescriptionLabel"
 @onready var copyright_label = $"CopyrightLabel"
 
 # References to drill button (single CheckButton)
@@ -52,6 +57,10 @@ const DEBUG_ENABLED = false
 
 # References to drill note label
 @onready var drill_note_label = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/Label"
+
+# References to sensitivity controls
+@onready var sensitivity_slider = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/SensitivityHSlider"
+@onready var sensitivity_label = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/SensitivityLabel"
 
 # Reference to upgrade button
 @onready var upgrade_button = $"VBoxContainer/MarginContainer/tab_container/About/MarginContainer/Button"
@@ -140,6 +149,25 @@ func _ready():
 	if upgrade_button:
 		upgrade_button.pressed.connect(_on_upgrade_pressed)
 
+	# Connect sensitivity slider value_changed signal
+	if sensitivity_slider:
+		sensitivity_slider.value_changed.connect(_on_sensitivity_value_changed)
+		# Update label with initial value
+		_update_sensitivity_label()
+	else:
+		if DEBUG_ENABLED:
+			print("[Option] Sensitivity slider not found!")
+
+	# Load embedded system status to get current threshold
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		http_service.embedded_status(Callable(self, "_on_embedded_status_response"))
+		if DEBUG_ENABLED:
+			print("[Option] Requesting embedded system status")
+	else:
+		if DEBUG_ENABLED:
+			print("[Option] HttpService singleton not found!")
+
 	# Focus will be set by load_settings_from_global_data() based on current language
 	
 	# Connect to WebSocketListener
@@ -153,8 +181,8 @@ func _ready():
 			print("[Option] WebSocketListener singleton not found!")
 
 	# Always request fresh netlink status from server
-	var http_service = get_node_or_null("/root/HttpService")
-	if http_service:
+	var http_service_netlink = get_node_or_null("/root/HttpService")
+	if http_service_netlink:
 		if DEBUG_ENABLED:
 			print("[Option] About to call http_service.netlink_status")
 		http_service.netlink_status(Callable(self, "_on_netlink_status_response"))
@@ -335,7 +363,7 @@ func update_ui_texts():
 		tab_container.set_tab_title(2, tr("drill"))
 		tab_container.set_tab_title(3, tr("about"))
 	if description_label:
-		description_label.text = tr("description")
+		description_label.text = tr("about_description_intro") + "\n" + tr("about_description_features")
 	if copyright_label:
 		copyright_label.text = tr("copyright")
 	if random_sequence_check:
@@ -530,6 +558,8 @@ static func get_auto_restart_pause_time() -> int:
 	return auto_restart_pause_time
 
 func _on_menu_control(directive: String):
+	if has_visible_power_off_dialog():
+		return
 	if DEBUG_ENABLED:
 		print("[Option] Received menu_control signal with directive: ", directive)
 	match directive:
@@ -552,9 +582,15 @@ func _on_menu_control(directive: String):
 						if DEBUG_ENABLED:
 							print("[Option] Navigation: ", directive, " ignored - current tab has no navigation")
 		"left", "right":
-			if DEBUG_ENABLED:
-				print("[Option] Tab switch: ", directive)
-			switch_tab(directive)
+			# Check if sensitivity slider is focused on Drills tab
+			if tab_container and tab_container.current_tab == 2 and sensitivity_slider and sensitivity_slider.has_focus():
+				if DEBUG_ENABLED:
+					print("[Option] Adjusting sensitivity slider: ", directive)
+				adjust_sensitivity_slider(directive)
+			else:
+				if DEBUG_ENABLED:
+					print("[Option] Tab switch: ", directive)
+				switch_tab(directive)
 		"enter":
 			if DEBUG_ENABLED:
 				print("[Option] Enter pressed")
@@ -562,6 +598,8 @@ func _on_menu_control(directive: String):
 		"back", "homepage":
 			if DEBUG_ENABLED:
 				print("[Option] ", directive, " - navigating to main menu")
+			# Save threshold before leaving the scene
+			_save_threshold_if_changed()
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 			else:
@@ -639,6 +677,8 @@ func navigate_drill_buttons(direction: String):
 		drill_buttons.append(pause_5s_check)
 	if pause_10s_check and auto_restart_enabled:
 		drill_buttons.append(pause_10s_check)
+	if sensitivity_slider:
+		drill_buttons.append(sensitivity_slider)
 	
 	if drill_buttons.is_empty():
 		if DEBUG_ENABLED:
@@ -797,19 +837,16 @@ func _on_volume_down_response(_result, response_code, _headers, body):
 		print("[Option] Volume down HTTP response:", _result, response_code, body_str)
 
 func power_off():
-	var http_service = get_node("/root/HttpService")
-	if http_service:
-		if DEBUG_ENABLED:
-			print("[Option] Sending power off HTTP request...")
-		http_service.shutdown(_on_shutdown_response)
-	else:
-		if DEBUG_ENABLED:
-			print("[Option] HttpService singleton not found!")
+	var dialog_scene = preload("res://scene/power_off_dialog.tscn")
+	var dialog = dialog_scene.instantiate()
+	dialog.set_alert_text(tr("power_off_alert"))
+	add_child(dialog)
 
-func _on_shutdown_response(_result, response_code, _headers, body):
-	var body_str = body.get_string_from_utf8()
-	if DEBUG_ENABLED:
-		print("[Option] Shutdown HTTP response:", _result, response_code, body_str)
+func has_visible_power_off_dialog() -> bool:
+	for child in get_children():
+		if child.name == "PowerOffDialog":
+			return true
+	return false
 
 func switch_tab(direction: String):
 	if not tab_container:
@@ -864,3 +901,86 @@ func _on_upgrade_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	if DEBUG_ENABLED:
 		print("[Option] Upgrade engine HTTP response:", result, response_code, body_str)
+
+func _on_embedded_status_response(_result, _response_code, _headers, body):
+	"""Handle embedded system status response."""
+	var body_str = body.get_string_from_utf8()
+	if DEBUG_ENABLED:
+		print("[Option] Embedded status response:", body_str)
+	
+	var response = JSON.parse_string(body_str)
+	if response and response.has("code") and response.code == 0 and response.has("data"):
+		var threshold = response.data.threshold
+		initial_threshold = threshold
+		current_threshold = threshold
+		threshold_changed = false
+		
+		# Set the slider to the fetched threshold value
+		if sensitivity_slider:
+			sensitivity_slider.value = threshold
+			_update_sensitivity_label()
+			if DEBUG_ENABLED:
+				print("[Option] Set sensitivity slider to: ", threshold)
+	else:
+		if DEBUG_ENABLED:
+			print("[Option] Invalid embedded status response")
+
+func _on_sensitivity_value_changed(value: float):
+	"""Called when the sensitivity slider value changes."""
+	current_threshold = int(value)
+	threshold_changed = (current_threshold != initial_threshold)
+	_update_sensitivity_label()
+	if DEBUG_ENABLED:
+		print("[Option] Sensitivity value changed to: ", value, ", changed: ", threshold_changed)
+
+func _update_sensitivity_label():
+	"""Update the sensitivity label with the current slider value."""
+	if sensitivity_slider and sensitivity_label:
+		sensitivity_label.text = tr("sensor_sensitivity") + " [ "+ str(int(sensitivity_slider.value)) + " ]"
+		if DEBUG_ENABLED:
+			print("[Option] Updated sensitivity label to: ", sensitivity_label.text)
+
+func adjust_sensitivity_slider(direction: String):
+	"""Adjust the sensitivity slider with left/right directives."""
+	if not sensitivity_slider:
+		if DEBUG_ENABLED:
+			print("[Option] Sensitivity slider not found!")
+		return
+	
+	var current_value = sensitivity_slider.value
+	var step = sensitivity_slider.step
+	
+	if direction == "right":
+		sensitivity_slider.value = min(sensitivity_slider.max_value, current_value + step)
+		if DEBUG_ENABLED:
+			print("[Option] Increased sensitivity to: ", sensitivity_slider.value)
+	elif direction == "left":
+		sensitivity_slider.value = max(sensitivity_slider.min_value, current_value - step)
+		if DEBUG_ENABLED:
+			print("[Option] Decreased sensitivity to: ", sensitivity_slider.value)
+
+func _save_threshold_if_changed():
+	"""Save threshold to embedded system if it has changed."""
+	if threshold_changed and current_threshold != initial_threshold:
+		var http_service = get_node_or_null("/root/HttpService")
+		if http_service:
+			if DEBUG_ENABLED:
+				print("[Option] Threshold changed from ", initial_threshold, " to ", current_threshold, ", saving...")
+			# Use empty callable since we're exiting anyway
+			http_service.embedded_set_threshold(Callable(), current_threshold)
+		else:
+			if DEBUG_ENABLED:
+				print("[Option] HttpService not found, cannot save threshold")
+	else:
+		if DEBUG_ENABLED:
+			print("[Option] Threshold not changed, no need to save")
+
+func _on_threshold_set_response(_result, _response_code, _headers, body):
+	"""Handle threshold set response."""
+	var body_str = body.get_string_from_utf8()
+	if DEBUG_ENABLED:
+		print("[Option] Threshold set response: ", body_str)
+
+func _exit_tree():
+	"""Called when the node is about to leave the scene tree."""
+	_save_threshold_if_changed()

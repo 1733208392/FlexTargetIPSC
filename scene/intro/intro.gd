@@ -219,6 +219,8 @@ func _on_start_response(_result, response_code, _headers, body):
 		print("[Intro] Start game failed or invalid response.")
 
 func _on_menu_control(directive: String):
+	if has_visible_power_off_dialog():
+		return
 	print("[Intro] Received menu_control signal with directive: ", directive)
 	match directive:
 		"up", "down", "left", "right":
@@ -269,17 +271,16 @@ func _on_volume_down_response(_result, response_code, _headers, body):
 	print("[Intro] Volume down HTTP response:", _result, response_code, body_str)
 
 func power_off():
-	# Call the HTTP service to power off the system
-	var http_service = get_node("/root/HttpService")
-	if http_service:
-		print("[Intro] Sending power off HTTP request...")
-		http_service.shutdown(_on_shutdown_response)
-	else:
-		print("[Intro] HttpService singleton not found!")
+	var dialog_scene = preload("res://scene/power_off_dialog.tscn")
+	var dialog = dialog_scene.instantiate()
+	dialog.set_alert_text(tr("power_off_alert"))
+	add_child(dialog)
 
-func _on_shutdown_response(_result, response_code, _headers, body):
-	var body_str = body.get_string_from_utf8()
-	print("[Intro] Shutdown HTTP response:", _result, response_code, body_str)
+func has_visible_power_off_dialog() -> bool:
+	for child in get_children():
+		if child.name == "PowerOffDialog":
+			return true
+	return false
 
 func navigate_buttons():
 	# Enhanced navigation for prev/next and start buttons

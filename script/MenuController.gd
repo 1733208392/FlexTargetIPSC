@@ -73,12 +73,12 @@ func _handle_volume_down():
 		pass
 
 func _handle_power_off():
-	if http_service:
-		# print("[MenuController] Sending power off HTTP request...")
-		http_service.shutdown(_on_shutdown_response)
+	# Show power off dialog instead of calling HTTP shutdown
+	var parent = get_parent()
+	if parent and parent.has_method("power_off"):
+		parent.power_off()
 	else:
-		# print("[MenuController] HttpService not available for power off")
-		pass
+		print("[MenuController] Parent doesn't have power_off method")
 
 func _on_volume_response(_direction: String, _result, _response_code, _headers, _body):
 	var _body_str = _body.get_string_from_utf8()

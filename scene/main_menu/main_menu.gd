@@ -104,38 +104,6 @@ func _ready():
 	leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 	option_button.pressed.connect(_on_option_pressed)
 
-func _on_menu_control(directive: String):
-	print("[Menu] Received menu_control signal with directive: ", directive)
-	match directive:
-		"up":
-			print("[Menu] Moving focus up")
-			focused_index = (focused_index - 1) % buttons.size()
-			# Skip invisible buttons
-			while not buttons[focused_index].visible:
-				focused_index = (focused_index - 1) % buttons.size()
-			print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
-			print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
-			buttons[focused_index].grab_focus()
-			print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
-		"down":
-			print("[Menu] Moving focus down")
-			focused_index = (focused_index + 1) % buttons.size()
-			# Skip invisible buttons
-			while not buttons[focused_index].visible:
-				focused_index = (focused_index + 1) % buttons.size()
-			print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
-			print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
-			buttons[focused_index].grab_focus()
-			print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
-		"enter":
-			print("[Menu] Simulating button press")
-			buttons[focused_index].pressed.emit()
-		"power":
-			print("[Menu] Power off")
-			power_off()
-		_:
-			print("[Menu] Unknown directive: ", directive)
-
 func on_start_pressed():
 	# Call the HTTP service to start the game
 	var http_service = get_node("/root/HttpService")
@@ -210,13 +178,57 @@ func _on_option_pressed():
 		print("[Menu] Warning: Node not in tree, cannot change scene")
 
 func power_off():
-	# Call the HTTP service to power off the system
-	var http_service = get_node("/root/HttpService")
-	if http_service:
-		print("[Menu] Sending power off HTTP request...")
-		http_service.shutdown(_on_shutdown_response)
-	else:
-		print("[Menu] HttpService singleton not found!")
+	print("[Menu] power_off() called")
+	var dialog_scene = preload("res://scene/power_off_dialog.tscn")
+	print("[Menu] Dialog scene preloaded")
+	var dialog = dialog_scene.instantiate()
+	print("[Menu] Dialog instantiated")
+	dialog.set_alert_text(tr("power_off_alert"))
+	print("[Menu] Alert text set")
+	add_child(dialog)
+	print("[Menu] Dialog added to scene tree")
+	dialog.show()
+	print("[Menu] Dialog shown")
+
+func has_visible_power_off_dialog() -> bool:
+	for child in get_children():
+		if child.name == "PowerOffDialog":
+			return true
+	return false
+
+func _on_menu_control(directive: String):
+	if has_visible_power_off_dialog():
+		return
+	print("[Menu] Received menu_control signal with directive: ", directive)
+	match directive:
+		"up":
+			print("[Menu] Moving focus up")
+			focused_index = (focused_index - 1) % buttons.size()
+			# Skip invisible buttons
+			while not buttons[focused_index].visible:
+				focused_index = (focused_index - 1) % buttons.size()
+			print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
+			print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
+			buttons[focused_index].grab_focus()
+			print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
+		"down":
+			print("[Menu] Moving focus down")
+			focused_index = (focused_index + 1) % buttons.size()
+			# Skip invisible buttons
+			while not buttons[focused_index].visible:
+				focused_index = (focused_index + 1) % buttons.size()
+			print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
+			print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
+			buttons[focused_index].grab_focus()
+			print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
+		"enter":
+			print("[Menu] Simulating button press")
+			buttons[focused_index].pressed.emit()
+		"power":
+			print("[Menu] Power off")
+			power_off()
+		_:
+			print("[Menu] Unknown directive: ", directive)
 
 func _on_ble_ready_command(content: Dictionary) -> void:
 	print("[Menu] Received ble_ready_command with content: ", content)
@@ -266,7 +278,3 @@ func _check_network_button_visibility() -> void:
 			network_button.visible = false
 	else:
 		print("[Menu] Netlink status not available or missing 'started' key")
-
-func _on_shutdown_response(result, response_code, _headers, body):
-	var body_str = body.get_string_from_utf8()
-	print("[Menu] Shutdown HTTP response:", result, response_code, body_str)

@@ -9,11 +9,6 @@
 [ext_resource type="Texture2D" uid="uid://c2l6gc1ro012y" path="res://asset/SmallCntnrs3.png" id="7_686id"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="8_54dxg"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_tab_unselected"]
-bg_color = Color(0, 0, 0, 0)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-
 [sub_resource type="StyleBoxFlat" id="StyleBox_tab_selected"]
 bg_color = Color(0.2, 0.2, 0.2, 0.5)
 border_width_left = 2
@@ -21,6 +16,11 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.956863, 0.521569, 0.007843, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_tab_unselected"]
+bg_color = Color(0, 0, 0, 0)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 
@@ -86,11 +86,12 @@ layout_mode = 2
 theme_override_constants/side_margin = 100
 theme_override_fonts/font = ExtResource("3_a5ubv")
 theme_override_font_sizes/font_size = 32
-theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
-current_tab = 0
+theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
+current_tab = 2
 
 [node name="Networking" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -312,7 +313,6 @@ button_group = SubResource("ButtonGroup_language")
 text = "English"
 
 [node name="Drills" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
@@ -357,6 +357,18 @@ text = "Pause 10s"
 [node name="Label" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
 layout_mode = 2
 horizontal_alignment = 1
+
+[node name="SensitivityLabel" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_1n7n1")
+theme_override_font_sizes/font_size = 24
+
+[node name="SensitivityHSlider" type="HSlider" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
+layout_mode = 2
+min_value = 700.0
+max_value = 2000.0
+step = 50.0
+value = 700.0
 
 [node name="About" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
@@ -406,16 +418,12 @@ theme_override_constants/margin_top = 200
 theme_override_constants/margin_right = 50
 
 [node name="DescriptionLabel" type="RichTextLabel" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer/Left/MarginContainer"]
+custom_minimum_size = Vector2(0, 500)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_fonts/normal_font = SubResource("SFPro")
 theme_override_font_sizes/normal_font_size = 18
 bbcode_enabled = true
-text = "The Grwolf Smart Target is designed for shooting enthusiasts who want a convenient solution for practicing with airsoft or Laser Dry Fire at home, eliminating the hassle of going to the shooting range. Compared to the traditional target, the device has the following features, 
-* Real-time hit point display allows you to track and score your shots instantly.
-* Choose different drills with the same device, such as high-speed shooting and free shooting, to enhance your shooting experience.
-"
-fit_content = true
 
 [node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
 layout_mode = 2

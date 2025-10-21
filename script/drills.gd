@@ -1156,6 +1156,8 @@ func get_drills_manager():
 	return self
 
 func _on_menu_control(directive: String):
+	if has_visible_power_off_dialog():
+		return
 	if DEBUG_LOGGING:
 		print("[Drills] Received menu_control signal with directive: ", directive)
 	
@@ -1259,19 +1261,16 @@ func _on_volume_response(result, response_code, _headers, body):
 		print("[Drills] Volume HTTP response:", result, response_code, body_str)
 
 func power_off():
-	var http_service = get_node("/root/HttpService")
-	if http_service:
-		if DEBUG_LOGGING:
-			print("[Drills] Sending power off HTTP request...")
-		http_service.shutdown(_on_shutdown_response)
-	else:
-		if DEBUG_LOGGING:
-			print("[Drills] HttpService singleton not found!")
+	var dialog_scene = preload("res://scene/power_off_dialog.tscn")
+	var dialog = dialog_scene.instantiate()
+	dialog.set_alert_text(tr("power_off_alert"))
+	add_child(dialog)
 
-func _on_shutdown_response(result, response_code, _headers, body):
-	var body_str = body.get_string_from_utf8()
-	if DEBUG_LOGGING:
-		print("[Drills] Shutdown HTTP response:", result, response_code, body_str)
+func has_visible_power_off_dialog() -> bool:
+	for child in get_children():
+		if child.name == "PowerOffDialog":
+			return true
+	return false
 
 func _manual_button_activation(overlay):
 	"""Manually activate the focused button when script methods are not available"""
