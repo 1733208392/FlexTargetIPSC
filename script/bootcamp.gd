@@ -3,6 +3,20 @@ extends Node2D
 # Performance optimization
 const DEBUG_LOGGING = false  # Set to true for verbose debugging
 
+# Target sequence for bootcamp cycling
+var target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var current_target_index: int = 0
+var current_target_instance = null
+
+# Preload the scenes for bootcamp targets
+@onready var ipsc_mini_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
+@onready var ipsc_mini_black_1_scene: PackedScene = preload("res://scene/ipsc_mini_black_1.tscn")
+@onready var ipsc_mini_black_2_scene: PackedScene = preload("res://scene/ipsc_mini_black_2.tscn")
+@onready var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
+@onready var two_poppers_scene: PackedScene = preload("res://scene/2poppers_simple.tscn")
+@onready var three_paddles_scene: PackedScene = preload("res://scene/3paddles_simple.tscn")
+@onready var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
+
 @onready var ipsc = $IPSC
 @onready var shot_labels = []
 @onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
@@ -86,7 +100,7 @@ func start_bootcamp_drill():
 			print("[Bootcamp] ERROR: HttpService singleton not found! Starting drill anyway...")
 		_start_drill_immediately()
 
-func _on_start_game_response(result, response_code, headers, body):
+func _on_start_game_response(result, response_code, _headers, body):
 	"""Handle the HTTP start game response"""
 	var body_str = body.get_string_from_utf8()
 	if DEBUG_LOGGING:
@@ -114,9 +128,14 @@ func _start_drill_immediately():
 	if DEBUG_LOGGING:
 		print("[Bootcamp] Bootcamp drill officially started!")
 	
+	# Initialize current target (starts with ipsc_mini)
+	current_target_instance = ipsc
+	current_target_index = 0
+	
 	# Enable target interactions (they might be disabled initially)
 	if ipsc:
 		ipsc.input_pickable = true
+		ipsc.drill_active = true
 		if DEBUG_LOGGING:
 			print("[Bootcamp] Target enabled for shooting practice")
 	
@@ -154,10 +173,11 @@ func _on_clear_pressed():
 	
 	# Clear bullet holes - get all children and check if they're bullet holes
 	var children_to_remove = []
-	for child in ipsc.get_children():
-		# Check if it's a bullet hole (Sprite2D with bullet hole script)
-		if child is Sprite2D and child.has_method("set_hole_position"):
-			children_to_remove.append(child)
+	if current_target_instance:
+		for child in current_target_instance.get_children():
+			# Check if it's a bullet hole (Sprite2D with bullet hole script)
+			if child is Sprite2D and child.has_method("set_hole_position"):
+				children_to_remove.append(child)
 	
 	# Remove all bullet holes
 	for bullet_hole in children_to_remove:
@@ -173,9 +193,20 @@ func _on_menu_control(directive: String):
 			if DEBUG_LOGGING:
 				print("[Bootcamp] Enter pressed")
 			_on_clear_pressed()
+		"left":
+			switch_to_previous_target()
+		"right":
+			switch_to_next_target()
 		"back", "homepage":
 			if DEBUG_LOGGING:
 				print("[Bootcamp] ", directive, " - navigating to main menu")
+			
+			# Deactivate current target before exiting
+			if current_target_instance and current_target_instance.has_method("set"):
+				current_target_instance.set("drill_active", false)
+				if DEBUG_LOGGING:
+					print("[Bootcamp] Deactivated target before exiting")
+			
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 			else:
@@ -207,7 +238,7 @@ func volume_up():
 		if DEBUG_LOGGING:
 			print("[Bootcamp] HttpService singleton not found!")
 
-func _on_volume_up_response(result, response_code, headers, body):
+func _on_volume_up_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	if DEBUG_LOGGING:
 		print("[Bootcamp] Volume up HTTP response:", result, response_code, body_str)
@@ -222,7 +253,7 @@ func volume_down():
 		if DEBUG_LOGGING:
 			print("[Bootcamp] HttpService singleton not found!")
 
-func _on_volume_down_response(result, response_code, headers, body):
+func _on_volume_down_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	if DEBUG_LOGGING:
 		print("[Bootcamp] Volume down HTTP response:", result, response_code, body_str)
@@ -294,3 +325,109 @@ func get_localized_shots_text() -> String:
 			return "ショット"
 		_:
 			return "Shots"
+
+func switch_to_next_target():
+	"""Switch to the next target in the sequence"""
+	if not drill_started:
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Drill not started yet, ignoring target switch")
+		return
+	
+	# Deactivate current target
+	if current_target_instance and current_target_instance.has_method("set"):
+		current_target_instance.set("drill_active", false)
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Deactivated current target")
+	
+	# Move to next target
+	current_target_index = (current_target_index + 1) % target_sequence.size()
+	
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Switching to next target: ", target_sequence[current_target_index], " (index: ", current_target_index, ")")
+	
+	spawn_target_by_type(target_sequence[current_target_index])
+
+func switch_to_previous_target():
+	"""Switch to the previous target in the sequence"""
+	if not drill_started:
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Drill not started yet, ignoring target switch")
+		return
+	
+	# Deactivate current target
+	if current_target_instance and current_target_instance.has_method("set"):
+		current_target_instance.set("drill_active", false)
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Deactivated current target")
+	
+	# Move to previous target
+	current_target_index = (current_target_index - 1 + target_sequence.size()) % target_sequence.size()
+	
+	if DEBUG_LOGGING:
+		print("[Bootcamp] Switching to previous target: ", target_sequence[current_target_index], " (index: ", current_target_index, ")")
+	
+	spawn_target_by_type(target_sequence[current_target_index])
+
+func spawn_target_by_type(target_type: String):
+	"""Spawn a target of the specified type"""
+	# Clear current target
+	if current_target_instance:
+		current_target_instance.queue_free()
+	
+	var target_scene = null
+	
+	# Select the appropriate scene
+	match target_type:
+		"ipsc_mini":
+			target_scene = ipsc_mini_scene
+		"ipsc_mini_black_1":
+			target_scene = ipsc_mini_black_1_scene
+		"ipsc_mini_black_2":
+			target_scene = ipsc_mini_black_2_scene
+		"hostage":
+			target_scene = hostage_scene
+		"2poppers":
+			target_scene = two_poppers_scene
+		"3paddles":
+			target_scene = three_paddles_scene
+		"ipsc_mini_rotate":
+			target_scene = ipsc_mini_rotate_scene
+		_:
+			if DEBUG_LOGGING:
+				print("[Bootcamp] Unknown target type: ", target_type)
+			return
+	
+	if target_scene:
+		var target = target_scene.instantiate()
+		add_child(target)
+		current_target_instance = target
+		
+		# Center the target in the scene
+		target.position = Vector2(360, 640)
+		
+		# Disable disappearing for bootcamp (set max_shots to high number)
+		if target.has_method("set"):
+			target.set("max_shots", 1000)
+		
+		# For composite targets, also set max_shots on child targets
+		if target_type == "ipsc_mini_rotate":
+			var inner_ipsc = target.get_node_or_null("RotationCenter/IPSCMini")
+			if inner_ipsc and inner_ipsc.has_method("set"):
+				inner_ipsc.set("max_shots", 1000)
+				if DEBUG_LOGGING:
+					print("[Bootcamp] Set max_shots=1000 on inner IPSC mini for rotating target")
+		
+		# Special positioning for rotating target (offset from center)
+		if target_type == "ipsc_mini_rotate":
+			target.position = Vector2(160, 840)  # Center (360,640) + offset (-200,200)
+		
+		# Connect signals
+		if target.has_signal("target_hit"):
+			target.target_hit.connect(_on_target_hit)
+		
+		# Enable the target
+		if target.has_method("set"):
+			target.set("drill_active", true)
+		
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Spawned and activated target: ", target_type, " at position: ", target.position)

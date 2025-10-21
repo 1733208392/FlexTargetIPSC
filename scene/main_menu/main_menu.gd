@@ -51,6 +51,12 @@ func update_ui_texts():
 	print("[Menu] UI texts updated")
 
 func _ready():
+	# Show status bar when entering main menu
+	var status_bars = get_tree().get_nodes_in_group("status_bar")
+	for status_bar in status_bars:
+		status_bar.visible = true
+		print("[Menu] Showed status bar: ", status_bar.name)
+	
 	# Load and apply current language setting
 	load_language_setting()
 	
@@ -104,11 +110,23 @@ func _on_menu_control(directive: String):
 		"up":
 			print("[Menu] Moving focus up")
 			focused_index = (focused_index - 1) % buttons.size()
+			# Skip invisible buttons
+			while not buttons[focused_index].visible:
+				focused_index = (focused_index - 1) % buttons.size()
+			print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
+			print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
 			buttons[focused_index].grab_focus()
+			print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
 		"down":
 			print("[Menu] Moving focus down")
 			focused_index = (focused_index + 1) % buttons.size()
+			# Skip invisible buttons
+			while not buttons[focused_index].visible:
+				focused_index = (focused_index + 1) % buttons.size()
+			print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
+			print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
 			buttons[focused_index].grab_focus()
+			print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
 		"enter":
 			print("[Menu] Simulating button press")
 			buttons[focused_index].pressed.emit()
@@ -138,7 +156,7 @@ func _on_start_response(result, response_code, _headers, body):
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
 		print("[Menu] Start game success, changing scene.")
 		if is_inside_tree():
-			get_tree().change_scene_to_file("res://scene/intro.tscn")
+			get_tree().change_scene_to_file("res://scene/intro/intro.tscn")
 		else:
 			print("[Menu] Warning: Node not in tree, cannot change scene")
 	else:
@@ -203,17 +221,11 @@ func power_off():
 func _on_ble_ready_command(content: Dictionary) -> void:
 	print("[Menu] Received ble_ready_command with content: ", content)
 	# Optionally inspect content to decide target scene or additional behavior
-	# Store content on GlobalData.settings_dict so the drills_network scene can read it on startup
+	# Store content on GlobalData so the drills_network scene can read it on startup
 	var gd = get_node_or_null("/root/GlobalData")
 	if gd:
-		var settings = gd.get("settings_dict")
-		if settings != null and typeof(settings) == TYPE_DICTIONARY:
-			settings["ble_ready_content"] = content
-			print("[Menu] Stored ble_ready_content in GlobalData.settings_dict")
-		else:
-			# fallback: attach directly on GlobalData
-			gd.set("ble_ready_content", content)
-			print("[Menu] Stored ble_ready_content directly on GlobalData")
+		gd.ble_ready_content = content
+		print("[Menu] Stored ble_ready_content in GlobalData: ", content)
 	else:
 		print("[Menu] GlobalData not available; cannot persist ble content")
 

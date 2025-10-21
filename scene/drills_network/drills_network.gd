@@ -113,6 +113,9 @@ func _ready():
 		device_name_label.text = global_data.netlink_status["device_name"]
 	else:
 		device_name_label.text = tr("unknown_device")
+	
+	# Check if there's a saved ready state from main_menu and process it
+	call_deferred("_check_and_process_saved_ready_state")
 
 func _connect_to_websocket():
 	"""Connect to WebSocketListener signals (called deferred to ensure WebSocketListener is ready)"""
@@ -155,6 +158,67 @@ func _connect_to_websocket():
 		# Try again after a short delay
 		await get_tree().create_timer(0.1).timeout
 		_connect_to_websocket()
+
+func _check_and_process_saved_ready_state():
+	"""Check if there's a saved ready state from main_menu and process it"""
+	if not DEBUG_DISABLED:
+		print("[DrillsNetwork] Checking for saved ready state from main_menu")
+	
+	if not global_data:
+		if not DEBUG_DISABLED:
+			print("[DrillsNetwork] GlobalData not available, cannot check for saved ready state")
+		return
+	
+	# Check if ready content was saved by main_menu in GlobalData.ble_ready_content
+	var saved_ready_content = global_data.ble_ready_content
+	
+	if saved_ready_content != null and saved_ready_content.size() > 0:
+		if not DEBUG_DISABLED:
+			print("[DrillsNetwork] Found saved ready state, processing it: ", saved_ready_content)
+		
+		# Process it as if we received the ready command
+		_on_ble_ready_command(saved_ready_content)
+		
+		# Start auto-start fallback timer (drill will start if no 'start' command arrives)
+		_start_auto_start_fallback()
+	else:
+		if not DEBUG_DISABLED:
+			print("[DrillsNetwork] No saved ready state found in GlobalData")
+
+func _start_auto_start_fallback():
+	"""Start a fallback timer that will auto-start the drill in master mode if no 'start' command arrives"""
+	if not DEBUG_DISABLED:
+		print("[DrillsNetwork] Starting auto-start fallback timer (2 seconds)")
+	
+	await get_tree().create_timer(2.0).timeout
+	
+	# If drill has not been started yet (no BLE start command received), start it now
+	if not drill_completed and target_instance == null:
+		if not DEBUG_DISABLED:
+			print("[DrillsNetwork] Auto-start fallback triggered - no BLE start command received, starting drill")
+		
+		# Use is_first from saved ready content, default to true (master mode) if not present
+		is_first = saved_ble_ready_content.get("isFirst", true)
+		emit_signal("ui_mode_update", is_first)
+		
+		if not DEBUG_DISABLED:
+			print("[DrillsNetwork] Operating in ", "master" if is_first else "slave", " mode (based on saved isFirst: ", is_first, ")")
+		
+		# Use saved timeout or default
+		if saved_ble_ready_content.has("timeout"):
+			timeout_seconds = float(saved_ble_ready_content["timeout"])
+		else:
+			timeout_seconds = 40.0
+		
+		if not DEBUG_DISABLED:
+			print("[DrillsNetwork] Auto-starting drill with timeout: ", timeout_seconds)
+		
+		start_drill()
+		if is_first:
+			shot_timer_visible = true
+	else:
+		if not DEBUG_DISABLED:
+			print("[DrillsNetwork] Auto-start fallback cancelled - drill already started or will be started by BLE command")
 			
 func _on_netlink_status_loaded():
 	"""Update device name when netlink status is loaded"""
@@ -305,6 +369,10 @@ func complete_drill():
 		print("[DrillsNetwork] Drill completed! Score:", total_score)
 	drill_completed = true
 	
+	# Deactivate the target
+	if target_instance and target_instance.has_method("set"):
+		target_instance.set("drill_active", false)
+	
 	# Emit timer stopped signal with final elapsed time BEFORE stopping
 	emit_signal("ui_timer_stopped", elapsed_seconds)
 	
@@ -374,6 +442,11 @@ func _on_menu_control(directive: String):
 		"power":
 			power_off()
 		"back", "homepage":
+			# Clear BLE ready content before exiting the scene
+			if global_data:
+				global_data.ble_ready_content.clear()
+				if not DEBUG_DISABLED:
+					print("[DrillsNetwork] Cleared ble_ready_content before returning to main menu")
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:
 			if not DEBUG_DISABLED:

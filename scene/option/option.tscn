@@ -358,51 +358,54 @@ text = "Pause 10s"
 layout_mode = 2
 horizontal_alignment = 1
 
-[node name="About" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+[node name="About" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 3
 
-[node name="Right" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
+layout_mode = 2
+
+[node name="Right" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="top" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/Right"]
+[node name="top" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer/Right"]
 layout_mode = 2
 theme_override_constants/margin_left = 80
 theme_override_constants/margin_top = 200
 theme_override_constants/margin_right = 20
 
-[node name="Contact" type="TextureRect" parent="VBoxContainer/MarginContainer/tab_container/About/Right/top"]
+[node name="Contact" type="TextureRect" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer/Right/top"]
 layout_mode = 2
 texture = ExtResource("6_jjy7b")
 
-[node name="Bottom" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/Right"]
+[node name="Bottom" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer/Right"]
 layout_mode = 2
 theme_override_constants/margin_left = 80
 theme_override_constants/margin_right = 20
 
-[node name="SmallCntnrs3" type="TextureRect" parent="VBoxContainer/MarginContainer/tab_container/About/Right/Bottom"]
+[node name="SmallCntnrs3" type="TextureRect" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer/Right/Bottom"]
 layout_mode = 2
 texture = ExtResource("7_686id")
 
-[node name="EmailLabel" type="Label" parent="VBoxContainer/MarginContainer/tab_container/About/Right/Bottom"]
+[node name="EmailLabel" type="Label" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer/Right/Bottom"]
 layout_mode = 2
 theme_override_fonts/font = SubResource("SystemFont_lkh8f")
 text = "kai.yang@grwolftactical.com"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Left" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
+[node name="Left" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/Left"]
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer/Left"]
 layout_mode = 2
 theme_override_constants/margin_top = 200
 theme_override_constants/margin_right = 50
 
-[node name="DescriptionLabel" type="RichTextLabel" parent="VBoxContainer/MarginContainer/tab_container/About/Left/MarginContainer"]
+[node name="DescriptionLabel" type="RichTextLabel" parent="VBoxContainer/MarginContainer/tab_container/About/HBoxContainer/Left/MarginContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_fonts/normal_font = SubResource("SFPro")
@@ -413,6 +416,19 @@ text = "The Grwolf Smart Target is designed for shooting enthusiasts who want a 
 * Choose different drills with the same device, such as high-speed shooting and free shooting, to enhance your shooting experience.
 "
 fit_content = true
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
+layout_mode = 2
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 0
+
+[node name="Button" type="Button" parent="VBoxContainer/MarginContainer/tab_container/About/MarginContainer"]
+layout_mode = 2
+theme = ExtResource("5_ur50w")
+disabled = true
+text = "System Upgrade"
 
 [node name="CopyrightLabel" type="Label" parent="."]
 layout_mode = 1

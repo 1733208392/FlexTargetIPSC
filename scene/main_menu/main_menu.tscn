@@ -72,6 +72,8 @@ theme_override_constants/separation = 5
 [node name="ipsc" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
+theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
 theme_override_font_sizes/font_size = 32
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
@@ -80,6 +82,8 @@ theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 [node name="network" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
+theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
 theme_override_font_sizes/font_size = 32
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
@@ -88,6 +92,8 @@ theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 [node name="boot_camp" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
+theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
 theme_override_fonts/font = SubResource("SystemFont_2atga")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
@@ -97,6 +103,8 @@ theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 [node name="learder_board" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
+theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
 theme_override_fonts/font = SubResource("SystemFont_2atga")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
@@ -106,6 +114,8 @@ theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 [node name="option" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
+theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
 theme_override_fonts/font = SubResource("SystemFont_by01r")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")

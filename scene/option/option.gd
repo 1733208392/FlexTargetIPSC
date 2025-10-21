@@ -53,7 +53,16 @@ const DEBUG_ENABLED = false
 # References to drill note label
 @onready var drill_note_label = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/Label"
 
+# Reference to upgrade button
+@onready var upgrade_button = $"VBoxContainer/MarginContainer/tab_container/About/MarginContainer/Button"
+
 func _ready():
+	# Show status bar when entering options
+	var status_bars = get_tree().get_nodes_in_group("status_bar")
+	for status_bar in status_bars:
+		status_bar.visible = true
+		print("[Option] Showed status bar: ", status_bar.name)
+	
 	# Load saved settings from GlobalData
 	load_settings_from_global_data()
 	
@@ -127,6 +136,10 @@ func _ready():
 	if wifi_button:
 		wifi_button.pressed.connect(_on_wifi_pressed)
 	
+	# Connect upgrade button pressed
+	if upgrade_button:
+		upgrade_button.pressed.connect(_on_upgrade_pressed)
+
 	# Focus will be set by load_settings_from_global_data() based on current language
 	
 	# Connect to WebSocketListener
@@ -836,3 +849,18 @@ func _show_wifi_networks():
 
 func _on_network_pressed():
 	get_tree().change_scene_to_file("res://scene/networking_config.tscn")
+
+func _on_upgrade_pressed():
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		if DEBUG_ENABLED:
+			print("[Option] Sending upgrade engine HTTP request...")
+		http_service.upgrade_engine(_on_upgrade_response)
+	else:
+		if DEBUG_ENABLED:
+			print("[Option] HttpService not found!")
+
+func _on_upgrade_response(result, response_code, _headers, body):
+	var body_str = body.get_string_from_utf8()
+	if DEBUG_ENABLED:
+		print("[Option] Upgrade engine HTTP response:", result, response_code, body_str)

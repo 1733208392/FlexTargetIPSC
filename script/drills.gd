@@ -142,6 +142,13 @@ func _ready():
 		if DEBUG_LOGGING:
 			print("[Drills] WebSocketListener singleton not found!")
 	
+	# Hide status bar for drills
+	var status_bars = get_tree().get_nodes_in_group("status_bar")
+	for status_bar in status_bars:
+		status_bar.visible = false
+		if DEBUG_LOGGING:
+			print("[Drills] Hidden status bar: ", status_bar.name)
+	
 	# Show shot timer overlay before starting drill
 	show_shot_timer()
 
@@ -166,6 +173,16 @@ func hide_shot_timer():
 		print("=== HIDING SHOT TIMER OVERLAY ===")
 	emit_signal("ui_hide_shot_timer")
 
+func set_target_drill_active(target: Node, active: bool):
+	"""Set the drill_active flag on a target"""
+	if target and target.has_method("set"):
+		target.set("drill_active", active)
+		if DEBUG_LOGGING:
+			print("Set drill_active to ", active, " on target: ", target.name)
+	else:
+		if DEBUG_LOGGING:
+			print("WARNING: Could not set drill_active on target - has_method('set') returned false")
+
 func _on_shot_timer_ready(delay: float):
 	"""Handle when shot timer beep occurs - start the drill"""
 	if DEBUG_LOGGING:
@@ -182,6 +199,9 @@ func _on_shot_timer_ready(delay: float):
 	await spawn_next_target()
 	# Hide the shot timer overlay after target is spawned
 	hide_shot_timer()
+	# Activate drill on the spawned target
+	if current_target_instance:
+		set_target_drill_active(current_target_instance, true)
 
 func _on_shot_timer_reset():
 	"""Handle when shot timer is reset"""
@@ -390,6 +410,10 @@ func spawn_next_target():
 	# Connect signals for the new target
 	connect_target_signals()
 	
+	# Activate drill on the spawned target
+	if current_target_instance:
+		set_target_drill_active(current_target_instance, true)
+	
 	# Re-enable bullet spawning after target is fully ready
 	await get_tree().process_frame  # Ensure target is fully initialized
 	bullets_allowed = true
@@ -401,6 +425,10 @@ func spawn_next_target():
 
 func clear_current_target():
 	"""Remove the current target from the scene"""
+	# Deactivate the current target before clearing it
+	if current_target_instance:
+		set_target_drill_active(current_target_instance, false)
+	
 	for child in center_container.get_children():
 		center_container.remove_child(child)
 		child.queue_free()
@@ -1192,6 +1220,14 @@ func _on_menu_control(directive: String):
 		"back", "homepage":
 			if DEBUG_LOGGING:
 				print("[Drills] ", directive, " - navigating to main menu")
+			
+			# Show status bar when exiting drills
+			var status_bars = get_tree().get_nodes_in_group("status_bar")
+			for status_bar in status_bars:
+				status_bar.visible = true
+				if DEBUG_LOGGING:
+					print("[Drills] Shown status bar: ", status_bar.name)
+			
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:
 			if DEBUG_LOGGING:
@@ -1217,7 +1253,7 @@ func volume_down():
 		if DEBUG_LOGGING:
 			print("[Drills] HttpService singleton not found!")
 
-func _on_volume_response(result, response_code, headers, body):
+func _on_volume_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	if DEBUG_LOGGING:
 		print("[Drills] Volume HTTP response:", result, response_code, body_str)
@@ -1232,7 +1268,7 @@ func power_off():
 		if DEBUG_LOGGING:
 			print("[Drills] HttpService singleton not found!")
 
-func _on_shutdown_response(result, response_code, headers, body):
+func _on_shutdown_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
 	if DEBUG_LOGGING:
 		print("[Drills] Shutdown HTTP response:", result, response_code, body_str)

@@ -98,15 +98,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="Overlay" type="PanelContainer" parent="."]
-visible = false
 layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -862.0
 grow_horizontal = 2
-grow_vertical = 0
+grow_vertical = 2
 
 [node name="PanelContainer" type="PanelContainer" parent="Overlay"]
 layout_mode = 2
@@ -117,7 +114,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Spacer" type="Control" parent="Overlay/PanelContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 800)
+custom_minimum_size = Vector2(0, 480)
 layout_mode = 2
 
 [node name="Label" type="Label" parent="Overlay/PanelContainer/VBoxContainer"]
@@ -130,11 +127,6 @@ layout_mode = 2
 placeholder_text = "Password"
 
 [node name="OnscreenKeyboard" type="PanelContainer" parent="Overlay/PanelContainer/VBoxContainer"]
-visible = false
 layout_mode = 2
 script = ExtResource("2_xtqbd")
 metadata/_custom_type_script = "uid://dxfujov7vai6f"
-
-[node name="Spacer2" type="Control" parent="Overlay/PanelContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 100)
-layout_mode = 2

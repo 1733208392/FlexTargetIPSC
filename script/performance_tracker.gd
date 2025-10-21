@@ -203,7 +203,7 @@ func _on_performance_saved(result, response_code, headers, body):
 			var settings_json = ""
 			var next_index = 1
 			
-			if global_data and global_data.has("settings_dict"):
+			if global_data and global_data.settings_dict != null:
 				var current_index = int(global_data.settings_dict.get("max_index", 0))
 				next_index = (current_index % 20) + 1
 				global_data.settings_dict["max_index"] = next_index
