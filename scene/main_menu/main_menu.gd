@@ -6,6 +6,7 @@ extends Control
 @onready var leaderboard_button = $VBoxContainer/learder_board
 @onready var option_button = $VBoxContainer/option
 @onready var copyright_label = $Label
+@onready var background_music = $BackgroundMusic
 
 var focused_index
 var buttons = []
@@ -59,6 +60,22 @@ func _ready():
 	
 	# Load and apply current language setting
 	load_language_setting()
+	
+	# Load SFX volume from GlobalData and apply it
+	var global_data_for_sfx = get_node_or_null("/root/GlobalData")
+	if global_data_for_sfx and global_data_for_sfx.settings_dict.has("sfx_volume"):
+		var sfx_volume = global_data_for_sfx.settings_dict.get("sfx_volume", 5)
+		_apply_sfx_volume(sfx_volume)
+		print("[Menu] Loaded SFX volume from GlobalData: ", sfx_volume)
+	else:
+		# Default to volume level 5 if not set
+		_apply_sfx_volume(5)
+		print("[Menu] Using default SFX volume: 5")
+	
+	# Play background music
+	if background_music:
+		background_music.play()
+		print("[Menu] Playing background music")
 	
 	# Initially hide the network button until network is started
 	network_button.visible = false
@@ -211,6 +228,9 @@ func _on_menu_control(directive: String):
 			print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
 			buttons[focused_index].grab_focus()
 			print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"down":
 			print("[Menu] Moving focus down")
 			focused_index = (focused_index + 1) % buttons.size()
@@ -221,9 +241,15 @@ func _on_menu_control(directive: String):
 			print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
 			buttons[focused_index].grab_focus()
 			print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"enter":
 			print("[Menu] Simulating button press")
 			buttons[focused_index].pressed.emit()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"power":
 			print("[Menu] Power off")
 			power_off()
@@ -278,3 +304,28 @@ func _check_network_button_visibility() -> void:
 			network_button.visible = false
 	else:
 		print("[Menu] Netlink status not available or missing 'started' key")
+
+func _on_sfx_volume_changed(volume: int):
+	"""Handle SFX volume changes from Option scene.
+	Volume ranges from 0 to 10, where 0 stops audio and 10 is max volume."""
+	print("[Menu] SFX volume changed to: ", volume)
+	_apply_sfx_volume(volume)
+
+func _apply_sfx_volume(volume: int):
+	"""Apply SFX volume level to audio.
+	Volume ranges from 0 to 10, where 0 stops audio and 10 is max volume."""
+	# Convert volume (0-10) to Godot's decibel scale
+	# 0 = silence (mute), 10 = full volume (0dB)
+	# We use approximately -40dB for silence and 0dB for maximum
+	if volume <= 0:
+		# Stop all SFX
+		if background_music:
+			background_music.volume_db = -80  # Effectively mute
+		print("[Menu] Muted audio (volume=", volume, ")")
+	else:
+		# Map 1-10 to -40dB to 0dB
+		# volume 1 = -40dB, volume 10 = 0dB
+		var db = -40.0 + ((volume - 1) * (40.0 / 9.0))
+		if background_music:
+			background_music.volume_db = db
+		print("[Menu] Set audio volume_db to ", db, " (volume level: ", volume, ")")

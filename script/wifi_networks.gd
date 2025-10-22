@@ -175,7 +175,11 @@ func _on_wifi_scan_completed(result, response_code, _headers, body):
 		print("[WiFi Networks] Response body: ", body_str)
 		var json = JSON.parse_string(body_str)
 
-		if json and json.has("data") and json["data"].has("ssid_list"):
+		# Check for error in response message
+		if json and json.has("msg") and "error" in json["msg"].to_lower():
+			print("WiFi scan error: ", json.get("msg", "Unknown error"))
+			_show_scan_error()
+		elif json and json.has("data") and json["data"].has("ssid_list"):
 			networks = json["data"]["ssid_list"]
 			print("[WiFi Networks] Networks found: ", networks)
 

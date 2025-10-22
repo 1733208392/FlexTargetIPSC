@@ -1203,6 +1203,9 @@ func _on_menu_control(directive: String):
 							print("[Drills] _activate_focused_button method not found")
 						# Manual button activation
 						_manual_button_activation(drill_complete_overlay)
+		var menu_controller = get_node("/root/MenuController")
+		if menu_controller:
+			menu_controller.play_cursor_sound()
 		return
 	
 	# Handle drills manager specific commands
@@ -1222,6 +1225,9 @@ func _on_menu_control(directive: String):
 		"back", "homepage":
 			if DEBUG_LOGGING:
 				print("[Drills] ", directive, " - navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			
 			# Show status bar when exiting drills
 			var status_bars = get_tree().get_nodes_in_group("status_bar")

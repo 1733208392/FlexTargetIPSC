@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://cjkeemu421bdp"]
+[gd_scene load_steps=16 format=3 uid="uid://cjkeemu421bdp"]
 
 [ext_resource type="Script" uid="uid://dthf7l17t1uuo" path="res://scene/main_menu/main_menu.gd" id="1_vny3a"]
 [ext_resource type="Texture2D" uid="uid://d3jnypy7bx42r" path="res://asset/largeCntnrs.png" id="2_1vqx8"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://d34m0mqmlp1qq" path="res://asset/crosshair.png" id="6_eo5a4"]
 [ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://font/Inter/Inter-VariableFont_opsz,wght.ttf" id="7_lt21p"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="8_kvq8n"]
+[ext_resource type="AudioStream" uid="uid://clyhqyw8s6hud" path="res://audio/Final Battle - For Love.ogg" id="9_audio"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_2fwvj"]
 texture = ExtResource("3_rq7sb")
@@ -180,3 +181,7 @@ offset_right = -20.0
 offset_bottom = -20.0
 grow_horizontal = 0
 grow_vertical = 0
+
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("9_audio")
+bus = &"Master"

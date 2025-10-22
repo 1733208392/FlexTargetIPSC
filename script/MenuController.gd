@@ -13,6 +13,7 @@ signal power_off_requested
 signal menu_control(directive: String)  # For compatibility with onscreen keyboard
 
 var http_service = null
+var cursor_sound: AudioStream = load("res://audio/Cursor.ogg")
 
 func _ready():
 	# Connect to WebSocketListener
@@ -59,7 +60,9 @@ func _on_menu_control(directive: String):
 func _handle_volume_up():
 	if http_service:
 		# print("[MenuController] Sending volume up HTTP request...")
-		http_service.volume_up(_on_volume_response.bind("up"))
+		http_service.volume_up(func(result, response_code, headers, body):
+			_on_volume_response("up", result, response_code, headers, body)
+		)
 	else:
 		# print("[MenuController] HttpService not available for volume up")
 		pass
@@ -67,7 +70,9 @@ func _handle_volume_up():
 func _handle_volume_down():
 	if http_service:
 		# print("[MenuController] Sending volume down HTTP request...")
-		http_service.volume_down(_on_volume_response.bind("down"))
+		http_service.volume_down(func(result, response_code, headers, body):
+			_on_volume_response("down", result, response_code, headers, body)
+		)
 	else:
 		# print("[MenuController] HttpService not available for volume down")
 		pass
@@ -82,8 +87,24 @@ func _handle_power_off():
 
 func _on_volume_response(_direction: String, _result, _response_code, _headers, _body):
 	var _body_str = _body.get_string_from_utf8()
-	# print("[MenuController] Volume ", direction, " HTTP response:", _result, response_code, body_str)
+	# print("[MenuController] Volume ", _direction, " HTTP response:", _result, _response_code, _body_str)
 
 func _on_shutdown_response(_result, _response_code, _headers, _body):
 	var _body_str = _body.get_string_from_utf8()
 	# print("[MenuController] Shutdown HTTP response:", _result, response_code, body_str)
+
+func play_cursor_sound():
+	"""Play cursor sound effect for menu navigation at fixed volume"""
+	if not cursor_sound:
+		print("[MenuController] Cursor sound not loaded")
+		return
+	
+	# Create audio player with fixed volume
+	var audio_player = AudioStreamPlayer.new()
+	audio_player.stream = cursor_sound
+	audio_player.volume_db = 0  # Full volume
+	
+	add_child(audio_player)
+	audio_player.play()
+	# Clean up audio player after sound finishes
+	audio_player.finished.connect(func(): audio_player.queue_free())

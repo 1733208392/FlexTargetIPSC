@@ -727,19 +727,31 @@ func _on_menu_control(directive: String):
 		"back":
 			if DEBUG_LOGGING:
 						print("[Drill Replay] Back to upper level scene")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			back_to_upper_level()
 		"homepage":
 			if DEBUG_LOGGING:
 						print("[Drill Replay] Back to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"left", "up":
 			if DEBUG_LOGGING:
 						print("[Drill Replay] Previous bullet/target")
 			navigate_previous()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"right", "down":
 			if DEBUG_LOGGING:
 						print("[Drill Replay] Next bullet/target")
 			navigate_next()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		_:
 			if DEBUG_LOGGING:
 						print("[Drill Replay] Unknown directive: ", directive)

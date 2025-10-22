@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://dmciy24fnm8cw"]
+[gd_scene load_steps=9 format=3 uid="uid://dmciy24fnm8cw"]
 
 [ext_resource type="PackedScene" uid="uid://pxoma10oooh5" path="res://scene/ipsc_mini.tscn" id="1_ipsc"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
@@ -7,6 +7,7 @@
 [ext_resource type="LabelSettings" uid="uid://bm81ecgqnn8cv" path="res://theme/target_title_settings.tres" id="4_cfv3r"]
 [ext_resource type="PackedScene" uid="uid://dturr8so8g8cw" path="res://scene/custom_button.tscn" id="4_e58o0"]
 [ext_resource type="Theme" uid="uid://br4jdxsyx0xtu" path="res://theme/drill_data_theme.tres" id="5_drill_theme"]
+[ext_resource type="AudioStream" uid="uid://clyhqyw8s6hud" path="res://audio/Final Battle - For Love.ogg" id="6_audio"]
 
 [node name="Node2D" type="Node2D"]
 script = ExtResource("2_bootcamp")
@@ -149,3 +150,7 @@ offset_right = -20.0
 offset_bottom = -20.0
 grow_horizontal = 0
 grow_vertical = 0
+
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_audio")
+bus = &"Master"

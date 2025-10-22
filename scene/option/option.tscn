@@ -366,9 +366,18 @@ theme_override_font_sizes/font_size = 24
 [node name="SensitivityHSlider" type="HSlider" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
 layout_mode = 2
 min_value = 700.0
-max_value = 2000.0
-step = 50.0
-value = 700.0
+max_value = 1500.0
+value = 1000.0
+
+[node name="SFX" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_1n7n1")
+theme_override_font_sizes/font_size = 24
+
+[node name="SFXVolumnHSlider" type="HSlider" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
+layout_mode = 2
+max_value = 10.0
+value = 5.0
 
 [node name="About" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
@@ -433,6 +442,73 @@ theme_override_constants/margin_right = 100
 theme_override_constants/margin_bottom = 0
 
 [node name="Button" type="Button" parent="VBoxContainer/MarginContainer/tab_container/About/MarginContainer"]
+layout_mode = 2
+theme = ExtResource("5_ur50w")
+disabled = true
+text = "System Upgrade"
+
+[node name="About" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About"]
+visible = false
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About/About"]
+layout_mode = 2
+
+[node name="Right" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About/About/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="top" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/About/HBoxContainer/Right"]
+layout_mode = 2
+theme_override_constants/margin_left = 80
+theme_override_constants/margin_top = 200
+theme_override_constants/margin_right = 20
+
+[node name="Contact" type="TextureRect" parent="VBoxContainer/MarginContainer/tab_container/About/About/HBoxContainer/Right/top"]
+layout_mode = 2
+texture = ExtResource("6_jjy7b")
+
+[node name="Bottom" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/About/HBoxContainer/Right"]
+layout_mode = 2
+theme_override_constants/margin_left = 80
+theme_override_constants/margin_right = 20
+
+[node name="SmallCntnrs3" type="TextureRect" parent="VBoxContainer/MarginContainer/tab_container/About/About/HBoxContainer/Right/Bottom"]
+layout_mode = 2
+texture = ExtResource("7_686id")
+
+[node name="EmailLabel" type="Label" parent="VBoxContainer/MarginContainer/tab_container/About/About/HBoxContainer/Right/Bottom"]
+layout_mode = 2
+theme_override_fonts/font = SubResource("SystemFont_lkh8f")
+text = "kai.yang@grwolftactical.com"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Left" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/About/About/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/About/HBoxContainer/Left"]
+layout_mode = 2
+theme_override_constants/margin_top = 200
+theme_override_constants/margin_right = 50
+
+[node name="DescriptionLabel" type="RichTextLabel" parent="VBoxContainer/MarginContainer/tab_container/About/About/HBoxContainer/Left/MarginContainer"]
+custom_minimum_size = Vector2(0, 500)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_fonts/normal_font = SubResource("SFPro")
+theme_override_font_sizes/normal_font_size = 18
+bbcode_enabled = true
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/MarginContainer/tab_container/About/About"]
+layout_mode = 2
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 0
+
+[node name="Button" type="Button" parent="VBoxContainer/MarginContainer/tab_container/About/About/MarginContainer"]
 layout_mode = 2
 theme = ExtResource("5_ur50w")
 disabled = true

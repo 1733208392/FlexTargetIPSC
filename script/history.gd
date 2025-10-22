@@ -613,23 +613,38 @@ func _on_menu_control(directive: String):
 		"back", "homepage":
 			if DEBUG_PRINTS:
 				print("[History] ", directive, " - navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"up":
 			if DEBUG_PRINTS:
 				print("[History] Moving focus up")
 			navigate_up()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"down":
 			if DEBUG_PRINTS:
 				print("[History] Moving focus down")
 			navigate_down()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"enter":
 			if DEBUG_PRINTS:
 				print("[History] Enter pressed")
 			select_current_item()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"sort", "toggle_sort":
 			if DEBUG_PRINTS:
 				print("[History] Sort mode toggle")
 			toggle_sort_mode()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		_:
 			if DEBUG_PRINTS:
 				print("[History] Unknown directive: ", directive)

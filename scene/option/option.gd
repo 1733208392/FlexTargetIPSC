@@ -10,6 +10,9 @@ static var current_drill_sequence = "Fixed"
 static var auto_restart_enabled = false
 static var auto_restart_pause_time = 5  # Changed to store the selected time (5 or 10)
 
+# SFX volume setting (0-10 scale, default 5)
+static var sfx_volume = 5
+
 # Sensor threshold tracking
 var initial_threshold = 0
 var current_threshold = 0
@@ -17,6 +20,9 @@ var threshold_changed = false
 
 # Debug flag for controlling print statements
 const DEBUG_ENABLED = false
+
+# Signal emitted when SFX volume changes
+signal sfx_volume_changed(volume: int)
 
 # References to language buttons
 @onready var chinese_button = $"VBoxContainer/MarginContainer/tab_container/Languages/MarginContainer/LanguageContainer/SimplifiedChineseButton"
@@ -43,7 +49,7 @@ const DEBUG_ENABLED = false
 @onready var network_button = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow/NetworkButton"
 @onready var networking_buttons = []
 @onready var content1_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1/Content1"
-@onready var content2_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2/Content2"
+@onready var content2_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MaroptginContainer/NetworkContainer/NetworkInfo/Row2/Content2"
 @onready var content3_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3/Content3"
 @onready var content4_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4/Content4"
 @onready var content5_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5/Content5"
@@ -61,6 +67,10 @@ const DEBUG_ENABLED = false
 # References to sensitivity controls
 @onready var sensitivity_slider = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/SensitivityHSlider"
 @onready var sensitivity_label = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/SensitivityLabel"
+
+# References to SFX volume controls
+@onready var sfx_volume_slider = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/SFXVolumnHSlider"
+@onready var sfx_label = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/SFX"
 
 # Reference to upgrade button
 @onready var upgrade_button = $"VBoxContainer/MarginContainer/tab_container/About/MarginContainer/Button"
@@ -157,6 +167,15 @@ func _ready():
 	else:
 		if DEBUG_ENABLED:
 			print("[Option] Sensitivity slider not found!")
+	
+	# Connect SFX volume slider value_changed signal
+	if sfx_volume_slider:
+		sfx_volume_slider.value_changed.connect(_on_sfx_volume_changed)
+		# Update label with initial value
+		_update_sfx_label()
+	else:
+		if DEBUG_ENABLED:
+			print("[Option] SFX volume slider not found!")
 
 	# Load embedded system status to get current threshold
 	var http_service = get_node_or_null("/root/HttpService")
@@ -392,6 +411,10 @@ func update_ui_texts():
 		pause_5s_check.text = tr("pause_5s")
 	if pause_10s_check:
 		pause_10s_check.text = tr("pause_10s")
+	if sensitivity_label:
+		sensitivity_label.text = tr("sensor_sensitivity") + " [ " + str(int(sensitivity_slider.value)) + " ]"
+	if sfx_label:
+		sfx_label.text = tr("sound_sfx") + " [ " + str(int(sfx_volume_slider.value)) + " ]"
 	if drill_note_label:
 		drill_note_label.text = tr("auto_restart_note")
 
@@ -473,11 +496,25 @@ func load_settings_from_global_data():
 			print("[Option] No auto_restart_pause_time setting, using default 5")
 		auto_restart_pause_time = 5
 	
+	# Load SFX volume setting
+	if global_data and global_data.settings_dict.has("sfx_volume"):
+		sfx_volume = global_data.settings_dict.get("sfx_volume", 5)
+		if DEBUG_ENABLED:
+			print("[Option] Loaded sfx_volume from GlobalData: ", sfx_volume)
+	else:
+		if DEBUG_ENABLED:
+			print("[Option] No sfx_volume setting, using default 5")
+		sfx_volume = 5
+	
 	# Update UI to reflect the loaded settings
 	set_language_button_pressed()
 	set_drill_button_pressed()
 	set_auto_restart_button_pressed()
 	update_ui_texts()
+	
+	# Set SFX slider value to loaded setting
+	if sfx_volume_slider:
+		sfx_volume_slider.value = sfx_volume
 	
 	# Use call_deferred to ensure focus is set after all UI updates are complete
 	call_deferred("set_focus_to_current_language")
@@ -581,23 +618,40 @@ func _on_menu_control(directive: String):
 					_:
 						if DEBUG_ENABLED:
 							print("[Option] Navigation: ", directive, " ignored - current tab has no navigation")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"left", "right":
 			# Check if sensitivity slider is focused on Drills tab
 			if tab_container and tab_container.current_tab == 2 and sensitivity_slider and sensitivity_slider.has_focus():
 				if DEBUG_ENABLED:
 					print("[Option] Adjusting sensitivity slider: ", directive)
 				adjust_sensitivity_slider(directive)
+			# Check if SFX volume slider is focused on Drills tab
+			elif tab_container and tab_container.current_tab == 2 and sfx_volume_slider and sfx_volume_slider.has_focus():
+				if DEBUG_ENABLED:
+					print("[Option] Adjusting SFX volume slider: ", directive)
+				adjust_sfx_volume_slider(directive)
 			else:
 				if DEBUG_ENABLED:
 					print("[Option] Tab switch: ", directive)
 				switch_tab(directive)
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"enter":
 			if DEBUG_ENABLED:
 				print("[Option] Enter pressed")
 			press_focused_button()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"back", "homepage":
 			if DEBUG_ENABLED:
 				print("[Option] ", directive, " - navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			# Save threshold before leaving the scene
 			_save_threshold_if_changed()
 			if is_inside_tree():
@@ -608,6 +662,9 @@ func _on_menu_control(directive: String):
 		"compose":
 			if DEBUG_ENABLED:
 				print("[Option] compose directive received - navigating to onboard_debug")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/onboard_debug.tscn")
 			else:
@@ -679,6 +736,8 @@ func navigate_drill_buttons(direction: String):
 		drill_buttons.append(pause_10s_check)
 	if sensitivity_slider:
 		drill_buttons.append(sensitivity_slider)
+	if sfx_volume_slider:
+		drill_buttons.append(sfx_volume_slider)
 	
 	if drill_buttons.is_empty():
 		if DEBUG_ENABLED:
@@ -911,6 +970,8 @@ func _on_embedded_status_response(_result, _response_code, _headers, body):
 	var response = JSON.parse_string(body_str)
 	if response and response.has("code") and response.code == 0 and response.has("data"):
 		var threshold = response.data.threshold
+		# Round to nearest 100
+		threshold = round(threshold / 100.0) * 100
 		initial_threshold = threshold
 		current_threshold = threshold
 		threshold_changed = false
@@ -948,14 +1009,20 @@ func adjust_sensitivity_slider(direction: String):
 		return
 	
 	var current_value = sensitivity_slider.value
-	var step = sensitivity_slider.step
-	
+	var step = 50
+
 	if direction == "right":
-		sensitivity_slider.value = min(sensitivity_slider.max_value, current_value + step)
+		var new_value = min(sensitivity_slider.max_value, current_value + step)
+		# Round to nearest 100
+		new_value = round(new_value / 100.0) * 100
+		sensitivity_slider.value = new_value
 		if DEBUG_ENABLED:
 			print("[Option] Increased sensitivity to: ", sensitivity_slider.value)
 	elif direction == "left":
-		sensitivity_slider.value = max(sensitivity_slider.min_value, current_value - step)
+		var new_value = max(sensitivity_slider.min_value, current_value - step)
+		# Round to nearest 100
+		new_value = round(new_value / 100.0) * 100
+		sensitivity_slider.value = new_value
 		if DEBUG_ENABLED:
 			print("[Option] Decreased sensitivity to: ", sensitivity_slider.value)
 
@@ -981,6 +1048,67 @@ func _on_threshold_set_response(_result, _response_code, _headers, body):
 	if DEBUG_ENABLED:
 		print("[Option] Threshold set response: ", body_str)
 
-func _exit_tree():
-	"""Called when the node is about to leave the scene tree."""
-	_save_threshold_if_changed()
+func _on_sfx_volume_changed(value: float):
+	"""Called when the SFX volume slider value changes."""
+	sfx_volume = int(value)
+	_update_sfx_label()
+	
+	# Update GlobalData immediately to ensure consistency
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.settings_dict["sfx_volume"] = sfx_volume
+		if DEBUG_ENABLED:
+			print("[Option] Immediately updated GlobalData.settings_dict[sfx_volume] to: ", sfx_volume)
+	else:
+		if DEBUG_ENABLED:
+			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
+	
+	# Emit signal for bootcamp and mainmenu to listen
+	sfx_volume_changed.emit(sfx_volume)
+	
+	# Also notify any scenes that are listening via a global method
+	_notify_sfx_listeners(sfx_volume)
+	
+	# Save settings to HTTP
+	save_settings()
+	
+	if DEBUG_ENABLED:
+		print("[Option] SFX volume changed to: ", value)
+
+func _notify_sfx_listeners(volume: int):
+	"""Notify all listening scenes about SFX volume change."""
+	# Try to notify bootcamp scene if it's loaded
+	var bootcamp_node = get_tree().root.get_node_or_null("Bootcamp")
+	if bootcamp_node and bootcamp_node.has_method("_on_sfx_volume_changed"):
+		bootcamp_node._on_sfx_volume_changed(volume)
+	
+	# Try to notify main_menu scene if it's loaded
+	var main_menu_node = get_tree().root.get_node_or_null("MainMenu")
+	if main_menu_node and main_menu_node.has_method("_on_sfx_volume_changed"):
+		main_menu_node._on_sfx_volume_changed(volume)
+
+func _update_sfx_label():
+	"""Update the SFX volume label with the current slider value."""
+	if sfx_volume_slider and sfx_label:
+		sfx_label.text = tr("sound_sfx") + " [ " + str(int(sfx_volume_slider.value)) + " ]"
+		if DEBUG_ENABLED:
+			print("[Option] Updated SFX label to: ", sfx_label.text)
+
+func adjust_sfx_volume_slider(direction: String):
+	"""Adjust the SFX volume slider with left/right directives."""
+	if not sfx_volume_slider:
+		if DEBUG_ENABLED:
+			print("[Option] SFX volume slider not found!")
+		return
+	
+	var current_value = sfx_volume_slider.value
+	var step = 1  # Step by 1 for 0-10 range
+
+	if direction == "right":
+		sfx_volume_slider.value = min(sfx_volume_slider.max_value, current_value + step)
+		if DEBUG_ENABLED:
+			print("[Option] Increased SFX volume to: ", sfx_volume_slider.value)
+	elif direction == "left":
+		sfx_volume_slider.value = max(sfx_volume_slider.min_value, current_value - step)
+		if DEBUG_ENABLED:
+			print("[Option] Decreased SFX volume to: ", sfx_volume_slider.value)

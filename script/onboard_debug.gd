@@ -121,6 +121,9 @@ func _on_menu_control(directive: String) -> void:
 		"homepage", "home":
 			# Navigate to main menu
 			print("OnboardDebug: homepage -> navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"up":
 			# Move selection up one row (wrap to last if none selected)
@@ -130,6 +133,9 @@ func _on_menu_control(directive: String) -> void:
 				selected_index = max(0, selected_index - 1)
 			_update_selection_visuals()
 			_ensure_selected_visible()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			print("OnboardDebug: up -> selected", selected_index)
 		"down":
 			# Move selection down one row
@@ -139,6 +145,9 @@ func _on_menu_control(directive: String) -> void:
 				selected_index = min(count - 1, selected_index + 1)
 			_update_selection_visuals()
 			_ensure_selected_visible()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			print("OnboardDebug: down -> selected", selected_index)
 		_:
 			# ignore other directives

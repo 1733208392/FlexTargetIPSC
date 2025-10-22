@@ -226,11 +226,20 @@ func _on_menu_control(directive: String):
 		"up", "down", "left", "right":
 			print("[Intro] Navigation: ", directive)
 			navigate_buttons()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"enter":
 			print("[Intro] Enter pressed")
 			press_focused_button()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 		"back", "homepage":
 			print("[Intro] ", directive, " - navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"volume_up":
 			print("[Intro] Volume up")

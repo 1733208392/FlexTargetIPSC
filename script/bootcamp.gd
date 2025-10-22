@@ -20,6 +20,7 @@ var current_target_instance = null
 @onready var ipsc = $IPSC
 @onready var shot_labels = []
 @onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
+@onready var background_music = $BackgroundMusic
 
 var shot_times = []
 var drill_started = false  # Track if drill has been started
@@ -76,6 +77,19 @@ func _ready():
 	else:
 		if DEBUG_LOGGING:
 			print("[Bootcamp] WebSocketListener singleton not found!")
+	
+	# Load SFX volume from GlobalData and apply it
+	var global_data_for_sfx = get_node_or_null("/root/GlobalData")
+	if global_data_for_sfx and global_data_for_sfx.settings_dict.has("sfx_volume"):
+		var sfx_volume = global_data_for_sfx.settings_dict.get("sfx_volume", 5)
+		_apply_sfx_volume(sfx_volume)
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Loaded SFX volume from GlobalData: ", sfx_volume)
+	else:
+		# Default to volume level 5 if not set
+		_apply_sfx_volume(5)
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Using default SFX volume: 5")
 	
 	# Send HTTP request to start the game and wait for response
 	start_bootcamp_drill()
@@ -139,10 +153,20 @@ func _start_drill_immediately():
 		if DEBUG_LOGGING:
 			print("[Bootcamp] Target enabled for shooting practice")
 	
+	# Play background music
+	if background_music:
+		background_music.play()
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Playing background music")
+	
 	# Any additional drill initialization can go here
 	# For bootcamp, the drill is already "active" since it's free practice
 
-func _on_target_hit(_zone: String, _points: int, _hit_position: Vector2):
+func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null):
+	# Handle both signal signatures:
+	# IPSC Mini: target_hit(zone, points, hit_position)
+	# Poppers/Paddles: target_hit(id, zone, points, hit_position)
+	
 	# Only process hits if drill has started
 	if not drill_started:
 		if DEBUG_LOGGING:
@@ -430,3 +454,31 @@ func spawn_target_by_type(target_type: String):
 		
 		if DEBUG_LOGGING:
 			print("[Bootcamp] Spawned and activated target: ", target_type, " at position: ", target.position)
+
+func _on_sfx_volume_changed(volume: int):
+	"""Handle SFX volume changes from Option scene.
+	Volume ranges from 0 to 10, where 0 stops audio and 10 is max volume."""
+	if DEBUG_LOGGING:
+		print("[Bootcamp] SFX volume changed to: ", volume)
+	_apply_sfx_volume(volume)
+
+func _apply_sfx_volume(volume: int):
+	"""Apply SFX volume level to audio.
+	Volume ranges from 0 to 10, where 0 stops audio and 10 is max volume."""
+	# Convert volume (0-10) to Godot's decibel scale
+	# 0 = silence (mute), 10 = full volume (0dB)
+	# We use approximately -40dB for silence and 0dB for maximum
+	if volume <= 0:
+		# Stop all SFX
+		if background_music:
+			background_music.volume_db = -80  # Effectively mute
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Muted audio (volume=", volume, ")")
+	else:
+		# Map 1-10 to -40dB to 0dB
+		# volume 1 = -40dB, volume 10 = 0dB
+		var db = -40.0 + ((volume - 1) * (40.0 / 9.0))
+		if background_music:
+			background_music.volume_db = db
+		if DEBUG_LOGGING:
+			print("[Bootcamp] Set audio volume_db to ", db, " (volume level: ", volume, ")")

@@ -442,6 +442,9 @@ func _on_menu_control(directive: String):
 		"power":
 			power_off()
 		"back", "homepage":
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			# Clear BLE ready content before exiting the scene
 			if global_data:
 				global_data.ble_ready_content.clear()

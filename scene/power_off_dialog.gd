@@ -44,9 +44,15 @@ func _on_menu_control(directive: String):
 	match directive:
 		"enter":
 			print("[PowerOffDialog] Enter pressed, closing dialog")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			_on_ok_pressed()
 		"power":
 			print("[PowerOffDialog] Power pressed, closing dialog")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			_on_ok_pressed()
 		_:
 			print("[PowerOffDialog] Ignoring directive: ", directive)
