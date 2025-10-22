@@ -2,10 +2,11 @@
 
 [sub_resource type="SystemFont" id="SystemFont_tactical"]
 font_names = PackedStringArray("Consolas", "Courier New", "Liberation Mono", "DejaVu Sans Mono")
+font_italic = true
 font_weight = 700
 
 [resource]
 font = SubResource("SystemFont_tactical")
-font_size = 32
+font_size = 80
 outline_size = 2
 outline_color = Color(0, 0, 0, 1)

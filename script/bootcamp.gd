@@ -1,7 +1,7 @@
 extends Node2D
 
 # Performance optimization
-const DEBUG_DISABLED = true  # Set to true for verbose debugging
+const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
 var target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
@@ -21,6 +21,7 @@ var current_target_instance = null
 @onready var shot_labels = []
 @onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
 @onready var background_music = $BackgroundMusic
+@onready var clear_area = $ClearArea
 
 var shot_times = []
 var drill_started = false  # Track if drill has been started
@@ -173,6 +174,18 @@ func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null):
 			print("[Bootcamp] Target hit before drill started - ignoring")
 		return
 	
+	# Extract hit_position from the arguments
+	# For IPSC Mini: _arg3 is hit_position
+	# For Poppers/Paddles: _arg4 is hit_position
+	var hit_position = _arg4 if _arg4 != null else _arg3
+	
+	# Check if hit is in the ClearArea
+	if hit_position and clear_area and clear_area.get_rect().has_point(hit_position):
+		if not DEBUG_DISABLED:
+			print("[Bootcamp] Hit detected in ClearArea at: ", hit_position)
+		_on_clear_pressed()
+		return
+	
 	var current_time = Time.get_ticks_msec() / 1000.0
 	
 	shot_times.append(current_time)
@@ -195,19 +208,36 @@ func _on_clear_pressed():
 		label.text = ""
 	shot_times.clear()
 	
-	# Clear bullet holes - get all children and check if they're bullet holes
-	var children_to_remove = []
-	if current_target_instance:
-		for child in current_target_instance.get_children():
-			# Check if it's a bullet hole (Sprite2D with bullet hole script)
-			if child is Sprite2D and child.has_method("set_hole_position"):
-				children_to_remove.append(child)
-	
-	# Remove all bullet holes
-	for bullet_hole in children_to_remove:
-		bullet_hole.queue_free()
-		if not DEBUG_DISABLED:
-			print("Removed bullet hole: ", bullet_hole.name)
+	# Check if current target is a popper or paddle (composition targets without bullet holes)
+	var target_type = target_sequence[current_target_index]
+	if target_type in ["2poppers", "3paddles"]:
+		# For poppers and paddles, remove and respawn them
+		if current_target_instance and is_instance_valid(current_target_instance):
+			current_target_instance.queue_free()
+			if not DEBUG_DISABLED:
+				print("Removed ", target_type, " for respawning")
+		# Respawn the target
+		spawn_target_by_type(target_type)
+	else:
+		# For other targets (with bullet holes), clear the bullet holes recursively
+		var children_to_remove = []
+		if current_target_instance and is_instance_valid(current_target_instance):
+			_collect_bullet_holes(current_target_instance, children_to_remove)
+		
+		# Remove all bullet holes
+		for bullet_hole in children_to_remove:
+			bullet_hole.queue_free()
+			if not DEBUG_DISABLED:
+				print("Removed bullet hole: ", bullet_hole.name)
+
+func _collect_bullet_holes(node: Node, result: Array):
+	"""Recursively collect all bullet holes in the node tree"""
+	for child in node.get_children():
+		# Check if it's a bullet hole (Sprite2D with bullet hole script)
+		if child is Sprite2D and child.has_method("set_hole_position"):
+			result.append(child)
+		# Recursively search in child nodes
+		_collect_bullet_holes(child, result)
 
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
@@ -228,7 +258,7 @@ func _on_menu_control(directive: String):
 				print("[Bootcamp] ", directive, " - navigating to main menu")
 			
 			# Deactivate current target before exiting
-			if current_target_instance and current_target_instance.has_method("set"):
+			if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("set"):
 				current_target_instance.set("drill_active", false)
 				if not DEBUG_DISABLED:
 					print("[Bootcamp] Deactivated target before exiting")
@@ -329,9 +359,17 @@ func set_locale_from_language(language: String):
 func update_ui_texts():
 	# Update static UI elements with translations
 	var intervals_label = get_node_or_null("CanvasLayer/Control/ShotIntervalsOverlay/IntervalsLabel")
+	var background_instruction = get_node_or_null("Background/Label")
+	var clear_area_label = get_node_or_null("ClearArea/Label")
 	
 	if intervals_label:
 		intervals_label.text = get_localized_shots_text()
+	
+	if background_instruction:
+		background_instruction.text = tr("switch_targets_instruction")
+	
+	if clear_area_label:
+		clear_area_label.text = tr("shoot_to_reset")
 	
 	if clear_button:
 		clear_button.text = tr("clear")
@@ -357,7 +395,7 @@ func switch_to_next_target():
 		return
 	
 	# Deactivate current target
-	if current_target_instance and current_target_instance.has_method("set"):
+	if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("set"):
 		current_target_instance.set("drill_active", false)
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Deactivated current target")
@@ -378,7 +416,7 @@ func switch_to_previous_target():
 		return
 	
 	# Deactivate current target
-	if current_target_instance and current_target_instance.has_method("set"):
+	if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("set"):
 		current_target_instance.set("drill_active", false)
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Deactivated current target")
@@ -391,8 +429,32 @@ func switch_to_previous_target():
 	
 	spawn_target_by_type(target_sequence[current_target_index])
 
+func _on_target_disappeared(target_name: String):
+	"""Handle when all poppers or paddles have disappeared - respawn them"""
+	if not DEBUG_DISABLED:
+		print("[Bootcamp] Target disappeared signal received: ", target_name)
+	
+	# Check if current target is a popper or paddle
+	var target_type = target_sequence[current_target_index]
+	if target_type in ["2poppers", "3paddles"]:
+		# Call reset_scene if the target has this method
+		if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("reset_scene"):
+			current_target_instance.reset_scene()
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Reset scene for: ", target_type)
+		else:
+			# If no reset_scene method, respawn the target
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] No reset_scene method, respawning target: ", target_type)
+			_on_clear_pressed()
+
 func spawn_target_by_type(target_type: String):
 	"""Spawn a target of the specified type"""
+	# Clear shots from the overlay when switching targets
+	for label in shot_labels:
+		label.text = ""
+	shot_times.clear()
+	
 	# Clear current target
 	if current_target_instance:
 		current_target_instance.queue_free()
@@ -425,6 +487,13 @@ func spawn_target_by_type(target_type: String):
 		add_child(target)
 		current_target_instance = target
 		
+		# Set z_index to be above Background (z=0) but behind ClearArea and CanvasLayer
+		# Background: z_index = 0 (default)
+		# Target: z_index = 1 (above background)
+		# ClearArea: z_index = 2 (above target)
+		# CanvasLayer: z_index = 1 (by default, but CanvasLayers always render on top)
+		target.z_index = 1
+		
 		# Center the target in the scene
 		target.position = Vector2(360, 640)
 		
@@ -447,6 +516,12 @@ func spawn_target_by_type(target_type: String):
 		# Connect signals
 		if target.has_signal("target_hit"):
 			target.target_hit.connect(_on_target_hit)
+		
+		# For poppers and paddles, connect to target_disappeared signal to auto-respawn
+		if target.has_signal("target_disappeared"):
+			target.target_disappeared.connect(_on_target_disappeared)
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Connected to target_disappeared signal for: ", target_type)
 		
 		# Enable the target
 		if target.has_method("set"):
