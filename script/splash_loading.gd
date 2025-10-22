@@ -1,5 +1,7 @@
 extends Control
 
+const DEBUG_DISABLED = true
+
 @onready var loading_label = $VBoxContainer/LoadingLabel
 @onready var logo_container = $VBoxContainer/LogoContainer
 
@@ -8,9 +10,7 @@ var loading_timer: Timer
 var timeout_timer: Timer
 var max_loading_time = 10.0  # Maximum 10 seconds loading time
 
-func _ready():
-	print("[Splash] Splash loading scene started")
-	
+func _ready():	
 	# Setup loading animation
 	setup_loading_animation()
 	
@@ -22,14 +22,15 @@ func _ready():
 	if global_data:
 		# Check if settings are already loaded
 		if global_data.settings_dict.size() > 0:
-			print("[Splash] Settings already loaded, proceeding to main menu")
+			if not DEBUG_DISABLED:
+				print("[Splash] Settings already loaded, proceeding to main menu")
 			proceed_to_main_menu()
 		else:
 			# Wait for settings to load
-			print("[Splash] Waiting for settings to load...")
 			global_data.settings_loaded.connect(_on_settings_loaded)
 	else:
-		print("[Splash] GlobalData not found, proceeding anyway")
+		if not DEBUG_DISABLED:
+			print("[Splash] GlobalData not found, proceeding anyway")
 		proceed_to_main_menu()
 
 func setup_loading_animation():
@@ -58,11 +59,13 @@ func _on_loading_timer_timeout():
 	loading_label.text = tr("loading") + dots
 
 func _on_settings_loaded():
-	print("[Splash] Settings loaded signal received, proceeding to main menu")
+	if not DEBUG_DISABLED:
+		print("[Splash] Settings loaded signal received, proceeding to main menu")
 	proceed_to_main_menu()
 
 func _on_timeout():
-	print("[Splash] Loading timeout reached, proceeding to main menu anyway")
+	if not DEBUG_DISABLED:
+		print("[Splash] Loading timeout reached, proceeding to main menu anyway")
 	loading_label.text = tr("timeout_loading")
 	await get_tree().create_timer(1.0).timeout
 	proceed_to_main_menu()
@@ -75,5 +78,6 @@ func proceed_to_main_menu():
 		timeout_timer.queue_free()
 	
 	# Transition to main menu
-	print("[Splash] Transitioning to main menu")
+	if not DEBUG_DISABLED:
+		print("[Splash] Transitioning to main menu")
 	get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")

@@ -1,5 +1,7 @@
 extends Control
 
+const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
+
 @onready var start_button = $StartButton
 @onready var main_text = $CenterContainer/ContentVBox/MainText
 @onready var prev_button = $CenterContainer/ContentVBox/NavigationContainer/PrevButton
@@ -7,6 +9,7 @@ extends Control
 @onready var page_indicator = $CenterContainer/ContentVBox/NavigationContainer/PageIndicator
 @onready var title_label = $TitleLabel
 @onready var history_button = get_node_or_null("TopBar/HistoryButton")
+@onready var background_music = $BackgroundMusic
 
 var current_page = 0
 var pages = []
@@ -17,10 +20,12 @@ func load_language_setting():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		print("[Intro] Loaded language from GlobalData: ", language)
+		if not DEBUG_DISABLED:
+			print("[Intro] Loaded language from GlobalData: ", language)
 		call_deferred("initialize_pages_and_ui")
 	else:
-		print("[Intro] GlobalData not found or no language setting, using default English")
+		if not DEBUG_DISABLED:
+			print("[Intro] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 		call_deferred("initialize_pages_and_ui")
 
@@ -38,7 +43,8 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	print("[Intro] Set locale to: ", locale)
+	if not DEBUG_DISABLED:
+		print("[Intro] Set locale to: ", locale)
 
 func initialize_pages_and_ui():
 	# Initialize pages with translated content
@@ -49,7 +55,8 @@ func initialize_pages_and_ui():
 	
 	for key in translation_keys:
 		var translated_content = tr(key)
-		print("[Intro] Raw translation for ", key, ": ", translated_content)
+		if not DEBUG_DISABLED:
+			print("[Intro] Raw translation for ", key, ": ", translated_content)
 		
 		# Try to parse as JSON first
 		var parsed_json = JSON.parse_string(translated_content)
@@ -59,10 +66,12 @@ func initialize_pages_and_ui():
 				"title": parsed_json.get("title", key.to_upper().replace("_", " ")),
 				"content": parsed_json.content
 			})
-			print("[Intro] Successfully parsed JSON for ", key)
+			if not DEBUG_DISABLED:
+				print("[Intro] Successfully parsed JSON for ", key)
 		else:
 			# JSON parsing failed, try to extract content manually
-			print("[Intro] JSON parsing failed for ", key, ", trying manual extraction")
+			if not DEBUG_DISABLED:
+				print("[Intro] JSON parsing failed for ", key, ", trying manual extraction")
 			
 			# Try to extract content from the string manually
 			var content = extract_content_from_string(translated_content)
@@ -129,6 +138,25 @@ func _ready():
 	# Load and apply current language setting first
 	load_language_setting()
 	
+	# Load SFX volume from GlobalData and apply it to background music
+	var global_data_for_sfx = get_node_or_null("/root/GlobalData")
+	if global_data_for_sfx and global_data_for_sfx.settings_dict.has("sfx_volume"):
+		var sfx_volume_value = global_data_for_sfx.settings_dict.get("sfx_volume", 5)
+		_apply_sfx_volume(sfx_volume_value)
+		if not DEBUG_DISABLED:
+			print("[Intro] Loaded SFX volume from GlobalData: ", sfx_volume_value)
+	else:
+		# Default to volume level 5 if not set
+		_apply_sfx_volume(5)
+		if not DEBUG_DISABLED:
+			print("[Intro] Using default SFX volume: 5")
+	
+	# Play background music
+	if background_music:
+		background_music.play()
+		if not DEBUG_DISABLED:
+			print("[Intro] Playing background music")
+	
 	# Connect button signals
 	start_button.pressed.connect(_on_start_pressed)
 	prev_button.pressed.connect(_on_prev_pressed)
@@ -141,9 +169,11 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		print("[Intro] Connecting to WebSocketListener.menu_control signal")
+		if not DEBUG_DISABLED:
+			print("[Intro] Connecting to WebSocketListener.menu_control signal")
 	else:
-		print("[Intro] WebSocketListener singleton not found!")
+		if not DEBUG_DISABLED:
+			print("[Intro] WebSocketListener singleton not found!")
 	
 	# Add some visual polish
 	setup_ui_styles()
@@ -151,7 +181,8 @@ func _ready():
 func update_page_display():
 	# Safety check: ensure pages exist and current_page is valid
 	if pages.is_empty() or current_page < 0 or current_page >= pages.size():
-		print("[Intro] Invalid page state: pages.size()=", pages.size(), " current_page=", current_page)
+		if not DEBUG_DISABLED:
+			print("[Intro] Invalid page state: pages.size()=", pages.size(), " current_page=", current_page)
 		return
 	
 	# Update main text content
@@ -161,10 +192,12 @@ func update_page_display():
 			main_text.text = current_page_data.content
 		else:
 			main_text.text = tr("content_not_available")
-			print("[Intro] Page ", current_page, " missing content field")
+			if not DEBUG_DISABLED:
+				print("[Intro] Page ", current_page, " missing content field")
 	else:
 		main_text.text = tr("page_data_invalid")
-		print("[Intro] Page ", current_page, " has invalid data: ", current_page_data)
+		if not DEBUG_DISABLED:
+			print("[Intro] Page ", current_page, " has invalid data: ", current_page_data)
 	
 	# Update page indicator
 	if page_indicator:
@@ -180,13 +213,15 @@ func _on_prev_pressed():
 	if current_page > 0:
 		current_page -= 1
 		update_page_display()
-		print("[Intro] Previous page: ", current_page + 1)
+		if not DEBUG_DISABLED:
+			print("[Intro] Previous page: ", current_page + 1)
 
 func _on_next_pressed():
 	if current_page < pages.size() - 1:
 		current_page += 1
 		update_page_display()
-		print("[Intro] Next page: ", current_page + 1)
+		if not DEBUG_DISABLED:
+			print("[Intro] Next page: ", current_page + 1)
 	
 	# Add some visual polish
 	setup_ui_styles()
@@ -202,82 +237,101 @@ func _on_start_pressed():
 	# Call the HTTP service to start the game
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Intro] Sending start game HTTP request...")
+		if not DEBUG_DISABLED:
+			print("[Intro] Sending start game HTTP request...")
 		http_service.start_game(_on_start_response)
 	else:
-		print("[Intro] HttpService singleton not found!")
+		if not DEBUG_DISABLED:
+			print("[Intro] HttpService singleton not found!")
 		get_tree().change_scene_to_file("res://scene/drills.tscn")
 
 func _on_start_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Intro] Start game HTTP response:", _result, response_code, body_str)
+	if not DEBUG_DISABLED:
+		print("[Intro] Start game HTTP response:", _result, response_code, body_str)
 	var json = JSON.parse_string(body_str)
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
-		print("[Intro] Start game success, changing scene.")
+		if not DEBUG_DISABLED:
+			print("[Intro] Start game success, changing scene.")
 		get_tree().change_scene_to_file("res://scene/drills.tscn")
 	else:
-		print("[Intro] Start game failed or invalid response.")
+		if not DEBUG_DISABLED:
+			print("[Intro] Start game failed or invalid response.")
 
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
 		return
-	print("[Intro] Received menu_control signal with directive: ", directive)
+	if not DEBUG_DISABLED:
+		print("[Intro] Received menu_control signal with directive: ", directive)
 	match directive:
 		"up", "down", "left", "right":
-			print("[Intro] Navigation: ", directive)
+			if not DEBUG_DISABLED:
+				print("[Intro] Navigation: ", directive)
 			navigate_buttons()
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 		"enter":
-			print("[Intro] Enter pressed")
+			if not DEBUG_DISABLED:
+				print("[Intro] Enter pressed")
 			press_focused_button()
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 		"back", "homepage":
-			print("[Intro] ", directive, " - navigating to main menu")
+			if not DEBUG_DISABLED:
+				print("[Intro] ", directive, " - navigating to main menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"volume_up":
-			print("[Intro] Volume up")
+			if not DEBUG_DISABLED:
+				print("[Intro] Volume up")
 			volume_up()
 		"volume_down":
-			print("[Intro] Volume down")
+			if not DEBUG_DISABLED:
+				print("[Intro] Volume down")
 			volume_down()
 		"power":
-			print("[Intro] Power off")
+			if not DEBUG_DISABLED:
+				print("[Intro] Power off")
 			power_off()
 		_:
-			print("[Intro] Unknown directive: ", directive)
+			if not DEBUG_DISABLED:
+				print("[Intro] Unknown directive: ", directive)
 
 func volume_up():
 	# Call the HTTP service to increase the volume
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Intro] Sending volume up HTTP request...")
+		if not DEBUG_DISABLED:
+			print("[Intro] Sending volume up HTTP request...")
 		http_service.volume_up(_on_volume_up_response)
 	else:
-		print("[Intro] HttpService singleton not found!")
+		if not DEBUG_DISABLED:
+			print("[Intro] HttpService singleton not found!")
 
 func _on_volume_up_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Intro] Volume up HTTP response:", _result, response_code, body_str)
+	if not DEBUG_DISABLED:
+		print("[Intro] Volume up HTTP response:", _result, response_code, body_str)
 
 func volume_down():
 	# Call the HTTP service to decrease the volume
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		print("[Intro] Sending volume down HTTP request...")
+		if not DEBUG_DISABLED:
+			print("[Intro] Sending volume down HTTP request...")
 		http_service.volume_down(_on_volume_down_response)
 	else:
-		print("[Intro] HttpService singleton not found!")
+		if not DEBUG_DISABLED:
+			print("[Intro] HttpService singleton not found!")
 
 func _on_volume_down_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	print("[Intro] Volume down HTTP response:", _result, response_code, body_str)
+	if not DEBUG_DISABLED:
+		print("[Intro] Volume down HTTP response:", _result, response_code, body_str)
 
 func power_off():
 	var dialog_scene = preload("res://scene/power_off_dialog.tscn")
@@ -295,27 +349,56 @@ func navigate_buttons():
 	# Enhanced navigation for prev/next and start buttons
 	if prev_button.has_focus():
 		next_button.grab_focus()
-		print("[Intro] Focus moved to next button")
+		if not DEBUG_DISABLED:
+			print("[Intro] Focus moved to next button")
 	elif next_button.has_focus():
 		start_button.grab_focus()
-		print("[Intro] Focus moved to start button")
+		if not DEBUG_DISABLED:
+			print("[Intro] Focus moved to start button")
 	elif start_button.has_focus():
 		prev_button.grab_focus()
-		print("[Intro] Focus moved to prev button")
+		if not DEBUG_DISABLED:
+			print("[Intro] Focus moved to prev button")
 	else:
 		prev_button.grab_focus()
-		print("[Intro] Focus moved to prev button")
+
+func _apply_sfx_volume(volume: int):
+	"""Apply SFX volume level to audio.
+	Volume ranges from 0 to 10, where 0 stops audio and 10 is max volume."""
+	# Convert volume (0-10) to Godot's decibel scale
+	# 0 = silence (mute), 10 = full volume (0dB)
+	# We use approximately -40dB for silence and 0dB for maximum
+	if volume <= 0:
+		# Stop all SFX
+		if background_music:
+			background_music.volume_db = -80  # Effectively mute
+		if not DEBUG_DISABLED:
+			print("[Intro] Muted audio (volume=", volume, ")")
+	else:
+		# Map 1-10 to -40dB to 0dB
+		# volume 1 = -40dB, volume 10 = 0dB
+		var db = -40.0 + ((volume - 1) * (40.0 / 9.0))
+		if background_music:
+			background_music.volume_db = db
+		if not DEBUG_DISABLED:
+			print("[Intro] Set audio volume_db to ", db, " (volume level: ", volume, ")")
+		if not DEBUG_DISABLED:
+			print("[Intro] Focus moved to prev button")
 
 func press_focused_button():
 	# Simulate pressing the currently focused button
 	if start_button.has_focus():
-		print("[Intro] Simulating start button press")
+		if not DEBUG_DISABLED:
+			print("[Intro] Simulating start button press")
 		_on_start_pressed()
 	elif prev_button.has_focus():
-		print("[Intro] Simulating prev button press")
+		if not DEBUG_DISABLED:
+			print("[Intro] Simulating prev button press")
 		_on_prev_pressed()
 	elif next_button.has_focus():
-		print("[Intro] Simulating next button press")
+		if not DEBUG_DISABLED:
+			print("[Intro] Simulating next button press")
 		_on_next_pressed()
 	else:
-		print("[Intro] No button has focus")
+		if not DEBUG_DISABLED:
+			print("[Intro] No button has focus")

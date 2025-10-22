@@ -7,7 +7,7 @@
 [ext_resource type="LabelSettings" uid="uid://bm81ecgqnn8cv" path="res://theme/target_title_settings.tres" id="4_cfv3r"]
 [ext_resource type="PackedScene" uid="uid://dturr8so8g8cw" path="res://scene/custom_button.tscn" id="4_e58o0"]
 [ext_resource type="Theme" uid="uid://br4jdxsyx0xtu" path="res://theme/drill_data_theme.tres" id="5_drill_theme"]
-[ext_resource type="AudioStream" uid="uid://clyhqyw8s6hud" path="res://audio/Final Battle - For Love.ogg" id="6_audio"]
+[ext_resource type="AudioStream" uid="uid://i6eh50aq5t66" path="res://audio/Final Battle - For Love.ogg" id="6_audio"]
 
 [node name="Node2D" type="Node2D"]
 script = ExtResource("2_bootcamp")

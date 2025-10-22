@@ -1,7 +1,7 @@
 extends Control
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 # Shot timer states
 enum TimerState {
@@ -29,7 +29,7 @@ var actual_delay: float = 0.0  # Store the actual delay duration
 
 func _ready():
 	"""Initialize the shot timer"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("=== SHOT TIMER INITIALIZED ===")
 	
 	# Load and apply current language setting from global settings
@@ -51,10 +51,10 @@ func load_language_from_global_settings():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[ShotTimer] Loaded language from GlobalData: ", language)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[ShotTimer] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
@@ -72,7 +72,7 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[ShotTimer] Set locale to: ", locale)
 
 func get_standby_text() -> String:
@@ -107,7 +107,7 @@ func _process(_delta):
 
 func start_timer_sequence():
 	"""Start the shot timer sequence"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("=== STARTING SHOT TIMER SEQUENCE ===")
 	
 	# Hide instructions (not needed)
@@ -130,7 +130,7 @@ func start_timer_sequence():
 	timer_delay.wait_time = random_delay
 	timer_delay.start()
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("Random delay set to: ", random_delay, " seconds (rounded: ", actual_delay, ")")
 	
 	# Record start time
@@ -141,7 +141,7 @@ func _on_timer_timeout():
 	if current_state != TimerState.STANDBY:
 		return
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("=== TIMER BEEP - READY TO SHOOT ===")
 	
 	# Record beep time
@@ -170,7 +170,7 @@ signal timer_reset()
 
 func reset_timer():
 	"""Reset the timer to initial state without auto-starting"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("=== RESETTING SHOT TIMER ===")
 	
 	# Stop all timers and animations

@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
+
 const WIFI_IDLE := preload("res://asset/wifi.fill.idle.png")
 const WIFI_CONNECTED := preload("res://asset/wifi.fill.connect.png")
 const NET_IDLE := preload("res://asset/connectivity.idle.png")

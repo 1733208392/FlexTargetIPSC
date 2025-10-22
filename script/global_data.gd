@@ -1,5 +1,7 @@
 extends Node
 
+const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
+
 # Global data storage for sharing information between scenes
 var upper_level_scene: String = "res://scene/drills.tscn"
 var settings_dict: Dictionary = {}

@@ -1,6 +1,6 @@
 extends Node
 
-const DEBUG_DISABLED = false
+const DEBUG_DISABLED = true
 const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
 #const WEBSOCKET_URL = "ws://localhost:8080"
 
@@ -105,7 +105,6 @@ func _process(_delta):
 			
 			var packet = socket.get_packet()
 			var message = packet.get_string_from_utf8()
-			print("[WebSocket] Received raw message: ", message)
 			data_received.emit(message)
 			_process_websocket_json(message)
 			
@@ -191,12 +190,12 @@ func _process_websocket_json(json_string):
 				
 				if bullet_spawning_enabled:
 					# Emit immediately when enabled
-					print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
+					if not DEBUG_DISABLED: print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
 					bullet_hit.emit(transformed_pos)
 				else:
 					# When disabled, don't add to pending queue - just ignore
 					pass
-					print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
+					if not DEBUG_DISABLED: print("[WebSocket] Bullet spawning disabled, ignoring hit at: Vector2(", x, ", ", y, ")")
 			else:
 				if not DEBUG_DISABLED:
 					print("[WebSocket] Entry missing x or y: ", entry)
@@ -236,10 +235,10 @@ func _handle_ble_forwarded_command(parsed):
 	# Emit the appropriate signal based on the command value
 	match command:
 		"ready":
-			print("[WebSocket] Emitting ble_ready_command signal with content: ", content)
+			if not DEBUG_DISABLED: print("[WebSocket] Emitting ble_ready_command signal with content: ", content)
 			ble_ready_command.emit(content)
 		"start":
-			print("[WebSocket] Emitting ble_start_command signal with content: ", content)
+			if not DEBUG_DISABLED: print("[WebSocket] Emitting ble_start_command signal with content: ", content)
 			ble_start_command.emit(content)
 		_:
 			if not DEBUG_DISABLED:
@@ -265,7 +264,7 @@ func clear_queued_signals():
 	pending_bullet_hits.clear()
 	
 	if cleared_signals > 0:
-		print("[WebSocket] Cleared ", cleared_signals, " pending bullet hit signals")
+		if not DEBUG_DISABLED: print("[WebSocket] Cleared ", cleared_signals, " pending bullet hit signals")
 	
 	# Reset rate limiting timer to prevent immediate flood when re-enabled
 	last_message_time = Time.get_ticks_msec() / 1000.0

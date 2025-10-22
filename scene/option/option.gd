@@ -19,7 +19,8 @@ var current_threshold = 0
 var threshold_changed = false
 
 # Debug flag for controlling print statements
-const DEBUG_ENABLED = false
+# Can also use GlobalDebug.not DEBUG_DISABLED from the centralized debug system
+const DEBUG_DISABLED = true  # Set to false for production release (or use GlobalDebug.not DEBUG_DISABLED)
 
 # Signal emitted when SFX volume changes
 signal sfx_volume_changed(volume: int)
@@ -71,6 +72,9 @@ signal sfx_volume_changed(volume: int)
 # References to SFX volume controls
 @onready var sfx_volume_slider = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/SFXVolumnHSlider"
 @onready var sfx_label = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/SFX"
+
+# Reference to background music
+@onready var background_music = $BackgroundMusic
 
 # Reference to upgrade button
 @onready var upgrade_button = $"VBoxContainer/MarginContainer/tab_container/About/MarginContainer/Button"
@@ -124,7 +128,7 @@ func _ready():
 	language_buttons = [traditional_chinese_button, chinese_button, japanese_button, english_button]
 	
 	# Debug: Check which buttons are properly loaded
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Language buttons initialization:")
 		for i in range(language_buttons.size()):
 			if language_buttons[i]:
@@ -143,7 +147,7 @@ func _ready():
 	if network_button:
 		networking_buttons.append(network_button)
 
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Networking buttons initialization:")
 		for i in range(networking_buttons.size()):
 			if networking_buttons[i]:
@@ -165,7 +169,7 @@ func _ready():
 		# Update label with initial value
 		_update_sensitivity_label()
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Sensitivity slider not found!")
 	
 	# Connect SFX volume slider value_changed signal
@@ -174,17 +178,33 @@ func _ready():
 		# Update label with initial value
 		_update_sfx_label()
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] SFX volume slider not found!")
+
+	# Load SFX volume from GlobalData and apply it to background music
+	var global_data_for_sfx = get_node_or_null("/root/GlobalData")
+	if global_data_for_sfx and global_data_for_sfx.settings_dict.has("sfx_volume"):
+		var sfx_volume_value = global_data_for_sfx.settings_dict.get("sfx_volume", 5)
+		_apply_sfx_volume(sfx_volume_value)
+		print("[Option] Loaded SFX volume from GlobalData: ", sfx_volume_value)
+	else:
+		# Default to volume level 5 if not set
+		_apply_sfx_volume(5)
+		print("[Option] Using default SFX volume: 5")
+	
+	# Play background music
+	if background_music:
+		background_music.play()
+		print("[Option] Playing background music")
 
 	# Load embedded system status to get current threshold
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
 		http_service.embedded_status(Callable(self, "_on_embedded_status_response"))
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Requesting embedded system status")
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] HttpService singleton not found!")
 
 	# Focus will be set by load_settings_from_global_data() based on current language
@@ -193,22 +213,22 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Connecting to WebSocketListener.menu_control signal")
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] WebSocketListener singleton not found!")
 
 	# Always request fresh netlink status from server
 	var http_service_netlink = get_node_or_null("/root/HttpService")
 	if http_service_netlink:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] About to call http_service.netlink_status")
 		http_service.netlink_status(Callable(self, "_on_netlink_status_response"))
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Called http_service.netlink_status successfully")
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] HttpService singleton not found; cannot request netlink status")
 
 func _on_language_changed(language: String):
@@ -218,41 +238,41 @@ func _on_language_changed(language: String):
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.settings_dict["language"] = current_language
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Immediately updated GlobalData.settings_dict[language] to: ", current_language)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	set_locale_from_language(language)
 	save_settings()
 	update_ui_texts()
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("Language changed to: ", language)
 
 func _on_drill_sequence_toggled(button_pressed: bool):
 	var sequence = "Random" if button_pressed else "Fixed"
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Drill sequence toggled to: ", sequence)
 		print("[Option] Current drill_sequence before change: ", current_drill_sequence)
 	current_drill_sequence = sequence
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Current drill_sequence after change: ", current_drill_sequence)
 	
 	# Update GlobalData immediately to ensure consistency
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.settings_dict["drill_sequence"] = current_drill_sequence
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Immediately updated GlobalData.settings_dict[drill_sequence] to: ", current_drill_sequence)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	save_settings()
 
 func _on_auto_restart_toggled(button_pressed: bool):
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Auto restart toggled to: ", button_pressed)
 	auto_restart_enabled = button_pressed
 	
@@ -270,16 +290,16 @@ func _on_auto_restart_toggled(button_pressed: bool):
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.settings_dict["auto_restart"] = auto_restart_enabled
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Immediately updated GlobalData.settings_dict[auto_restart] to: ", auto_restart_enabled)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	save_settings()
 
 func _on_pause_time_changed(selected_time: int):
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Pause time changed to: ", selected_time)
 	auto_restart_pause_time = selected_time
 	
@@ -287,10 +307,10 @@ func _on_pause_time_changed(selected_time: int):
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.settings_dict["auto_restart_pause_time"] = auto_restart_pause_time
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Immediately updated GlobalData.settings_dict[auto_restart_pause_time] to: ", auto_restart_pause_time)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	save_settings()
@@ -422,25 +442,25 @@ func save_settings():
 	# Save settings directly using current GlobalData
 	var http_service = get_node("/root/HttpService")
 	if not http_service:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("HttpService not found!")
 		return
 	
 	var global_data = get_node_or_null("/root/GlobalData")
 	if not global_data or global_data.settings_dict.size() == 0:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("GlobalData not available, cannot save settings")
 		return
 	
 	var settings_data = global_data.settings_dict.duplicate()
 	var content = JSON.stringify(settings_data)
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Saving settings directly: ", settings_data)
 	
 	http_service.save_game(_on_save_settings_callback, "settings", content)
 
 func _on_save_settings_callback(_result, response_code, _headers, _body):
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Save settings callback - Response code: ", response_code)
 		if response_code == 200:
 			print("[Option] Settings saved successfully to HTTP server")
@@ -457,10 +477,10 @@ func load_settings_from_global_data():
 	if global_data and global_data.settings_dict.has("language"):
 		current_language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(current_language)
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Loaded language from GlobalData: ", current_language)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] GlobalData not found or no language setting, using default English")
 		current_language = "English"
 		set_locale_from_language(current_language)
@@ -470,39 +490,39 @@ func load_settings_from_global_data():
 		current_drill_sequence = global_data.settings_dict.get("drill_sequence", "Fixed")
 		if current_drill_sequence == "":
 			current_drill_sequence = "Fixed"
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Loaded drill_sequence from GlobalData: ", current_drill_sequence)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] No drill_sequence setting, using default Fixed")
 		current_drill_sequence = "Fixed"
 	
 	# Load auto restart settings
 	if global_data and global_data.settings_dict.has("auto_restart"):
 		auto_restart_enabled = global_data.settings_dict.get("auto_restart", false)
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Loaded auto_restart from GlobalData: ", auto_restart_enabled)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] No auto_restart setting, using default false")
 		auto_restart_enabled = false
 	
 	if global_data and global_data.settings_dict.has("auto_restart_pause_time"):
 		auto_restart_pause_time = global_data.settings_dict.get("auto_restart_pause_time", 5)
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Loaded auto_restart_pause_time from GlobalData: ", auto_restart_pause_time)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] No auto_restart_pause_time setting, using default 5")
 		auto_restart_pause_time = 5
 	
 	# Load SFX volume setting
 	if global_data and global_data.settings_dict.has("sfx_volume"):
 		sfx_volume = global_data.settings_dict.get("sfx_volume", 5)
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Loaded sfx_volume from GlobalData: ", sfx_volume)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] No sfx_volume setting, using default 5")
 		sfx_volume = 5
 	
@@ -534,11 +554,11 @@ func _populate_networking_fields(data: Dictionary):
 		content5_label.text = str(data.get("work_mode", ""))
 
 func _on_netlink_status_response(result, response_code, _headers, body):
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Received netlink_status HTTP response - Code:", response_code)
 	if response_code == 200 and result == HTTPRequest.RESULT_SUCCESS:
 		var body_str = body.get_string_from_utf8()
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] netlink_status body: ", body_str)
 		
 		# Parse the response
@@ -554,27 +574,27 @@ func _on_netlink_status_response(result, response_code, _headers, body):
 					parsed_data = JSON.parse_string(data_field)
 				else:
 					parsed_data = data_field
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Parsed data from 'data' field")
 			else:
 				# Direct format: {...}
 				parsed_data = json
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Parsed data directly from response")
 			
 			if parsed_data and typeof(parsed_data) == TYPE_DICTIONARY:
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Parsed netlink_status data: ", parsed_data)
 				# Populate UI directly with parsed data
 				_populate_networking_fields(parsed_data)
 			else:
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Failed to parse netlink_status data - parsed_data: ", parsed_data, " type: ", typeof(parsed_data))
 		else:
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Failed to parse JSON response: ", body_str)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] netlink_status request failed with code:", response_code)
 
 # Functions to get current auto restart settings (can be called from other scripts)
@@ -597,26 +617,26 @@ static func get_auto_restart_pause_time() -> int:
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
 		return
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Received menu_control signal with directive: ", directive)
 	match directive:
 		"up", "down":
 			if tab_container:
 				match tab_container.current_tab:
 					0:
-						if DEBUG_ENABLED:
+						if not DEBUG_DISABLED:
 							print("[Option] Navigation: ", directive, " on Networking tab")
 						navigate_network_buttons(directive)
 					1:
-						if DEBUG_ENABLED:
+						if not DEBUG_DISABLED:
 							print("[Option] Navigation: ", directive, " on Languages tab")
 						navigate_buttons(directive)
 					2:
-						if DEBUG_ENABLED:
+						if not DEBUG_DISABLED:
 							print("[Option] Navigation: ", directive, " on Drills tab")
 						navigate_drill_buttons(directive)
 					_:
-						if DEBUG_ENABLED:
+						if not DEBUG_DISABLED:
 							print("[Option] Navigation: ", directive, " ignored - current tab has no navigation")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
@@ -624,30 +644,30 @@ func _on_menu_control(directive: String):
 		"left", "right":
 			# Check if sensitivity slider is focused on Drills tab
 			if tab_container and tab_container.current_tab == 2 and sensitivity_slider and sensitivity_slider.has_focus():
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Adjusting sensitivity slider: ", directive)
 				adjust_sensitivity_slider(directive)
 			# Check if SFX volume slider is focused on Drills tab
 			elif tab_container and tab_container.current_tab == 2 and sfx_volume_slider and sfx_volume_slider.has_focus():
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Adjusting SFX volume slider: ", directive)
 				adjust_sfx_volume_slider(directive)
 			else:
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Tab switch: ", directive)
 				switch_tab(directive)
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 		"enter":
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Enter pressed")
 			press_focused_button()
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 		"back", "homepage":
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] ", directive, " - navigating to main menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
@@ -657,10 +677,10 @@ func _on_menu_control(directive: String):
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 			else:
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Warning: Node not in tree, cannot change scene")
 		"compose":
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] compose directive received - navigating to onboard_debug")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
@@ -668,22 +688,22 @@ func _on_menu_control(directive: String):
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/onboard_debug.tscn")
 			else:
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Warning: Node not in tree, cannot change scene to onboard_debug")
 		"volume_up":
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Volume up")
 			volume_up()
 		"volume_down":
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Volume down")
 			volume_down()
 		"power":
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Power off")
 			power_off()
 		_:
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Unknown directive: ", directive)
 
 func navigate_buttons(direction: String):
@@ -697,7 +717,7 @@ func navigate_buttons(direction: String):
 		for i in range(language_buttons.size()):
 			if language_buttons[i]:
 				language_buttons[i].grab_focus()
-				if DEBUG_ENABLED:
+				if not DEBUG_DISABLED:
 					print("[Option] Focus set to first valid button: ", language_buttons[i].name)
 				return
 		return
@@ -714,13 +734,13 @@ func navigate_buttons(direction: String):
 		# Check if the target button exists and is valid
 		if language_buttons[target_index] and language_buttons[target_index] != language_buttons[current_index]:
 			language_buttons[target_index].grab_focus()
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Focus moved to ", language_buttons[target_index].name)
 			return
 		
 		attempts += 1
 	
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] No other valid buttons found for navigation")
 
 func navigate_drill_buttons(direction: String):
@@ -740,7 +760,7 @@ func navigate_drill_buttons(direction: String):
 		drill_buttons.append(sfx_volume_slider)
 	
 	if drill_buttons.is_empty():
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] No drill buttons found for navigation")
 		return
 	
@@ -755,7 +775,7 @@ func navigate_drill_buttons(direction: String):
 		# If no button has focus, focus the first one
 		if drill_buttons[0]:
 			drill_buttons[0].grab_focus()
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Focus set to first drill button")
 		return
 	
@@ -771,18 +791,18 @@ func navigate_drill_buttons(direction: String):
 		# Check if the target button exists and is valid
 		if drill_buttons[target_index]:
 			drill_buttons[target_index].grab_focus()
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Focus moved to drill button at index: ", target_index)
 			return
 		
 		attempts += 1
 	
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] No other valid drill buttons found for navigation")
 
 func navigate_network_buttons(direction: String):
 	if networking_buttons.is_empty():
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] No networking buttons available")
 		return
 
@@ -794,7 +814,7 @@ func navigate_network_buttons(direction: String):
 
 	if current_index == -1:
 		networking_buttons[0].grab_focus()
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Focus set to first networking button")
 		return
 
@@ -806,7 +826,7 @@ func navigate_network_buttons(direction: String):
 
 	if networking_buttons[target_index]:
 		networking_buttons[target_index].grab_focus()
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Networking focus moved to ", networking_buttons[target_index].name)
 
 func press_focused_button():
@@ -840,7 +860,7 @@ func press_focused_button():
 		# Toggle the CheckButton
 		random_sequence_check.button_pressed = !random_sequence_check.button_pressed
 		# This will trigger the toggled signal which calls _on_drill_sequence_toggled
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Toggled drill CheckButton to: ", random_sequence_check.button_pressed)
 	
 	# Handle auto restart CheckButton
@@ -848,51 +868,51 @@ func press_focused_button():
 		# Toggle the CheckButton
 		auto_restart_check.button_pressed = !auto_restart_check.button_pressed
 		# This will trigger the toggled signal which calls _on_auto_restart_toggled
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Toggled auto restart CheckButton to: ", auto_restart_check.button_pressed)
 	
 	# Handle pause time check buttons
 	if pause_5s_check and pause_5s_check.has_focus():
 		# Toggle the 5s button (this will automatically untoggle the 10s button due to ButtonGroup)
 		pause_5s_check.button_pressed = true
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Selected pause time: 5s")
 		_on_pause_time_changed(5)
 	if pause_10s_check and pause_10s_check.has_focus():
 		# Toggle the 10s button (this will automatically untoggle the 5s button due to ButtonGroup)
 		pause_10s_check.button_pressed = true
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Selected pause time: 10s")
 		_on_pause_time_changed(10)
 
 func volume_up():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Sending volume up HTTP request...")
 		http_service.volume_up(_on_volume_up_response)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] HttpService singleton not found!")
 
 func _on_volume_up_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Volume up HTTP response:", _result, response_code, body_str)
 
 func volume_down():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Sending volume down HTTP request...")
 		http_service.volume_down(_on_volume_down_response)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] HttpService singleton not found!")
 
 func _on_volume_down_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Volume down HTTP response:", _result, response_code, body_str)
 
 func power_off():
@@ -949,22 +969,22 @@ func _on_network_pressed():
 func _on_upgrade_pressed():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Sending upgrade engine HTTP request...")
 		http_service.upgrade_engine(_on_upgrade_response)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] HttpService not found!")
 
 func _on_upgrade_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Upgrade engine HTTP response:", result, response_code, body_str)
 
 func _on_embedded_status_response(_result, _response_code, _headers, body):
 	"""Handle embedded system status response."""
 	var body_str = body.get_string_from_utf8()
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Embedded status response:", body_str)
 	
 	var response = JSON.parse_string(body_str)
@@ -980,10 +1000,10 @@ func _on_embedded_status_response(_result, _response_code, _headers, body):
 		if sensitivity_slider:
 			sensitivity_slider.value = threshold
 			_update_sensitivity_label()
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Set sensitivity slider to: ", threshold)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Invalid embedded status response")
 
 func _on_sensitivity_value_changed(value: float):
@@ -991,20 +1011,20 @@ func _on_sensitivity_value_changed(value: float):
 	current_threshold = int(value)
 	threshold_changed = (current_threshold != initial_threshold)
 	_update_sensitivity_label()
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Sensitivity value changed to: ", value, ", changed: ", threshold_changed)
 
 func _update_sensitivity_label():
 	"""Update the sensitivity label with the current slider value."""
 	if sensitivity_slider and sensitivity_label:
 		sensitivity_label.text = tr("sensor_sensitivity") + " [ "+ str(int(sensitivity_slider.value)) + " ]"
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Updated sensitivity label to: ", sensitivity_label.text)
 
 func adjust_sensitivity_slider(direction: String):
 	"""Adjust the sensitivity slider with left/right directives."""
 	if not sensitivity_slider:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Sensitivity slider not found!")
 		return
 	
@@ -1016,14 +1036,14 @@ func adjust_sensitivity_slider(direction: String):
 		# Round to nearest 100
 		new_value = round(new_value / 100.0) * 100
 		sensitivity_slider.value = new_value
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Increased sensitivity to: ", sensitivity_slider.value)
 	elif direction == "left":
 		var new_value = max(sensitivity_slider.min_value, current_value - step)
 		# Round to nearest 100
 		new_value = round(new_value / 100.0) * 100
 		sensitivity_slider.value = new_value
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Decreased sensitivity to: ", sensitivity_slider.value)
 
 func _save_threshold_if_changed():
@@ -1031,21 +1051,21 @@ func _save_threshold_if_changed():
 	if threshold_changed and current_threshold != initial_threshold:
 		var http_service = get_node_or_null("/root/HttpService")
 		if http_service:
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] Threshold changed from ", initial_threshold, " to ", current_threshold, ", saving...")
 			# Use empty callable since we're exiting anyway
 			http_service.embedded_set_threshold(Callable(), current_threshold)
 		else:
-			if DEBUG_ENABLED:
+			if not DEBUG_DISABLED:
 				print("[Option] HttpService not found, cannot save threshold")
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Threshold not changed, no need to save")
 
 func _on_threshold_set_response(_result, _response_code, _headers, body):
 	"""Handle threshold set response."""
 	var body_str = body.get_string_from_utf8()
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] Threshold set response: ", body_str)
 
 func _on_sfx_volume_changed(value: float):
@@ -1053,14 +1073,17 @@ func _on_sfx_volume_changed(value: float):
 	sfx_volume = int(value)
 	_update_sfx_label()
 	
+	# Apply volume to background music immediately
+	_apply_sfx_volume(sfx_volume)
+	
 	# Update GlobalData immediately to ensure consistency
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.settings_dict["sfx_volume"] = sfx_volume
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Immediately updated GlobalData.settings_dict[sfx_volume] to: ", sfx_volume)
 	else:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
 	
 	# Emit signal for bootcamp and mainmenu to listen
@@ -1072,7 +1095,7 @@ func _on_sfx_volume_changed(value: float):
 	# Save settings to HTTP
 	save_settings()
 	
-	if DEBUG_ENABLED:
+	if not DEBUG_DISABLED:
 		print("[Option] SFX volume changed to: ", value)
 
 func _notify_sfx_listeners(volume: int):
@@ -1091,13 +1114,32 @@ func _update_sfx_label():
 	"""Update the SFX volume label with the current slider value."""
 	if sfx_volume_slider and sfx_label:
 		sfx_label.text = tr("sound_sfx") + " [ " + str(int(sfx_volume_slider.value)) + " ]"
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Updated SFX label to: ", sfx_label.text)
+
+func _apply_sfx_volume(volume: int):
+	"""Apply SFX volume level to audio.
+	Volume ranges from 0 to 10, where 0 stops audio and 10 is max volume."""
+	# Convert volume (0-10) to Godot's decibel scale
+	# 0 = silence (mute), 10 = full volume (0dB)
+	# We use approximately -40dB for silence and 0dB for maximum
+	if volume <= 0:
+		# Stop all SFX
+		if background_music:
+			background_music.volume_db = -80  # Effectively mute
+		print("[Option] Muted audio (volume=", volume, ")")
+	else:
+		# Map 1-10 to -40dB to 0dB
+		# volume 1 = -40dB, volume 10 = 0dB
+		var db = -40.0 + ((volume - 1) * (40.0 / 9.0))
+		if background_music:
+			background_music.volume_db = db
+		print("[Option] Set audio volume_db to ", db, " (volume level: ", volume, ")")
 
 func adjust_sfx_volume_slider(direction: String):
 	"""Adjust the SFX volume slider with left/right directives."""
 	if not sfx_volume_slider:
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] SFX volume slider not found!")
 		return
 	
@@ -1106,9 +1148,9 @@ func adjust_sfx_volume_slider(direction: String):
 
 	if direction == "right":
 		sfx_volume_slider.value = min(sfx_volume_slider.max_value, current_value + step)
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Increased SFX volume to: ", sfx_volume_slider.value)
 	elif direction == "left":
 		sfx_volume_slider.value = max(sfx_volume_slider.min_value, current_value - step)
-		if DEBUG_ENABLED:
+		if not DEBUG_DISABLED:
 			print("[Option] Decreased SFX volume to: ", sfx_volume_slider.value)

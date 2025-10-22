@@ -1,18 +1,18 @@
 keys,en,zh_CN,ja,zh_TW
 languages,Locale,语言,言語,語言
 about,About,关于,約,關於
-drill,Drill,训练,ドリル,訓練
+drill,Control,参数,ドコントロール,參數
 random_sequence,"Random Sequence
 ",随机序列,ランダムシーケンス,隨機序列
 
 fixed_sequence,Fixed Sequence,固定序列,固定シーケンス,固定序列
-description,"The Grwolf Smart Target is designed for shooting enthusiasts who want a convenient solution for practicing with airsoft, eliminating the hassle of going to the shooting range. Compared to the traditional target, the device has the following features, 
+description,"The Grwolf Smart Target is designed for shooting enthusiasts who want a convenient solution for practicing with airsoft. Compared to the traditional target, the device has the following features, 
 * Real-time hit point display allows you to track and score your shots instantly.
-* Choose different drills with the same device, such as bill drill and free shooting, to enhance your shooting experience.","Grwolf 智能靶专为希望便捷练习软气枪的射击爱好者设计，免去了前往靶场的麻烦。与传统靶相比，该设备具有以下特点：
+* Choose different controls with the same device, such as bill control and free shooting, to enhance your shooting experience.","Grwolf 智能靶专为希望便捷练习软气枪的射击爱好者设计。与传统靶相比，该设备具有以下特点：
 * 实时命中点显示，让您可以即时追踪射击并计分。
-* 同一设备可选择不同的练习方式，例如枪枝练习和自由射击，提升您的射击体验。","Grwolfスマートターゲットは、エアソフトガンの練習に便利なソリューションを求める射撃愛好家のために設計されており、射撃場に行く手間を省きます。従来のターゲットと比較して、このデバイスは以下の機能を備えています。
+* 同一设备可选择不同的练习方式，例如枪枝练习和自由射击，提升您的射击体验。","Grwolfスマートターゲットは、エアソフトガンの練習に便利なソリューションを求める射撃愛好家のために設計されており。従来のターゲットと比較して、このデバイスは以下の機能を備えています。
 * リアルタイムのヒットポイント表示により、射撃の追跡とスコアリングが瞬時に行えます。
-* ビルドリルやフリーシューティングなど、同じデバイスで様々なドリルを選択できるため、射撃体験が向上します。","Grwolf 智能靶專為希望便捷練習軟氣槍的射擊愛好者設計，免去了前往靶場的麻煩。與傳統靶場相比，該設備具有以下特點：
+* ビルドリルやフリーシューティングなど、同じデバイスで様々なドリルを選択できるため、射撃体験が向上します。","Grwolf 智能靶專為希望便捷練習軟氣槍的射擊愛好者設計。與傳統靶相比，該設備具有以下特點：
 * 即時命中點顯示，讓您可以即時追蹤射擊併計分。
 * 同一裝置可選擇不同的練習方式，例如槍枝練習和自由射擊，提升您的射擊體驗。 "
 copyright,© 2025 FlexTarget IPSC@Grwolf.com,© 2025 FlexTarget IPSC@Grwolf.com,© 2025 FlexTarget IPSC@Grwolf.com,2025 FlexTarget IPSC@Grwolf.com

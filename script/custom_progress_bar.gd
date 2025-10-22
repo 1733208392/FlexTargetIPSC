@@ -1,7 +1,7 @@
 extends Control
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 @onready var skew_shader = preload("res://shader/skew_shader.gdshader")
 @onready var progress_segments = $ProgressContainer/ProgressSegments
@@ -51,16 +51,15 @@ func update_progress(targets_completed: int):
 					bar_node.color = INACTIVE_COLOR  # Inactive/not completed
 	
 	# Debug output with segment breakdown
-	if DEBUG_LOGGING and targets_completed >= 0:
+	if DEBUG_DISABLED and targets_completed >= 0:
 		var segment_breakdown = []
 		var cumulative = 0
 		for i in range(TOTAL_TARGETS):
 			cumulative += SEGMENTS_PER_TARGET[i]
 			segment_breakdown.append("Target %d: %d segments (total: %d)" % [i, SEGMENTS_PER_TARGET[i], cumulative])
-		print("Progress updated: ", targets_completed, "/", TOTAL_TARGETS, " targets (", active_segments, "/", TOTAL_SEGMENTS, " segments)")
-		print("Segment breakdown: ", segment_breakdown)
-	else:
-		print("Progress updated: ", targets_completed, "/", TOTAL_TARGETS, " targets (", active_segments, "/", TOTAL_SEGMENTS, " segments)")
+		if not DEBUG_DISABLED:
+			print("Progress updated: ", targets_completed, "/", TOTAL_TARGETS, " targets (", active_segments, "/", TOTAL_SEGMENTS, " segments)")
+			print("Segment breakdown: ", segment_breakdown)
 
 func reset_progress():
 	"""Reset progress bar to empty state"""

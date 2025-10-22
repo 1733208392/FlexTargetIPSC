@@ -2,6 +2,8 @@ extends Control
 
 # Simple overlay that just shows "Drill ENDs" when network drill completes
 
+const DEBUG_ENABLED = false  # Set to false for production release
+
 @onready var title_label = $VBoxContainer/MarginContainer/VBoxContainer/Title
 
 func _ready():
@@ -18,9 +20,11 @@ func show_completion(repeat_number: int = 0):
 		title_label.text = tr("drill_repeat_ends")
 	
 	visible = true
-	print("[drill_network_complete_overlay] Network drill completion overlay shown for repeat #%d" % repeat_number)
+	if DEBUG_ENABLED:
+		print("[drill_network_complete_overlay] Network drill completion overlay shown for repeat #%d" % repeat_number)
 
 func hide_completion():
 	"""Hide the drill network completion overlay"""
 	visible = false
-	print("[drill_network_complete_overlay] Network drill completion overlay hidden")
+	if DEBUG_ENABLED:
+		print("[drill_network_complete_overlay] Network drill completion overlay hidden")

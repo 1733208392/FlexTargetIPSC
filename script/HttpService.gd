@@ -2,14 +2,13 @@ extends Node
 
 # Add this script as an autoload (singleton) in Project Settings > Autoload
 
-const DEBUG_DISABLED = false
+const DEBUG_DISABLED = true
 
 var base_url: String = "http://127.0.0.1"
 var sb = null  # Signal bus reference
 
 func _ready():
 	sb = get_node_or_null("/root/SignalBus")
-	print("[HttpService] Ready, SignalBus found:", sb != null)
 
 # Renamed to avoid conflict with Godot's built-in get()
 func get_request(url: String, callback: Callable):
@@ -254,10 +253,12 @@ func netlink_status(callback: Callable):
 		if sb:
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			print("[HttpService] Emitting debug info for netlink_status:", debug_msg)
+			if not DEBUG_DISABLED:
+				print("[HttpService] Emitting debug info for netlink_status:", debug_msg)
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		else:
-			print("[HttpService] SignalBus not found, cannot emit debug info")
+			if not DEBUG_DISABLED:
+				print("[HttpService] SignalBus not found, cannot emit debug info")
 		# Forward raw response to caller
 		callback.call(result, response_code, headers, body)
 	)
@@ -317,7 +318,8 @@ func embedded_set_threshold(callback: Callable, value: int):
 	
 	# Validate value is within range (700-2000)
 	if value < 700 or value > 2000:
-		print("[HttpService] Warning: threshold value ", value, " is outside recommended range (700-2000)")
+		if not DEBUG_DISABLED:
+			print("[HttpService] Warning: threshold value ", value, " is outside recommended range (700-2000)")
 	
 	var data = {
 		"value": value

@@ -1,5 +1,7 @@
 extends Node
 
+const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
+
 # Global Menu Controller Singleton
 # Handles remote control directives from WebSocketListener
 # Emits signals that scenes can connect to for menu control
@@ -83,7 +85,8 @@ func _handle_power_off():
 	if parent and parent.has_method("power_off"):
 		parent.power_off()
 	else:
-		print("[MenuController] Parent doesn't have power_off method")
+		if not DEBUG_DISABLED:
+			print("[MenuController] Parent doesn't have power_off method")
 
 func _on_volume_response(_direction: String, _result, _response_code, _headers, _body):
 	var _body_str = _body.get_string_from_utf8()
@@ -96,7 +99,8 @@ func _on_shutdown_response(_result, _response_code, _headers, _body):
 func play_cursor_sound():
 	"""Play cursor sound effect for menu navigation at fixed volume"""
 	if not cursor_sound:
-		print("[MenuController] Cursor sound not loaded")
+		if not DEBUG_DISABLED:
+			print("[MenuController] Cursor sound not loaded")
 		return
 	
 	# Create audio player with fixed volume

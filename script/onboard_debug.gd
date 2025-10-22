@@ -1,5 +1,7 @@
 extends Control
 
+const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
+
 @onready var scroll: ScrollContainer = $MarginContainer/VBoxContainer/ScrollContainer
 @onready var list_vbox: VBoxContainer = $MarginContainer/VBoxContainer/ScrollContainer/ListContainer
 var selected_index: int = -1
@@ -16,9 +18,11 @@ func _ready() -> void:
 		var cb = Callable(self, "_on_message_appended")
 		if not ods.is_connected("message_appended", cb):
 			ods.connect("message_appended", cb)
-			print("OnboardDebug: Connected to OnboardDebugSingleton.message_appended")
+			if not DEBUG_DISABLED:
+				print("OnboardDebug: Connected to OnboardDebugSingleton.message_appended")
 	else:
-		print("OnboardDebug: OnboardDebugSingleton not found; live updates disabled")
+		if not DEBUG_DISABLED:
+			print("OnboardDebug: OnboardDebugSingleton not found; live updates disabled")
 
 	# Connect to MenuController for remote control directives (home/up/down)
 	var mc = get_node_or_null("/root/MenuController")
@@ -26,15 +30,19 @@ func _ready() -> void:
 		var cb2 = Callable(self, "_on_menu_control")
 		if not mc.is_connected("menu_control", cb2):
 			mc.connect("menu_control", cb2)
-			print("OnboardDebug: Connected to MenuController.menu_control")
+			if not DEBUG_DISABLED:
+				print("OnboardDebug: Connected to MenuController.menu_control")
 		else:
-			print("OnboardDebug: Already connected to MenuController.menu_control")
+			if not DEBUG_DISABLED:
+				print("OnboardDebug: Already connected to MenuController.menu_control")
 		# Compose is handled by Option -> change_scene flow; no need to listen here
 	else:
-		print("OnboardDebug: MenuController not found; remote directives disabled")
+		if not DEBUG_DISABLED:
+			print("OnboardDebug: MenuController not found; remote directives disabled")
 
 func _on_compose_request() -> void:
-	print("OnboardDebug: Received compose request")
+	if not DEBUG_DISABLED:
+		print("OnboardDebug: Received compose request")
 
 func _exit_tree() -> void:
 	var sb = get_node_or_null("/root/SignalBus")
@@ -120,7 +128,8 @@ func _on_menu_control(directive: String) -> void:
 	match directive:
 		"homepage", "home":
 			# Navigate to main menu
-			print("OnboardDebug: homepage -> navigating to main menu")
+			if not DEBUG_DISABLED:
+				print("OnboardDebug: homepage -> navigating to main menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
@@ -136,7 +145,8 @@ func _on_menu_control(directive: String) -> void:
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-			print("OnboardDebug: up -> selected", selected_index)
+			if not DEBUG_DISABLED:
+				print("OnboardDebug: up -> selected", selected_index)
 		"down":
 			# Move selection down one row
 			if selected_index == -1:
@@ -148,7 +158,8 @@ func _on_menu_control(directive: String) -> void:
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-			print("OnboardDebug: down -> selected", selected_index)
+			if not DEBUG_DISABLED:
+				print("OnboardDebug: down -> selected", selected_index)
 		_:
 			# ignore other directives
 			pass

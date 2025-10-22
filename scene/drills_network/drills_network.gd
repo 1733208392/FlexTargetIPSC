@@ -1,6 +1,6 @@
 extends Control
 
-const DEBUG_DISABLED = false
+const DEBUG_ENABLED = false  # Set to false for production release
 
 # Single target for network drills
 @export var target_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
@@ -68,7 +68,7 @@ signal ui_theme_change(theme_name: String)
 
 func _ready():
 	"""Initialize the network drill with a single target"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting network drill")
 	
 	# Get global data reference
@@ -91,7 +91,7 @@ func _ready():
 	var shot_timer = get_node("DrillUI/ShotTimerOverlay")
 	if shot_timer and shot_timer.has_signal("timer_ready"):
 		shot_timer.timer_ready.connect(_on_shot_timer_ready)
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Connected to shot timer ready signal")
 	
 	# Set theme
@@ -119,41 +119,41 @@ func _ready():
 
 func _connect_to_websocket():
 	"""Connect to WebSocketListener signals (called deferred to ensure WebSocketListener is ready)"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Attempting deferred connection to WebSocketListener")
 	
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Found WebSocketListener at /root/WebSocketListener")
 		
 		# Check if signals exist before connecting
 		if ws_listener.has_signal("menu_control"):
 			ws_listener.menu_control.connect(_on_menu_control)
-			if not DEBUG_DISABLED:
+			if DEBUG_ENABLED:
 				print("[DrillsNetwork] Connected to menu_control signal")
 		else:
-			if not DEBUG_DISABLED:
+			if DEBUG_ENABLED:
 				print("[DrillsNetwork] ERROR: WebSocketListener does not have menu_control signal")
 		
 		if ws_listener.has_signal("ble_ready_command"):
 			ws_listener.ble_ready_command.connect(_on_ble_ready_command)
-			if not DEBUG_DISABLED:
+			if DEBUG_ENABLED:
 				print("[DrillsNetwork] Connected to ble_ready_command signal")
 		else:
-			if not DEBUG_DISABLED:
+			if DEBUG_ENABLED:
 				print("[DrillsNetwork] ERROR: WebSocketListener does not have ble_ready_command signal")
 		
 		# Connect to ble_start_command so the drill only starts when an explicit 'start' is received
 		if ws_listener.has_signal("ble_start_command"):
 			ws_listener.ble_start_command.connect(_on_ble_start_command)
-			if not DEBUG_DISABLED:
+			if DEBUG_ENABLED:
 				print("[DrillsNetwork] Connected to ble_start_command signal")
 		else:
-			if not DEBUG_DISABLED:
+			if DEBUG_ENABLED:
 				print("[DrillsNetwork] ERROR: WebSocketListener does not have ble_start_command signal")
 	else:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] ERROR: WebSocketListener not found at /root/WebSocketListener")
 		# Try again after a short delay
 		await get_tree().create_timer(0.1).timeout
@@ -161,11 +161,11 @@ func _connect_to_websocket():
 
 func _check_and_process_saved_ready_state():
 	"""Check if there's a saved ready state from main_menu and process it"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Checking for saved ready state from main_menu")
 	
 	if not global_data:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] GlobalData not available, cannot check for saved ready state")
 		return
 	
@@ -173,7 +173,7 @@ func _check_and_process_saved_ready_state():
 	var saved_ready_content = global_data.ble_ready_content
 	
 	if saved_ready_content != null and saved_ready_content.size() > 0:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Found saved ready state, processing it: ", saved_ready_content)
 		
 		# Process it as if we received the ready command
@@ -182,26 +182,26 @@ func _check_and_process_saved_ready_state():
 		# Start auto-start fallback timer (drill will start if no 'start' command arrives)
 		_start_auto_start_fallback()
 	else:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] No saved ready state found in GlobalData")
 
 func _start_auto_start_fallback():
 	"""Start a fallback timer that will auto-start the drill in master mode if no 'start' command arrives"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting auto-start fallback timer (2 seconds)")
 	
 	await get_tree().create_timer(2.0).timeout
 	
 	# If drill has not been started yet (no BLE start command received), start it now
 	if not drill_completed and target_instance == null:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Auto-start fallback triggered - no BLE start command received, starting drill")
 		
 		# Use is_first from saved ready content, default to true (master mode) if not present
 		is_first = saved_ble_ready_content.get("isFirst", true)
 		emit_signal("ui_mode_update", is_first)
 		
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Operating in ", "master" if is_first else "slave", " mode (based on saved isFirst: ", is_first, ")")
 		
 		# Use saved timeout or default
@@ -210,14 +210,14 @@ func _start_auto_start_fallback():
 		else:
 			timeout_seconds = 40.0
 		
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Auto-starting drill with timeout: ", timeout_seconds)
 		
 		start_drill()
 		if is_first:
 			shot_timer_visible = true
 	else:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Auto-start fallback cancelled - drill already started or will be started by BLE command")
 			
 func _on_netlink_status_loaded():
@@ -229,7 +229,7 @@ func _on_netlink_status_loaded():
 			
 func spawn_target():
 	"""Spawn the single target"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Spawning target")
 	
 	# Clear any existing target
@@ -248,10 +248,10 @@ func spawn_target():
 	# Connect to target hit signal if it exists
 	if target_instance.has_signal("target_hit"):
 		target_instance.target_hit.connect(_on_target_hit)
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Connected to target_hit signal")
 	else:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] WARNING: Target does not have target_hit signal")
 	
 	# Connect performance tracker to our target_hit signal
@@ -266,7 +266,7 @@ func spawn_target():
 
 func start_drill():
 	"""Start the drill after delay"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting drill after delay")
 	spawn_target()
 
@@ -274,13 +274,13 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	"""Handle target hit - supports different target signal signatures"""
 	# Ignore any shots after the drill has completed
 	if drill_completed:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Ignoring target hit because drill is completed")
 		return
 
 	# Ignore shots that arrive before the timeout timer actually starts (e.g. master mode before shot timer ready)
 	if timeout_timer and timeout_timer.is_stopped():
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Ignoring target hit because timeout timer has not started yet")
 		return
 	var zone: String
@@ -299,7 +299,7 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 		points = arg3
 		hit_position = arg4
 	
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Target hit: zone=", zone, " points=", points, " pos=", hit_position)
 	
 	# Hide shot timer on first shot
@@ -310,7 +310,7 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	total_score += points
 	
 	# Emit for performance tracking
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Emitting target_hit signal to performance tracker")
 	emit_signal("target_hit", current_target_type, hit_position, zone, 0.0, current_repeat)
 	
@@ -338,13 +338,13 @@ func start_drill_timer():
 		timeout_timer.start()
 		drill_start_time = Time.get_ticks_msec() / 1000.0
 		elapsed_seconds = 0.0
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Slave mode: Drill timer started immediately")
 		# Activate drill for target
 		if target_instance and target_instance.has_method("set"):
 			target_instance.set("drill_active", true)
 	else:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Master mode: Drill timer created (waiting for shot timer ready)")
 
 func _process(_delta):
@@ -355,7 +355,7 @@ func _process(_delta):
 
 func _on_timeout():
 	"""Handle drill timeout"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Drill timed out")
 	drill_timed_out = true
 	complete_drill()
@@ -365,7 +365,7 @@ func complete_drill():
 	if drill_completed:
 		return
 	
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Drill completed! Score:", total_score)
 	drill_completed = true
 	
@@ -390,7 +390,7 @@ func complete_drill():
 
 func reset_drill_state():
 	"""Reset the drill state to fresh start"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Resetting drill state to fresh start")
 	
 	drill_completed = false
@@ -430,7 +430,7 @@ func hide_shot_timer():
 
 func _on_menu_control(directive: String):
 	"""Handle websocket menu control"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Received menu_control directive:", directive)
 	
 	# Handle navigation commands
@@ -448,34 +448,34 @@ func _on_menu_control(directive: String):
 			# Clear BLE ready content before exiting the scene
 			if global_data:
 				global_data.ble_ready_content.clear()
-				if not DEBUG_DISABLED:
+				if DEBUG_ENABLED:
 					print("[DrillsNetwork] Cleared ble_ready_content before returning to main menu")
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:
-			if not DEBUG_DISABLED:
+			if DEBUG_ENABLED:
 				print("[DrillsNetwork] Unknown directive:", directive)
 
 func volume_up():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Sending volume up")
 
 func volume_down():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Sending volume down")
 
 func power_off():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Sending power off")
 
 func _on_ble_ready_command(content: Dictionary):
 	"""Handle BLE ready command"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] ===== BLE READY COMMAND FUNCTION CALLED =====")
 		print("[DrillsNetwork] Received BLE ready command (saved, not starting): ", content)
 
@@ -489,7 +489,7 @@ func _on_ble_ready_command(content: Dictionary):
 	if saved_ble_ready_content.has("targetType"):
 		current_target_type = saved_ble_ready_content["targetType"]
 
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] BLE ready parameters saved: ", saved_ble_ready_content)
 
 	# Acknowledge the ready command back to sender by forwarding a netlink message
@@ -499,14 +499,14 @@ func _on_ble_ready_command(content: Dictionary):
 		var content_dict = {"ack":"ready"}
 		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
 			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-				if not DEBUG_DISABLED:
+				if DEBUG_ENABLED:
 					print("[DrillsNetwork] Sent ready ack successfully")
 			else:
-				if not DEBUG_DISABLED:
+				if DEBUG_ENABLED:
 					print("[DrillsNetwork] Failed to send ready ack: ", result, response_code)
 		, content_dict)
 	else:
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] HttpService not available; cannot send ready ack")
 
 	# If drill is completed, reset to fresh start
@@ -515,7 +515,7 @@ func _on_ble_ready_command(content: Dictionary):
 
 func _on_ble_start_command(content: Dictionary) -> void:
 	"""Handle BLE start command: merge saved ready params with start payload and begin delay/start sequence."""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Received BLE start command: ", content)
 
 	# Merge saved ready params (lowest priority) with start content (highest priority)
@@ -527,12 +527,12 @@ func _on_ble_start_command(content: Dictionary) -> void:
 
 	# Determine master/slave mode based on isFirst from ready command
 	is_first = merged.get("isFirst", false)
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Operating in ", "master" if is_first else "slave", " mode (based on isFirst: ", is_first, ")")
 	
 	# Set current repeat
 	current_repeat = merged.get("repeat", 0)
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Current repeat set to: ", current_repeat)
 	
 	# Notify UI of mode change
@@ -544,16 +544,16 @@ func _on_ble_start_command(content: Dictionary) -> void:
 		current_target_type = target_type
 		if target_type_to_scene.has(target_type):
 			target_scene = load(target_type_to_scene[target_type])
-			if not DEBUG_DISABLED:
+			if DEBUG_ENABLED:
 				print("[DrillsNetwork] Set target scene for type '", target_type, "' to: ", target_type_to_scene[target_type])
 		else:
-			if not DEBUG_DISABLED:
+			if DEBUG_ENABLED:
 				print("[DrillsNetwork] Unknown targetType: ", target_type, ", using default")
 
 	# Update UI target name if provided
 	if merged.has("dest"):
 		emit_signal("ui_target_name_update", merged["dest"])
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Updated target name to: ", merged["dest"])
 
 	# Parse timeout from merged content
@@ -562,11 +562,11 @@ func _on_ble_start_command(content: Dictionary) -> void:
 			timeout_seconds = float(merged["timeout"])
 		else:
 			timeout_seconds = 5.0 + float(merged["timeout"])
-		if not DEBUG_DISABLED:
+		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Set timeout to: ", timeout_seconds)
 
 	# Start the drill immediately
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting drill immediately")
 	start_drill()
 	if is_first:
@@ -574,7 +574,7 @@ func _on_ble_start_command(content: Dictionary) -> void:
 
 func _on_shot_timer_ready(delay: float):
 	"""Handle shot timer ready - start the drill timeout timer and begin elapsed time tracking"""
-	if not DEBUG_DISABLED:
+	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Shot timer ready - starting drill timeout timer and elapsed time tracking. Delay: ", delay, " seconds")
 	
 	# Pass the delay to performance tracker

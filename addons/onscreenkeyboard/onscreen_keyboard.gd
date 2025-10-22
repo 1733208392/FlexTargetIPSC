@@ -229,6 +229,37 @@ func _show_keyboard(key_data=null):
 		if debug_remote:
 			print("[onscreenkbd] _show_keyboard: non-animated mode, size=", size, " target_y=", target_y, " final_pos=", position)
 			print("[onscreenkbd] _show_keyboard: viewport_height=", viewport_height, " visible_rect=", viewport_rect)
+	
+	# Set focus to the top-left key by default when keyboard becomes visible
+	call_deferred("_set_focus_to_top_left_key")
+
+
+func _set_focus_to_top_left_key():
+	# Grab focus for the top-left key of the current layout
+	var top_left_key = _get_first_key_for_layout(current_layout)
+	if top_left_key == null:
+		if debug_remote:
+			print("[onscreenkbd] _set_focus_to_top_left_key: no top-left key found")
+		return
+	
+	if not top_left_key.is_inside_tree():
+		if debug_remote:
+			print("[onscreenkbd] _set_focus_to_top_left_key: top-left key not in tree, deferring")
+		call_deferred("_set_focus_to_top_left_key")
+		return
+	
+	# Verify the layout is actually visible
+	if current_layout != null and not current_layout.visible:
+		if debug_remote:
+			print("[onscreenkbd] _set_focus_to_top_left_key: current layout not visible, deferring")
+		call_deferred("_set_focus_to_top_left_key")
+		return
+	
+	# Finally grab the focus
+	top_left_key.grab_focus()
+	last_focused_key = top_left_key
+	if debug_remote:
+		print("[onscreenkbd] _set_focus_to_top_left_key: successfully focused top-left key=", top_left_key.text)
 
 
 func _animate_show_keyboard():
@@ -327,11 +358,21 @@ func _switch_layout(key_data):
 	if key_data.get("layout-name") == "PREVIOUS-LAYOUT":
 		if prev_prev_layout != null:
 			_show_layout(prev_prev_layout)
+			# Use multiple deferred calls to ensure focus is set after layout is visible
+			call_deferred("_set_focus_to_top_left_key")
+			call_deferred("_set_focus_to_top_left_key")
+			if debug_remote:
+				print("[onscreenkbd] _switch_layout: switching to PREVIOUS-LAYOUT")
 			return
 
 	for layout in layouts:
 		if layout.get_meta("layout_name") == key_data.get("layout-name"):
 			_show_layout(layout)
+			# Use multiple deferred calls to ensure focus is set after layout is visible
+			call_deferred("_set_focus_to_top_left_key")
+			call_deferred("_set_focus_to_top_left_key")
+			if debug_remote:
+				print("[onscreenkbd] _switch_layout: switching to layout=", key_data.get("layout-name"))
 			return
 
 	_set_caps_lock(false)

@@ -1,7 +1,7 @@
 extends Control
 
 # Performance optimization
-const DEBUG_LOGGING = true  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to false for production release
 
 # Bullet system
 @export var bullet_scene: PackedScene = preload("res://scene/bullet.tscn")
@@ -22,7 +22,7 @@ var original_restart_text: String = ""
 
 func _ready():
 	"""Initialize the drill complete overlay"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("=== DRILL COMPLETE OVERLAY INITIALIZED ===")
 		print("[DrillComplete] Scene tree structure:")
 		_debug_print_children(self, 0)
@@ -36,10 +36,10 @@ func _ready():
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
 		# Connect to WebSocket control directives
 		ws_listener.menu_control.connect(_on_websocket_menu_control)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Connected to WebSocketListener signals")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] WebSocketListener singleton not found!")
 	
 	# Set up for mouse input processing - Control nodes need special setup
@@ -60,7 +60,7 @@ func _ready():
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data and not global_data.settings_loaded.is_connected(_on_global_settings_loaded):
 		global_data.settings_loaded.connect(_on_global_settings_loaded)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Connected to GlobalData settings_loaded signal")
 
 func _debug_print_children(node: Node, depth: int):
@@ -75,7 +75,7 @@ func _debug_print_children(node: Node, depth: int):
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
 	var global_data = get_node_or_null("/root/GlobalData")
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillComplete] load_language_from_global_settings called")
 		if global_data:
 			print("[DrillComplete] GlobalData found, settings_dict: ", global_data.settings_dict)
@@ -85,11 +85,11 @@ func load_language_from_global_settings():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] Loaded language from GlobalData: ", language)
 		call_deferred("update_ui_texts")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 		call_deferred("update_ui_texts")
@@ -108,12 +108,12 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillComplete] Set locale to: ", locale)
 
 func update_ui_texts():
 	# Update static text elements with translations
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillComplete] update_ui_texts called")
 		print("[DrillComplete] Current locale: ", TranslationServer.get_locale())
 		print("[DrillComplete] Available locales: ", TranslationServer.get_loaded_locales())
@@ -128,18 +128,18 @@ func update_ui_texts():
 	
 	if title:
 		title.text = tr("complete")
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] Updated title to: ", title.text)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] ERROR: title node not found at VBoxContainer/MarginContainer/VBoxContainer/Title")
 	
 	if restart_btn:
 		restart_btn.text = tr("restart")
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] Updated restart button to: ", restart_btn.text)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] ERROR: restart button not found at VBoxContainer/RestartButton")
 	
 	if replay_btn:
@@ -150,27 +150,27 @@ func update_ui_texts():
 		# Re-enable the collision area for the replay button
 		if area_replay:
 			area_replay.monitoring = true
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] Updated and enabled replay button: ", replay_btn.text)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] ERROR: replay button not found at VBoxContainer/ReviewReplayButton")
 
 func _notification(what):
 	"""Debug overlay visibility changes"""
 	if what == NOTIFICATION_VISIBILITY_CHANGED:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Visibility changed to: ", visible)
 			print("[drill_complete_overlay] Size: ", size)
 			print("[drill_complete_overlay] Position: ", position)
 		if visible:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Overlay is now visible and ready for input")
 			# Grab focus for the restart button when overlay becomes visible
 			grab_restart_button_focus()
 		else:
 			# Cleanup when overlay becomes invisible
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Overlay hidden - cleaning up countdown")
 			stop_countdown()
 
@@ -183,13 +183,13 @@ func setup_collision_areas():
 		area_restart.monitoring = true
 		area_restart.monitorable = true
 		area_restart.area_entered.connect(_on_area_restart_hit)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] AreaRestart collision setup complete")
 			print("[drill_complete_overlay] AreaRestart global position: ", area_restart.global_position)
 			print("[drill_complete_overlay] AreaRestart collision_layer: ", area_restart.collision_layer)
 			print("[drill_complete_overlay] AreaRestart collision_mask: ", area_restart.collision_mask)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] AreaRestart not found!")
 	
 	if area_replay:
@@ -199,13 +199,13 @@ func setup_collision_areas():
 		area_replay.monitoring = true
 		area_replay.monitorable = true
 		area_replay.area_entered.connect(_on_area_replay_hit)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] AreaReplay collision setup complete")
 			print("[drill_complete_overlay] AreaReplay global position: ", area_replay.global_position)
 			print("[drill_complete_overlay] AreaReplay collision_layer: ", area_replay.collision_layer)
 			print("[drill_complete_overlay] AreaReplay collision_mask: ", area_replay.collision_mask)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] AreaReplay not found!")
 
 func _input(event):
@@ -215,11 +215,11 @@ func _input(event):
 		return
 	
 	# Debug: Log any input event
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] _input received event: ", event)
 		
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Mouse click detected via _input")
 		_handle_mouse_click(event)
 		# Mark the event as handled to prevent parent nodes from processing it
@@ -233,11 +233,11 @@ func _unhandled_input(event):
 		return
 	
 	# Debug: Log any unhandled input event
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] _unhandled_input received event: ", event)
 		
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Mouse click detected via _unhandled_input")
 		_handle_mouse_click(event)
 		# Accept the event to prevent further processing
@@ -245,25 +245,25 @@ func _unhandled_input(event):
 
 func _handle_mouse_click(event):
 	"""Process the mouse click for bullet spawning"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Processing mouse click")
 	
 	# Check if bullet spawning is enabled through WebSocketListener
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] WebSocketListener found, bullet_spawning_enabled: ", ws_listener.bullet_spawning_enabled)
 		if not ws_listener.bullet_spawning_enabled:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Bullet spawning disabled")
 			return
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] WebSocketListener not found!")
 		return
 		
 	var world_pos = get_global_mouse_position()
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Spawning bullet at: ", world_pos)
 	spawn_bullet_at_position(world_pos)
 
@@ -273,13 +273,13 @@ func _on_websocket_bullet_hit(position: Vector2):
 	if not visible:
 		return
 		
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] WebSocket bullet hit at: ", position)
 	spawn_bullet_at_position(position)
 
 func spawn_bullet_at_position(world_pos: Vector2):
 	"""Spawn a bullet at the specified world position"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Spawning bullet at world position: ", world_pos)
 		print("[drill_complete_overlay] Overlay global_position: ", global_position)
 		print("[drill_complete_overlay] Overlay size: ", size)
@@ -304,13 +304,13 @@ func spawn_bullet_at_position(world_pos: Vector2):
 		else:
 			bullet.global_position = world_pos
 		
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Bullet spawned successfully")
 			print("[drill_complete_overlay] Bullet global_position: ", bullet.global_position)
 			print("[drill_complete_overlay] Bullet collision_layer: ", bullet.collision_layer)
 			print("[drill_complete_overlay] Bullet collision_mask: ", bullet.collision_mask)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] ERROR: No bullet scene loaded!")
 
 func _on_area_restart_hit(area: Area2D):
@@ -318,11 +318,11 @@ func _on_area_restart_hit(area: Area2D):
 	# Check if restart button is disabled (auto restart enabled)
 	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
 	if restart_btn and restart_btn.disabled:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restart button is disabled (auto restart enabled), ignoring hit")
 		return
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Bullet hit AreaRestart - restarting drill")
 		if area:
 			print("[drill_complete_overlay] Hit by area: ", area.name, " at position: ", area.global_position)
@@ -341,24 +341,24 @@ func _on_area_restart_hit(area: Area2D):
 		var drills_manager = drill_ui.get_parent()
 		if drills_manager and drills_manager.has_method("restart_drill"):
 			drills_manager.restart_drill()
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Drill restarted successfully")
 		else:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Warning: Could not find drills manager or restart_drill method")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Warning: Could not find drill UI parent")
 
 func _on_area_replay_hit(area: Area2D):
 	"""Handle bullet collision with replay area"""
 	var replay_btn = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	if replay_btn and replay_btn.disabled:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Replay button is disabled, ignoring hit")
 		return
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Bullet hit AreaReplay - navigating to drill replay")
 		if area:
 			print("[drill_complete_overlay] Hit by area: ", area.name, " at position: ", area.global_position)
@@ -375,12 +375,12 @@ func setup_button_focus():
 	
 	if restart_btn:
 		restart_btn.focus_mode = Control.FOCUS_ALL
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] RestartButton focus enabled")
 	
 	if replay_btn:
 		replay_btn.focus_mode = Control.FOCUS_ALL
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] ReviewReplayButton focus enabled")
 
 func update_drill_results(score: int, hit_factor: float, fastest_shot: float):
@@ -391,17 +391,17 @@ func update_drill_results(score: int, hit_factor: float, fastest_shot: float):
 	
 	if score_label:
 		score_label.text = tr("score") + ": %d" % score
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Updated score: %d" % score)
 	
 	if hf_label:
 		hf_label.text = tr("hit_factor") + ": %.2f" % hit_factor
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Updated hit factor: %.2f" % hit_factor)
 	
 	if fastest_label:
 		fastest_label.text = tr("fastest_shot") + ": %.2fs" % fastest_shot
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Updated fastest shot: %.2fs" % fastest_shot)
 
 func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0):
@@ -421,7 +421,7 @@ func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: 
 	# Check auto restart setting and disable restart button if enabled
 	_check_and_disable_restart_button()
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Drill complete overlay shown with results")
 
 func show_drill_complete_with_timeout(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0, timed_out: bool = false):
@@ -441,7 +441,7 @@ func show_drill_complete_with_timeout(score: int = 0, hit_factor: float = 0.0, f
 	# Check auto restart setting and disable restart button if enabled
 	_check_and_disable_restart_button()
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Drill complete overlay shown with timeout state: %s" % timed_out)
 
 func _update_ui_after_visible_with_timeout(timed_out: bool):
@@ -451,7 +451,7 @@ func _update_ui_after_visible_with_timeout(timed_out: bool):
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] Reloaded language from GlobalData: ", language)
 	
 	# Update the UI texts with timeout consideration
@@ -459,7 +459,7 @@ func _update_ui_after_visible_with_timeout(timed_out: bool):
 
 func update_ui_texts_with_timeout(timed_out: bool):
 	"""Update UI texts with timeout consideration"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillComplete] Updating UI texts with timeout state: ", timed_out)
 		print("[DrillComplete] Current locale: ", TranslationServer.get_locale())
 	
@@ -475,15 +475,15 @@ func update_ui_texts_with_timeout(timed_out: bool):
 		else:
 			title.text = tr("complete")
 			title.modulate = Color.WHITE
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] Updated title to: ", title.text, " with color: ", title.modulate)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] ERROR: title node not found")
 	
 	if restart_btn:
 		restart_btn.text = tr("restart")
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] Updated restart button to: ", restart_btn.text)
 	
 	if replay_btn:
@@ -495,7 +495,7 @@ func update_ui_texts_with_timeout(timed_out: bool):
 			# Also disable the collision area for the replay button
 			if area_replay:
 				area_replay.monitoring = false
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[DrillComplete] Disabled replay button and collision area due to timeout")
 		else:
 			replay_btn.disabled = false
@@ -503,7 +503,7 @@ func update_ui_texts_with_timeout(timed_out: bool):
 			# Re-enable the collision area for the replay button
 			if area_replay:
 				area_replay.monitoring = true
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] Updated replay button to: ", replay_btn.text)
 
 func _update_ui_after_visible():
@@ -513,7 +513,7 @@ func _update_ui_after_visible():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillComplete] Reloaded language from GlobalData: ", language)
 	
 	# Then update the UI texts
@@ -527,19 +527,19 @@ func grab_restart_button_focus():
 	# Prefer restart button if it's enabled, otherwise use replay button
 	if restart_button and not restart_button.disabled:
 		restart_button.grab_focus()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] RestartButton focus grabbed")
 	elif replay_button and not replay_button.disabled:
 		replay_button.grab_focus()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restart button disabled, focusing ReviewReplayButton")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] No available button to focus")
 
 func _on_websocket_menu_control(directive: String):
 	"""Handle WebSocket control directives for menu navigation"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Received control directive: ", directive)
 	
 	match directive:
@@ -550,7 +550,7 @@ func _on_websocket_menu_control(directive: String):
 		"enter":
 			_activate_focused_button()
 		_:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Unknown directive: ", directive)
 
 func _navigate_up():
@@ -561,25 +561,25 @@ func _navigate_up():
 	
 	if focused_control == replay_button and restart_button and not restart_button.disabled:
 		restart_button.grab_focus()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Navigated up to RestartButton")
 	elif focused_control == restart_button and replay_button and not replay_button.disabled:
 		replay_button.grab_focus()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Wrapped around to ReviewReplayButton")
 	elif focused_control == replay_button and restart_button and restart_button.disabled:
 		# If restart button is disabled, stay on replay button
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restart button disabled, staying on ReviewReplayButton")
 	else:
 		# Default focus logic - prefer restart button if enabled, otherwise replay button
 		if restart_button and not restart_button.disabled:
 			restart_button.grab_focus()
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Default focus to RestartButton")
 		elif replay_button and not replay_button.disabled:
 			replay_button.grab_focus()
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Restart button disabled, default focus to ReviewReplayButton")
 
 func _navigate_down():
@@ -590,30 +590,30 @@ func _navigate_down():
 	
 	if focused_control == restart_button and replay_button and not replay_button.disabled:
 		replay_button.grab_focus()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Navigated down to ReviewReplayButton")
 	elif focused_control == replay_button and restart_button and not restart_button.disabled:
 		restart_button.grab_focus()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Wrapped around to RestartButton")
 	elif focused_control == restart_button and replay_button and replay_button.disabled:
 		# If replay button is disabled, stay on restart button
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Replay button disabled, staying on RestartButton")
 	else:
 		# Default focus logic - prefer restart button if enabled, otherwise replay button
 		if restart_button and not restart_button.disabled:
 			restart_button.grab_focus()
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Default focus to RestartButton")
 		elif replay_button and not replay_button.disabled:
 			replay_button.grab_focus()
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Restart button disabled, default focus to ReviewReplayButton")
 
 func _on_global_settings_loaded():
 	"""Handle when GlobalData settings are loaded/updated"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Settings loaded signal received")
 	# Wait a frame to ensure everything is ready, then reload language settings
 	call_deferred("load_language_from_global_settings")
@@ -625,19 +625,19 @@ func _activate_focused_button():
 	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	
 	if focused_control == restart_button:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Activating RestartButton via WebSocket")
 		_on_area_restart_hit(null)  # Trigger restart action
 	elif focused_control == replay_button and not replay_button.disabled:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Activating ReviewReplayButton via WebSocket")
 		_on_area_replay_hit(null)  # Trigger replay action
 	elif focused_control == replay_button and replay_button.disabled:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Replay button is disabled, defaulting to restart")
 		_on_area_restart_hit(null)  # Default to restart
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] No button focused, defaulting to restart")
 		_on_area_restart_hit(null)  # Default to restart
 
@@ -646,19 +646,19 @@ func _check_and_disable_restart_button():
 	# Get auto restart setting from GlobalData
 	var global_data = get_node_or_null("/root/GlobalData")
 	if not global_data:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] GlobalData not found")
 		return
 	
 	# Check if auto restart is enabled
 	var auto_restart_enabled = global_data.settings_dict.get("auto_restart", false)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Auto restart enabled: ", auto_restart_enabled)
 	
 	# Get the restart button
 	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
 	if not restart_btn:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restart button not found")
 		return
 	
@@ -673,7 +673,7 @@ func _check_and_disable_restart_button():
 		# Keep the collision area enabled for potential bullet interactions
 		if area_restart:
 			area_restart.monitoring = true
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restart button set to auto restart mode")
 		
 		# Update focus to the available button
@@ -688,18 +688,18 @@ func _check_and_disable_restart_button():
 		# Re-enable the collision area for the restart button
 		if area_restart:
 			area_restart.monitoring = true
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restart button enabled in manual mode")
 
 func start_countdown(total_seconds: int):
 	"""Start countdown timer on the restart button"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Starting countdown: ", total_seconds, " seconds")
 	
 	# Get the restart button
 	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
 	if not restart_btn:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restart button not found for countdown")
 		return
 	
@@ -729,7 +729,7 @@ func _on_countdown_timeout():
 		# Countdown finished
 		countdown_timer.stop()
 		_restore_restart_button_text()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Countdown finished")
 	else:
 		# Update countdown display
@@ -743,7 +743,7 @@ func _update_countdown_text():
 		# Make countdown text more visible with larger font and red color
 		restart_btn.add_theme_font_size_override("font_size", 48)
 		restart_btn.add_theme_color_override("font_color", Color.RED)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Updated countdown text: ", restart_btn.text)
 
 func _restore_restart_button_text():
@@ -754,7 +754,7 @@ func _restore_restart_button_text():
 		# Restore original font size and color
 		restart_btn.add_theme_font_size_override("font_size", 36)
 		restart_btn.add_theme_color_override("font_color", Color.WHITE)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restored restart button text: ", restart_btn.text)
 
 func stop_countdown():
@@ -762,5 +762,5 @@ func stop_countdown():
 	if countdown_timer and countdown_timer.is_connected("timeout", _on_countdown_timeout):
 		countdown_timer.stop()
 	_restore_restart_button_text()
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Countdown stopped")

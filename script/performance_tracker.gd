@@ -1,7 +1,7 @@
 extends Node
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 # Scoring rules are now loaded dynamically from settings_dict.target_rule
 
@@ -36,7 +36,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		if time_diff >= minimum_shot_interval and time_diff < fastest_time_diff:
 			fastest_time_diff = time_diff
 		
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("PERFORMANCE TRACKER: First shot - total time:", total_time, "s, shot timer delay:", shot_timer_delay, "s, reaction time:", time_diff, "s")
 	else:
 		# Subsequent shots - calculate interval with microsecond precision
@@ -44,7 +44,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		
 		# Apply minimum time threshold to prevent unrealistic 0.0s intervals
 		if time_diff < minimum_shot_interval:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("PERFORMANCE TRACKER: Shot interval too fast (", time_diff, "s), clamping to minimum (", minimum_shot_interval, "s)")
 			time_diff = minimum_shot_interval
 		
@@ -52,7 +52,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		if time_diff < fastest_time_diff:
 			fastest_time_diff = time_diff
 		
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("PERFORMANCE TRACKER: Shot interval:", time_diff, "seconds, fastest:", fastest_time_diff)
 	
 	# Update last shot time for next calculation
@@ -72,7 +72,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 	}
 	
 	records.append(record)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("Performance record added: ", record)
 
 # Signal handler for drills finished
@@ -80,7 +80,7 @@ func _on_drills_finished():
 	if records.size() == 0:
 		return
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("Performance records for this drill: ", records)
 	
 	# Create the summary data
@@ -107,7 +107,7 @@ func _on_drills_finished():
 	var global_data = get_node("/root/GlobalData")
 	if global_data:
 		global_data.latest_performance_data = drill_data.duplicate()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] Stored latest performance data in GlobalData")
 	
 	var http_service = get_node("/root/HttpService")
@@ -117,11 +117,11 @@ func _on_drills_finished():
 		var current_index = int(global_data.settings_dict.get("max_index", 0)) if global_data else 0
 		var next_index = (current_index % 20) + 1  # Circular buffer: 1-20
 		var data_id = "performance_" + str(next_index)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] Saving drill data to file: ", data_id, " (previous index: ", current_index, ", next index: ", next_index, ")")
 		http_service.save_game(_on_performance_saved, data_id, json_string)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("HttpService not found")
 
 # Get the fastest time difference recorded
@@ -168,33 +168,33 @@ func reset_shot_timer():
 # Set the total elapsed time for the drill
 func set_total_elapsed_time(time_seconds: float):
 	total_elapsed_time = time_seconds
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("PERFORMANCE TRACKER: Total elapsed time set to:", total_elapsed_time, "seconds")
 
 # Set the shot timer delay
 func set_shot_timer_delay(delay: float):
 	shot_timer_delay = round(delay * 100.0) / 100.0  # Ensure 2 decimal precision
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("PERFORMANCE TRACKER: Shot timer delay set to:", shot_timer_delay, "seconds")
 
 func _on_settings_saved(result, response_code, headers, body):
 	if response_code == 200:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("Settings saved")
 		var fastest_display = "N/A"
 		if fastest_time_diff < 999.0:
 			fastest_display = "%.2f" % fastest_time_diff
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("Drill summary - Total time:", total_elapsed_time, "seconds, Fastest shot:", fastest_display)
 		records.clear()
 		pending_drill_data = null
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("Failed to save settings")
 
 func _on_performance_saved(result, response_code, headers, body):
 	if response_code == 200:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("Performance data saved")
 		var http_service = get_node("/root/HttpService")
 		if http_service:
@@ -207,7 +207,7 @@ func _on_performance_saved(result, response_code, headers, body):
 				var current_index = int(global_data.settings_dict.get("max_index", 0))
 				next_index = (current_index % 20) + 1
 				global_data.settings_dict["max_index"] = next_index
-				if DEBUG_LOGGING:
+				if not DEBUG_DISABLED:
 					print("[PerformanceTracker] Updated max_index from ", current_index, " to ", next_index, " (circular buffer 1-20)")
 				# Preserve all existing settings, only update max_index
 				settings_json = JSON.stringify(global_data.settings_dict)
@@ -217,22 +217,22 @@ func _on_performance_saved(result, response_code, headers, body):
 			# Save/update leaderboard index
 			_save_leaderboard_index(next_index)
 		else:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("HttpService not found")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("Failed to save performance data")
 
 # Save/update leaderboard index with current drill performance
 func _save_leaderboard_index(drill_index: int):
 	if not pending_drill_data:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] No pending drill data for leaderboard index")
 		return
 	
 	var http_service = get_node("/root/HttpService")
 	if not http_service:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] HttpService not found for leaderboard index update")
 		return
 	
@@ -267,7 +267,7 @@ func _save_leaderboard_index(drill_index: int):
 		"fastest_shot": round(fastest_shot_time * 100) / 100.0  # Round to 2 decimal places
 	}
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[PerformanceTracker] Creating leaderboard index entry: ", leaderboard_entry)
 	
 	# Try to load existing leader_board_index.json or create new one if it doesn't exist
@@ -291,7 +291,7 @@ func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers
 				# Check if data is empty string "{}" indicating file doesn't exist
 				if response_data["data"] == "{}":
 					# File doesn't exist - create new one
-					if DEBUG_LOGGING:
+					if not DEBUG_DISABLED:
 						print("[PerformanceTracker] leader_board_index.json doesn't exist, creating new file")
 				else:
 					var index_json = JSON.new()
@@ -314,11 +314,11 @@ func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers
 							else:
 								# Add fastest_shot field if missing (for backward compatibility)
 								entry["fastest_shot"] = 0.0
-						if DEBUG_LOGGING:
+						if not DEBUG_DISABLED:
 							print("[PerformanceTracker] Loaded and normalized existing leader_board_index.json with ", index_data.size(), " entries")
 	else:
 		# Unexpected response code - create new file
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] Unexpected response code ", response_code, ", creating new file")
 	
 	# Find if entry with same index exists and update it, otherwise append new entry
@@ -327,14 +327,14 @@ func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers
 		if int(index_data[i].get("index")) == int(new_entry["index"]):
 			index_data[i] = new_entry
 			entry_updated = true
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[PerformanceTracker] Updated existing entry at index ", new_entry["index"])
 			break
 	
 	# If entry with this index doesn't exist, append the new entry
 	if not entry_updated:
 		index_data.append(new_entry)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] Appended new entry at index ", new_entry["index"])
 	
 	# Sort index data by hit factor in descending order for better leaderboard presentation
@@ -346,8 +346,8 @@ func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers
 
 func _on_index_file_saved(result, response_code, headers, body):
 	if response_code == 200:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] leader_board_index.json saved successfully")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] Failed to save leader_board_index.json - Response code: ", response_code)

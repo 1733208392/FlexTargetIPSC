@@ -24,7 +24,7 @@ var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 # Scoring system
 var total_score: int = 0
@@ -422,18 +422,18 @@ func _on_websocket_bullet_hit(pos: Vector2):
 
 func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[paddle %s] FAST PATH: Processing WebSocket bullet hit at: %s" % [paddle_id, world_pos])
 	
 	# Don't process if paddle has already fallen
 	if is_fallen:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] Paddle already fallen - ignoring WebSocket hit" % paddle_id)
 		return
 	
 	# Convert world position to local coordinates
 	var local_pos = to_local(world_pos)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[paddle %s] World pos: %s -> Local pos: %s" % [paddle_id, world_pos, local_pos])
 	
 	# 1. FIRST: Determine hit zone and scoring
@@ -448,21 +448,21 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 		points = 5
 		is_target_hit = true
 		should_fall = true
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: Circle area hit - 5 points!" % paddle_id)
 	elif is_point_in_stand_area(local_pos):
 		zone_hit = "StandArea"
 		points = 0
 		is_target_hit = true
 		should_fall = false
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: Stand area hit - 0 points (no fall)" % paddle_id)
 	else:
 		zone_hit = "miss"
 		points = 0
 		is_target_hit = false
 		should_fall = false
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: Bullet missed target" % paddle_id)
 	
 	# 2. NO BULLET HOLES: Paddle is steel target, doesn't create bullet holes
@@ -470,34 +470,34 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# 3. ALWAYS: Spawn bullet effects (impact/sound) for target hits
 	if is_target_hit:
 		spawn_bullet_effects_at_position(world_pos, is_target_hit)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: Bullet effects spawned for target hit" % paddle_id)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: No effects - bullet missed target" % paddle_id)
 	
 	# 4. Update score and emit signal
 	total_score += points
 	target_hit.emit(paddle_id, zone_hit, points, world_pos)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[paddle %s] FAST: Total score: %d" % [paddle_id, total_score])
 	
 	# 5. Trigger fall animation if needed (only for hits that should cause falling)
 	if should_fall:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: Triggering fall animation..." % paddle_id)
 		trigger_fall_animation()
 	elif zone_hit == "StandArea":
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: Stand hit - testing shader effects only" % paddle_id)
 		test_shader_effects()
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: Miss - no animation triggered" % paddle_id)
 
 func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = true):
 	"""Spawn bullet smoke and impact effects with throttling for performance"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[paddle %s] Spawning bullet effects at: %s (Target hit: %s)" % [paddle_id, world_pos, is_target_hit])
 	
 	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
@@ -515,7 +515,7 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 	if false:  # Completely disabled
 		pass
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] Smoke effect disabled for performance optimization" % paddle_id)
 	
 	# Throttled impact effect - ALWAYS spawn (for both hits and misses)
@@ -526,10 +526,10 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 		# Ensure impact effects appear above other elements
 		impact.z_index = 15
 		last_impact_time = time_stamp
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] Impact effect spawned at: %s with z_index: 15" % [paddle_id, world_pos])
 	elif (time_stamp - last_impact_time) < impact_cooldown:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] Impact effect throttled (too fast)" % paddle_id)
 	
 	# Throttled sound effect - ALWAYS play (for both hits and misses)
@@ -539,13 +539,13 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 	"""Play steel impact sound effect with throttling and concurrent sound limiting"""
 	# Check time-based throttling
 	if (current_time - last_sound_time) < sound_cooldown:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] Sound effect throttled (too fast - %ss since last)" % [paddle_id, current_time - last_sound_time])
 		return
 	
 	# Check concurrent sound limiting
 	if active_sounds >= max_concurrent_sounds:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] Sound effect throttled (too many concurrent sounds: %d/%d)" % [paddle_id, active_sounds, max_concurrent_sounds])
 		return
 	
@@ -574,10 +574,10 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 		audio_player.finished.connect(func(): 
 			active_sounds -= 1
 			audio_player.queue_free()
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[paddle %s] Sound finished, active sounds: %d" % [paddle_id, active_sounds])
 		)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[paddle %s] Steel impact sound played at: %s (Active sounds: %d)" % [paddle_id, world_pos, active_sounds])
 	else:
 		print("[paddle %s] No impact sound found!" % paddle_id)  # Keep this as it indicates an error

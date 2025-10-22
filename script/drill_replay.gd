@@ -1,7 +1,7 @@
 extends Node
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 var records = []
 var current_index = 0
@@ -26,7 +26,7 @@ var navigation_instruction_label: Label
 var bullet_hole_labels = []  # Store sequence number labels for bullet holes
 
 func _ready():
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("Drill Replay: Loading drill records...")
 	
 	# Load and apply current language setting from global settings
@@ -36,29 +36,29 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Drill Replay] Connecting to WebSocketListener.menu_control signal")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Drill Replay] WebSocketListener singleton not found!")
 	
 	# Get upper level scene and selected drill data from GlobalData
 	var global_data = get_node("/root/GlobalData")
 	if global_data:
 		upper_level_scene = global_data.upper_level_scene
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Drill Replay] Upper level scene set to: ", upper_level_scene)
 		
 		# Check if drill data is available in GlobalData
 		if global_data.selected_drill_data.size() > 0:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Drill Replay] Found selected drill data in GlobalData")
 			
 			# Check if we need to load detailed performance data
 			var drill_data = global_data.selected_drill_data
 			if drill_data.has("records") and drill_data["records"].size() == 0 and drill_data.has("drill_number"):
 				# Data came from leaderboard index - need to load full performance file
-				if DEBUG_LOGGING:
+				if not DEBUG_DISABLED:
 					print("[Drill Replay] Empty records detected, loading performance file for drill ", drill_data["drill_number"])
 				load_performance_from_http(drill_data["drill_number"])
 			else:
@@ -71,7 +71,7 @@ func _ready():
 			return
 	
 	# Fallback: use latest performance data from memory
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("[Drill Replay] No selected drill data found, checking in-memory latest performance")
 	load_latest_performance_from_memory()
 	# Initialize UI after fallback load
@@ -79,42 +79,42 @@ func _ready():
 
 func load_latest_performance_from_memory():
 	"""Load the latest performance data from GlobalData (in-memory)"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Drill Replay] Loading latest performance from memory")
 	
 	var global_data = get_node("/root/GlobalData")
 	if not global_data:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Drill Replay] GlobalData not found")
 		return
 	
 	# Check if we have latest performance data in memory
 	if global_data.latest_performance_data.size() > 0:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Drill Replay] Found latest performance data in memory")
 		var data = global_data.latest_performance_data
 		
 		# Verify the data structure
 		if data.has("drill_summary") and data.has("records"):
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Drill Replay] Successfully loaded latest performance data from memory")
 			load_selected_drill_data(data)
 			return
 		else:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Drill Replay] Invalid data structure in memory performance data")
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Drill Replay] No latest performance data in memory, nothing to display")
 
 func load_performance_from_http(drill_index: int):
 	# Load the detailed performance data from performance_[index].json file
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Drill Replay] Loading performance file for drill index: ", drill_index)
 	
 	var http_service = get_node_or_null("/root/HttpService")
 	if not http_service:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Drill Replay] HttpService not found, cannot load performance file")
 		# Fallback to fallback loading
 		load_latest_performance_from_memory()
@@ -122,14 +122,14 @@ func load_performance_from_http(drill_index: int):
 		return
 	
 	var file_id = "performance_" + str(drill_index)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Drill Replay] Loading file: ", file_id)
 	
 	http_service.load_game(_on_performance_file_loaded, file_id)
 
 func _on_performance_file_loaded(result, response_code, _headers, body):
 	# Handle the loaded performance file
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Drill Replay] Performance file load response - Result: ", result, ", Code: ", response_code)
 	
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
@@ -144,7 +144,7 @@ func _on_performance_file_loaded(result, response_code, _headers, body):
 				var content_parse = content_json.parse(response_data["data"])
 				if content_parse == OK:
 					var performance_data = content_json.data
-					if DEBUG_LOGGING:
+					if not DEBUG_DISABLED:
 						print("[Drill Replay] Successfully loaded performance file with ", performance_data.get("records", []).size(), " records")
 					load_selected_drill_data(performance_data)
 					
@@ -157,24 +157,24 @@ func _on_performance_file_loaded(result, response_code, _headers, body):
 					initialize_ui()
 					return
 				else:
-					if DEBUG_LOGGING:
+					if not DEBUG_DISABLED:
 						print("[Drill Replay] Failed to parse performance file content")
 			else:
-				if DEBUG_LOGGING:
+				if not DEBUG_DISABLED:
 					print("[Drill Replay] Invalid response data structure")
 		else:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Drill Replay] Failed to parse performance file response")
 	else:
 		if response_code == 404:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Drill Replay] Performance file not found (404) - drill may not have detailed records")
 		else:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Drill Replay] Failed to load performance file - Response code: ", response_code)
 	
 	# Fallback: try to load from memory or show error
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Drill Replay] Falling back to memory data or empty display")
 	load_latest_performance_from_memory()
 	initialize_ui()
@@ -182,29 +182,29 @@ func _on_performance_file_loaded(result, response_code, _headers, body):
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
 	var global_data = get_node_or_null("/root/GlobalData")
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillReplay] GlobalData node found: ", global_data != null)
 	
 	if global_data:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillReplay] GlobalData.settings_dict exists: ", global_data.settings_dict != null)
 		if global_data.settings_dict:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[DrillReplay] settings_dict keys: ", global_data.settings_dict.keys())
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[DrillReplay] settings_dict language value: ", global_data.settings_dict.get("language", "NOT_FOUND"))
 		
 		if global_data.settings_dict and global_data.settings_dict.has("language"):
 			var language = global_data.settings_dict.get("language", "English")
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[DrillReplay] Loading language from GlobalData: ", language)
 			set_locale_from_language(language)
 		else:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[DrillReplay] No language key found in settings_dict")
 			set_locale_from_language("English")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillReplay] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
@@ -222,18 +222,18 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillReplay] Set locale to: ", locale)
 
 func get_localized_shot_text() -> String:
 	# Since there's no specific "shot" translation key, create localized text based on locale
 	var locale = TranslationServer.get_locale()
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillReplay] Current locale for shot text: ", locale)
 	
 	# Test if translation server is working with a known key
 	var test_translation = tr("target")
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillReplay] Test translation for 'target': ", test_translation)
 	
 	match locale:
@@ -244,29 +244,29 @@ func get_localized_shot_text() -> String:
 		"ja":
 			return "ショット"
 		_:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[DrillReplay] Using default English for unknown locale: ", locale)
 			return "Shot"
 
 func load_selected_drill_data(data: Dictionary):
 	"""Load drill data from the selected drill format"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("Loading selected drill data")
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("[Drill Replay] Data structure keys: ", data.keys())
 	
 	# Both history and performance tracker use "records" field
 	if data.has("records"):
 		records = data["records"]
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("[Drill Replay] Using 'records' field from data")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("[Drill Replay] Error: No 'records' field found in data")
 		return
 	
 	if records.size() == 0:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("No records found in selected drill data")
 		return
 	
@@ -277,10 +277,10 @@ func load_selected_drill_data(data: Dictionary):
 	if records.size() > 0:
 		var first_record = records[0]
 		if first_record.has("rotation_angle"):
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("Rotation angle data found in records - will display target at recorded angles during replay")
 		else:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("No rotation angle data found in records")
 	
 	# Load the first record
@@ -298,69 +298,69 @@ func clear_all_sequence_labels():
 
 func load_performance_file(file_path: String):
 	"""Load drill data from a performance file"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("Loading performance file: ", file_path)
 	
 	# Load the data
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("Failed to open file: ", file_path)
 		return
 	
 	var json_string = file.get_as_text()
 	file.close()
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("JSON string: ", json_string)
 	
 	var json = JSON.parse_string(json_string)
 	if json == null:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("Failed to parse JSON from: ", file_path)
 		return
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("Parsed JSON type: ", typeof(json))
 	if json is Dictionary:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("Parsed JSON keys: ", json.keys())
 		if json.has("records"):
 			records = json["records"]
 	elif json is Array:
 		records = json
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("Unexpected JSON type")
 		return
 	
 	if records.size() == 0:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("No records found")
 		return
 	
 	# Print the drill summary
 	if json is Dictionary and json.has("drill_summary"):
 		var summary = json["drill_summary"]
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("Drill Summary:")
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("  Total Elapsed Time: ", summary.get("total_elapsed_time", "N/A"), " seconds")
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("  Fastest Shot Interval: ", summary.get("fastest_shot_interval", "N/A"), " seconds")
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("  Total Shots: ", summary.get("total_shots", 0))
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("  Timestamp: ", summary.get("timestamp", "N/A"))
 	
 	# Check if records contain rotation angle data
 	if records.size() > 0:
 		var first_record = records[0]
 		if first_record.has("rotation_angle"):
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("Rotation angle data found in records - will display target at recorded angles during replay")
 		else:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("No rotation angle data found in records")
 	
 	# Load the first record
@@ -397,14 +397,14 @@ func load_record(index):
 					var animation_player = target_scene.get_node("AnimationPlayer")
 					if animation_player:
 						animation_player.stop()
-						if DEBUG_LOGGING:
+						if not DEBUG_DISABLED:
 							print("Drill Replay New: Stopped rotation animation for replay")
 				
 				# Disable input for target and its children
 				disable_target_input(target_scene)
 				loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
 			else:
-				if DEBUG_LOGGING:
+				if not DEBUG_DISABLED:
 						print("Unknown target type: ", target_type)
 				return
 		# Show current target
@@ -417,7 +417,7 @@ func load_record(index):
 		var rotation_center = target_scene.get_node("RotationCenter")
 		if rotation_center:
 			rotation_center.rotation = rotation_angle
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("Drill Replay: Applied rotation angle ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for current shot ", index + 1)
 	
 	add_bullet_hole_for_record(index)
@@ -429,7 +429,7 @@ func update_shot_list():
 	var shot_list = get_node_or_null("CanvasLayer/ShotListOverlay/ScrollContainer/ShotList")
 	var scroll_container = get_node_or_null("CanvasLayer/ShotListOverlay/ScrollContainer")
 	if not shot_list or not scroll_container:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("Shot list node not found, skipping update")
 		return
 	
@@ -508,7 +508,7 @@ func add_bullet_hole_for_record(index):
 		var rotation_center = target_scene.get_node("RotationCenter")
 		if rotation_center:
 			rotation_center.rotation = rotation_angle
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("Drill Replay New: Set target rotation to: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", index + 1)
 	
 	# Add bullet hole
@@ -667,7 +667,7 @@ func _input(event):
 				var rotation_center = target_scene.get_node("RotationCenter")
 				if rotation_center:
 					rotation_center.rotation = rotation_angle
-					if DEBUG_LOGGING:
+					if not DEBUG_DISABLED:
 						print("Drill Replay (Previous): Applied rotation angle ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", current_index + 1)
 			
 			update_shot_list()
@@ -682,7 +682,7 @@ func _input(event):
 				var rotation_center = target_scene.get_node("RotationCenter")
 				if rotation_center:
 					rotation_center.rotation = rotation_angle
-					if DEBUG_LOGGING:
+					if not DEBUG_DISABLED:
 						print("Drill Replay (Previous, Same Target): Applied rotation angle ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", current_index + 1)
 			
 			update_shot_list()
@@ -709,76 +709,76 @@ func disable_target_input(node: Node):
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
 		return
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("[Drill Replay] Received menu_control signal with directive: ", directive)
 	match directive:
 		"volume_up":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("[Drill Replay] Volume up")
 			volume_up()
 		"volume_down":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("[Drill Replay] Volume down")
 			volume_down()
 		"power":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("[Drill Replay] Power off")
 			power_off()
 		"back":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("[Drill Replay] Back to upper level scene")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 			back_to_upper_level()
 		"homepage":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("[Drill Replay] Back to main menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"left", "up":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("[Drill Replay] Previous bullet/target")
 			navigate_previous()
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 		"right", "down":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("[Drill Replay] Next bullet/target")
 			navigate_next()
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 		_:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 						print("[Drill Replay] Unknown directive: ", directive)
 
 func volume_up():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("[Drill Replay] Sending volume up HTTP request...")
 		http_service.volume_up(_on_volume_response)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("[Drill Replay] HttpService singleton not found!")
 
 func volume_down():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("[Drill Replay] Sending volume down HTTP request...")
 		http_service.volume_down(_on_volume_response)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("[Drill Replay] HttpService singleton not found!")
 
 func _on_volume_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("[Drill Replay] Volume HTTP response:", result, response_code, body_str)
 
 func power_off():
@@ -795,7 +795,7 @@ func has_visible_power_off_dialog() -> bool:
 
 func back_to_upper_level():
 	# Go back to the recorded upper level scene
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("[Drill Replay] Going back to upper level scene: ", upper_level_scene)
 	get_tree().change_scene_to_file(upper_level_scene)
 
@@ -818,7 +818,7 @@ func navigate_next():
 func find_latest_performance_file() -> String:
 	var dir = DirAccess.open("user://")
 	if not dir:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("Failed to open user:// directory")
 		return ""
 	
@@ -826,14 +826,14 @@ func find_latest_performance_file() -> String:
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
 	while file_name != "":
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 						print("Found file: ", file_name)
 		if file_name.begins_with("performance_") and file_name.ends_with(".json"):
 			files.append(file_name)
 		file_name = dir.get_next()
 	dir.list_dir_end()
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 						print("Performance files found: ", files)
 	
 	if files.size() == 0:

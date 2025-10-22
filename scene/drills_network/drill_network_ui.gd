@@ -1,7 +1,7 @@
 extends Control
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 # Theme styles for title
 @export var golden_title_style: LabelSettings = preload("res://theme/target_title_settings.tres")
@@ -26,7 +26,7 @@ var fastest_time_diff: float = 999.0
 
 func _ready():
 	"""Initialize the drill UI"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("=== DRILL UI INITIALIZED ===")
 	
 	# Load and apply current language setting from global settings
@@ -60,7 +60,7 @@ func _ready():
 		if drills_manager.has_signal("ui_mode_update"):
 			drills_manager.ui_mode_update.connect(_on_mode_update)
 		
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillUI] Connected to drills manager UI signals")
 	
 	# Timer is hidden by default until mode is determined
@@ -72,10 +72,10 @@ func load_language_from_global_settings():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillUI] Loaded language from GlobalData: ", language)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillUI] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
@@ -84,11 +84,11 @@ func load_drill_sequence_from_global_settings():
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data and global_data.settings_dict.has("drill_sequence"):
 		var drill_sequence = global_data.settings_dict.get("drill_sequence", "Fixed")
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillUI] Loaded drill_sequence from GlobalData: ", drill_sequence)
 		return drill_sequence
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillUI] GlobalData not found or no drill_sequence setting, using default Fixed")
 		return "Fixed"
 
@@ -106,7 +106,7 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillUI] Set locale to: ", locale)
 
 func _on_timer_update(time_elapsed: float):
@@ -148,7 +148,7 @@ func _on_timer_stopped(final_time: float):
 func _on_timeout_warning(remaining_seconds: float):
 	"""Handle timeout warning - show red timer"""
 	timeout_warning_active = true
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillUI] Timeout warning activated - %.1f seconds remaining" % remaining_seconds)
 
 func _process(_delta):
@@ -160,13 +160,13 @@ func _on_target_title_update(target_index: int, total_targets: int):
 	"""Update the target title based on the current target number"""
 	var target_number = target_index + 1
 	target_name.text = tr("target") + " " + str(target_number) + "/" + str(total_targets)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("Updated title to: ", tr("target"), " ", target_number, "/", total_targets)
 
 func _on_target_name_update(target_name_text: String):
 	"""Update the target name display"""
 	target_name.text = target_name_text
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("Updated target name to: ", target_name_text)
 
 func _on_theme_change(theme_name: String):
@@ -183,12 +183,12 @@ func apply_title_theme(theme_name: String):
 		"competitive":
 			target_name.label_settings = competitive_title_style
 		_:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("Unknown theme: ", theme_name)
 			return
 	
 	current_theme_style = theme_name
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("Applied theme: ", theme_name)
 
 func _on_fastest_time_update(fastest_time: float):
@@ -205,35 +205,35 @@ func _on_score_update(score: int):
 
 func _on_show_shot_timer():
 	"""Show the shot timer overlay"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("=== DRILL_UI: Received ui_show_shot_timer signal ===")
 		print("DEBUG: shot_timer_overlay node: ", shot_timer_overlay)
 	shot_timer_overlay.visible = true
 	
 	# The shot_timer_overlay IS the shot timer, so call its methods directly
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("DEBUG: Calling start_timer_sequence() on shot_timer_overlay")
 	shot_timer_overlay.start_timer_sequence()
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillUI] Started shot timer sequence")
 
 func _on_hide_shot_timer():
 	"""Hide the shot timer overlay"""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("=== HIDING SHOT TIMER OVERLAY ===")
 	shot_timer_overlay.visible = false
 	
 	# The shot_timer_overlay IS the shot timer, so call its methods directly
 	if shot_timer_overlay.has_method("reset_timer"):
 		shot_timer_overlay.reset_timer()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillUI] Reset shot timer")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[DrillUI] Warning: Shot timer overlay missing reset_timer method")
 
 func _on_mode_update(is_first: bool):
 	"""Update timer visibility based on master/slave mode"""
 	timer_container.visible = is_first
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[DrillUI] Timer visibility set to: ", is_first)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://dus614khw11h2"]
+[gd_scene load_steps=22 format=3 uid="uid://dus614khw11h2"]
 
 [ext_resource type="Script" uid="uid://crika1mdfvjsw" path="res://scene/option/option.gd" id="1_o2t7p"]
 [ext_resource type="Texture2D" uid="uid://btbmgtdbgtpkm" path="res://asset/largeCntnrs1.png" id="2_pm2y3"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://bphdbktqgumws" path="res://asset/contact.png" id="6_jjy7b"]
 [ext_resource type="Texture2D" uid="uid://c2l6gc1ro012y" path="res://asset/SmallCntnrs3.png" id="7_686id"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="8_54dxg"]
+[ext_resource type="AudioStream" uid="uid://i6eh50aq5t66" path="res://audio/Final Battle - For Love.ogg" id="9_audio"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_tab_selected"]
 bg_color = Color(0.2, 0.2, 0.2, 0.5)
@@ -88,10 +89,9 @@ theme_override_fonts/font = ExtResource("3_a5ubv")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
 theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
-current_tab = 2
+current_tab = 0
 
 [node name="Networking" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -313,6 +313,7 @@ button_group = SubResource("ButtonGroup_language")
 text = "English"
 
 [node name="Drills" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
@@ -541,3 +542,6 @@ offset_right = -20.0
 offset_bottom = -20.0
 grow_horizontal = 0
 grow_vertical = 0
+
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("9_audio")

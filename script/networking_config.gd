@@ -1,5 +1,7 @@
 extends Control
 
+const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
+
 # Networking configuration UI for setting channel and target name
 # Features remote control navigation and onscreen keyboard for input
 
@@ -54,21 +56,25 @@ func _ready():
 		menu_controller.navigate.connect(_on_navigate)
 		menu_controller.enter_pressed.connect(_on_enter_pressed)
 		menu_controller.back_pressed.connect(_on_back_pressed)
-		print("[NetworkingConfig] Connected to MenuController signals")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Connected to MenuController signals")
 	else:
-		print("[NetworkingConfig] MenuController singleton not found!")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] MenuController singleton not found!")
 
 	# Connect to GlobalData netlink status signal to populate fields when available
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		if global_data.has_signal("netlink_status_loaded"):
 			global_data.netlink_status_loaded.connect(_on_netlink_status_loaded)
-			print("[NetworkingConfig] Connected to GlobalData.netlink_status_loaded signal")
+			if not DEBUG_DISABLED:
+				print("[NetworkingConfig] Connected to GlobalData.netlink_status_loaded signal")
 		# If netlink_status is already present, populate immediately
 		if global_data.netlink_status and global_data.netlink_status.size() > 0:
 			_on_netlink_status_loaded()
 	else:
-		print("[NetworkingConfig] GlobalData singleton not found; will not auto-populate netlink info")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] GlobalData singleton not found; will not auto-populate netlink info")
 
 func update_ui_texts():
 	if status_label:
@@ -113,9 +119,11 @@ func load_current_settings():
 		var target_name = global_data.settings_dict.get("target_name", "")
 		name_line_edit.text = target_name
 		
-		print("[NetworkingConfig] Loaded settings - Channel: ", channel, ", Workmode: ", workmode_str, ", Name: ", target_name)
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Loaded settings - Channel: ", channel, ", Workmode: ", workmode_str, ", Name: ", target_name)
 	else:
-		print("[NetworkingConfig] No settings loaded, using defaults")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] No settings loaded, using defaults")
 
 func set_focused_control(index: int):
 	if index >= 0 and index < controls.size():
@@ -161,7 +169,8 @@ func show_keyboard_for_name_input():
 		# Connect keyboard button handlers
 		_attach_keyboard_handlers()
 		
-		print("[NetworkingConfig] Keyboard shown for name input")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Keyboard shown for name input")
 
 func _attach_keyboard_handlers(node = null):
 	"""
@@ -185,7 +194,8 @@ func _attach_keyboard_handlers(node = null):
 			
 			if is_hide_button:
 				child.disabled = true
-				print("[NetworkingConfig] Disabled hide keyboard button: ", child.name)
+				if not DEBUG_DISABLED:
+					print("[NetworkingConfig] Disabled hide keyboard button: ", child.name)
 			else:
 				var callback = Callable(self, "_on_keyboard_key_released")
 				if not child.is_connected("released", callback):
@@ -199,12 +209,14 @@ func _ensure_name_focus():
 	"""
 	if name_line_edit:
 		name_line_edit.grab_focus()
-		print("[NetworkingConfig] Name LineEdit focus ensured")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Name LineEdit focus ensured")
 		
 		# Set last_input_focus as backup if keyboard supports it
 		if keyboard and "last_input_focus" in keyboard:
 			keyboard.last_input_focus = name_line_edit
-			print("[NetworkingConfig] Manually set keyboard last_input_focus to name LineEdit")
+			if not DEBUG_DISABLED:
+				print("[NetworkingConfig] Manually set keyboard last_input_focus to name LineEdit")
 
 func hide_keyboard():
 	if keyboard:
@@ -228,7 +240,8 @@ func _on_keyboard_key_released(key_data):
 
 	# Handle special keys that need custom behavior
 	if is_enter:
-		print("[NetworkingConfig] Keyboard enter pressed, configuring network")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Keyboard enter pressed, configuring network")
 		configure_network()
 		return
 	
@@ -236,7 +249,8 @@ func _on_keyboard_key_released(key_data):
 	# The addon sends InputEventKey to the focused LineEdit, so no manual text manipulation needed
 
 func _on_navigate(direction: String):
-	print("[NetworkingConfig] Navigation: ", direction)
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Navigation: ", direction)
 	match direction:
 		"up":
 			if dropdown_open:
@@ -282,7 +296,8 @@ func _on_navigate(direction: String):
 						workmode_dropdown.select(current_selected + 1)
 
 func _on_enter_pressed():
-	print("[NetworkingConfig] Enter pressed")
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Enter pressed")
 	if focused_control == 0:  # Channel dropdown
 		if not dropdown_open:
 			var rect = channel_dropdown.get_global_rect()
@@ -305,14 +320,17 @@ func _on_enter_pressed():
 		save_settings()
 
 func _on_back_pressed():
-	print("[NetworkingConfig] Back pressed - navigating to main menu")
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Back pressed - navigating to main menu")
 	get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 
 func _on_netlink_status_loaded():
-	print("[NetworkingConfig] Received netlink_status_loaded signal, populating UI")
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Received netlink_status_loaded signal, populating UI")
 	var global_data = get_node_or_null("/root/GlobalData")
 	if not global_data:
-		print("[NetworkingConfig] GlobalData not found in _on_netlink_status_loaded")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] GlobalData not found in _on_netlink_status_loaded")
 		return
 	var status = global_data.netlink_status
 	# Populate channel if present and within 1-10
@@ -330,12 +348,14 @@ func _on_netlink_status_loaded():
 	# Populate device name
 	if status.has("device_name"):
 		name_line_edit.text = str(status["device_name"])
-	print("[NetworkingConfig] Populated netlink info from GlobalData: ", status)
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Populated netlink info from GlobalData: ", status)
 
 func save_settings():
 	var global_data = get_node_or_null("/root/GlobalData")
 	if not global_data:
-		print("[NetworkingConfig] GlobalData not found, cannot save settings")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] GlobalData not found, cannot save settings")
 		return
 	
 	# Get values from UI
@@ -354,25 +374,31 @@ func save_settings():
 	if http_service:
 		var settings_data = global_data.settings_dict.duplicate()
 		var content = JSON.stringify(settings_data)
-		print("[NetworkingConfig] Saving settings: ", settings_data)
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Saving settings: ", settings_data)
 		http_service.save_game(_on_save_settings_callback, "settings", content)
 	else:
-		print("[NetworkingConfig] HttpService not found, settings saved locally only")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] HttpService not found, settings saved locally only")
 
 func _on_save_settings_callback(result, response_code, _headers, _body):
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-		print("[NetworkingConfig] Settings saved successfully")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Settings saved successfully")
 	else:
-		print("[NetworkingConfig] Failed to save settings - Result: ", result, ", Code: ", response_code)
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Failed to save settings - Result: ", result, ", Code: ", response_code)
 
 func configure_network():
 	if is_configuring or is_stopping:
-		print("[NetworkingConfig] Configuration or stopping already in progress, ignoring request")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Configuration or stopping already in progress, ignoring request")
 		return
 		
 	var http_service = get_node_or_null("/root/HttpService")
 	if not http_service:
-		print("[NetworkingConfig] HttpService not found, cannot configure network")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] HttpService not found, cannot configure network")
 		return
 	
 	# Check if netlink is currently started
@@ -383,7 +409,8 @@ func configure_network():
 	
 	if netlink_started:
 		# Need to stop netlink first
-		print("[NetworkingConfig] Netlink is started, stopping first...")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Netlink is started, stopping first...")
 		is_stopping = true
 		start_progress_animation("stopping_netlink")
 		start_guard_timer()
@@ -404,7 +431,8 @@ func do_netlink_config():
 	var workmode = "master" if workmode_index == 0 else "slave"
 	var target_name = name_line_edit.text.strip_edges()
 	
-	print("[NetworkingConfig] Configuring network with channel: ", channel, ", workmode: ", workmode, ", target_name: ", target_name)
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Configuring network with channel: ", channel, ", workmode: ", workmode, ", target_name: ", target_name)
 	
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
@@ -414,19 +442,22 @@ func _on_netlink_stop_callback(result, response_code, _headers, _body):
 	stop_timers()
 	
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-		print("[NetworkingConfig] Netlink stop successful, proceeding to config...")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Netlink stop successful, proceeding to config...")
 		
 		# Update GlobalData to mark netlink as stopped
 		var global_data = get_node_or_null("/root/GlobalData")
 		if global_data:
 			global_data.netlink_status["started"] = false
-			print("[NetworkingConfig] Updated GlobalData.netlink_status.started to false")
+			if not DEBUG_DISABLED:
+				print("[NetworkingConfig] Updated GlobalData.netlink_status.started to false")
 		
 		is_stopping = false
 		# Now proceed to configuration
 		do_netlink_config()
 	else:
-		print("[NetworkingConfig] Netlink stop failed - Result: ", result, ", Code: ", response_code)
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Netlink stop failed - Result: ", result, ", Code: ", response_code)
 		set_status_stop_failed()
 		is_stopping = false
 
@@ -434,7 +465,8 @@ func _on_netlink_config_callback(result, response_code, _headers, _body):
 	stop_timers()
 	
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-		print("[NetworkingConfig] Netlink config successful, updating GlobalData and starting netlink...")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Netlink config successful, updating GlobalData and starting netlink...")
 		
 		# Update GlobalData.netlink_status with the new configuration
 		var global_data = get_node_or_null("/root/GlobalData")
@@ -451,38 +483,45 @@ func _on_netlink_config_callback(result, response_code, _headers, _body):
 			global_data.netlink_status["bluetooth_name"] = target_name
 			global_data.netlink_status["started"] = false  # Will be updated when start succeeds
 			
-			print("[NetworkingConfig] Updated GlobalData.netlink_status: ", global_data.netlink_status)
+			if not DEBUG_DISABLED:
+				print("[NetworkingConfig] Updated GlobalData.netlink_status: ", global_data.netlink_status)
 		
 		var http_service = get_node_or_null("/root/HttpService")
 		if http_service:
 			http_service.netlink_start(_on_netlink_start_callback)
 	else:
-		print("[NetworkingConfig] Netlink config failed - Result: ", result, ", Code: ", response_code)
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Netlink config failed - Result: ", result, ", Code: ", response_code)
 		set_status_failed()
 		is_configuring = false
 
 func _on_netlink_start_callback(result, response_code, _headers, _body):
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-		print("[NetworkingConfig] Netlink start successful")
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Netlink start successful")
 		
 		# Update GlobalData to mark netlink as started
 		var global_data = get_node_or_null("/root/GlobalData")
 		if global_data:
 			global_data.netlink_status["started"] = true
-			print("[NetworkingConfig] Updated GlobalData.netlink_status.started to true")
+			if not DEBUG_DISABLED:
+				print("[NetworkingConfig] Updated GlobalData.netlink_status.started to true")
 			# Emit the signal to notify other components
 			global_data.netlink_status_loaded.emit()
 		
 		is_configuring = false
 		var signal_bus = get_node_or_null("/root/SignalBus")
 		if signal_bus:
-			print("[NetworkingConfig] Emitting network_started via SignalBus")
+			if not DEBUG_DISABLED:
+				print("[NetworkingConfig] Emitting network_started via SignalBus")
 			signal_bus.emit_network_started()
 		else:
-			print("[NetworkingConfig] SignalBus not found, cannot emit wifi_connected signal")
+			if not DEBUG_DISABLED:
+				print("[NetworkingConfig] SignalBus not found, cannot emit wifi_connected signal")
 		get_tree().change_scene_to_file("res://scene/option/option.tscn")
 	else:
-		print("[NetworkingConfig] Netlink start failed - Result: ", result, ", Code: ", response_code)
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Netlink start failed - Result: ", result, ", Code: ", response_code)
 		set_status_failed()
 		is_configuring = false
 
@@ -503,7 +542,8 @@ func stop_timers():
 		animation_timer.stop()
 
 func _on_guard_timer_timeout():
-	print("[NetworkingConfig] Guard timer timed out (15s)")
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Guard timer timed out (15s)")
 	stop_timers()
 	if is_stopping:
 		set_status_stop_failed()

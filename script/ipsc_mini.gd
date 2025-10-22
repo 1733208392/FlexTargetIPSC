@@ -29,7 +29,7 @@ var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 # Performance optimization
-const DEBUG_LOGGING = true  # Set to true for verbose debugging
+const DEBUG_DISABLED = true
 
 # Performance optimization for rotating targets
 var rotation_cache_angle: float = 0.0
@@ -60,10 +60,6 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
-		print("[ipsc_mini] Connected to WebSocketListener bullet_hit signal")
-	else:
-		print("[ipsc_mini] WebSocketListener singleton not found!")
-	
 	# Set up collision detection for bullets
 	# NOTE: Collision detection is now obsolete due to WebSocket fast path
 	# collision_layer = 7  # Target layer
@@ -73,20 +69,10 @@ func _ready():
 	var drills_network = get_node_or_null("/root/drills_network")
 	if drills_network:
 		max_shots = 1000
-		print("[ipsc_mini] drills_network detected at /root/drills_network - max_shots set to ", max_shots)
-
-func _unhandled_input(event):
-	# Handle mouse clicks for bullet spawning
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		var mouse_screen_pos = event.position
-		var world_pos = get_global_mouse_position()
-		print("Mouse screen pos: ", mouse_screen_pos, " -> World pos: ", world_pos)
-		spawn_bullet_at_position(world_pos)
 
 func _on_input_event(_viewport, event, _shape_idx):
 	# Don't process input events if target is disappearing
 	if is_disappearing:
-		print("Target is disappearing - ignoring input event")
 		return
 		
 	# Check if it's a left mouse click
@@ -103,20 +89,16 @@ func _on_input_event(_viewport, event, _shape_idx):
 		# Check zones in priority order (highest score first)
 		# A-Zone has highest priority (5 points)
 		if is_point_in_zone("AZone", local_pos):
-			print("Zone A clicked - 5 points!")
 			return
 		
 		# C-Zone has medium priority (3 points)
 		if is_point_in_zone("CZone", local_pos):
-			print("Zone C clicked - 3 points!")
 			return
 		
 		# D-Zone has lowest priority (1 point)
 		if is_point_in_zone("DZone", local_pos):
-			print("Zone D clicked - 1 point!")
 			return
 		
-		print("Clicked outside target zones")
 
 func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 	# Find the collision shape by name
@@ -127,7 +109,6 @@ func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 	return false
 
 func spawn_bullet_at_position(world_pos: Vector2):
-	print("Spawning bullet at world position: ", world_pos)
 	
 	if BulletScene:
 		var bullet = BulletScene.instantiate()
@@ -143,8 +124,6 @@ func spawn_bullet_at_position(world_pos: Vector2):
 		
 		# Use the new set_spawn_position method to ensure proper positioning
 		bullet.set_spawn_position(world_pos)
-		
-		print("Bullet spawned and position set to: ", world_pos)
 
 func handle_bullet_collision(bullet_position: Vector2):
 	"""Handle collision detection when a bullet hits this target"""
@@ -153,10 +132,8 @@ func handle_bullet_collision(bullet_position: Vector2):
 	
 	# Don't process bullet collisions if target is disappearing
 	if is_disappearing:
-		print("Target is disappearing - ignoring bullet collision")
 		return "ignored"
 	
-	print("Bullet collision detected at position: ", bullet_position)
 	
 	# Convert bullet world position to local coordinates for zone checking
 	var local_pos = to_local(bullet_position)
@@ -168,24 +145,19 @@ func handle_bullet_collision(bullet_position: Vector2):
 	if is_point_in_zone("AZone", local_pos):
 		zone_hit = "AZone"
 		points = 5
-		print("COLLISION: Zone A hit by bullet - 5 points!")
 	elif is_point_in_zone("CZone", local_pos):
 		zone_hit = "CZone"
 		points = 3
-		print("COLLISION: Zone C hit by bullet - 3 points!")
 	elif is_point_in_zone("DZone", local_pos):
 		zone_hit = "DZone"
 		points = 1
-		print("COLLISION: Zone D hit by bullet - 1 point!")
 	else:
 		zone_hit = "miss"
 		points = 0
-		print("COLLISION: Bullet hit target but outside scoring zones")
 	
 	# Update score and emit signal
 	total_score += points
 	target_hit.emit(zone_hit, points, bullet_position)
-	print("Total score: ", total_score)
 	
 	# Note: Bullet hole is now spawned by bullet script before this method is called
 	
@@ -193,15 +165,10 @@ func handle_bullet_collision(bullet_position: Vector2):
 	var is_target_hit = zone_hit != "miss" and zone_hit != "barrel_miss" and points > 0
 	if is_target_hit:
 		shot_count += 1
-		print("Valid target hit count: ", shot_count, "/", max_shots)
 		
-		# Check if we've reached the maximum valid target hits
+		# Check if we've reached the maximum shots
 		if shot_count >= max_shots:
-			print("Maximum valid target hits reached! Triggering disappearing animation...")
 			play_disappearing_animation()
-	else:
-		print("Miss/barrel hit - shot count not incremented")
-	
 	return zone_hit
 
 func get_total_score() -> int:
@@ -211,14 +178,9 @@ func get_total_score() -> int:
 func reset_score():
 	"""Reset the score to zero"""
 	total_score = 0
-	print("Score reset to 0")
 
 func play_disappearing_animation():
 	"""Start the disappearing animation and disable collision detection"""
-	print("=== DISAPPEARING ANIMATION TRIGGERED ===")
-	print("Shot count: ", shot_count, "/", max_shots)
-	print("Call stack trace available in debug mode")
-	print("Starting disappearing animation for ipsc_mini")
 	is_disappearing = true
 	
 	# Get the AnimationPlayer
@@ -230,19 +192,13 @@ func play_disappearing_animation():
 		
 		# Play the disappear animation
 		animation_player.play("disappear")
-		print("Disappear animation started")
-	else:
-		print("ERROR: AnimationPlayer not found")
-
 func _on_animation_finished(animation_name: String):
 	"""Called when any animation finishes"""
 	if animation_name == "disappear":
-		print("Disappear animation completed")
 		_on_disappear_animation_finished()
 
 func _on_disappear_animation_finished():
 	"""Called when the disappearing animation completes"""
-	print("Target disappearing animation finished")
 	
 	# Disable collision detection completely
 	# NOTE: Collision detection was already obsolete due to WebSocket fast path
@@ -251,7 +207,6 @@ func _on_disappear_animation_finished():
 	
 	# Emit signal to notify the drills system that the target has disappeared
 	target_disappeared.emit()
-	print("target_disappeared signal emitted")
 	
 	# Keep the disappearing state active to prevent any further interactions
 	# is_disappearing remains true
@@ -280,11 +235,9 @@ func reset_target():
 	# Reset bullet hole pool - hide all active holes
 	reset_bullet_hole_pool()
 	
-	print("Target reset to original state")
 
 func reset_bullet_hole_pool():
 	"""Reset the bullet hole pool by hiding all active holes"""
-	print("[ipsc_mini] Resetting bullet hole pool")
 	
 	# Hide all active bullet holes
 	for hole in active_bullet_holes:
@@ -294,14 +247,11 @@ func reset_bullet_hole_pool():
 	# Clear active list
 	active_bullet_holes.clear()
 	
-	print("[ipsc_mini] Bullet hole pool reset - all holes returned to pool")
 
 func initialize_bullet_hole_pool():
 	"""Pre-instantiate bullet holes for performance optimization"""
-	print("[ipsc_mini] Initializing bullet hole pool with size: ", pool_size)
 	
 	if not BulletHoleScene:
-		print("[ipsc_mini] ERROR: BulletHoleScene not found for pool initialization!")
 		return
 	
 	# Clear existing pool
@@ -319,27 +269,22 @@ func initialize_bullet_hole_pool():
 		# Set z-index to ensure bullet holes appear below effects
 		bullet_hole.z_index = 0
 		bullet_hole_pool.append(bullet_hole)
-		print("[ipsc_mini] Pre-instantiated bullet hole ", i + 1, "/", pool_size, " with z_index: 0")
 	
-	print("[ipsc_mini] Bullet hole pool initialized successfully with ", bullet_hole_pool.size(), " holes")
 
 func get_pooled_bullet_hole() -> Node:
 	"""Get an available bullet hole from the pool, or create new if needed"""
 	# Try to find an inactive bullet hole in the pool
 	for hole in bullet_hole_pool:
 		if is_instance_valid(hole) and not hole.visible:
-			print("[ipsc_mini] Reusing pooled bullet hole")
 			return hole
 	
 	# If no available holes in pool, create a new one (fallback)
-	# print("[ipsc_mini] Pool exhausted, creating new bullet hole")
 	if BulletHoleScene:
 		var new_hole = BulletHoleScene.instantiate()
 		add_child(new_hole)
 		bullet_hole_pool.append(new_hole)  # Add to pool for future use
 		return new_hole
 	
-	print("[ipsc_mini] ERROR: Cannot create new bullet hole - BulletHoleScene missing!")
 	return null
 
 func return_bullet_hole_to_pool(hole: Node):
@@ -349,11 +294,9 @@ func return_bullet_hole_to_pool(hole: Node):
 		# Remove from active list
 		if hole in active_bullet_holes:
 			active_bullet_holes.erase(hole)
-		print("[ipsc_mini] Bullet hole returned to pool, active holes: ", active_bullet_holes.size())
 
 func spawn_bullet_hole(local_position: Vector2):
 	"""Spawn a bullet hole at the specified local position using object pool"""
-	# print("[ipsc_mini] POOL: Spawning bullet hole at local position: ", local_position)
 	
 	var bullet_hole = get_pooled_bullet_hole()
 	if bullet_hole:
@@ -367,24 +310,15 @@ func spawn_bullet_hole(local_position: Vector2):
 		if bullet_hole not in active_bullet_holes:
 			active_bullet_holes.append(bullet_hole)
 		
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] POOL: Bullet hole activated at position: ", local_position, " (Active: ", active_bullet_holes.size(), ") with z_index: 0")
-	else:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] POOL ERROR: Failed to get bullet hole from pool!")
-
 func _on_websocket_bullet_hit(pos: Vector2):
-	print("[ipsc_mini] Received websocket bullet hit at position: ", pos)
 	
 	# Ignore shots if drill is not active yet
 	if not drill_active:
-		print("[ipsc_mini] Ignoring shot because drill is not active yet")
 		return
 	
 	# Check if bullet spawning is enabled
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener and not ws_listener.bullet_spawning_enabled:
-		print("[ipsc_mini] WebSocket bullet spawning disabled during shot timer")
 		return
 	
 	# Check if this target is part of a rotating scene (ipsc_mini_rotate)
@@ -392,32 +326,24 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	var parent_node = get_parent()
 	while parent_node:
 		if parent_node.name.contains("IPSCMiniRotate") or parent_node.name.contains("RotationCenter"):
-			print("[ipsc_mini] Rotating target detected - using optimized rotation-aware processing")
 			# Use optimized direct hit processing for rotating targets
 			handle_websocket_bullet_hit_rotating(pos)
 			return
 		parent_node = parent_node.get_parent()
 	
-	# print("[ipsc_mini] Received bullet hit at position: ", pos)
 	
 	# FAST PATH: Direct bullet hole spawning for WebSocket hits (non-rotating targets only)
 	handle_websocket_bullet_hit_fast(pos)
 
 func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
-	if DEBUG_LOGGING:
-		print("[ipsc_mini] FAST PATH: Processing WebSocket bullet hit at: ", world_pos)
 	
 	# Don't process if target is disappearing
 	if is_disappearing:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] Target is disappearing - ignoring WebSocket hit")
 		return
 	
 	# Convert world position to local coordinates
 	var local_pos = to_local(world_pos)
-	if DEBUG_LOGGING:
-		print("[ipsc_mini] World pos: ", world_pos, " -> Local pos: ", local_pos)
 	
 	# 1. FIRST: Determine hit zone and scoring
 	var zone_hit = ""
@@ -429,64 +355,38 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 		zone_hit = "AZone"
 		points = 5
 		is_target_hit = true
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: Zone A hit - 5 points!")
 	elif is_point_in_zone("CZone", local_pos):
 		zone_hit = "CZone"
 		points = 3
 		is_target_hit = true
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: Zone C hit - 3 points!")
 	elif is_point_in_zone("DZone", local_pos):
 		zone_hit = "DZone"
 		points = 1
 		is_target_hit = true
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: Zone D hit - 1 point!")
 	else:
 		zone_hit = "miss"
 		points = 0
 		is_target_hit = false
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: Bullet missed target - no bullet hole")
 	
 	# 2. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if is_target_hit:
 		spawn_bullet_hole(local_pos)
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: Bullet hole spawned for target hit")
-	else:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: No bullet hole - bullet missed target")
-	
 	# 3. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
 	spawn_bullet_effects_at_position(world_pos, is_target_hit)
 	
 	# 4. Update score and emit signal
 	total_score += points
 	target_hit.emit(zone_hit, points, world_pos)
-	if DEBUG_LOGGING:
-		print("[ipsc_mini] FAST: Total score: ", total_score)
 	
 	# 5. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
 		shot_count += 1
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: Valid target hit count: ", shot_count, "/", max_shots)
 		
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
-			if DEBUG_LOGGING:
-				print("[ipsc_mini] FAST: Maximum valid target hits reached! Triggering disappearing animation...")
 			play_disappearing_animation()
-	else:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] FAST: Miss/barrel hit - shot count not incremented")
-
 func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = true):
 	"""Spawn bullet smoke and impact effects with throttling for performance"""
-	if DEBUG_LOGGING:
-		print("[ipsc_mini] Spawning bullet effects at: ", world_pos, " (Target hit: ", is_target_hit, ")")
 	
 	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
 	
@@ -502,10 +402,6 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 	# Smoke is the most expensive effect (GPUParticles2D) and not essential for gameplay
 	if false:  # Completely disabled
 		pass
-	else:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] Smoke effect disabled for performance optimization")
-	
 	# Throttled impact effect - ALWAYS spawn (for both hits and misses)
 	if bullet_impact_scene and (time_stamp - last_impact_time) >= impact_cooldown:
 		var impact = bullet_impact_scene.instantiate()
@@ -514,12 +410,6 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 		# Ensure impact effects appear above bullet holes
 		impact.z_index = 15
 		last_impact_time = time_stamp
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] Impact effect spawned at: ", world_pos, " with z_index: 15")
-	elif (time_stamp - last_impact_time) < impact_cooldown:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] Impact effect throttled (too fast)")
-	
 	# Throttled sound effect - only plays for hits since this function is only called for hits
 	play_impact_sound_at_position_throttled(world_pos, time_stamp)
 
@@ -527,14 +417,10 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 	"""Play steel impact sound effect with throttling and concurrent sound limiting"""
 	# Check time-based throttling
 	if (current_time - last_sound_time) < sound_cooldown:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] Sound effect throttled (too fast - ", current_time - last_sound_time, "s since last)")
 		return
 	
 	# Check concurrent sound limiting
 	if active_sounds >= max_concurrent_sounds:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] Sound effect throttled (too many concurrent sounds: ", active_sounds, "/", max_concurrent_sounds, ")")
 		return
 	
 	# Load the paper impact sound for paper targets
@@ -562,14 +448,7 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 		audio_player.finished.connect(func(): 
 			active_sounds -= 1
 			audio_player.queue_free()
-			if DEBUG_LOGGING:
-				print("[ipsc_mini] Sound finished, active sounds: ", active_sounds)
 		)
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] Steel impact sound played at: ", world_pos, " (Active sounds: ", active_sounds, ")")
-	else:
-		print("[ipsc_mini] No impact sound found!")  # Keep this as it indicates an error
-
 func play_impact_sound_at_position(world_pos: Vector2):
 	"""Play paper impact sound effect at specific position (legacy - non-throttled)"""
 	# Load the paper impact sound for paper targets
@@ -591,10 +470,6 @@ func play_impact_sound_at_position(world_pos: Vector2):
 		
 		# Clean up audio player after sound finishes
 		audio_player.finished.connect(func(): audio_player.queue_free())
-		print("[ipsc_mini] Steel impact sound played at: ", world_pos)
-	else:
-		print("[ipsc_mini] No impact sound found!")
-
 # ROTATION PERFORMANCE OPTIMIZATIONS
 
 func get_cached_rotation_angle() -> float:
@@ -616,13 +491,9 @@ func get_cached_rotation_angle() -> float:
 
 func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	"""Optimized hit processing for rotating targets without bullet spawning"""
-	if DEBUG_LOGGING:
-		print("[ipsc_mini] ROTATING: Processing WebSocket bullet hit at: ", world_pos)
 	
 	# Don't process if target is disappearing
 	if is_disappearing:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] Target is disappearing - ignoring WebSocket hit")
 		return
 	
 	# Track bullet activity for animation pausing
@@ -631,8 +502,6 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	
 	# Convert world position to local coordinates (this handles rotation automatically)
 	var local_pos = to_local(world_pos)
-	if DEBUG_LOGGING:
-		print("[ipsc_mini] ROTATING: World pos: ", world_pos, " -> Local pos: ", local_pos)
 	
 	# 1. FIRST: Check if bullet hit the BarrelWall (for rotating targets)
 	var barrel_wall_hit = false
@@ -653,8 +522,6 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 					var relative_pos = barrel_local_pos - shape_pos
 					if abs(relative_pos.x) <= half_extents.x and abs(relative_pos.y) <= half_extents.y:
 						barrel_wall_hit = true
-						if DEBUG_LOGGING:
-							print("[ipsc_mini] ROTATING: Bullet hit BarrelWall - counting as miss")
 	
 	# 2. SECOND: Determine hit zone and scoring
 	var zone_hit = ""
@@ -666,68 +533,42 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 		zone_hit = "barrel_miss"
 		points = 0
 		is_target_hit = false
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] ROTATING: BarrelWall hit - no bullet hole, no points")
 	else:
 		# Check target zones (highest score first)
 		if is_point_in_zone("AZone", local_pos):
 			zone_hit = "AZone"
 			points = 5
 			is_target_hit = true
-			if DEBUG_LOGGING:
-				print("[ipsc_mini] ROTATING: Zone A hit - 5 points!")
 		elif is_point_in_zone("CZone", local_pos):
 			zone_hit = "CZone"
 			points = 3
 			is_target_hit = true
-			if DEBUG_LOGGING:
-				print("[ipsc_mini] ROTATING: Zone C hit - 3 points!")
 		elif is_point_in_zone("DZone", local_pos):
 			zone_hit = "DZone"
 			points = 1
 			is_target_hit = true
-			if DEBUG_LOGGING:
-				print("[ipsc_mini] ROTATING: Zone D hit - 1 point!")
 		else:
 			zone_hit = "miss"
 			points = 0
 			is_target_hit = false
-			if DEBUG_LOGGING:
-				print("[ipsc_mini] ROTATING: Bullet missed target - no bullet hole")
 	
 	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if is_target_hit:
 		spawn_bullet_hole(local_pos)
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] ROTATING: Bullet hole spawned for target hit")
-	else:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] ROTATING: No bullet hole - bullet missed target or hit barrel")
-	
 	# 4. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
 	spawn_bullet_effects_at_position(world_pos, is_target_hit)
 	
 	# 5. Update score and emit signal
 	total_score += points
 	target_hit.emit(zone_hit, points, world_pos)
-	if DEBUG_LOGGING:
-		print("[ipsc_mini] ROTATING: Total score: ", total_score)
 	
 	# 6. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
 		shot_count += 1
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] ROTATING: Valid target hit count: ", shot_count, "/", max_shots)
 		
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
-			if DEBUG_LOGGING:
-				print("[ipsc_mini] ROTATING: Maximum valid target hits reached! Triggering disappearing animation...")
 			play_disappearing_animation()
-	else:
-		if DEBUG_LOGGING:
-			print("[ipsc_mini] ROTATING: Miss/barrel hit - shot count not incremented")
-	
 	# Decrease activity after a short delay (simulate bullet lifetime)
 	var tree = get_tree()
 	if tree:
@@ -761,7 +602,6 @@ func pause_rotation_animation():
 		if animation_player and animation_player.is_playing():
 			animation_player.pause()
 			animation_paused = true
-			print("[ipsc_mini] Rotation animation paused due to high bullet activity (", bullet_activity_count, " bullets)")
 
 func resume_rotation_animation():
 	"""Resume the rotation animation"""
@@ -772,4 +612,3 @@ func resume_rotation_animation():
 			animation_player.play()
 			animation_paused = false
 			activity_cooldown_timer = 0.0
-			print("[ipsc_mini] Rotation animation resumed after cooldown")

@@ -1,5 +1,7 @@
 extends Control
 
+const DEBUG_DISABLED = true
+
 @onready var progress_bar: ProgressBar = $VolumeContainer/ProgressBar
 @onready var hide_timer: Timer = Timer.new()
 
@@ -23,9 +25,11 @@ func _ready():
 	var websocket_listener = get_node("/root/WebSocketListener")
 	if websocket_listener:
 		websocket_listener.menu_control.connect(_on_menu_control)
-		print("[VolumeControl] Connected to WebSocketListener")
+		if not DEBUG_DISABLED:
+			print("[VolumeControl] Connected to WebSocketListener")
 	else:
-		print("[VolumeControl] Warning: WebSocketListener not found")
+		if not DEBUG_DISABLED:
+			print("[VolumeControl] Warning: WebSocketListener not found")
 	
 	# Initialize progress bar
 	progress_bar.value = current_volume
@@ -41,7 +45,8 @@ func _on_menu_control(directive: String):
 		_decrease_volume()
 
 func _increase_volume():
-	print("[VolumeControl] Volume increase")
+	if not DEBUG_DISABLED:
+		print("[VolumeControl] Volume increase")
 	current_volume = min(current_volume + 10.0, 100.0)
 	_update_volume_display()
 	
@@ -51,7 +56,8 @@ func _increase_volume():
 		http_service.volume_up(_on_volume_response)
 
 func _decrease_volume():
-	print("[VolumeControl] Volume decrease")
+	if not DEBUG_DISABLED:
+		print("[VolumeControl] Volume decrease")
 	current_volume = max(current_volume - 10.0, 0.0)
 	_update_volume_display()
 	
@@ -74,17 +80,21 @@ func _update_volume_display():
 	# Play button sound feedback
 	_play_button_sound()
 	
-	print("[VolumeControl] Volume updated to: ", current_volume, "%")
+	if not DEBUG_DISABLED:
+		print("[VolumeControl] Volume updated to: ", current_volume, "%")
 
 func _play_button_sound():
 	# Play the remote button sound when volume changes
 	if audio_player and remote_button_sound:
 		audio_player.play()
-		print("[VolumeControl] Playing remote button sound")
+		if not DEBUG_DISABLED:
+			print("[VolumeControl] Playing remote button sound")
 
 func _on_hide_timer_timeout():
-	print("[VolumeControl] Hiding volume control after timeout")
+	if not DEBUG_DISABLED:
+		print("[VolumeControl] Hiding volume control after timeout")
 	visible = false
 
 func _on_volume_response(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
-	print("[VolumeControl] Volume command response: ", response_code)
+	if not DEBUG_DISABLED:
+		print("[VolumeControl] Volume command response: ", response_code)

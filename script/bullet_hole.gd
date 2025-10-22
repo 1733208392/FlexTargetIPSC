@@ -1,7 +1,7 @@
 extends Sprite2D
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 # Array of bullet hole textures
 const BULLET_HOLE_TEXTURES = [
@@ -55,5 +55,5 @@ func randomize_texture():
 func set_hole_position(pos: Vector2):
 	"""Set the local position of the bullet hole relative to parent"""
 	position = pos
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("Bullet hole positioned at local: ", pos)

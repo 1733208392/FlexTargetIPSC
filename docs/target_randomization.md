@@ -43,7 +43,7 @@ drills_manager.toggle_randomization()    # Toggle current state
 ```
 
 #### Debug Information
-Set `DEBUG_LOGGING = true` in `drills.gd` to see:
+Set `DEBUG_DISABLED = true` in `drills.gd` to see:
 - Original vs randomized sequences
 - Randomization enable/disable events
 - Current sequence for each drill run

@@ -1,7 +1,7 @@
 extends Node2D
 
 # Performance optimization
-const DEBUG_LOGGING = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
 var target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
@@ -31,7 +31,7 @@ func _ready():
 	load_language_from_global_settings()
 	
 	# Initialize but don't start the drill yet
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Initializing bootcamp, waiting for HTTP start game response...")
 	
 	# Disable disappearing for bootcamp
@@ -39,7 +39,7 @@ func _ready():
 	
 	# Temporarily disable target interaction until drill starts
 	ipsc.input_pickable = false
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Target disabled until game start response received")
 	
 	# Connect to ipsc target_hit signal
@@ -49,7 +49,7 @@ func _ready():
 	if clear_button:
 		clear_button.pressed.connect(_on_clear_pressed)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("ERROR: ClearButton not found!")
 	
 	# Get all shot labels
@@ -59,7 +59,7 @@ func _ready():
 			shot_labels.append(label)
 			label.text = ""
 		else:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("ERROR: Shot" + str(i) + " not found!")
 	
 	# Update UI texts with translations
@@ -72,10 +72,10 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Connecting to WebSocketListener.menu_control signal")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] WebSocketListener singleton not found!")
 	
 	# Load SFX volume from GlobalData and apply it
@@ -83,12 +83,12 @@ func _ready():
 	if global_data_for_sfx and global_data_for_sfx.settings_dict.has("sfx_volume"):
 		var sfx_volume = global_data_for_sfx.settings_dict.get("sfx_volume", 5)
 		_apply_sfx_volume(sfx_volume)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Loaded SFX volume from GlobalData: ", sfx_volume)
 	else:
 		# Default to volume level 5 if not set
 		_apply_sfx_volume(5)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Using default SFX volume: 5")
 	
 	# Send HTTP request to start the game and wait for response
@@ -97,12 +97,12 @@ func _ready():
 func start_bootcamp_drill():
 	"""Send HTTP start game request and wait for OK response before starting drill"""
 	if game_start_requested:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Game start already requested, ignoring duplicate call")
 		return
 	
 	game_start_requested = true
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Sending start game HTTP request for bootcamp...")
 	
 	var http_service = get_node("/root/HttpService")
@@ -110,36 +110,36 @@ func start_bootcamp_drill():
 		# Send start game request with bootcamp mode
 		http_service.start_game(_on_start_game_response, "bootcamp")
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] ERROR: HttpService singleton not found! Starting drill anyway...")
 		_start_drill_immediately()
 
 func _on_start_game_response(result, response_code, _headers, body):
 	"""Handle the HTTP start game response"""
 	var body_str = body.get_string_from_utf8()
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Start game HTTP response:", result, response_code, body_str)
 	
 	# Parse the JSON response
 	var json = JSON.parse_string(body_str)
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Start game SUCCESS - starting bootcamp drill")
 		_start_drill_immediately()
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Start game FAILED or invalid response - starting drill anyway")
 		_start_drill_immediately()
 
 func _start_drill_immediately():
 	"""Actually start the bootcamp drill"""
 	if drill_started:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Drill already started, ignoring duplicate call")
 		return
 	
 	drill_started = true
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Bootcamp drill officially started!")
 	
 	# Initialize current target (starts with ipsc_mini)
@@ -150,13 +150,13 @@ func _start_drill_immediately():
 	if ipsc:
 		ipsc.input_pickable = true
 		ipsc.drill_active = true
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Target enabled for shooting practice")
 	
 	# Play background music
 	if background_music:
 		background_music.play()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Playing background music")
 	
 	# Any additional drill initialization can go here
@@ -169,7 +169,7 @@ func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null):
 	
 	# Only process hits if drill has started
 	if not drill_started:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Target hit before drill started - ignoring")
 		return
 	
@@ -206,17 +206,17 @@ func _on_clear_pressed():
 	# Remove all bullet holes
 	for bullet_hole in children_to_remove:
 		bullet_hole.queue_free()
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("Removed bullet hole: ", bullet_hole.name)
 
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
 		return
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Received menu_control signal with directive: ", directive)
 	match directive:
 		"enter":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Bootcamp] Enter pressed")
 			_on_clear_pressed()
 		"left":
@@ -224,64 +224,64 @@ func _on_menu_control(directive: String):
 		"right":
 			switch_to_next_target()
 		"back", "homepage":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Bootcamp] ", directive, " - navigating to main menu")
 			
 			# Deactivate current target before exiting
 			if current_target_instance and current_target_instance.has_method("set"):
 				current_target_instance.set("drill_active", false)
-				if DEBUG_LOGGING:
+				if not DEBUG_DISABLED:
 					print("[Bootcamp] Deactivated target before exiting")
 			
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 			else:
-				if DEBUG_LOGGING:
+				if not DEBUG_DISABLED:
 					print("[Bootcamp] Warning: Node not in tree, cannot change scene")
 		"volume_up":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Bootcamp] Volume up")
 			volume_up()
 		"volume_down":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Bootcamp] Volume down")
 			volume_down()
 		"power":
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Bootcamp] Power off")
 			power_off()
 		_:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Bootcamp] Unknown directive: ", directive)
 
 func volume_up():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Sending volume up HTTP request...")
 		http_service.volume_up(_on_volume_up_response)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] HttpService singleton not found!")
 
 func _on_volume_up_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Volume up HTTP response:", result, response_code, body_str)
 
 func volume_down():
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Sending volume down HTTP request...")
 		http_service.volume_down(_on_volume_down_response)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] HttpService singleton not found!")
 
 func _on_volume_down_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Volume down HTTP response:", result, response_code, body_str)
 
 func power_off():
@@ -302,10 +302,10 @@ func load_language_from_global_settings():
 	if global_data and global_data.settings_dict.has("language"):
 		var language = global_data.settings_dict.get("language", "English")
 		set_locale_from_language(language)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Loaded language from GlobalData: ", language)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] GlobalData not found or no language setting, using default English")
 		set_locale_from_language("English")
 
@@ -323,7 +323,7 @@ func set_locale_from_language(language: String):
 		_:
 			locale = "en"  # Default to English
 	TranslationServer.set_locale(locale)
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Set locale to: ", locale)
 
 func update_ui_texts():
@@ -352,20 +352,20 @@ func get_localized_shots_text() -> String:
 func switch_to_next_target():
 	"""Switch to the next target in the sequence"""
 	if not drill_started:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Drill not started yet, ignoring target switch")
 		return
 	
 	# Deactivate current target
 	if current_target_instance and current_target_instance.has_method("set"):
 		current_target_instance.set("drill_active", false)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Deactivated current target")
 	
 	# Move to next target
 	current_target_index = (current_target_index + 1) % target_sequence.size()
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Switching to next target: ", target_sequence[current_target_index], " (index: ", current_target_index, ")")
 	
 	spawn_target_by_type(target_sequence[current_target_index])
@@ -373,20 +373,20 @@ func switch_to_next_target():
 func switch_to_previous_target():
 	"""Switch to the previous target in the sequence"""
 	if not drill_started:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Drill not started yet, ignoring target switch")
 		return
 	
 	# Deactivate current target
 	if current_target_instance and current_target_instance.has_method("set"):
 		current_target_instance.set("drill_active", false)
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Deactivated current target")
 	
 	# Move to previous target
 	current_target_index = (current_target_index - 1 + target_sequence.size()) % target_sequence.size()
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] Switching to previous target: ", target_sequence[current_target_index], " (index: ", current_target_index, ")")
 	
 	spawn_target_by_type(target_sequence[current_target_index])
@@ -416,7 +416,7 @@ func spawn_target_by_type(target_type: String):
 		"ipsc_mini_rotate":
 			target_scene = ipsc_mini_rotate_scene
 		_:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("[Bootcamp] Unknown target type: ", target_type)
 			return
 	
@@ -437,7 +437,7 @@ func spawn_target_by_type(target_type: String):
 			var inner_ipsc = target.get_node_or_null("RotationCenter/IPSCMini")
 			if inner_ipsc and inner_ipsc.has_method("set"):
 				inner_ipsc.set("max_shots", 1000)
-				if DEBUG_LOGGING:
+				if not DEBUG_DISABLED:
 					print("[Bootcamp] Set max_shots=1000 on inner IPSC mini for rotating target")
 		
 		# Special positioning for rotating target (offset from center)
@@ -452,13 +452,13 @@ func spawn_target_by_type(target_type: String):
 		if target.has_method("set"):
 			target.set("drill_active", true)
 		
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Spawned and activated target: ", target_type, " at position: ", target.position)
 
 func _on_sfx_volume_changed(volume: int):
 	"""Handle SFX volume changes from Option scene.
 	Volume ranges from 0 to 10, where 0 stops audio and 10 is max volume."""
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("[Bootcamp] SFX volume changed to: ", volume)
 	_apply_sfx_volume(volume)
 
@@ -472,7 +472,7 @@ func _apply_sfx_volume(volume: int):
 		# Stop all SFX
 		if background_music:
 			background_music.volume_db = -80  # Effectively mute
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Muted audio (volume=", volume, ")")
 	else:
 		# Map 1-10 to -40dB to 0dB
@@ -480,5 +480,5 @@ func _apply_sfx_volume(volume: int):
 		var db = -40.0 + ((volume - 1) * (40.0 / 9.0))
 		if background_music:
 			background_music.volume_db = db
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("[Bootcamp] Set audio volume_db to ", db, " (volume level: ", volume, ")")

@@ -8,7 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://d34m0mqmlp1qq" path="res://asset/crosshair.png" id="6_eo5a4"]
 [ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://font/Inter/Inter-VariableFont_opsz,wght.ttf" id="7_lt21p"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="8_kvq8n"]
-[ext_resource type="AudioStream" uid="uid://clyhqyw8s6hud" path="res://audio/Final Battle - For Love.ogg" id="9_audio"]
+[ext_resource type="AudioStream" uid="uid://i6eh50aq5t66" path="res://audio/Final Battle - For Love.ogg" id="9_audio"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_2fwvj"]
 texture = ExtResource("3_rq7sb")

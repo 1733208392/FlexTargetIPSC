@@ -1,7 +1,7 @@
 extends Node
 
 # Performance optimization
-const DEBUG_LOGGING = true  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to false for production release
 
 # Performance tracking variables
 var last_shot_time_usec = 0  # Changed to microseconds for better precision
@@ -32,7 +32,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		if time_diff >= minimum_shot_interval and time_diff < fastest_time_diff:
 			fastest_time_diff = time_diff
 		
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("PERFORMANCE TRACKER NETWORK: First shot - total time:", total_time, "s, shot timer delay:", shot_timer_delay, "s, reaction time:", time_diff, "s")
 	else:
 		# Subsequent shots - calculate interval with microsecond precision
@@ -40,7 +40,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		
 		# Apply minimum time threshold to prevent unrealistic 0.0s intervals
 		if time_diff < minimum_shot_interval:
-			if DEBUG_LOGGING:
+			if not DEBUG_DISABLED:
 				print("PERFORMANCE TRACKER NETWORK: Shot interval too fast (", time_diff, "s), clamping to minimum (", minimum_shot_interval, "s)")
 			time_diff = minimum_shot_interval
 		
@@ -48,7 +48,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		if time_diff < fastest_time_diff:
 			fastest_time_diff = time_diff
 		
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("PERFORMANCE TRACKER NETWORK: Shot interval:", time_diff, "seconds, fastest:", fastest_time_diff)
 	
 	# Update last shot time for next calculation
@@ -68,7 +68,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 	# Send to websocket server
 	_send_to_app(record)
 	
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("Performance record sent: ", record)
 
 # Send message to websocket server
@@ -77,14 +77,14 @@ func _send_to_app(record: Dictionary):
 	if http_service:		
 		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
 			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-				if DEBUG_LOGGING:
+				if not DEBUG_DISABLED:
 					print("Successfully sent performance data via HTTP")
 			else:
-				if DEBUG_LOGGING:
+				if not DEBUG_DISABLED:
 					print("Failed to send performance data via HTTP: ", result, response_code)
 		, record)
 	else:
-		if DEBUG_LOGGING:
+		if not DEBUG_DISABLED:
 			print("HttpService not available for sending")
 
 # Get the fastest time difference recorded
@@ -103,5 +103,5 @@ func reset_shot_timer():
 # Set the shot timer delay
 func set_shot_timer_delay(delay: float):
 	shot_timer_delay = round(delay * 100.0) / 100.0  # Ensure 2 decimal precision
-	if DEBUG_LOGGING:
+	if not DEBUG_DISABLED:
 		print("PERFORMANCE TRACKER NETWORK: Shot timer delay set to:", shot_timer_delay, "seconds")

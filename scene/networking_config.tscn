@@ -69,8 +69,8 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_gax0u")
+theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 toggle_mode = false
 
 [node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer"]
@@ -85,8 +85,8 @@ custom_minimum_size = Vector2(24, 32)
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 theme_override_styles/hover = SubResource("StyleBoxFlat_gax0u")
+theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 
 [node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 16)
@@ -112,12 +112,13 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = -580.0
+offset_bottom = -236.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/margin_bottom = 200
 
 [node name="OnscreenKeyboard" type="PanelContainer" parent="BottomContainer"]
-visible = false
 layout_mode = 2
 script = ExtResource("2_keyboard")
 metadata/_custom_type_script = "uid://dxfujov7vai6f"

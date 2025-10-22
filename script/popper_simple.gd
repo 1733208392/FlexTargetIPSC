@@ -1,5 +1,7 @@
 extends Node2D
 
+const DEBUG_DISABLE = true
+
 @onready var animation_player = $AnimationPlayer
 @onready var sprite = $PopperSprite
 
@@ -10,22 +12,22 @@ signal popper_disappeared
 
 func _ready():
 	instance_id = str(get_instance_id())  # Get unique instance ID
-	print("[popper_simple ", instance_id, "] Ready")
+	if not DEBUG_DISABLE: print("[popper_simple ", instance_id, "] Ready")
 	
 	# CRITICAL: Duplicate the material to avoid shader parameter sharing between instances
 	if sprite and sprite.material:
 		sprite.material = sprite.material.duplicate()
-		print("[popper_simple ", instance_id, "] Material duplicated to avoid shader sharing")
+		if not DEBUG_DISABLE: print("[popper_simple ", instance_id, "] Material duplicated to avoid shader sharing")
 
 func trigger_fall_animation():
 	"""Trigger the popper fall animation and disappearing"""
 	if is_fallen:
-		print("[popper_simple ", instance_id, "] Already fallen, ignoring trigger")
+		if not DEBUG_DISABLE: print("[popper_simple ", instance_id, "] Already fallen, ignoring trigger")
 		return
 		
-	print("[popper_simple ", instance_id, "] ⚠️  TRIGGERING FALL ANIMATION - WHO CALLED THIS?")
-	print("[popper_simple ", instance_id, "] Node name: ", name)
-	print("[popper_simple ", instance_id, "] Parent: ", get_parent().name if get_parent() else "no parent")
+	if not DEBUG_DISABLE: print("[popper_simple ", instance_id, "] ⚠️  TRIGGERING FALL ANIMATION - WHO CALLED THIS?")
+	if not DEBUG_DISABLE: print("[popper_simple ", instance_id, "] Node name: ", name)
+	if not DEBUG_DISABLE: print("[popper_simple ", instance_id, "] Parent: ", str(get_parent().name) if get_parent() else "no parent")
 	is_fallen = true
 	
 	# Play the fall animation
@@ -35,25 +37,25 @@ func trigger_fall_animation():
 		if not animation_player.animation_finished.is_connected(_on_animation_finished):
 			animation_player.animation_finished.connect(_on_animation_finished)
 	else:
-		print("[popper_simple] Warning: fall_down animation not found")
+		if not DEBUG_DISABLE: print("[popper_simple] Warning: fall_down animation not found")
 		# Immediately hide if no animation
 		_hide_popper()
 
 func _on_animation_finished(anim_name: String):
 	"""Called when animation finishes"""
 	if anim_name == "fall_down":
-		print("[popper_simple ", instance_id, "] Fall animation completed")
+		if not DEBUG_DISABLE: print("[popper_simple ", instance_id, "] Fall animation completed")
 		_hide_popper()
 
 func _hide_popper():
 	"""Hide the popper and emit disappeared signal"""
 	visible = false
 	popper_disappeared.emit()
-	print("[popper_simple ", instance_id, "] Popper hidden and disappeared signal emitted")
+	if not DEBUG_DISABLE: print("[popper_simple ", instance_id, "] Popper hidden and disappeared signal emitted")
 
 func reset_popper():
 	"""Reset the popper to its initial state"""
-	print("[popper_simple ", instance_id, "] Resetting popper")
+	if not DEBUG_DISABLE: print("[popper_simple ", instance_id, "] Resetting popper")
 	is_fallen = false
 	visible = true
 	
