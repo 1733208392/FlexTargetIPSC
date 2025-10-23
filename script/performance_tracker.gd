@@ -288,14 +288,35 @@ func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers
 		if parse_result == OK:
 			var response_data = json.data
 			if response_data.has("data") and response_data["code"] == 0:
-				# Check if data is empty string "{}" indicating file doesn't exist
-				if response_data["data"] == {}:
+				# Check if data is empty dictionary indicating file doesn't exist
+				if typeof(response_data["data"]) == TYPE_DICTIONARY and response_data["data"].is_empty():
 					# File doesn't exist - create new one
 					if not DEBUG_DISABLED:
 						print("[PerformanceTracker] leader_board_index.json doesn't exist, creating new file")
+				elif typeof(response_data["data"]) == TYPE_ARRAY:
+					index_data = response_data["data"]
+					# Normalize existing data to ensure correct types
+					for i in range(index_data.size()):
+						var entry = index_data[i]
+						if entry.has("index"):
+							entry["index"] = int(entry["index"])  # Ensure index is integer
+						if entry.has("score"):
+							entry["score"] = int(entry["score"])  # Ensure score is integer
+						if entry.has("hf"):
+							entry["hf"] = round(float(entry["hf"]) * 10) / 10.0  # Ensure hf is float with 1 decimal
+						if entry.has("time"):
+							entry["time"] = round(float(entry["time"]) * 10) / 10.0  # Ensure time is float with 1 decimal
+						if entry.has("fastest_shot"):
+							entry["fastest_shot"] = round(float(entry["fastest_shot"]) * 100) / 100.0  # Ensure fastest_shot is float with 2 decimals
+						else:
+							# Add fastest_shot field if missing (for backward compatibility)
+							entry["fastest_shot"] = 0.0
+					if not DEBUG_DISABLED:
+						print("[PerformanceTracker] Loaded existing leader_board_index.json with ", index_data.size(), " entries")
 				else:
+					# Assume it's a JSON string
 					var index_json = JSON.new()
-					var index_parse = index_json.parse(response_data["data"])
+					var index_parse = index_json.parse(str(response_data["data"]))
 					if index_parse == OK:
 						index_data = index_json.data
 						# Normalize existing data to ensure correct types
@@ -344,7 +365,7 @@ func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers
 	#var index_json = JSON.stringify(index_data)
 	http_service.save_game(_on_index_file_saved, "leader_board_index", index_data)
 
-func _on_index_file_saved(result, response_code, headers, body):
+func _on_index_file_saved(_result, response_code, _headers, _body):
 	if response_code == 200:
 		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] leader_board_index.json saved successfully")
