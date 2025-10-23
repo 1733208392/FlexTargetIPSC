@@ -112,14 +112,14 @@ func _on_drills_finished():
 	
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		var json_string = JSON.stringify(pending_drill_data)
+		# var json_string = JSON.stringify(pending_drill_data)
 		# Implement circular buffer: cycle through indices 1-20
 		var current_index = int(global_data.settings_dict.get("max_index", 0)) if global_data else 0
 		var next_index = (current_index % 20) + 1  # Circular buffer: 1-20
 		var data_id = "performance_" + str(next_index)
 		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] Saving drill data to file: ", data_id, " (previous index: ", current_index, ", next index: ", next_index, ")")
-		http_service.save_game(_on_performance_saved, data_id, json_string)
+		http_service.save_game(_on_performance_saved, data_id, pending_drill_data)
 	else:
 		if not DEBUG_DISABLED:
 			print("HttpService not found")
@@ -210,9 +210,9 @@ func _on_performance_saved(result, response_code, headers, body):
 				if not DEBUG_DISABLED:
 					print("[PerformanceTracker] Updated max_index from ", current_index, " to ", next_index, " (circular buffer 1-20)")
 				# Preserve all existing settings, only update max_index
-				settings_json = JSON.stringify(global_data.settings_dict)
+				#settings_json = JSON.stringify(global_data.settings_dict)
 			
-			http_service.save_game(_on_settings_saved, "settings", settings_json)
+			http_service.save_game(_on_settings_saved, "settings", global_data.settings_dict)
 			
 			# Save/update leaderboard index
 			_save_leaderboard_index(next_index)
@@ -289,7 +289,7 @@ func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers
 			var response_data = json.data
 			if response_data.has("data") and response_data["code"] == 0:
 				# Check if data is empty string "{}" indicating file doesn't exist
-				if response_data["data"] == "{}":
+				if response_data["data"] == {}:
 					# File doesn't exist - create new one
 					if not DEBUG_DISABLED:
 						print("[PerformanceTracker] leader_board_index.json doesn't exist, creating new file")
@@ -341,8 +341,8 @@ func _on_index_file_loaded(new_entry: Dictionary, result, response_code, headers
 	index_data.sort_custom(func(a, b): return a.get("hf", 0.0) > b.get("hf", 0.0))
 	
 	# Save updated leader_board_index.json
-	var index_json = JSON.stringify(index_data)
-	http_service.save_game(_on_index_file_saved, "leader_board_index", index_json)
+	#var index_json = JSON.stringify(index_data)
+	http_service.save_game(_on_index_file_saved, "leader_board_index", index_data)
 
 func _on_index_file_saved(result, response_code, headers, body):
 	if response_code == 200:

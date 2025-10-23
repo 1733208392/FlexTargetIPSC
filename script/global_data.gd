@@ -28,10 +28,17 @@ func _on_settings_loaded(_result, response_code, _headers, body):
 		var json = JSON.parse_string(body.get_string_from_utf8())
 		# print("GlobalData: Parsed JSON: ", json)
 		if json and json.has("data"):
-			var content_json = JSON.parse_string(json["data"])
+			var data = json["data"]
 			# print("GlobalData: Parsed content JSON: ", content_json)
-			if content_json:
-				settings_dict = content_json
+			if data:
+				if typeof(data) == TYPE_STRING:
+					var parsed = JSON.parse_string(data)
+					if parsed:
+						settings_dict = parsed
+					else:
+						settings_dict = {}
+				else:
+					settings_dict = data
 				# Ensure max_index is always an integer
 				if settings_dict.has("max_index"):
 					settings_dict["max_index"] = int(settings_dict["max_index"])

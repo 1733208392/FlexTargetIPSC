@@ -4,7 +4,7 @@ extends Node
 
 const DEBUG_DISABLED = true
 
-var base_url: String = "http://127.0.0.1"
+var base_url: String = "http://192.168.1.100"
 var sb = null  # Signal bus reference
 
 func _ready():
@@ -115,7 +115,7 @@ func post(url: String, data: Dictionary, callback: Callable):
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
 
-func save_game(callback: Callable, data_id: String, content: String, ns: String = "default"):
+func save_game(callback: Callable, data_id: String, content: Variant, ns: String = "default"):
 	var url = base_url + "/game/save"
 	var data = {
 		"data_id": data_id,
@@ -260,7 +260,8 @@ func netlink_status(callback: Callable):
 			if not DEBUG_DISABLED:
 				print("[HttpService] SignalBus not found, cannot emit debug info")
 		# Forward raw response to caller
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
 

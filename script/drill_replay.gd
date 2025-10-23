@@ -140,10 +140,10 @@ func _on_performance_file_loaded(result, response_code, _headers, body):
 		if parse_result == OK:
 			var response_data = json.data
 			if response_data.has("data") and response_data["code"] == 0:
-				var content_json = JSON.new()
-				var content_parse = content_json.parse(response_data["data"])
-				if content_parse == OK:
-					var performance_data = content_json.data
+				var performance_data = null
+				if response_data["data"] is Dictionary:
+					# Data is already parsed as Dictionary (performance data format)
+					performance_data = response_data["data"]
 					if not DEBUG_DISABLED:
 						print("[Drill Replay] Successfully loaded performance file with ", performance_data.get("records", []).size(), " records")
 					load_selected_drill_data(performance_data)
@@ -156,9 +156,30 @@ func _on_performance_file_loaded(result, response_code, _headers, body):
 					# Initialize UI after successful load
 					initialize_ui()
 					return
+				elif response_data["data"] is String:
+					# Data is a JSON string that needs parsing
+					var content_json = JSON.new()
+					var content_parse = content_json.parse(response_data["data"])
+					if content_parse == OK:
+						performance_data = content_json.data
+						if not DEBUG_DISABLED:
+							print("[Drill Replay] Successfully loaded performance file with ", performance_data.get("records", []).size(), " records")
+						load_selected_drill_data(performance_data)
+						
+						# Clear the selected drill data from GlobalData
+						var global_data = get_node("/root/GlobalData")
+						if global_data:
+							global_data.selected_drill_data = {}
+						
+						# Initialize UI after successful load
+						initialize_ui()
+						return
+					else:
+						if not DEBUG_DISABLED:
+							print("[Drill Replay] Failed to parse performance file content")
 				else:
 					if not DEBUG_DISABLED:
-						print("[Drill Replay] Failed to parse performance file content")
+						print("[Drill Replay] Unexpected data type for performance file: ", typeof(response_data["data"]))
 			else:
 				if not DEBUG_DISABLED:
 					print("[Drill Replay] Invalid response data structure")

@@ -1,7 +1,7 @@
 extends Node2D
 
 # Performance optimization
-const DEBUG_DISABLED = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
 var target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]

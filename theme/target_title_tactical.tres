@@ -1,12 +1,6 @@
-[gd_resource type="LabelSettings" load_steps=2 format=3 uid="uid://bw22f0mtic4xe"]
-
-[sub_resource type="SystemFont" id="SystemFont_tactical"]
-font_names = PackedStringArray("Consolas", "Courier New", "Liberation Mono", "DejaVu Sans Mono")
-font_italic = true
-font_weight = 700
+[gd_resource type="LabelSettings" format=3 uid="uid://bw22f0mtic4xe"]
 
 [resource]
-font = SubResource("SystemFont_tactical")
-font_size = 80
+font_size = 30
 outline_size = 2
 outline_color = Color(0, 0, 0, 1)

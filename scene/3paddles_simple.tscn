@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://bjwl4ygsr211v"]
 
-[ext_resource type="PackedScene" path="res://scene/paddle_simple.tscn" id="2_jci2v"]
-[ext_resource type="Script" path="res://script/3paddles_simple.gd" id="2_script"]
+[ext_resource type="PackedScene" uid="uid://b1o8o233dwg3s" path="res://scene/paddle_simple.tscn" id="2_jci2v"]
+[ext_resource type="Script" uid="uid://bi25rhrsu2r0n" path="res://script/3paddles_simple.gd" id="2_script"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jci2v"]
 radius = 119.403
@@ -16,7 +16,7 @@ radius = 120.416
 script = ExtResource("2_script")
 
 [node name="Paddle1Area" type="Area2D" parent="."]
-position = Vector2(-300, 0)
+position = Vector2(-250, 0)
 
 [node name="Paddle1" parent="Paddle1Area" instance=ExtResource("2_jci2v")]
 
@@ -36,8 +36,8 @@ position = Vector2(0, 200)
 [node name="Paddle3Area" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Paddle3Area"]
-position = Vector2(301, -135)
+position = Vector2(250, -135)
 shape = SubResource("CircleShape2D_0ir4w")
 
 [node name="Paddle3" parent="Paddle3Area" instance=ExtResource("2_jci2v")]
-position = Vector2(300, 0)
+position = Vector2(250, 0)

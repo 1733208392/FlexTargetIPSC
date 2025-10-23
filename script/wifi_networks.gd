@@ -532,11 +532,9 @@ func _on_back_pressed():
 	Handle Back button press
 	"""
 	if overlay.visible:
-		print("[WiFi Networks] Back pressed - cancelling password entry")
 		_cancel_password()
 	else:
-		print("[WiFi Networks] Back pressed - navigating to main menu")
-		get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+		get_tree().change_scene_to_file("res://scene/option/option.tscn")
 
 func _on_volume_up():
 	"""

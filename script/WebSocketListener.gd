@@ -1,7 +1,7 @@
 extends Node
 
 const DEBUG_DISABLED = true
-const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
+const WEBSOCKET_URL = "ws://192.168.1.100/websocket"
 #const WEBSOCKET_URL = "ws://localhost:8080"
 
 signal data_received(data)
@@ -148,6 +148,18 @@ func _process_websocket_json(json_string):
 		return
 	
 	var parsed = json.get_data()
+	# Handle telemetry data
+	if parsed and parsed.has("type") and parsed["type"] == "telemetry" and parsed.has("data"):
+		var telemetry = parsed["data"]
+		var telemetry_str = JSON.stringify(telemetry)
+		var msg = "WebSocket telemetry received: " + telemetry_str
+		var sb = get_node_or_null("/root/SignalBus")
+		if sb:
+			sb.emit_onboard_debug_info(2, msg, "WebSocket Listener")
+		else:
+			print(msg)
+		return
+	
 	# print("[WebSocket] Parsed data: ", parsed)
 	# Handle control directive
 	if parsed and parsed.has("type") and parsed["type"] == "control" and parsed.has("directive"):

@@ -98,14 +98,25 @@ func _on_leaderboard_index_loaded(result, response_code, _headers, body):
 		if parse_result == OK:
 			var response_data = json.data
 			if response_data.has("data") and response_data["code"] == 0:
-				var index_json = JSON.new()
-				var index_parse = index_json.parse(response_data["data"])
-				if index_parse == OK:
-					var leaderboard_data = index_json.data
+				var leaderboard_data = null
+				if response_data["data"] is Array:
+					# Data is already parsed as Array (leaderboard index format)
+					leaderboard_data = response_data["data"]
 					process_leaderboard_data(leaderboard_data)
+				elif response_data["data"] is String:
+					# Data is a JSON string that needs parsing
+					var index_json = JSON.new()
+					var index_parse = index_json.parse(response_data["data"])
+					if index_parse == OK:
+						leaderboard_data = index_json.data
+						process_leaderboard_data(leaderboard_data)
+					else:
+						if DEBUG_PRINTS:
+							print("[History] Failed to parse leaderboard index data")
+						finish_loading()
 				else:
 					if DEBUG_PRINTS:
-						print("[History] Failed to parse leaderboard index data")
+						print("[History] Unexpected data type for leaderboard index: ", typeof(response_data["data"]))
 					finish_loading()
 			else:
 				if DEBUG_PRINTS:

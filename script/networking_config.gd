@@ -322,7 +322,7 @@ func _on_enter_pressed():
 func _on_back_pressed():
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Back pressed - navigating to main menu")
-	get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+	get_tree().change_scene_to_file("res://scene/option/option.tscn")
 
 func _on_netlink_status_loaded():
 	if not DEBUG_DISABLED:

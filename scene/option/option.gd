@@ -50,7 +50,7 @@ signal sfx_volume_changed(volume: int)
 @onready var network_button = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow/NetworkButton"
 @onready var networking_buttons = []
 @onready var content1_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1/Content1"
-@onready var content2_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MaroptginContainer/NetworkContainer/NetworkInfo/Row2/Content2"
+@onready var content2_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2/Content2"
 @onready var content3_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3/Content3"
 @onready var content4_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4/Content4"
 @onready var content5_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5/Content5"
@@ -394,6 +394,25 @@ func set_focus_to_current_language():
 			if english_button:
 				english_button.grab_focus()
 
+func set_focus_based_on_tab():
+	# Set focus based on the current tab
+	var current = tab_container.current_tab if tab_container else 0
+	match current:
+		0:
+			if wifi_button:
+				wifi_button.grab_focus()
+			else:
+				tab_container.grab_focus()
+		1:
+			set_focus_to_current_language()
+		2:
+			if random_sequence_check:
+				random_sequence_check.grab_focus()
+			else:
+				tab_container.grab_focus()
+		_:
+			tab_container.grab_focus()
+
 func update_ui_texts():
 	if tab_container:
 		# New tab order: 0 Networking, 1 Languages, 2 Drills, 3 About
@@ -537,7 +556,7 @@ func load_settings_from_global_data():
 		sfx_volume_slider.value = sfx_volume
 	
 	# Use call_deferred to ensure focus is set after all UI updates are complete
-	call_deferred("set_focus_to_current_language")
+	call_deferred("set_focus_based_on_tab")
 
 func _populate_networking_fields(data: Dictionary):
 	# Map expected fields from netlink_status -> UI labels
@@ -1034,14 +1053,12 @@ func adjust_sensitivity_slider(direction: String):
 	if direction == "right":
 		var new_value = min(sensitivity_slider.max_value, current_value + step)
 		# Round to nearest 100
-		new_value = round(new_value / 100.0) * 100
 		sensitivity_slider.value = new_value
 		if not DEBUG_DISABLED:
 			print("[Option] Increased sensitivity to: ", sensitivity_slider.value)
 	elif direction == "left":
 		var new_value = max(sensitivity_slider.min_value, current_value - step)
 		# Round to nearest 100
-		new_value = round(new_value / 100.0) * 100
 		sensitivity_slider.value = new_value
 		if not DEBUG_DISABLED:
 			print("[Option] Decreased sensitivity to: ", sensitivity_slider.value)
