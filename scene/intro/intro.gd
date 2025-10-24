@@ -243,7 +243,8 @@ func _on_start_pressed():
 	else:
 		if not DEBUG_DISABLED:
 			print("[Intro] HttpService singleton not found!")
-		get_tree().change_scene_to_file("res://scene/drills.tscn")
+		if get_tree():
+			get_tree().change_scene_to_file("res://scene/drills.tscn")
 
 func _on_start_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
@@ -253,7 +254,8 @@ func _on_start_response(_result, response_code, _headers, body):
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
 		if not DEBUG_DISABLED:
 			print("[Intro] Start game success, changing scene.")
-		get_tree().change_scene_to_file("res://scene/drills.tscn")
+		if get_tree():
+			get_tree().change_scene_to_file("res://scene/drills.tscn")
 	else:
 		if not DEBUG_DISABLED:
 			print("[Intro] Start game failed or invalid response.")
@@ -284,7 +286,8 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+			if get_tree():
+				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"volume_up":
 			if not DEBUG_DISABLED:
 				print("[Intro] Volume up")

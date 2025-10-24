@@ -4,11 +4,12 @@ extends Node2D
 const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-var target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var target_sequence: Array[String] = ["bullseye", "ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
 var current_target_index: int = 0
 var current_target_instance = null
 
 # Preload the scenes for bootcamp targets
+@onready var bullseye_scene: PackedScene = preload("res://scene/targets/bullseye.tscn")	
 @onready var ipsc_mini_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
 @onready var ipsc_mini_black_1_scene: PackedScene = preload("res://scene/ipsc_mini_black_1.tscn")
 @onready var ipsc_mini_black_2_scene: PackedScene = preload("res://scene/ipsc_mini_black_2.tscn")
@@ -17,7 +18,6 @@ var current_target_instance = null
 @onready var three_paddles_scene: PackedScene = preload("res://scene/3paddles_simple.tscn")
 @onready var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
-@onready var ipsc = $IPSC
 @onready var shot_labels = []
 @onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
 @onready var background_music = $BackgroundMusic
@@ -35,16 +35,7 @@ func _ready():
 	if not DEBUG_DISABLED:
 		print("[Bootcamp] Initializing bootcamp, waiting for HTTP start game response...")
 	
-	# Disable disappearing for bootcamp
-	ipsc.max_shots = 1000
-	
-	# Temporarily disable target interaction until drill starts
-	ipsc.input_pickable = false
-	if not DEBUG_DISABLED:
-		print("[Bootcamp] Target disabled until game start response received")
-	
-	# Connect to ipsc target_hit signal
-	ipsc.target_hit.connect(_on_target_hit)
+	# Targets are spawned dynamically when drill starts
 	
 	# Connect clear button
 	if clear_button:
@@ -91,6 +82,12 @@ func _ready():
 		_apply_sfx_volume(5)
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Using default SFX volume: 5")
+	
+	# Enable bullet spawning for bootcamp scene
+	if ws_listener:
+		ws_listener.set_bullet_spawning_enabled(true)
+		if not DEBUG_DISABLED:
+			print("[Bootcamp] Enabled bullet spawning for bootcamp scene")
 	
 	# Send HTTP request to start the game and wait for response
 	start_bootcamp_drill()
@@ -143,16 +140,9 @@ func _start_drill_immediately():
 	if not DEBUG_DISABLED:
 		print("[Bootcamp] Bootcamp drill officially started!")
 	
-	# Initialize current target (starts with ipsc_mini)
-	current_target_instance = ipsc
+	# Initialize with the first target in sequence (bullseye)
 	current_target_index = 0
-	
-	# Enable target interactions (they might be disabled initially)
-	if ipsc:
-		ipsc.input_pickable = true
-		ipsc.drill_active = true
-		if not DEBUG_DISABLED:
-			print("[Bootcamp] Target enabled for shooting practice")
+	spawn_target_by_type(target_sequence[current_target_index])
 	
 	# Play background music
 	if background_music:
@@ -162,6 +152,31 @@ func _start_drill_immediately():
 	
 	# Any additional drill initialization can go here
 	# For bootcamp, the drill is already "active" since it's free practice
+
+func _on_bullseye_time_diff(time_diff: float, hit_position: Vector2):
+	"""Handle time difference signals from bullseye target for gun zeroing"""
+	if not DEBUG_DISABLED:
+		print("[Bootcamp] _on_bullseye_time_diff called with time_diff: ", time_diff, " hit_position: ", hit_position)
+	
+	# Only process if drill has started
+	if not drill_started:
+		if not DEBUG_DISABLED:
+			print("[Bootcamp] Bullseye time diff before drill started - ignoring")
+		return
+	
+	# Always check if hit is in the ClearArea
+	if hit_position and clear_area and clear_area.get_rect().has_point(hit_position):
+		if not DEBUG_DISABLED:
+			print("[Bootcamp] Bullseye hit detected in ClearArea at: ", hit_position)
+		_on_clear_pressed()
+		return
+	
+	# Only display time differences for actual target hits (time_diff >= 0)
+	if time_diff >= 0:
+		if time_diff > 0:
+			_update_shot_list("+%.2fs" % time_diff)
+		else:
+			_update_shot_list("First shot")
 
 func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null):
 	# Handle both signal signatures:
@@ -218,6 +233,12 @@ func _on_clear_pressed():
 				print("Removed ", target_type, " for respawning")
 		# Respawn the target
 		spawn_target_by_type(target_type)
+	elif target_type == "bullseye":
+		# For bullseye, reset the target (clears bullet holes and shot tracking)
+		if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("reset_target"):
+			current_target_instance.reset_target()
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Reset bullseye target")
 	else:
 		# For other targets (with bullet holes), clear the bullet holes recursively
 		var children_to_remove = []
@@ -463,6 +484,8 @@ func spawn_target_by_type(target_type: String):
 	
 	# Select the appropriate scene
 	match target_type:
+		"bullseye":
+			target_scene = bullseye_scene
 		"ipsc_mini":
 			target_scene = ipsc_mini_scene
 		"ipsc_mini_black_1":
@@ -513,8 +536,21 @@ func spawn_target_by_type(target_type: String):
 		if target_type == "ipsc_mini_rotate":
 			target.position = Vector2(160, 840)  # Center (360,640) + offset (-200,200)
 		
+		# Special scaling for bullseye target
+		if target_type == "bullseye":
+			target.scale = Vector2(0.9, 0.9)
+		
 		# Connect signals
-		if target.has_signal("target_hit"):
+		if target_type == "bullseye":
+			# Bullseye uses shot_time_diff signal instead of target_hit
+			if target.has_signal("shot_time_diff"):
+				target.shot_time_diff.connect(_on_bullseye_time_diff)
+				if not DEBUG_DISABLED:
+					print("[Bootcamp] Connected shot_time_diff signal for bullseye")
+			else:
+				if not DEBUG_DISABLED:
+					print("[Bootcamp] ERROR: Bullseye target does not have shot_time_diff signal")
+		elif target.has_signal("target_hit"):
 			target.target_hit.connect(_on_target_hit)
 		
 		# For poppers and paddles, connect to target_disappeared signal to auto-respawn

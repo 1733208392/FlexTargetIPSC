@@ -1,8 +1,8 @@
 extends Node
 
 const DEBUG_DISABLED = true
-const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
-#const WEBSOCKET_URL = "ws://192.168.1.100/websocket"
+#const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
+const WEBSOCKET_URL = "ws://192.168.1.102/websocket"
 #const WEBSOCKET_URL = "ws://localhost:8080"
 
 signal data_received(data)

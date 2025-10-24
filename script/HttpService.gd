@@ -4,8 +4,8 @@ extends Node
 
 const DEBUG_DISABLED = true
 
-var base_url: String = "http://127.0.0.1"
-#var base_url: String = "http://192.168.1.100"
+#var base_url: String = "http://127.0.0.1"
+var base_url: String = "http://192.168.1.102"
 
 var sb = null  # Signal bus reference
 
@@ -23,7 +23,8 @@ func get_request(url: String, callback: Callable):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "GET " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	http.request(url)
 
@@ -37,7 +38,8 @@ func start_game(callback: Callable, mode: String = "free", waiting: int = 0):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
@@ -53,7 +55,8 @@ func stop_game(callback: Callable):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	http.request(url, [], HTTPClient.METHOD_POST)
 
@@ -67,7 +70,8 @@ func shutdown(callback: Callable, mode: String = "free"):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
@@ -82,7 +86,8 @@ func volume_up(callback: Callable, mode: String = "free"):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
@@ -97,7 +102,8 @@ func volume_down(callback: Callable, mode: String = "free"):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
@@ -112,7 +118,8 @@ func post(url: String, data: Dictionary, callback: Callable):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
@@ -131,7 +138,8 @@ func save_game(callback: Callable, data_id: String, content: Variant, ns: String
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
@@ -151,7 +159,8 @@ func load_game(callback: Callable, data_id: String, ns: String = "default"):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
 	if not DEBUG_DISABLED:
@@ -169,7 +178,8 @@ func wifi_scan(callback: Callable):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
 
@@ -188,7 +198,8 @@ func wifi_connect(callback: Callable, ssid: String, password: String):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
@@ -210,7 +221,8 @@ func netlink_config(callback: Callable, channel: int, target_name: String, workm
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
@@ -226,7 +238,8 @@ func netlink_start(callback: Callable):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
 
@@ -241,7 +254,8 @@ func netlink_stop(callback: Callable):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
 
@@ -280,7 +294,8 @@ func netlink_forward_data(callback: Callable, data: Dictionary):
 			var _body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Data: " + str(data)
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
 
@@ -295,7 +310,8 @@ func upgrade_engine(callback: Callable):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
 
@@ -310,7 +326,8 @@ func embedded_status(callback: Callable):
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
 			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		callback.call(result, response_code, headers, body)
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
 	)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, "{}")
 

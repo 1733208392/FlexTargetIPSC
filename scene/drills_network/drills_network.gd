@@ -97,6 +97,13 @@ func _ready():
 	# Set theme
 	emit_signal("ui_theme_change", "golden")
 	
+	# Enable bullet spawning for network drills scene
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.set_bullet_spawning_enabled(true)
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Enabled bullet spawning for network drills scene")
+	
 	# Initialize progress (1 target)
 	# Note: progress UI updates are not emitted for network drills
 	emit_signal("ui_target_title_update", 1, 1)

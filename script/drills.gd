@@ -1232,13 +1232,14 @@ func _on_menu_control(directive: String):
 				menu_controller.play_cursor_sound()
 			
 			# Show status bar when exiting drills
-			var status_bars = get_tree().get_nodes_in_group("status_bar")
-			for status_bar in status_bars:
-				status_bar.visible = true
-				if not DEBUG_DISABLED:
-					print("[Drills] Shown status bar: ", status_bar.name)
+			if get_tree():
+				var status_bars = get_tree().get_nodes_in_group("status_bar")
+				for status_bar in status_bars:
+					status_bar.visible = true
+					if not DEBUG_DISABLED:
+						print("[Drills] Shown status bar: ", status_bar.name)
 			
-			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:
 			if not DEBUG_DISABLED:
 				print("[Drills] Unknown directive: ", directive)
