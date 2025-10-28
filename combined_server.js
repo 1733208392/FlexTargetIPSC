@@ -11,7 +11,7 @@ const WebSocket = require('ws');
 let netlinkStarted = true;
 let netlinkChannel = 0;
 let netlinkWorkMode = "master";
-let netlinkDeviceName = "cjyw01";
+let netlinkDeviceName = "01";
 let netlinkBluetoothName = "cjyw01-bluetooth";
 let netlinkWifiIp = "192.168.1.100"; // Mock IP for simulation
 
@@ -701,8 +701,7 @@ class WriteCharacteristic extends bleno.Characteristic {
             type: 'netlink',
             action: 'device_list',
             data: [
-              { mode: 'master', name: 'cjyw01' },
-              { mode: 'slave', name: 'yang02' }
+              { mode: 'master', name: '01' }
             ]
           };
           

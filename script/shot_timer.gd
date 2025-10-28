@@ -21,6 +21,8 @@ enum TimerState {
 @export var min_delay: float = 2.0  # Minimum delay before beep (seconds)
 @export var max_delay: float = 5.0  # Maximum delay before beep (seconds)
 
+var fixed_delay: float = -1.0  # If set (>=0), use this delay instead of random
+
 # State tracking
 var current_state: TimerState = TimerState.WAITING
 var start_time: float = 0.0
@@ -88,6 +90,9 @@ func get_standby_text() -> String:
 		_:
 			return "STANDBY"
 
+func set_fixed_delay(delay: float):
+	fixed_delay = delay
+
 func _input(_event):
 	"""Handle input events - removed manual controls"""
 	# No manual controls needed - timer starts automatically
@@ -124,14 +129,24 @@ func start_timer_sequence():
 	# Start pulsing animation
 	animation_player.play("standby_pulse")
 	
-	# Set random delay between min_delay and max_delay
-	var random_delay = randf_range(min_delay, max_delay)
-	actual_delay = round(random_delay * 100.0) / 100.0  # Round to 2 decimal places
-	timer_delay.wait_time = random_delay
+	# Set delay: use fixed if set, else random
+	var delay_to_use: float
+	if fixed_delay >= 0:
+		delay_to_use = fixed_delay
+		actual_delay = fixed_delay
+		fixed_delay = -1.0  # Reset after use
+	else:
+		var random_delay = randf_range(min_delay, max_delay)
+		delay_to_use = random_delay
+		actual_delay = round(random_delay * 100.0) / 100.0
+	timer_delay.wait_time = delay_to_use
 	timer_delay.start()
 	
 	if not DEBUG_DISABLED:
-		print("Random delay set to: ", random_delay, " seconds (rounded: ", actual_delay, ")")
+		if fixed_delay >= 0:
+			print("Fixed delay set to: ", delay_to_use, " seconds")
+		else:
+			print("Random delay set to: ", delay_to_use, " seconds (rounded: ", actual_delay, ")")
 	
 	# Record start time
 	start_time = Time.get_unix_time_from_system()
@@ -183,6 +198,7 @@ func reset_timer():
 	start_time = 0.0
 	beep_time = 0.0
 	actual_delay = 0.0
+	fixed_delay = -1.0
 	
 	# Reset visual elements and hide them
 	standby_label.text = get_standby_text()

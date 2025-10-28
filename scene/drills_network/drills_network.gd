@@ -13,7 +13,8 @@ var target_type_to_scene = {
 	"hostage": "res://scene/hostage.tscn",
 	"rotation": "res://scene/ipsc_mini_rotate.tscn",
 	"paddle": "res://scene/3paddles.tscn",
-	"popper": "res://scene/2poppers_simple.tscn"
+	"popper": "res://scene/2poppers_simple.tscn",
+	"final": "res://scene/targets/final.tscn"
 }
 
 # Node references
@@ -41,14 +42,20 @@ var timeout_timer: Timer = null
 var timeout_seconds: float = 40.0
 var drill_timed_out: bool = false
 
-# Master/Slave mode
-var is_first: bool = false
+
+var is_first: bool = false # Only First Target Has Shot Timer
+var is_last: bool = false  # Last Target shows the Final target
 
 # Saved parameters from BLE 'ready' until a 'start' is received
 var saved_ble_ready_content: Dictionary = {}
 
 # Current repeat tracking
 var current_repeat: int = 0
+
+# Shot tracking for last target
+var shots_on_last_target: int = 0
+var final_target_spawned: bool = false
+var final_target_instance: Node = null
 
 # Performance tracking
 signal drills_finished
@@ -57,12 +64,10 @@ signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
 signal ui_timer_stopped(final_time: float)
-signal ui_target_title_update(target_index: int, total_targets: int)
 signal ui_target_name_update(target_name: String)
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
 signal ui_mode_update(is_first: bool)
-signal ui_theme_change(theme_name: String)
 
 @onready var performance_tracker = preload("res://script/performance_tracker_network.gd").new()
 
@@ -94,19 +99,12 @@ func _ready():
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Connected to shot timer ready signal")
 	
-	# Set theme
-	emit_signal("ui_theme_change", "golden")
-	
 	# Enable bullet spawning for network drills scene
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.set_bullet_spawning_enabled(true)
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Enabled bullet spawning for network drills scene")
-	
-	# Initialize progress (1 target)
-	# Note: progress UI updates are not emitted for network drills
-	emit_signal("ui_target_title_update", 1, 1)
 
 	# Hide only the HeaderContainer inside TopContainer for network drills
 	var drill_ui_node = get_node_or_null("DrillUI")
@@ -204,7 +202,7 @@ func _start_auto_start_fallback():
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Auto-start fallback triggered - no BLE start command received, starting drill")
 		
-		# Use is_first from saved ready content, default to true (master mode) if not present
+		# Use is_first from saved ready content
 		is_first = saved_ble_ready_content.get("isFirst", true)
 		emit_signal("ui_mode_update", is_first)
 		
@@ -277,6 +275,76 @@ func start_drill():
 		print("[DrillsNetwork] Starting drill after delay")
 	spawn_target()
 
+func spawn_final_target():
+	"""Spawn the final target after 2 shots on the last target"""
+	final_target_spawned = true
+	
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Removing last target before spawning final target")
+	
+	# Remove the last target after a delay to allow bullet effects to complete
+	if target_instance:
+		await get_tree().create_timer(0.5).timeout
+		target_instance.queue_free()
+		target_instance = null
+	
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Spawning final target")
+	
+	# Clear any existing final target
+	if final_target_instance:
+		final_target_instance.queue_free()
+		final_target_instance = null
+	
+	# Load and instantiate the final target scene
+	var final_scene = load("res://scene/targets/final.tscn")
+	if final_scene:
+		final_target_instance = final_scene.instantiate()
+		center_container.add_child(final_target_instance)
+		
+		# Connect to final_target_hit signal
+		if final_target_instance.has_signal("final_target_hit"):
+			final_target_instance.final_target_hit.connect(_on_final_target_hit)
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Connected to final_target_hit signal")
+		else:
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] WARNING: Final target does not have final_target_hit signal")
+	else:
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] ERROR: Could not load final target scene")
+
+func _on_final_target_hit(hit_position: Vector2):
+	"""Handle final target hit - send end acknowledgement"""
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Final target hit at position: ", hit_position)
+	
+	# Mark drill as completed to stop the timer updates
+	drill_completed = true
+	
+	# Stop the drill timer
+	if timeout_timer:
+		timeout_timer.stop()
+	
+	# Emit timer stopped signal with final elapsed time
+	emit_signal("ui_timer_stopped", elapsed_seconds)
+	
+	# Send netlink forward data with ack:end
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		var content_dict = {"ack": "end"}
+		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
+			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Sent end ack successfully")
+			else:
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Failed to send end ack: ", result, response_code)
+		, content_dict)
+	else:
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] HttpService not available; cannot send end ack")
+
 func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	"""Handle target hit - supports different target signal signatures"""
 	# Ignore any shots after the drill has completed
@@ -316,15 +384,22 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	
 	total_score += points
 	
+	# Track shots on the last target to trigger final spawn
+	if is_last and not final_target_spawned:
+		shots_on_last_target += 1
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Last target hit! Shot count: ", shots_on_last_target, "/2")
+		
+		# Spawn final target after 2 shots on last target
+		if shots_on_last_target >= 2:
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Spawning final target after 2 shots on last target")
+			spawn_final_target()
+	
 	# Emit for performance tracking
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Emitting target_hit signal to performance tracker")
 	emit_signal("target_hit", current_target_type, hit_position, zone, 0.0, current_repeat)
-	
-	# Update fastest time
-	# Note: fastest time UI update removed per request
-	
-	# Drill continues until timeout
 
 func start_drill_timer():
 	"""Start the drill timer"""
@@ -406,6 +481,8 @@ func reset_drill_state():
 	elapsed_seconds = 0.0
 	drill_start_time = 0.0
 	shot_timer_visible = false
+	shots_on_last_target = 0
+	final_target_spawned = false
 	
 	# Stop and clean up timeout timer
 	if timeout_timer:
@@ -417,6 +494,11 @@ func reset_drill_state():
 	if target_instance:
 		target_instance.queue_free()
 		target_instance = null
+	
+	# Remove existing final target instance
+	if final_target_instance:
+		final_target_instance.queue_free()
+		final_target_instance = null
 	
 	# Hide completion overlay
 	network_complete_overlay.hide_completion()
@@ -499,11 +581,24 @@ func _on_ble_ready_command(content: Dictionary):
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] BLE ready parameters saved: ", saved_ble_ready_content)
 
+	# Set random delay for shot timer if in master mode
+	var delay_time: float = 0.0
+	if content.get("isFirst", false):
+		var shot_timer = get_node("DrillUI/ShotTimerOverlay")
+		if shot_timer:
+			delay_time = randf_range(2.0, 5.0)
+			delay_time = round(delay_time * 100.0) / 100.0
+			shot_timer.set_fixed_delay(delay_time)
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Set random delay to shot timer: ", delay_time)
+
 	# Acknowledge the ready command back to sender by forwarding a netlink message
 	# Format: {"type":"netlink","action":"forward","device":"A","content":"ready"}
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
 		var content_dict = {"ack":"ready"}
+		if delay_time > 0.0:
+			content_dict["delay_time"] = delay_time
 		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
 			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 				if DEBUG_ENABLED:
@@ -542,6 +637,11 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Current repeat set to: ", current_repeat)
 	
+	# Extract isLast flag
+	is_last = merged.get("isLast", false)
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] isLast set to: ", is_last)
+	
 	# Notify UI of mode change
 	emit_signal("ui_mode_update", is_first)
 
@@ -568,7 +668,7 @@ func _on_ble_start_command(content: Dictionary) -> void:
 		if is_first:
 			timeout_seconds = float(merged["timeout"])
 		else:
-			timeout_seconds = 5.0 + float(merged["timeout"])
+			timeout_seconds = float(merged["delay_time"]) + float(merged["timeout"])
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Set timeout to: ", timeout_seconds)
 
