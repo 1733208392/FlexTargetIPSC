@@ -5,7 +5,7 @@ extends Node
 const DEBUG_DISABLED = true
 
 var base_url: String = "http://127.0.0.1"
-#var base_url: String = "http://192.168.1.104"
+#var base_url: String = "http://192.168.50.22"
 
 var sb = null  # Signal bus reference
 

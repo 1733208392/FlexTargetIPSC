@@ -2,6 +2,7 @@ extends Node2D
 
 var final_id: String = ""
 var collision_radius: float = 0.0
+var collision_center: Vector2 = Vector2.ZERO
 @onready var audio_player = $AudioStreamPlayer2D
 @onready var idle_sprite = $Area2D/idle
 @onready var hit_sprite = $Area2D/hit
@@ -14,13 +15,14 @@ func _ready():
 	if final_id == "":
 		final_id = name
 	
-	# Get the collision shape radius from the Area2D's CollisionShape2D
+	# Get the collision shape radius and position from the Area2D's CollisionShape2D
 	var area_2d = get_node_or_null("Area2D")
 	if area_2d:
 		var collision_shape = area_2d.get_node_or_null("CollisionShape2D")
 		if collision_shape and collision_shape.shape is CircleShape2D:
 			collision_radius = collision_shape.shape.radius
-			print("[final %s] Collision radius set to: %f" % [final_id, collision_radius])
+			collision_center = collision_shape.position
+			print("[final %s] Collision radius set to: %f, center offset: %s" % [final_id, collision_radius, collision_center])
 		else:
 			print("[final %s] ERROR: Could not find CircleShape2D!" % final_id)
 	else:
@@ -64,8 +66,8 @@ func _on_websocket_bullet_hit(pos: Vector2):
 
 func is_point_in_collision_circle(local_point: Vector2) -> bool:
 	"""Check if a local point is within the collision circle"""
-	# The circle is centered at the Area2D's origin (0, 0)
-	var distance = local_point.length()
+	# The circle is centered at the collision_center offset (e.g., (0, -70))
+	var distance = (local_point - collision_center).length()
 	return distance <= collision_radius
 
 func show_hit_state():

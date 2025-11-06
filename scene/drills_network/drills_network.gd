@@ -1,6 +1,6 @@
 extends Control
 
-const DEBUG_ENABLED = false  # Set to false for production release
+const DEBUG_ENABLED = true  # Set to false for production release
 
 # Single target for network drills
 @export var target_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
@@ -668,7 +668,7 @@ func _on_ble_start_command(content: Dictionary) -> void:
 		if is_first:
 			timeout_seconds = float(merged["timeout"])
 		else:
-			timeout_seconds = float(merged["delay_time"]) + float(merged["timeout"])
+			timeout_seconds = float(merged["delay"]) + float(merged["timeout"])
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Set timeout to: ", timeout_seconds)
 
