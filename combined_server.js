@@ -1,5 +1,10 @@
 // Combined Server: HttpServerSim + BLE_WS_SIM
 // Merges HTTP server for game data and netlink operations with WebSocket/BLE proxy for Godot-Mobile App communication
+//
+// TEST SCENARIOS:
+// - To test netlink_status failure response, change TEST_SCENARIO_NETLINK_STATUS to 'failure'
+//   Response will have code: 1 (error) instead of code: 0 (success)
+//   This tests error handling when the netlink service cannot retrieve status
 
 const http = require('http');
 const fs = require('fs');
@@ -34,6 +39,11 @@ let embeddedSystemState = {
   temperature: 28, // Temperature in Celsius
   version: "v1.0.0" // Hardware version
 };
+
+// Test scenario configuration
+// Set this to 'failure' to simulate netlink_status request failure (code: 1)
+// Set to 'success' for normal operation
+const TEST_SCENARIO_NETLINK_STATUS = 'failure'; // Options: 'success' | 'failure'
 
 // Global state management for WS/BLE
 let mobileAppBLEClient = null;
@@ -274,14 +284,35 @@ const httpServer = http.createServer((req, res) => {
   } else if (pathname === '/netlink/status' && req.method === 'POST') {
     // Get netlink service status
     console.log(`[HttpServer] Netlink status requested`);
-    // Commented out original response to simulate started=false scenario
     
+    // Test scenario: simulate failure response
+    if (TEST_SCENARIO_NETLINK_STATUS === 'failure') {
+      console.log(`[HttpServer] TEST SCENARIO: Responding with failure (code: 1)`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        code: 0,
+        msg: "",
+        data: {
+          wifi_ip: netlinkWifiIp,
+          wifi_status: false,
+          channel: netlinkChannel,
+          work_mode: netlinkWorkMode,
+          device_name: netlinkDeviceName,
+          bluetooth_name: netlinkBluetoothName,
+          started: false
+        }
+      }));
+      return;
+    }
+    
+    // Normal success response
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       code: 0,
       msg: "",
       data: {
         wifi_ip: netlinkWifiIp,
+        wifi_status: true,
         channel: netlinkChannel,
         work_mode: netlinkWorkMode,
         device_name: netlinkDeviceName,
@@ -290,20 +321,6 @@ const httpServer = http.createServer((req, res) => {
       }
     }));
     
-    // Simulate started=false scenario
-    // res.writeHead(200, { 'Content-Type': 'application/json' });
-    // res.end(JSON.stringify({
-    //   code: 0,
-    //   msg: "",
-    //   data: {
-    //     wifi_ip: netlinkWifiIp,
-    //     channel: 0,
-    //     work_mode: "",
-    //     device_name: "",
-    //     bluetooth_name: "",
-    //     started: false
-    //   }
-    // }));
   } else if (pathname === '/netlink/forward-data' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => {

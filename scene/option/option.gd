@@ -46,21 +46,6 @@ signal sfx_volume_changed(volume: int)
 @onready var auto_restart_pause_container = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/AutoRestartPauseContainer"
 
 @onready var language_buttons = []
-@onready var wifi_button = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow/WifiButton"
-@onready var network_button = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow/NetworkButton"
-@onready var networking_buttons = []
-@onready var content1_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1/Content1"
-@onready var content2_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2/Content2"
-@onready var content3_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3/Content3"
-@onready var content4_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4/Content4"
-@onready var content5_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5/Content5"
-
-# References to networking title labels
-@onready var title1_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1/Title1"
-@onready var title2_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2/Title2"
-@onready var title3_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3/Title3"
-@onready var title4_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4/Title4"
-@onready var title5_label = $"VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5/Title5"
 
 # References to drill note label
 @onready var drill_note_label = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/Label"
@@ -79,6 +64,9 @@ signal sfx_volume_changed(volume: int)
 # Reference to upgrade button
 @onready var upgrade_button = $"VBoxContainer/MarginContainer/tab_container/About/MarginContainer/Button"
 
+# Reference to networking tab script
+@onready var networking_tab = preload("res://scene/option/networking_tab.gd").new()
+
 func _ready():
 	# Show status bar when entering options
 	var status_bars = get_tree().get_nodes_in_group("status_bar")
@@ -88,18 +76,6 @@ func _ready():
 	
 	# Load saved settings from GlobalData
 	load_settings_from_global_data()
-	
-	# Set title labels to left alignment
-	if title1_label:
-		title1_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	if title2_label:
-		title2_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	if title3_label:
-		title3_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	if title4_label:
-		title4_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	if title5_label:
-		title5_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	
 	# Connect signals for language buttons
 	if chinese_button:
@@ -140,25 +116,10 @@ func _ready():
 	if tab_container:
 		tab_container.focus_mode = Control.FOCUS_ALL
 
-	# Initialize networking buttons array (wifi, network)
-	networking_buttons = []
-	if wifi_button:
-		networking_buttons.append(wifi_button)
-	if network_button:
-		networking_buttons.append(network_button)
+	# Initialize networking tab script
+	add_child(networking_tab)
+	networking_tab._ready()
 
-	if not DEBUG_DISABLED:
-		print("[Option] Networking buttons initialization:")
-		for i in range(networking_buttons.size()):
-			if networking_buttons[i]:
-				print("[Option]   Net Button ", i, ": ", networking_buttons[i].name, " - OK")
-			else:
-				print("[Option]   Net Button ", i, ": NULL - MISSING!")
-
-	# Connect wifi button pressed to open overlay (also handled by press_focused_button)
-	if wifi_button:
-		wifi_button.pressed.connect(_on_wifi_pressed)
-	
 	# Connect upgrade button pressed
 	if upgrade_button:
 		upgrade_button.pressed.connect(_on_upgrade_pressed)
@@ -218,18 +179,6 @@ func _ready():
 	else:
 		if not DEBUG_DISABLED:
 			print("[Option] WebSocketListener singleton not found!")
-
-	# Always request fresh netlink status from server
-	var http_service_netlink = get_node_or_null("/root/HttpService")
-	if http_service_netlink:
-		if not DEBUG_DISABLED:
-			print("[Option] About to call http_service.netlink_status")
-		http_service.netlink_status(Callable(self, "_on_netlink_status_response"))
-		if not DEBUG_DISABLED:
-			print("[Option] Called http_service.netlink_status successfully")
-	else:
-		if not DEBUG_DISABLED:
-			print("[Option] HttpService singleton not found; cannot request netlink status")
 
 func _on_language_changed(language: String):
 	current_language = language
@@ -399,10 +348,7 @@ func set_focus_based_on_tab():
 	var current = tab_container.current_tab if tab_container else 0
 	match current:
 		0:
-			if wifi_button:
-				wifi_button.grab_focus()
-			else:
-				tab_container.grab_focus()
+			networking_tab.set_focus_to_first_button()
 		1:
 			set_focus_to_current_language()
 		2:
@@ -427,21 +373,8 @@ func update_ui_texts():
 	if random_sequence_check:
 		random_sequence_check.text = tr("random_sequence")
 	
-	# Networking tab labels
-	if title1_label:
-		title1_label.text = tr("bluetooth_name")
-	if title2_label:
-		title2_label.text = tr("device_name")
-	if title3_label:
-		title3_label.text = tr("network_channel")
-	if title4_label:
-		title4_label.text = tr("ip_address")
-	if title5_label:
-		title5_label.text = tr("working_mode")
-	if wifi_button:
-		wifi_button.text = tr("wifi_configure")
-	if network_button:
-		network_button.text = tr("network_configure")
+	# Update networking tab UI texts
+	networking_tab.update_ui_texts()
 	
 	# Drills tab labels
 	if auto_restart_check:
@@ -558,64 +491,6 @@ func load_settings_from_global_data():
 	# Use call_deferred to ensure focus is set after all UI updates are complete
 	call_deferred("set_focus_based_on_tab")
 
-func _populate_networking_fields(data: Dictionary):
-	# Map expected fields from netlink_status -> UI labels
-	# Content1: bluetooth_name, Content2: device_name, Content3: channel, Content4: wifi_ip, Content5: work_mode
-	if content1_label:
-		content1_label.text = str(data.get("bluetooth_name", ""))
-	if content2_label:
-		content2_label.text = str(data.get("device_name", ""))
-	if content3_label:
-		content3_label.text = str(int(data.get("channel", 0)))
-	if content4_label:
-		content4_label.text = str(data.get("wifi_ip", ""))
-	if content5_label:
-		content5_label.text = str(data.get("work_mode", ""))
-
-func _on_netlink_status_response(result, response_code, _headers, body):
-	if not DEBUG_DISABLED:
-		print("[Option] Received netlink_status HTTP response - Code:", response_code)
-	if response_code == 200 and result == HTTPRequest.RESULT_SUCCESS:
-		var body_str = body.get_string_from_utf8()
-		if not DEBUG_DISABLED:
-			print("[Option] netlink_status body: ", body_str)
-		
-		# Parse the response
-		var json = JSON.parse_string(body_str)
-		if json:
-			var parsed_data = null
-			
-			# Try different response formats
-			if json.has("data"):
-				# Format: {"data": "..."} or {"data": {...}}
-				var data_field = json["data"]
-				if typeof(data_field) == TYPE_STRING:
-					parsed_data = JSON.parse_string(data_field)
-				else:
-					parsed_data = data_field
-				if not DEBUG_DISABLED:
-					print("[Option] Parsed data from 'data' field")
-			else:
-				# Direct format: {...}
-				parsed_data = json
-				if not DEBUG_DISABLED:
-					print("[Option] Parsed data directly from response")
-			
-			if parsed_data and typeof(parsed_data) == TYPE_DICTIONARY:
-				if not DEBUG_DISABLED:
-					print("[Option] Parsed netlink_status data: ", parsed_data)
-				# Populate UI directly with parsed data
-				_populate_networking_fields(parsed_data)
-			else:
-				if not DEBUG_DISABLED:
-					print("[Option] Failed to parse netlink_status data - parsed_data: ", parsed_data, " type: ", typeof(parsed_data))
-		else:
-			if not DEBUG_DISABLED:
-				print("[Option] Failed to parse JSON response: ", body_str)
-	else:
-		if not DEBUG_DISABLED:
-			print("[Option] netlink_status request failed with code:", response_code)
-
 # Functions to get current auto restart settings (can be called from other scripts)
 
 # Function to get current language (can be called from other scripts)
@@ -645,7 +520,7 @@ func _on_menu_control(directive: String):
 					0:
 						if not DEBUG_DISABLED:
 							print("[Option] Navigation: ", directive, " on Networking tab")
-						navigate_network_buttons(directive)
+						networking_tab.navigate_network_buttons(directive)
 					1:
 						if not DEBUG_DISABLED:
 							print("[Option] Navigation: ", directive, " on Languages tab")
@@ -819,45 +694,11 @@ func navigate_drill_buttons(direction: String):
 	if not DEBUG_DISABLED:
 		print("[Option] No other valid drill buttons found for navigation")
 
-func navigate_network_buttons(direction: String):
-	if networking_buttons.is_empty():
-		if not DEBUG_DISABLED:
-			print("[Option] No networking buttons available")
-		return
-
-	var current_index = -1
-	for i in range(networking_buttons.size()):
-		if networking_buttons[i] and networking_buttons[i].has_focus():
-			current_index = i
-			break
-
-	if current_index == -1:
-		networking_buttons[0].grab_focus()
-		if not DEBUG_DISABLED:
-			print("[Option] Focus set to first networking button")
-		return
-
-	var target_index = current_index
-	if direction == "up":
-		target_index = (target_index - 1 + networking_buttons.size()) % networking_buttons.size()
-	else:
-		target_index = (target_index + 1) % networking_buttons.size()
-
-	if networking_buttons[target_index]:
-		networking_buttons[target_index].grab_focus()
-		if not DEBUG_DISABLED:
-			print("[Option] Networking focus moved to ", networking_buttons[target_index].name)
-
 func press_focused_button():
 	# Networking tab
 	if tab_container and tab_container.current_tab == 0:
-		for button in networking_buttons:
-			if button and button.has_focus():
-				if button == wifi_button:
-					_on_wifi_pressed()
-				elif button == network_button:
-					_on_network_pressed()
-				return
+		networking_tab.press_focused_button()
+		return
 
 	for button in language_buttons:
 		if button and button.has_focus():
@@ -957,10 +798,7 @@ func switch_tab(direction: String):
 	tab_container.current_tab = current
 	match current:
 		0:
-			if wifi_button:
-				wifi_button.grab_focus()
-			else:
-				tab_container.grab_focus()
+			networking_tab.set_focus_to_first_button()
 		1:
 			set_focus_to_current_language()
 		2:
@@ -971,19 +809,6 @@ func switch_tab(direction: String):
 		_:
 			tab_container.grab_focus()
 	print("[Option] Switched to tab: ", tab_container.get_tab_title(current))
-
-func _on_wifi_pressed():
-	_show_wifi_networks()
-
-func _show_wifi_networks():
-	if not is_inside_tree():
-		print("[Option] Cannot change scene, node not inside tree")
-		return
-	print("[Option] Switching to WiFi networks scene")
-	get_tree().change_scene_to_file("res://scene/wifi_networks.tscn")
-
-func _on_network_pressed():
-	get_tree().change_scene_to_file("res://scene/networking_config.tscn")
 
 func _on_upgrade_pressed():
 	var http_service = get_node("/root/HttpService")

@@ -1,6 +1,6 @@
 extends Node
 
-const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
+const DEBUG_DISABLED = false  # Set to true to disable debug prints for production
 
 # Global data storage for sharing information between scenes
 var upper_level_scene: String = "res://scene/drills.tscn"
@@ -10,6 +10,10 @@ var latest_performance_data: Dictionary = {}  # Store latest performance data fo
 var netlink_status: Dictionary = {}  # Store last known netlink status from server
 var ble_ready_content: Dictionary = {}  # Store BLE ready command content for passing between scenes
 
+# Timer for periodic netlink status updates
+var netlink_timer: Timer = null
+const NETLINK_UPDATE_INTERVAL = 60.0  # Request every 60 seconds
+
 # Signal emitted when settings are successfully loaded
 signal settings_loaded
 signal netlink_status_loaded
@@ -17,6 +21,22 @@ signal netlink_status_loaded
 func _ready():
 	# print("GlobalData singleton initialized")
 	load_settings_from_http()
+
+func _setup_netlink_timer():
+	"""Setup periodic netlink status updates (called after first successful response)"""
+	if netlink_timer:
+		return  # Timer already started
+	netlink_timer = Timer.new()
+	add_child(netlink_timer)
+	netlink_timer.wait_time = NETLINK_UPDATE_INTERVAL
+	netlink_timer.timeout.connect(_on_netlink_timer_timeout)
+	netlink_timer.start()
+	# print("GlobalData: Netlink status timer started with interval: ", NETLINK_UPDATE_INTERVAL)
+
+func _on_netlink_timer_timeout():
+	"""Periodic callback to request netlink status"""
+	HttpService.netlink_status(Callable(self, "update_netlink_status_from_response"))
+	# print("GlobalData: Periodic netlink status request sent")
 
 func load_settings_from_http():
 	# print("GlobalData: Requesting settings from HttpService...")
@@ -78,26 +98,58 @@ func update_netlink_status_from_response(_result, response_code, _headers, body)
 		# print("GlobalData: netlink_status body: ", body_str)
 		# Try to parse top-level response then data
 		var json = JSON.parse_string(body_str)
-		if json and json.has("data"):
-			# 'data' may already be a dictionary encoded as object or a JSON string
-			var data_field = json["data"]
-			if typeof(data_field) == TYPE_STRING:
-				var parsed = JSON.parse_string(data_field)
-				if parsed:
-					netlink_status = parsed
+		if json:
+			# Check for error code in response
+			if json.has("code") and json["code"] != 0:
+				# Server returned an error code (not 0 = success)
+				var _error_msg = json.get("msg", "Unknown error")
+				# print("GlobalData: netlink_status request failed with error code: ", json["code"], " - ", _error_msg)
+				# Clear netlink_status and emit signal (listeners will see it's empty)
+				netlink_status = {}
+				netlink_status_loaded.emit()
+				# Still start the timer so we retry periodically
+				_setup_netlink_timer()
+				return
+			
+			# Check for data field (success case)
+			if json.has("data"):
+				# 'data' may already be a dictionary encoded as object or a JSON string
+				var data_field = json["data"]
+				if typeof(data_field) == TYPE_STRING:
+					var parsed = JSON.parse_string(data_field)
+					if parsed:
+						netlink_status = parsed
+					else:
+						netlink_status = {}
 				else:
-					netlink_status = {}
+					netlink_status = data_field
+				
+				# Ensure channel is always an integer if present
+				if netlink_status.has("channel"):
+					netlink_status["channel"] = int(netlink_status["channel"])
+				# print("GlobalData: netlink_status updated: ", netlink_status)
+				# Emit signal to notify listeners that netlink status is available
+				netlink_status_loaded.emit()
+				# Start periodic timer on first successful response
+				_setup_netlink_timer()
 			else:
-				netlink_status = data_field
-			# Ensure channel is always an integer if present
-			if netlink_status.has("channel"):
-				netlink_status["channel"] = int(netlink_status["channel"])
-			# print("GlobalData: netlink_status updated: ", netlink_status)
-			# Emit signal to notify listeners that netlink status is available
-			netlink_status_loaded.emit()
+				# print("GlobalData: netlink_status response missing data field or failed to parse")
+				netlink_status = {}
+				netlink_status_loaded.emit()
+				_setup_netlink_timer()
 		else:
-			# print("GlobalData: netlink_status response missing data field or failed to parse")
-			pass
+			# print("GlobalData: Failed to parse netlink_status JSON response")
+			netlink_status = {}
+			netlink_status_loaded.emit()
+			_setup_netlink_timer()
 	else:
 		# print("GlobalData: netlink_status request failed or non-200 code: ", response_code)
-		pass
+		netlink_status = {}
+		netlink_status_loaded.emit()
+		_setup_netlink_timer()
+
+func _exit_tree():
+	"""Cleanup timer when GlobalData is removed"""
+	if netlink_timer:
+		netlink_timer.queue_free()
+		netlink_timer = null

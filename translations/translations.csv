@@ -327,3 +327,5 @@ about_description_intro,"The Grwolf Smart Target is designed for shooting enthus
 about_description_features,"* Real-time hit point display allows you to track and score your shots instantly.\n* Choose different drills with the same device, such as high-speed shooting and free shooting, to enhance your shooting experience.","* 实时命中点显示允许您立即跟踪和记录您的射击。\n* 选择不同的练习模式，如快速射击和自由射击，增强您的射击体验。","* リアルタイムのヒットポイント表示により、ショットを即座に追跡およびスコアリングできます。\n* 高速射撃や自由射撃など、同じデバイスで異なるドリルを選択して、射撃体験を向上させます。","* 實時命中點顯示允許您立即追跡和記錄您的射擊。\n* 選擇不同的練習模式，如高速射擊和自由射擊，增強您的射擊體驗。"
 switch_targets_instruction,"Please Use Remote Control 'Left' and 'Right' Buttons to switch targets.","请使用遥控器的'左'和'右'按钮切换靶子。","リモコンの「左」ボタンと「右」ボタンを使用してターゲットを切り替えてください。","請使用遙控器的'左'和'右'按鈕切換靶子。"
 shoot_to_reset,"SHOOT TO RESET","射击此区清靶纸","シュートしてリセット","射擊此區清靶紙"
+work_mode_master,Master,主机,マスター,主機
+work_mode_slave,Slave,从机,スレーブ,從機

@@ -107,14 +107,13 @@ func _on_netlink_status_loaded():
 		return
 
 	var s = gd.netlink_status
-	if s and typeof(s) == TYPE_DICTIONARY and s.has("started"):
+	if s and typeof(s) == TYPE_DICTIONARY:
+		# Set wifi status based on wifi_status field
+		var wifi_status = bool(s.get("wifi_status", false))
+		_set_wifi_connected(wifi_status)
+		# print("StatusBar: wifi_status=", wifi_status)
+		
+		# Set network status based on started field
 		var started = bool(s.get("started", false))
+		_set_network_started(started)
 		# print("StatusBar: netlink started=", started)
-		if started:
-			_set_wifi_connected(true)
-			_set_network_started(true)
-		else:
-			# Optional: set to false if not started
-			_set_network_started(false)
-			_set_wifi_connected(false)
-			# print("StatusBar: netlink not started, setting icons to idle")
