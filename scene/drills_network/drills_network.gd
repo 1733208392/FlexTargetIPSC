@@ -157,6 +157,15 @@ func _connect_to_websocket():
 		else:
 			if DEBUG_ENABLED:
 				print("[DrillsNetwork] ERROR: WebSocketListener does not have ble_start_command signal")
+		
+		# Connect to ble_end_command to complete the drill when 'end' is received
+		if ws_listener.has_signal("ble_end_command"):
+			ws_listener.ble_end_command.connect(_on_ble_end_command)
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Connected to ble_end_command signal")
+		else:
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] ERROR: WebSocketListener does not have ble_end_command signal")
 	else:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] ERROR: WebSocketListener not found at /root/WebSocketListener")
@@ -678,6 +687,14 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	start_drill()
 	if is_first:
 		shot_timer_visible = true
+
+func _on_ble_end_command(content: Dictionary) -> void:
+	"""Handle BLE end command: complete the drill"""
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Received BLE end command: ", content)
+	
+	# Complete the drill
+	complete_drill()
 
 func _on_shot_timer_ready(delay: float):
 	"""Handle shot timer ready - start the drill timeout timer and begin elapsed time tracking"""

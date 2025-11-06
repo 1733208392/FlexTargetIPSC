@@ -9,6 +9,7 @@ signal bullet_hit(pos: Vector2)
 signal menu_control(directive: String)
 signal ble_ready_command(content: Dictionary)
 signal ble_start_command(content: Dictionary)
+signal ble_end_command(content: Dictionary)
 
 var socket: WebSocketPeer
 var bullet_spawning_enabled: bool = true
@@ -252,6 +253,9 @@ func _handle_ble_forwarded_command(parsed):
 		"start":
 			if not DEBUG_DISABLED: print("[WebSocket] Emitting ble_start_command signal with content: ", content)
 			ble_start_command.emit(content)
+		"end":
+			if not DEBUG_DISABLED: print("[WebSocket] Emitting ble_end_command signal with content: ", content)
+			ble_end_command.emit(content)
 		_:
 			if not DEBUG_DISABLED:
 				print("[WebSocket] BLE forwarded command unknown or unsupported command: ", command)
