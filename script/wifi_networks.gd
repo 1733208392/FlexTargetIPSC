@@ -46,6 +46,8 @@ var connected_network = ""  # Name of currently connected network
 var scan_timer: Timer       # Timer for scanning dots animation
 var timeout_timer: Timer    # Timer for scan timeout
 var connecting_timer: Timer # Timer for connecting dots animation
+var link_status_timer: Timer # Timer for polling link status
+var link_status_timeout_timer: Timer # Timer for link status polling timeout
 var dot_count = 0           # Current dot count for animations (0-3)
 
 # =============================================================================
@@ -420,6 +422,111 @@ func _hide_connecting_overlay():
 		connecting_timer = null
 	status_container.visible = false
 
+func _start_link_status_polling():
+	"""
+	Start polling for link status until IP address is available
+	"""
+	print("[WiFi Networks] Starting link status polling")
+
+	# Show status
+	status_container.visible = true
+	status_label.text = tr("waiting_for_ip")
+
+	# Create polling timer (every 2 seconds)
+	link_status_timer = Timer.new()
+	link_status_timer.wait_time = 2.0
+	link_status_timer.one_shot = false
+	link_status_timer.connect("timeout", Callable(self, "_poll_link_status"))
+	add_child(link_status_timer)
+	link_status_timer.start()
+
+	# Create timeout timer (30 seconds)
+	link_status_timeout_timer = Timer.new()
+	link_status_timeout_timer.wait_time = 30.0
+	link_status_timeout_timer.one_shot = true
+	link_status_timeout_timer.connect("timeout", Callable(self, "_on_link_status_timeout"))
+	add_child(link_status_timeout_timer)
+	link_status_timeout_timer.start()
+
+	# Start first poll
+	_poll_link_status()
+
+func _poll_link_status():
+	"""
+	Poll the current link status
+	"""
+	HttpService.netlink_status(Callable(self, "_on_link_status_response"))
+
+func _on_link_status_response(result, response_code, _headers, body):
+	"""
+	Handle link status response
+	"""
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		var body_str = body.get_string_from_utf8()
+		var json = JSON.parse_string(body_str)
+		if json:
+			var data = null
+			if json.has("data"):
+				var data_field = json["data"]
+				if typeof(data_field) == TYPE_STRING:
+					data = JSON.parse_string(data_field)
+				else:
+					data = data_field
+			else:
+				data = json
+
+			if data and typeof(data) == TYPE_DICTIONARY:
+				var wifi_ip = data.get("wifi_ip", "")
+				if wifi_ip and wifi_ip != "" and wifi_ip != "0.0.0.0":
+					print("IP address available: ", wifi_ip)
+					# IP available, complete connection
+					_stop_link_status_polling()
+					_set_connected_network(selected_network)
+
+					# Emit connection signal
+					var signal_bus = get_node_or_null("/root/SignalBus")
+					if signal_bus:
+						print("WiFi Networks: Emitting wifi_connected signal for SSID: ", selected_network)
+						signal_bus.emit_wifi_connected(selected_network)
+						get_tree().change_scene_to_file("res://scene/option/option.tscn")
+					else:
+						print("WiFi Networks: SignalBus not found, cannot emit signal")
+				else:
+					print("IP not available yet: ", wifi_ip)
+			else:
+				print("Invalid link status data format")
+		else:
+			print("Failed to parse link status JSON")
+	else:
+		print("Link status request failed: ", result, " code: ", response_code)
+
+func _on_link_status_timeout():
+	"""
+	Handle link status polling timeout
+	"""
+	print("[WiFi Networks] Link status polling timeout")
+	_stop_link_status_polling()
+	status_label.text = tr("wifi_ip_timeout")
+	retry_button.visible = true
+	retry_button.grab_focus()
+
+func _stop_link_status_polling():
+	"""
+	Stop link status polling and cleanup
+	"""
+	if link_status_timer:
+		link_status_timer.stop()
+		link_status_timer.queue_free()
+		link_status_timer = null
+	if link_status_timeout_timer:
+		link_status_timeout_timer.stop()
+		link_status_timeout_timer.queue_free()
+		link_status_timeout_timer = null
+	status_container.visible = false
+
 func _commit_password():
 	"""
 	Submit password and attempt WiFi connection
@@ -459,19 +566,8 @@ func _on_wifi_connect_completed(result, response_code, _headers, body):
 
 		if success:
 			print("Successfully connected to WiFi: ", selected_network)
-			_set_connected_network(selected_network)
-
-			# Emit connection signal
-			var signal_bus = get_node_or_null("/root/SignalBus")
-			if signal_bus:
-				print("WiFi Networks: Emitting wifi_connected signal for SSID: ", selected_network)
-				signal_bus.emit_wifi_connected(selected_network)
-				get_tree().change_scene_to_file("res://scene/option/option.tscn")
-			else:
-				print("WiFi Networks: SignalBus not found, cannot emit signal")
-
-			# Cleanup overlays
-			_cancel_password()
+			# Start polling for IP address availability
+			_start_link_status_polling()
 		else:
 			print("Failed to connect to WiFi: ", error_msg)
 	else:
