@@ -127,6 +127,8 @@ func _ready():
 	# Connect sensitivity slider value_changed signal
 	if sensitivity_slider:
 		sensitivity_slider.value_changed.connect(_on_sensitivity_value_changed)
+		sensitivity_slider.min_value = 0
+		sensitivity_slider.max_value = 800
 		# Update label with initial value
 		_update_sensitivity_label()
 	else:
@@ -846,23 +848,24 @@ func _on_embedded_status_response(_result, _response_code, _headers, body):
 		current_threshold = threshold
 		threshold_changed = false
 		
-		# Set the slider to the fetched threshold value
+		# Calculate slider value: 1500 - threshold, clamped to 0-800
+		var slider_value = clamp(1500 - threshold, 0, 800)
 		if sensitivity_slider:
-			sensitivity_slider.value = threshold
+			sensitivity_slider.value = slider_value
 			_update_sensitivity_label()
 			if not DEBUG_DISABLED:
-				print("[Option] Set sensitivity slider to: ", threshold)
+				print("[Option] Set sensitivity slider to: ", slider_value, " (threshold: ", threshold, ")")
 	else:
 		if not DEBUG_DISABLED:
 			print("[Option] Invalid embedded status response")
 
 func _on_sensitivity_value_changed(value: float):
 	"""Called when the sensitivity slider value changes."""
-	current_threshold = int(value)
+	current_threshold = round((1500 - int(value)) / 100.0) * 100
 	threshold_changed = (current_threshold != initial_threshold)
 	_update_sensitivity_label()
 	if not DEBUG_DISABLED:
-		print("[Option] Sensitivity value changed to: ", value, ", changed: ", threshold_changed)
+		print("[Option] Sensitivity value changed to: ", value, ", threshold: ", current_threshold, ", changed: ", threshold_changed)
 
 func _update_sensitivity_label():
 	"""Update the sensitivity label with the current slider value."""
@@ -883,13 +886,11 @@ func adjust_sensitivity_slider(direction: String):
 
 	if direction == "right":
 		var new_value = min(sensitivity_slider.max_value, current_value + step)
-		# Round to nearest 100
 		sensitivity_slider.value = new_value
 		if not DEBUG_DISABLED:
 			print("[Option] Increased sensitivity to: ", sensitivity_slider.value)
 	elif direction == "left":
 		var new_value = max(sensitivity_slider.min_value, current_value - step)
-		# Round to nearest 100
 		sensitivity_slider.value = new_value
 		if not DEBUG_DISABLED:
 			print("[Option] Decreased sensitivity to: ", sensitivity_slider.value)

@@ -89,9 +89,10 @@ theme_override_fonts/font = ExtResource("3_a5ubv")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
-current_tab = 0
+current_tab = 2
 
 [node name="Networking" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -313,7 +314,6 @@ button_group = SubResource("ButtonGroup_language")
 text = "English"
 
 [node name="Drills" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 
@@ -366,7 +366,6 @@ theme_override_font_sizes/font_size = 24
 
 [node name="SensitivityHSlider" type="HSlider" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
 layout_mode = 2
-min_value = 700.0
 max_value = 1500.0
 value = 1000.0
 

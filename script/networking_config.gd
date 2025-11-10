@@ -253,6 +253,16 @@ func _on_navigate(direction: String):
 		print("[NetworkingConfig] Navigation: ", direction)
 	match direction:
 		"up":
+			if keyboard.visible:
+				var focus_owner = get_viewport().gui_get_focus_owner()
+				if focus_owner is Button and keyboard.keys.has(focus_owner):
+					var matrix = keyboard.layout_key_matrices.get(keyboard.current_layout, [])
+					for row_idx in range(matrix.size()):
+						if focus_owner in matrix[row_idx]:
+							if row_idx == 0:
+								set_focused_control(1)  # Move focus to workmode dropdown
+								return
+							break
 			if dropdown_open:
 				if focused_control == 0:  # Channel dropdown
 					var current_selected = channel_dropdown.selected
