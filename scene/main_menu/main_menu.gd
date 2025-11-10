@@ -98,6 +98,28 @@ func _ready():
 		bootcamp_button,
 		leaderboard_button,
 		option_button]
+	
+	# Check return source and set focus accordingly
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.return_source != "":
+		var source = global_data.return_source  # Store before resetting
+		# Set focus based on return source
+		match source:
+			"drills":
+				focused_index = 0  # start_button
+			"bootcamp":
+				focused_index = 2  # bootcamp_button
+			"network":
+				focused_index = 1  # network_button
+			"leaderboard":
+				focused_index = 3  # leaderboard_button
+			"options":
+				focused_index = 4  # option_button
+			_:
+				focused_index = 0  # default
+		global_data.return_source = ""
+		if not DEBUG_DISABLED:
+			print("[Menu] Returning from ", source, ", setting focus to button index ", focused_index)
 		
 	buttons[focused_index].grab_focus()
 
@@ -120,7 +142,6 @@ func _ready():
 			print("[Menu] WebSocketListener singleton not found!")
 
 	# Connect to GlobalData netlink_status_loaded signal
-	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
 		global_data.netlink_status_loaded.connect(_on_netlink_status_loaded)
 		if not DEBUG_DISABLED:

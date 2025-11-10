@@ -1231,6 +1231,13 @@ func _on_menu_control(directive: String):
 			if menu_controller:
 				menu_controller.play_cursor_sound()
 			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "drills"
+				if not DEBUG_DISABLED:
+					print("[Drills] Set return_source to drills")
+			
 			# Show status bar when exiting drills
 			if get_tree():
 				var status_bars = get_tree().get_nodes_in_group("status_bar")

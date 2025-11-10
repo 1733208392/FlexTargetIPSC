@@ -10,6 +10,9 @@ var latest_performance_data: Dictionary = {}  # Store latest performance data fo
 var netlink_status: Dictionary = {}  # Store last known netlink status from server
 var ble_ready_content: Dictionary = {}  # Store BLE ready command content for passing between scenes
 
+# Track which scene we're returning from for focus management
+var return_source: String = ""
+
 # Timer for periodic netlink status updates
 var netlink_timer: Timer = null
 const NETLINK_UPDATE_INTERVAL = 60.0  # Request every 60 seconds

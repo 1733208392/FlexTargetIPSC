@@ -568,6 +568,12 @@ func _on_menu_control(directive: String):
 				menu_controller.play_cursor_sound()
 			# Save threshold before leaving the scene
 			_save_threshold_if_changed()
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "options"
+				if not DEBUG_DISABLED:
+					print("[Option] Set return_source to options")
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 			else:

@@ -627,6 +627,14 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "leaderboard"
+				if DEBUG_PRINTS:
+					print("[History] Set return_source to leaderboard")
+			
 			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"up":
 			if DEBUG_PRINTS:

@@ -113,11 +113,26 @@ func _ready():
 		if header:
 			header.visible = false
 	
+	# Hide the drill timer display as mobile app now counts the elapsed time
+	# Stop the DrillTimer node and hide the timer display
+	if drill_ui_node:
+		# Stop the DrillTimer if it exists
+		var drill_timer_node = drill_ui_node.get_node_or_null("DrillTimer")
+		if drill_timer_node and drill_timer_node is Timer:
+			drill_timer_node.stop()
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Stopped DrillTimer node")
+		
+		# Hide the timer display
+		if drill_ui_node.has_node("TopContainer/TopLayout/TimerContainer"):
+			var timer_container = drill_ui_node.get_node("TopContainer/TopLayout/TimerContainer")
+			if timer_container:
+				timer_container.visible = false
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Hidden TimerContainer display")
+	
 	# Set device name
-	if global_data and global_data.netlink_status.has("device_name"):
-		device_name_label.text = global_data.netlink_status["device_name"]
-	else:
-		device_name_label.text = tr("unknown_device")
+	update_device_name_label()
 	
 	# Check if there's a saved ready state from main_menu and process it
 	call_deferred("_check_and_process_saved_ready_state")
@@ -236,10 +251,31 @@ func _start_auto_start_fallback():
 			
 func _on_netlink_status_loaded():
 	"""Update device name when netlink status is loaded"""
+	update_device_name_label()
+			
+func update_device_name_label():
+	"""Update the device name label with master/slave - device_name - bluetooth_name format"""
+	var device_name = "unknown_device"
+	var bluetooth_name = ""
+	var work_mode = "slave"  # Default to slave
+	
 	if global_data and global_data.netlink_status.has("device_name"):
-		device_name_label.text = global_data.netlink_status["device_name"]
+		device_name = global_data.netlink_status["device_name"]
+	
+	if global_data and global_data.netlink_status.has("bluetooth_name"):
+		bluetooth_name = global_data.netlink_status["bluetooth_name"]
+	
+	if global_data and global_data.netlink_status.has("work_mode"):
+		work_mode = str(global_data.netlink_status["work_mode"]).to_lower()
+	
+	var is_master = (work_mode == "master")
+	var mode = tr("work_mode_master") if is_master else tr("work_mode_slave")
+	if is_master:
+		# Master mode: show bluetooth_name
+		device_name_label.text = mode + " - " + device_name + " - " + bluetooth_name
 	else:
-		device_name_label.text = tr("unknown_device")
+		# Slave mode: don't show bluetooth_name
+		device_name_label.text = mode + " - " + device_name
 			
 func spawn_target():
 	"""Spawn the single target"""
@@ -337,6 +373,9 @@ func _on_final_target_hit(hit_position: Vector2):
 	
 	# Emit timer stopped signal with final elapsed time
 	emit_signal("ui_timer_stopped", elapsed_seconds)
+	
+	# Show completion overlay
+	network_complete_overlay.show_completion(current_repeat)
 	
 	# Send netlink forward data with ack:end
 	var http_service = get_node_or_null("/root/HttpService")
@@ -543,6 +582,13 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			if global_data:
+				global_data.return_source = "network"
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Set return_source to network")
+			
 			# Clear BLE ready content before exiting the scene
 			if global_data:
 				global_data.ble_ready_content.clear()
@@ -641,6 +687,9 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Operating in ", "master" if is_first else "slave", " mode (based on isFirst: ", is_first, ")")
 	
+	# Update device name label with new mode
+	update_device_name_label()
+	
 	# Set current repeat
 	current_repeat = merged.get("repeat", 0)
 	if DEBUG_ENABLED:
@@ -681,6 +730,21 @@ func _on_ble_start_command(content: Dictionary) -> void:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Set timeout to: ", timeout_seconds)
 
+	# Call start_game before starting the drill
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		http_service.start_game(func(result, response_code, _headers, _body):
+			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] start_game called successfully")
+			else:
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] start_game failed: ", result, response_code)
+		)
+	else:
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] HttpService not available; cannot call start_game")
+	
 	# Start the drill immediately
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting drill immediately")

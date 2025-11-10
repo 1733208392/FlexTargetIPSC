@@ -43,7 +43,7 @@ let embeddedSystemState = {
 // Test scenario configuration
 // Set this to 'failure' to simulate netlink_status request failure (code: 1)
 // Set to 'success' for normal operation
-const TEST_SCENARIO_NETLINK_STATUS = 'failure'; // Options: 'success' | 'failure'
+const TEST_SCENARIO_NETLINK_STATUS = 'success'; // Options: 'success' | 'failure'
 
 // Global state management for WS/BLE
 let mobileAppBLEClient = null;
@@ -718,7 +718,8 @@ class WriteCharacteristic extends bleno.Characteristic {
             type: 'netlink',
             action: 'device_list',
             data: [
-              { mode: 'master', name: '01' }
+              { mode: 'master', name: 'ET-01' },
+              { mode: 'slave', name: 'ET-02' }
             ]
           };
           

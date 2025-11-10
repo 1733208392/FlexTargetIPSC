@@ -278,6 +278,13 @@ func _on_menu_control(directive: String):
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] ", directive, " - navigating to main menu")
 			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "bootcamp"
+				if not DEBUG_DISABLED:
+					print("[Bootcamp] Set return_source to bootcamp")
+			
 			# Deactivate current target before exiting
 			if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("set"):
 				current_target_instance.set("drill_active", false)

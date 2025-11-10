@@ -29,6 +29,7 @@ grow_vertical = 0
 text = "FPS: 60"
 
 [node name="TopContainer" type="MarginContainer" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -40,6 +41,7 @@ theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 0
 
 [node name="TopLayout" type="VBoxContainer" parent="TopContainer"]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 20
 
@@ -90,10 +92,12 @@ text = "--s"
 label_settings = ExtResource("3_7x8sl")
 
 [node name="TimerContainer" type="CenterContainer" parent="TopContainer/TopLayout"]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="Timer" type="Label" parent="TopContainer/TopLayout/TimerContainer"]
+visible = false
 layout_mode = 2
 text = "00:00:00"
 label_settings = ExtResource("6_plgmk")
