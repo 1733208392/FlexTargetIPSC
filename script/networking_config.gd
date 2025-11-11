@@ -163,8 +163,8 @@ func show_keyboard_for_name_input():
 		if keyboard.has_method("_show_keyboard"):
 			keyboard._show_keyboard()
 		
-		# Ensure name_line_edit keeps focus after keyboard is shown
-		call_deferred("_ensure_name_focus")
+		# Focus the 'q' key on the keyboard
+		call_deferred("_focus_q_key")
 		
 		# Connect keyboard button handlers
 		_attach_keyboard_handlers()
@@ -217,6 +217,36 @@ func _ensure_name_focus():
 			keyboard.last_input_focus = name_line_edit
 			if not DEBUG_DISABLED:
 				print("[NetworkingConfig] Manually set keyboard last_input_focus to name LineEdit")
+
+func _focus_q_key():
+	"""
+	Find and focus the 'q' key on the keyboard
+	"""
+	if not keyboard:
+		return
+	
+	var q_key = _find_key_by_text(keyboard, "q")
+	if q_key:
+		q_key.grab_focus()
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Focused 'q' key on keyboard")
+	else:
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] 'q' key not found on keyboard")
+
+func _find_key_by_text(node, text: String):
+	"""
+	Recursively search for a keyboard key with the specified text
+	"""
+	for child in node.get_children():
+		if child is Button and child.has_method("get_text"):
+			if child.get_text().to_lower() == text.to_lower():
+				return child
+		# Recurse into containers
+		var found = _find_key_by_text(child, text)
+		if found:
+			return found
+	return null
 
 func hide_keyboard():
 	if keyboard:

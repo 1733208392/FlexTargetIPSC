@@ -79,8 +79,15 @@ func _ready():
 		status_bar.visible = true
 		print("[Option] Showed status bar: ", status_bar.name)
 	
+	# Initialize networking tab script FIRST
+	add_child(networking_tab)
+	networking_tab._ready()
+	
 	# Load saved settings from GlobalData
 	load_settings_from_global_data()
+	
+	# Update UI texts with current language
+	update_ui_texts()
 	
 	# Connect signals for language buttons
 	if chinese_button:
@@ -120,10 +127,6 @@ func _ready():
 	# Set tab_container focusable
 	if tab_container:
 		tab_container.focus_mode = Control.FOCUS_ALL
-
-	# Initialize networking tab script
-	add_child(networking_tab)
-	networking_tab._ready()
 
 	# Connect upgrade button pressed
 	if upgrade_button:
