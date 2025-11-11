@@ -309,6 +309,7 @@ wifi_configure,WIFI Configure,WIFI配置,WIFI設定,WIFI配置
 network_configure,Netlink Configure,网络配置,ネットワーク設定,網路配置
 start_netlink,Start Netlink,启动网联,ネットリンク開始,啟動網聯
 netlink_status,Netlink Status,网联状态,ネットリンクステータス,網聯狀態
+netlink_status_updating,Netlink Status Being Updated,网联状态正在更新,ネットリンクステータス更新中,網聯狀態正在更新
 started,Started,已启动,已開始,已啟動
 stopped,Stopped,已停止,已停止,已停止
 auto_restart,Auto Restart,自动重启,自動再起動,自動重新啟動

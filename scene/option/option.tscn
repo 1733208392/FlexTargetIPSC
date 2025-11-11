@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://dus614khw11h2"]
+[gd_scene load_steps=23 format=3 uid="uid://dus614khw11h2"]
 
 [ext_resource type="Script" uid="uid://crika1mdfvjsw" path="res://scene/option/option.gd" id="1_o2t7p"]
 [ext_resource type="Texture2D" uid="uid://btbmgtdbgtpkm" path="res://asset/largeCntnrs1.png" id="2_pm2y3"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://c2l6gc1ro012y" path="res://asset/SmallCntnrs3.png" id="7_686id"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="8_54dxg"]
 [ext_resource type="AudioStream" uid="uid://i6eh50aq5t66" path="res://audio/Final Battle - For Love.ogg" id="9_audio"]
+[ext_resource type="Script" uid="uid://dj7d1chuxn4fg" path="res://scene/option/networking_tab.gd" id="10_networking_tab"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_tab_unselected"]
 bg_color = Color(0, 0, 0, 0)
@@ -245,6 +246,7 @@ text = "Yes"
 [node name="Control" type="Control" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+script = ExtResource("10_networking_tab")
 
 [node name="ButtonRow" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
 layout_mode = 2
@@ -279,6 +281,15 @@ layout_mode = 2
 theme = ExtResource("5_ur50w")
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 24
+
+[node name="space2" type="Control" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/ButtonRow"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 18
 
 [node name="Languages" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false

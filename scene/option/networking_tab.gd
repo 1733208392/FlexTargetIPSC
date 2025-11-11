@@ -27,6 +27,13 @@ var current_netlink_config = null
 var is_configuring_netlink = false
 var is_stopping_netlink = false
 
+# Status label and update timers
+var statusLabel = null
+var update_timer = null
+var stop_timer = null
+var updating_text = ""
+var updating_dots = 0
+
 func _ready():
 	"""Initialize networking tab"""
 	# Find nodes using get_node() from parent scene since script is added as child
@@ -40,7 +47,7 @@ func _ready():
 		content2_label = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2/Content2")
 		content3_label = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3/Content3")
 		content4_label = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4/Content4")
-		content5_label = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkInfo/Row5/Content5")
+		content5_label = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5/Content5")
 		content6_label = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row6/Content6")
 		
 		title1_label = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1/Title1")
@@ -50,7 +57,7 @@ func _ready():
 		title5_label = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row5/Title5")
 		title6_label = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row6/Title6")
 	
-	# Set title labels to left alignment
+		statusLabel = parent.get_node("VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/StatusLabel")
 	if title1_label:
 		title1_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	if title2_label:
@@ -72,6 +79,21 @@ func _ready():
 		networking_buttons.append(network_button)
 	if start_netlink_button:
 		networking_buttons.append(start_netlink_button)
+
+	# Initialize status update timers
+	update_timer = Timer.new()
+	add_child(update_timer)
+	update_timer.wait_time = 0.5
+	update_timer.timeout.connect(_on_update_timer_timeout)
+	
+	stop_timer = Timer.new()
+	add_child(stop_timer)
+	stop_timer.wait_time = 2.0
+	stop_timer.one_shot = true
+	stop_timer.timeout.connect(_on_stop_timer_timeout)
+
+	# Set updating text with translation
+	updating_text = tr("netlink_status_updating")
 
 	# Connect wifi button pressed to open overlay
 	if wifi_button:
@@ -270,6 +292,17 @@ func _check_and_enable_start_button(config: Dictionary):
 
 func _on_start_netlink_pressed():
 	"""Handle Start Netlink button pressed - configure and start network"""
+	# Start status update animation
+	if statusLabel:
+		statusLabel.text = updating_text
+		updating_dots = 0
+		if update_timer:
+			update_timer.stop()
+			update_timer.start()
+		if stop_timer:
+			stop_timer.stop()
+			stop_timer.start()
+	
 	if not current_netlink_config or is_configuring_netlink or is_stopping_netlink:
 		if not GlobalDebug.DEBUG_DISABLED:
 			print("[NetworkingTab] Cannot start netlink - no config or operation in progress")
@@ -368,3 +401,22 @@ func update_ui_texts():
 		network_button.text = tr("network_configure")
 	if start_netlink_button:
 		start_netlink_button.text = tr("start_netlink")
+
+	# Update updating text with current translation
+	updating_text = tr("netlink_status_updating")
+
+func _on_update_timer_timeout():
+	"""Handle update timer timeout for animated dots"""
+	updating_dots = (updating_dots + 1) % 4
+	var dots = ""
+	for i in range(updating_dots):
+		dots += "."
+	if statusLabel:
+		statusLabel.text = updating_text + dots
+
+func _on_stop_timer_timeout():
+	"""Handle stop timer timeout to clear status label"""
+	if update_timer:
+		update_timer.stop()
+	if statusLabel:
+		statusLabel.text = ""
