@@ -89,7 +89,7 @@ theme_override_fonts/font = ExtResource("3_a5ubv")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
-current_tab = 2
+current_tab = 0
 
 [node name="Networking" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
 visible = false
