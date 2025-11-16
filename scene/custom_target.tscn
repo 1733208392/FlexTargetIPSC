@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=3 uid="uid://dpr5o2u5xqn1l"]
+
+[ext_resource type="Script" uid="uid://covkwlj63fwyb" path="res://script/custom_target.gd" id="1_6q4j5"]
+[ext_resource type="Texture2D" uid="uid://ct7bcimjuqusa" path="res://asset/mini_map.png" id="2_whld2"]
+
+[node name="CustomTarget" type="Node2D"]
+script = ExtResource("1_6q4j5")
+
+[node name="ImageDisplay" type="TextureRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 360.0
+offset_bottom = 640.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(2, 2)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("2_whld2")
+expand_mode = 1
+
+[node name="StatusLabel" type="Label" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 295.0
+offset_top = 600.0
+offset_right = 445.0
+offset_bottom = 623.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 32
+text = "Waiting for image..."
+horizontal_alignment = 1

@@ -45,7 +45,6 @@ func _on_websocket_bullet_hit(pos: Vector2):
 		return
 	
 	print("[final %s] Received bullet hit at position: %s" % [final_id, pos])
-	
 	# Convert world position to local coordinates
 	var area_2d = get_node_or_null("Area2D")
 	if not area_2d:

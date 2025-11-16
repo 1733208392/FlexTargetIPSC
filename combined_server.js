@@ -82,18 +82,23 @@ const httpServer = http.createServer((req, res) => {
 
         const fileName = `${data_id}.json`;
         
-        // Debug logging for settings save
+        // Debug logging for all files
         console.log(`[HttpServer] Saving file: ${fileName}`);
         console.log(`[HttpServer] Content to save: ${content}`);
-        if (data_id === 'settings') {
-          console.log(`[HttpServer] SETTINGS UPDATE DETECTED!`);
-          try {
-            const parsedContent = JSON.parse(content);
+        
+        // Try to parse and log JSON content for debugging
+        try {
+          const parsedContent = JSON.parse(content);
+          console.log(`[HttpServer] Parsed ${data_id} content:`, parsedContent);
+          
+          // Special handling for settings file
+          if (data_id === 'settings') {
             console.log(`[HttpServer] Settings drill_sequence: ${parsedContent.drill_sequence}`);
             console.log(`[HttpServer] Settings language: ${parsedContent.language}`);
-          } catch (e) {
-            console.log(`[HttpServer] Failed to parse settings content for debugging: ${e.message}`);
           }
+        } catch (e) {
+          console.log(`[HttpServer] Failed to parse ${data_id} content as JSON for debugging: ${e.message}`);
+          console.log(`[HttpServer] Content appears to be non-JSON data`);
         }
         
         fs.writeFile(fileName, content, 'utf8', (err) => {
@@ -130,11 +135,8 @@ const httpServer = http.createServer((req, res) => {
 
         const fileName = `${data_id}.json`;
         
-        // Debug logging for settings load
+        // Debug logging for all files
         console.log(`[HttpServer] Loading file: ${fileName}`);
-        if (data_id === 'settings') {
-          console.log(`[HttpServer] SETTINGS LOAD REQUEST DETECTED!`);
-        }
         
         fs.readFile(fileName, 'utf8', (err, content) => {
           if (err) {
@@ -143,16 +145,23 @@ const httpServer = http.createServer((req, res) => {
             res.end(JSON.stringify({ code: 0, data: "{}", msg: "OK" }));
           } else {
             console.log(`[HttpServer] Successfully loaded: ${fileName}`);
-            if (data_id === 'settings') {
-              console.log(`[HttpServer] Settings content loaded: ${content}`);
-              try {
-                const parsedContent = JSON.parse(content);
+            console.log(`[HttpServer] Loaded content: ${content}`);
+            
+            // Try to parse and log JSON content for debugging
+            try {
+              const parsedContent = JSON.parse(content);
+              console.log(`[HttpServer] Parsed ${data_id} content:`, parsedContent);
+              
+              // Special handling for settings file
+              if (data_id === 'settings') {
                 console.log(`[HttpServer] Loaded settings drill_sequence: ${parsedContent.drill_sequence}`);
                 console.log(`[HttpServer] Loaded settings language: ${parsedContent.language}`);
-              } catch (e) {
-                console.log(`[HttpServer] Failed to parse loaded settings for debugging: ${e.message}`);
               }
+            } catch (e) {
+              console.log(`[HttpServer] Failed to parse ${data_id} content as JSON for debugging: ${e.message}`);
+              console.log(`[HttpServer] Content appears to be non-JSON data`);
             }
+            
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ code: 0, data: content }));
           }

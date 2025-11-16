@@ -11,11 +11,6 @@
 [ext_resource type="AudioStream" uid="uid://i6eh50aq5t66" path="res://audio/Final Battle - For Love.ogg" id="9_audio"]
 [ext_resource type="Script" uid="uid://dj7d1chuxn4fg" path="res://scene/option/networking_tab.gd" id="10_networking_tab"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_tab_unselected"]
-bg_color = Color(0, 0, 0, 0)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-
 [sub_resource type="StyleBoxFlat" id="StyleBox_tab_selected"]
 bg_color = Color(0.2, 0.2, 0.2, 0.5)
 border_width_left = 2
@@ -23,6 +18,11 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.956863, 0.521569, 0.007843, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_tab_unselected"]
+bg_color = Color(0, 0, 0, 0)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 
@@ -88,8 +88,8 @@ layout_mode = 2
 theme_override_constants/side_margin = 100
 theme_override_fonts/font = ExtResource("3_a5ubv")
 theme_override_font_sizes/font_size = 32
-theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
+theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 current_tab = 0
 
 [node name="Networking" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
