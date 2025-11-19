@@ -52,6 +52,76 @@ text = "shoot_to_reset"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="CanvasLayerStats" type="CanvasLayer" parent="."]
+
+[node name="Control" type="Control" parent="CanvasLayerStats"]
+layout_mode = 3
+anchors_preset = 0
+offset_top = 96.0
+offset_right = 714.0
+offset_bottom = 250.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayerStats/Control"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="HBoxContainerLine1" type="HBoxContainer" parent="CanvasLayerStats/Control/VBoxContainer"]
+custom_minimum_size = Vector2(720, 0)
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="Count" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+text = "Count: 1000"
+horizontal_alignment = 1
+
+[node name="A" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+text = "A: 100%"
+horizontal_alignment = 1
+
+[node name="C" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+text = "C: 100%"
+horizontal_alignment = 1
+
+[node name="D" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+text = "D: 100%"
+horizontal_alignment = 1
+
+[node name="Miss" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+text = "Miss: 100%"
+horizontal_alignment = 1
+
+[node name="HBoxContainerLine2" type="HBoxContainer" parent="CanvasLayerStats/Control/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Control" type="Control" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+
+[node name="Fastest" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2"]
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+text = "Fastest:100%"
+horizontal_alignment = 1
+
+[node name="Average" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2"]
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+text = "Average:100%"
+horizontal_alignment = 1
+
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="Control" type="Control" parent="CanvasLayer"]

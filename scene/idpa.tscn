@@ -1,7 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://bn4jluyldwlwl"]
+[gd_scene load_steps=7 format=3 uid="uid://mwlyybpg6fhe"]
 
-[ext_resource type="Script" uid="uid://d052u6s0ikdgy" path="res://script/ipsc_mini.gd" id="1_11fyi"]
-[ext_resource type="Texture2D" uid="uid://dve4iuyjc5x3u" path="res://asset/ipsc.png" id="2_uv8qi"]
+[ext_resource type="Script" uid="uid://b2c4e54ec4vkl" path="res://script/idpa.gd" id="1_ipda"]
+[ext_resource type="Texture2D" uid="uid://cane2y7sy4bht" path="res://asset/idpa.png" id="2_wegon"]
 
 [sub_resource type="Animation" id="Animation_1"]
 resource_name = "disappear"
@@ -47,24 +47,38 @@ _data = {
 &"disappear": SubResource("Animation_1")
 }
 
-[node name="IPSC" type="Area2D"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_knpln"]
+radius = 60.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_jfwqr"]
+radius = 116.72617
+
+[node name="IDPA" type="Area2D"]
 collision_layer = 7
 collision_mask = 0
-script = ExtResource("1_11fyi")
+script = ExtResource("1_ipda")
 
 [node name="TargetSprite" type="Sprite2D" parent="."]
-texture = ExtResource("2_uv8qi")
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("2_wegon")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
 &"": SubResource("AnimationLibrary_1")
 }
 
-[node name="AZone" type="CollisionPolygon2D" parent="."]
-polygon = PackedVector2Array(43, -452, 134, -152, 134, -26, 43, 106, -43, 106, -134, -26, -134, -152, -42, -452)
+[node name="head-0" type="CollisionShape2D" parent="."]
+position = Vector2(1, -342)
+shape = SubResource("CircleShape2D_knpln")
 
-[node name="CZone" type="CollisionPolygon2D" parent="."]
-polygon = PackedVector2Array(132, -485, 263, -152, 263, 76, 85, 286, -85, 286, -263, 76, -263, -152, -132, -485)
+[node name="heart-0" type="CollisionShape2D" parent="."]
+position = Vector2(0, -60)
+shape = SubResource("CircleShape2D_jfwqr")
 
-[node name="DZone" type="CollisionPolygon2D" parent="."]
-polygon = PackedVector2Array(132, -485, 379, -164, 379, 162, 132, 471, -132, 471, -379, 162, -379, -164, -132, -485)
+[node name="body-1" type="CollisionPolygon2D" parent="."]
+position = Vector2(-1127, -380)
+polygon = PackedVector2Array(1217, -63, 1217, 112, 1305, 212, 1302, 499, 1218, 643, 1043, 643, 952, 504, 951, 208, 1036, 110, 1040, -63)
+
+[node name="other-3" type="CollisionPolygon2D" parent="."]
+position = Vector2(-26, 238)
+polygon = PackedVector2Array(231, -504, 293, -413, 291, 49, 219, 206, -160, 204, -242, 57, -242, -409, -179, -508)

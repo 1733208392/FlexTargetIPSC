@@ -261,7 +261,7 @@ Strategy:
 shots,Shots,射击,ショット,射擊
 on_text,on,于,で,於
 target_text,Target,标靶,ターゲット,標靶
-navigate_instruction,▲ ▼ Browse bullet shots,▲ ▼ 浏览弹着点,▲ ▼ 弾丸射撃をナビゲート,▲ ▼ ショットを閲覧する
+navigate_instruction,▲ ▼ Browse bullet shots,▲ ▼ 浏览弹着点,▲ ▼ 弾丸射撃をナビゲート,▲ ▼ 瀏覽彈著點
 networking,Netlink,网络配置,ネットワーキング,網路配置
 auto_restart_in,Auto Restart in,自动重启倒计时,自動再起動まで,自動重新啟動倒數
 failed_open_settings,Failed to open settings.json,无法打开设置文件,設定ファイルを開けません,無法開啟設定檔案
@@ -334,3 +334,12 @@ switch_targets_instruction,"Please Use Remote Control 'Left' and 'Right' Buttons
 shoot_to_reset,"SHOOT TO RESET","射击此区清靶纸","シュートしてリセット","射擊此區清靶紙"
 work_mode_master,Master,主机,マスター,主機
 work_mode_slave,Slave,从机,スレーブ,從機
+stats_a_zone,"A:%.1f%%","A:%.1f%%","A:%.1f%%","A:%.1f%%"
+stats_c_zone,"C:%.1f%%","C:%.1f%%","C:%.1f%%","C:%.1f%%"
+stats_d_zone,"D:%.1f%%","D:%.1f%%","D:%.1f%%","D:%.1f%%"
+stats_miss,"Miss:%.1f%%","失误:%.1f%%","ミス:%.1f%%","失誤:%.1f%%"
+stats_count,"Count:%d","弹数:%d","カウント:%d","彈數:%d"
+stats_fastest,"Fastest:%.2fs","最快:%.2fs","最速:%.2fs","最快:%.2fs"
+stats_average,"Average:%.2fs","平均:%.2fs","平均:%.2fs","平均:%.2fs"
+stats_fastest_no_data,"Fastest:--","最快:--","最速:--","最快:--"
+stats_average_no_data,"Average:--","平均:--","平均:--","平均:--"

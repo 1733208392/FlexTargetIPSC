@@ -1,10 +1,10 @@
 extends Node2D
 
 # Performance optimization
-const DEBUG_DISABLED = true  # Set to true for verbose debugging
+const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-var target_sequence: Array[String] = ["bullseye", "ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var target_sequence: Array[String] = ["bullseye", "ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "ipda"]
 var current_target_index: int = 0
 var current_target_instance = null
 
@@ -13,19 +13,38 @@ var current_target_instance = null
 @onready var ipsc_mini_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
 @onready var ipsc_mini_black_1_scene: PackedScene = preload("res://scene/ipsc_mini_black_1.tscn")
 @onready var ipsc_mini_black_2_scene: PackedScene = preload("res://scene/ipsc_mini_black_2.tscn")
+@onready var ipda_scene: PackedScene = preload("res://scene/idpa.tscn")
 @onready var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
 @onready var two_poppers_scene: PackedScene = preload("res://scene/2poppers_simple.tscn")
 @onready var three_paddles_scene: PackedScene = preload("res://scene/3paddles_simple.tscn")
 @onready var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
+@onready var canvas_layer = $CanvasLayer
+@onready var canvas_layer_stats = $CanvasLayerStats
 @onready var shot_labels = []
 @onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
 @onready var background_music = $BackgroundMusic
 @onready var clear_area = $ClearArea
 
+# Statistics labels
+@onready var a_label = $CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1/A
+@onready var c_label = $CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1/C
+@onready var d_label = $CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1/D
+@onready var count_label = $CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1/Count
+@onready var miss_label = $CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1/Miss
+@onready var fastest_label = $CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2/Fastest
+@onready var average_label = $CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2/Average
+
 var shot_times = []
 var drill_started = false  # Track if drill has been started
 var game_start_requested = false  # Prevent multiple requests
+
+# Statistics tracking
+var shot_speeds = []  # Array of shot time differences in seconds
+var a_zone_count = 0
+var c_zone_count = 0  
+var d_zone_count = 0
+var miss_count = 0
 
 func _ready():
 	# Load and apply current language setting from global settings
@@ -138,7 +157,7 @@ func _start_drill_immediately():
 	
 	drill_started = true
 	if not DEBUG_DISABLED:
-		print("[Bootcamp] Bootcamp drill officially started!")
+		print("[Bootcamp] Bootcamp drill officially started! drill_started =", drill_started)
 	
 	# Initialize with the first target in sequence (bullseye)
 	current_target_index = 0
@@ -174,9 +193,13 @@ func _on_bullseye_time_diff(time_diff: float, hit_position: Vector2):
 	# Only display time differences for actual target hits (time_diff >= 0)
 	if time_diff >= 0:
 		if time_diff > 0:
+			shot_speeds.append(time_diff)
 			_update_shot_list("+%.2fs" % time_diff)
 		else:
 			_update_shot_list("First shot")
+	
+	# Update statistics display
+	update_statistics_display()
 
 func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null):
 	# Handle both signal signatures:
@@ -188,6 +211,9 @@ func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null):
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Target hit before drill started - ignoring")
 		return
+	
+	if not DEBUG_DISABLED:
+		print("[Bootcamp] _on_target_hit called with args:", _arg1, _arg2, _arg3, _arg4)
 	
 	# Extract hit_position from the arguments
 	# For IPSC Mini: _arg3 is hit_position
@@ -207,9 +233,24 @@ func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null):
 	
 	if shot_times.size() > 1:
 		var time_diff = shot_times[-1] - shot_times[-2]
+		shot_speeds.append(time_diff)
 		_update_shot_list("+%.2fs" % time_diff)
 	else:
 		_update_shot_list("First shot")
+	
+	# Track zone statistics (assuming _arg1 is zone for IPSC/IPDA targets)
+	var zone = _arg1
+	if zone == "AZone" or zone == "head-0" or zone == "heart-0":
+		a_zone_count += 1
+	elif zone == "CZone" or zone == "body-1":
+		c_zone_count += 1
+	elif zone == "DZone" or zone == "other-3":
+		d_zone_count += 1
+	elif zone == "miss" or zone == "barrel_miss":
+		miss_count += 1
+	
+	# Update statistics display
+	update_statistics_display()
 
 func _update_shot_list(new_text: String):
 	# Shift the list
@@ -222,6 +263,14 @@ func _on_clear_pressed():
 	for label in shot_labels:
 		label.text = ""
 	shot_times.clear()
+	
+	# Reset statistics
+	shot_speeds.clear()
+	a_zone_count = 0
+	c_zone_count = 0
+	d_zone_count = 0
+	miss_count = 0
+	update_statistics_display()
 	
 	# Check if current target is a popper or paddle (composition targets without bullet holes)
 	var target_type = target_sequence[current_target_index]
@@ -401,6 +450,9 @@ func update_ui_texts():
 	
 	if clear_button:
 		clear_button.text = tr("clear")
+	
+	# Update statistics labels with current translations
+	update_statistics_display()
 
 func get_localized_shots_text() -> String:
 	# Since there's no specific "shots" translation key, create localized text based on locale
@@ -487,6 +539,36 @@ func spawn_target_by_type(target_type: String):
 	if current_target_instance:
 		current_target_instance.queue_free()
 	
+	# Hide/show canvas layers based on target type
+	if canvas_layer:
+		if target_type == "ipsc_mini_rotate":
+			canvas_layer.visible = false  # Hide shot intervals for rotation targets
+			if canvas_layer_stats:
+				canvas_layer_stats.visible = true  # Show stats for rotation targets
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Hidden shot intervals but kept stats visible for rotation target")
+		elif target_type == "ipsc_mini":
+			canvas_layer.visible = true  # Show shot intervals for IPSC mini
+			if canvas_layer_stats:
+				canvas_layer_stats.visible = true  # Show stats for IPSC mini
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Shown CanvasLayers and stats for IPSC mini target")
+		elif target_type == "ipda":
+			canvas_layer.visible = true  # Show shot intervals for IPDA
+			if canvas_layer_stats:
+				canvas_layer_stats.visible = true  # Show stats for IPDA
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Shown CanvasLayers and stats for IPDA target")
+		else:
+			canvas_layer.visible = true  # Show shot intervals for other targets
+			if canvas_layer_stats:
+				canvas_layer_stats.visible = false  # Hide stats for other targets
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Shown shot intervals but hidden stats for non-IPSC target:", target_type)
+	
+	# Update statistics display
+	update_statistics_display()
+	
 	var target_scene = null
 	
 	# Select the appropriate scene
@@ -499,6 +581,8 @@ func spawn_target_by_type(target_type: String):
 			target_scene = ipsc_mini_black_1_scene
 		"ipsc_mini_black_2":
 			target_scene = ipsc_mini_black_2_scene
+		"ipda":
+			target_scene = ipda_scene
 		"hostage":
 			target_scene = hostage_scene
 		"2poppers":
@@ -539,9 +623,9 @@ func spawn_target_by_type(target_type: String):
 				if not DEBUG_DISABLED:
 					print("[Bootcamp] Set max_shots=1000 on inner IPSC mini for rotating target")
 		
-		# Special positioning for rotating target (offset from center)
-		if target_type == "ipsc_mini_rotate":
-			target.position = Vector2(160, 840)  # Center (360,640) + offset (-200,200)
+		# # Special positioning for rotating target (offset from center)
+		# if target_type == "ipsc_mini_rotate":
+		# 	target.position = Vector2(160, 840)  # Center (360,640) + offset (-200,200)
 		
 		# Special scaling for bullseye target
 		if target_type == "bullseye":
@@ -559,6 +643,8 @@ func spawn_target_by_type(target_type: String):
 					print("[Bootcamp] ERROR: Bullseye target does not have shot_time_diff signal")
 		elif target.has_signal("target_hit"):
 			target.target_hit.connect(_on_target_hit)
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Connected target_hit signal for:", target_type)
 		
 		# For poppers and paddles, connect to target_disappeared signal to auto-respawn
 		if target.has_signal("target_disappeared"):
@@ -600,3 +686,94 @@ func _apply_sfx_volume(volume: int):
 			background_music.volume_db = db
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Set audio volume_db to ", db, " (volume level: ", volume, ")")
+
+func update_statistics_display():
+	"""Update the statistics labels with current session data"""
+	var total_shots = a_zone_count + c_zone_count + d_zone_count + miss_count
+	
+	if not DEBUG_DISABLED:
+		print("[Bootcamp] update_statistics_display() called")
+		print("[Bootcamp] Updating stats - total_shots:", total_shots, " A:", a_zone_count, " C:", c_zone_count, " D:", d_zone_count, " Miss:", miss_count)
+	
+	# Update count label with total shots
+	if count_label:
+		count_label.text = tr("stats_count") % total_shots
+		if not DEBUG_DISABLED:
+			print("[Bootcamp] Set Count label to:", count_label.text)
+	else:
+		if not DEBUG_DISABLED:
+			print("[Bootcamp] ERROR: Count label not found! count_label =", count_label)
+	
+	# Update zone labels
+	var current_target_type = target_sequence[current_target_index] if current_target_index < target_sequence.size() else ""
+	var is_ipda_target = current_target_type == "ipda"
+	
+	if total_shots > 0:
+		var a_percent = (float(a_zone_count) / total_shots) * 100
+		var c_percent = (float(c_zone_count) / total_shots) * 100
+		var d_percent = (float(d_zone_count) / total_shots) * 100
+		var miss_percent = (float(miss_count) / total_shots) * 100
+		
+		if a_label:
+			var a_label_text = "0: %.0f%%" % a_percent if is_ipda_target else tr("stats_a_zone") % a_percent
+			a_label.text = a_label_text
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set A label to:", a_label.text)
+		else:
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] A label not found!")
+				
+		if c_label:
+			var c_label_text = "-1: %.0f%%" % c_percent if is_ipda_target else tr("stats_c_zone") % c_percent
+			c_label.text = c_label_text
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set C label to:", c_label.text)
+		if d_label:
+			var d_label_text = "-3: %.0f%%" % d_percent if is_ipda_target else tr("stats_d_zone") % d_percent
+			d_label.text = d_label_text
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set D label to:", d_label.text)
+		if miss_label:
+			miss_label.text = tr("stats_miss") % miss_percent
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set Miss label to:", miss_label.text)
+	else:
+		# When no shots, show 0% for all zones
+		if a_label:
+			var a_label_text = "0: %.0f%%" % 0.0 if is_ipda_target else tr("stats_a_zone") % 0.0
+			a_label.text = a_label_text
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set A label to: A:0.0%")
+		if c_label:
+			var c_label_text = "-1: %.0f%%" % 0.0 if is_ipda_target else tr("stats_c_zone") % 0.0
+			c_label.text = c_label_text
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set C label to: C:0.0%")
+		if d_label:
+			var d_label_text = "-3: %.0f%%" % 0.0 if is_ipda_target else tr("stats_d_zone") % 0.0
+			d_label.text = d_label_text
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set D label to: D:0.0%")
+		if miss_label:
+			miss_label.text = tr("stats_miss") % 0.0
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set Miss label to: Miss:0.0%")
+	
+	if shot_speeds.size() > 0:
+		var fastest = shot_speeds.min()
+		var average = shot_speeds.reduce(func(acc, val): return acc + val, 0.0) / shot_speeds.size()
+		
+		if fastest_label:
+			fastest_label.text = tr("stats_fastest") % fastest
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set Fastest label to:", fastest_label.text)
+		if average_label:
+			average_label.text = tr("stats_average") % average
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Set Average label to:", average_label.text)
+	else:
+		# Reset labels when no shots
+		if fastest_label:
+			fastest_label.text = tr("stats_fastest_no_data")
+		if average_label:
+			average_label.text = tr("stats_average_no_data")
