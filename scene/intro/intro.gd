@@ -244,7 +244,7 @@ func _on_start_pressed():
 		if not DEBUG_DISABLED:
 			print("[Intro] HttpService singleton not found!")
 		if get_tree():
-			get_tree().change_scene_to_file("res://scene/drills.tscn")
+			get_tree().change_scene_to_file("res://scene/ipsc_mini_stage/ipsc_mini_stage.tscn")
 
 func _on_start_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
@@ -255,7 +255,7 @@ func _on_start_response(_result, response_code, _headers, body):
 		if not DEBUG_DISABLED:
 			print("[Intro] Start game success, changing scene.")
 		if get_tree():
-			get_tree().change_scene_to_file("res://scene/drills.tscn")
+			get_tree().change_scene_to_file("res://scene/ipsc_mini_stage/ipsc_mini_stage.tscn")
 	else:
 		if not DEBUG_DISABLED:
 			print("[Intro] Start game failed or invalid response.")

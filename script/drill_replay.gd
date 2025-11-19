@@ -7,7 +7,7 @@ var records = []
 var current_index = 0
 var current_target_type = ""
 var loaded_targets = {}
-var upper_level_scene = "res://scene/drills.tscn"  # Default upper level scene
+var upper_level_scene = "res://scene/ipsc_mini_stage/ipsc_mini_stage.tscn"  # Default upper level scene
 
 var target_scenes = {
 	"ipsc_mini": "res://scene/ipsc_mini.tscn",

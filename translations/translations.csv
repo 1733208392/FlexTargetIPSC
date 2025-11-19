@@ -16,9 +16,15 @@ description,"The Grwolf Smart Target is designed for shooting enthusiasts who wa
 * 即時命中點顯示，讓您可以即時追蹤射擊併計分。
 * 同一裝置可選擇不同的練習方式，例如槍枝練習和自由射擊，提升您的射擊體驗。 "
 copyright,© 2025 FlexTarget IPSC@Grwolf.com,© 2025 FlexTarget IPSC@Grwolf.com,© 2025 FlexTarget IPSC@Grwolf.com,2025 FlexTarget IPSC@Grwolf.com
-ipsc,IPSC Drill,单靶训练,IPSC,單靶訓練
+ipsc,IPSC Drill,IPSC場景,IPSCステージ,IPSC場景
+stage,Mini Stage,迷你場景,ミニステージ,迷你場景
+standard_stage,Standard Stage,标准阶段,スタンダードステージ,標準階段
+stage_mini,Stage Mini,迷你阶段,ステージミニ,迷你階段
+stage_white,Stage White,白色阶段,ホワイトステージ,白色階段
+back_to_main,Back to Main Menu,返回主菜单,メインメニューに戻る,返回主選單
 network,Netlink Drill,多靶训练,マルチターゲットドリル,多靶訓練
-boot_camp,Boot Camp,自由射击,ブートキャンプ,訓練營
+drills,My Drills,我的练习,カスタムドリル,客製訓練
+boot_camp,Boot Camp,自由射击,フリーシュート,自由射擊
 leaderboard,Leaderboard,排行榜,リーダーボード,排行榜
 options,Options,选项,オプション,選項
 prev,Prev,上页,上页,上頁
