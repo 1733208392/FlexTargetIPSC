@@ -5,7 +5,7 @@ const DEBUG_DISABLED = true  # Set to true to disable debug prints for productio
 @onready var stage_button = $VBoxContainer/stage
 @onready var drills_button = $VBoxContainer/drills
 @onready var bootcamp_button = $VBoxContainer/boot_camp
-@onready var leaderboard_button = $VBoxContainer/learder_board
+@onready var games_button = $VBoxContainer/games
 @onready var option_button = $VBoxContainer/option
 @onready var copyright_label = $Label
 @onready var background_music = $BackgroundMusic
@@ -50,7 +50,7 @@ func update_ui_texts():
 	stage_button.text = tr("stage")
 	drills_button.text = tr("drills")
 	bootcamp_button.text = tr("boot_camp")
-	leaderboard_button.text = tr("leaderboard")
+	games_button.text = tr("games")
 	option_button.text = tr("options")
 	copyright_label.text = tr("copyright")
 	
@@ -96,7 +96,7 @@ func _ready():
 		stage_button,
 		drills_button,
 		bootcamp_button,
-		leaderboard_button,
+		games_button,
 		option_button]
 	
 	# Check return source and set focus accordingly
@@ -155,7 +155,7 @@ func _ready():
 	stage_button.pressed.connect(on_stage_pressed)
 	drills_button.pressed.connect(_on_drills_pressed)
 	bootcamp_button.pressed.connect(_on_bootcamp_pressed)
-	leaderboard_button.pressed.connect(_on_leaderboard_pressed)
+	games_button.pressed.connect(_on_games_pressed)
 	option_button.pressed.connect(_on_option_pressed)
 
 func on_stage_pressed():
@@ -231,10 +231,10 @@ func _on_bootcamp_response(result, response_code, _headers, body):
 		if not DEBUG_DISABLED:
 			print("[Menu] Start bootcamp failed or invalid response.")
 
-func _on_leaderboard_pressed():
-	# Load the history scene
+func _on_games_pressed():
+	# Load the games scene
 	if is_inside_tree():
-		get_tree().change_scene_to_file("res://scene/history.tscn")
+		get_tree().change_scene_to_file("res://scene/games/game.tscn")
 	else:
 		if not DEBUG_DISABLED:
 			print("[Menu] Warning: Node not in tree, cannot change scene")

@@ -101,7 +101,7 @@ theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
 theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 
-[node name="learder_board" type="Button" parent="VBoxContainer"]
+[node name="games" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
