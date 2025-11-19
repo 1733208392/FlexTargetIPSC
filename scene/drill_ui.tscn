@@ -2,11 +2,11 @@
 
 [ext_resource type="Script" uid="uid://buop6viqv08kk" path="res://script/drill_ui.gd" id="1_drill_ui_script"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
+[ext_resource type="Texture2D" uid="uid://cdwtg2vcfaupb" path="res://asset/trophy.png" id="2_4gcga"]
 [ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="2_title_settings"]
 [ext_resource type="PackedScene" uid="uid://bvmw1s06twfav" path="res://scene/shot_timer.tscn" id="3_shot_timer"]
 [ext_resource type="LabelSettings" uid="uid://deg7d40rl6o81" path="res://theme/big_bold_timer_font.tres" id="4_big_bold"]
 [ext_resource type="PackedScene" uid="uid://5awavhwtv8op" path="res://scene/custom_progress_bar.tscn" id="5_custom_progress"]
-[ext_resource type="Texture2D" uid="uid://cj5m8qdpg1amv" path="res://asset/coin.png" id="6_coin_texture"]
 [ext_resource type="Texture2D" uid="uid://bhksfu7pulyjs" path="res://asset/thunder.png" id="7_thunder_texture"]
 [ext_resource type="PackedScene" uid="uid://unm5ps1c30g" path="res://scene/drill_complete_overlay.tscn" id="8_4gcga"]
 
@@ -55,7 +55,7 @@ size_flags_horizontal = 3
 
 [node name="CoinIcon" type="TextureRect" parent="TopContainer/TopLayout/HeaderContainer/ScoreContainer"]
 layout_mode = 2
-texture = ExtResource("6_coin_texture")
+texture = ExtResource("2_4gcga")
 stretch_mode = 5
 
 [node name="Score" type="Label" parent="TopContainer/TopLayout/HeaderContainer/ScoreContainer"]
@@ -68,7 +68,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_font_sizes/font_size = 24
-text = ""
 label_settings = ExtResource("2_title_settings")
 horizontal_alignment = 1
 vertical_alignment = 1

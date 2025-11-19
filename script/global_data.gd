@@ -9,9 +9,27 @@ var selected_drill_data: Dictionary = {}  # Store selected drill data for replay
 var latest_performance_data: Dictionary = {}  # Store latest performance data for fallback
 var netlink_status: Dictionary = {}  # Store last known netlink status from server
 var ble_ready_content: Dictionary = {}  # Store BLE ready command content for passing between scenes
+var sub_menu_config: Dictionary = {
+	"title": "Stage Options",
+	"items": [
+		{
+			"text": "ipsc",
+			"action": "http_call",
+			"http_call": "start_game",
+			"success_scene": "res://scene/intro/intro.tscn"
+		},
+		{
+			"text": "back_to_main",
+			"action": "back_to_main"
+		}
+	]
+}
 
 # Track which scene we're returning from for focus management
 var return_source: String = ""
+
+# Store the selected variant (IPSC or IDPA)
+var selected_variant: String = "IPSC"
 
 # Timer for periodic netlink status updates
 var netlink_timer: Timer = null

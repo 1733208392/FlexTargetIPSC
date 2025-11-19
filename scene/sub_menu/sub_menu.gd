@@ -237,6 +237,15 @@ func _on_http_response(result, response_code, _headers, body, item):
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
 		if not DEBUG_DISABLED:
 			print("[SubMenu] HTTP call success")
+		
+		# Store variant in GlobalData if present in item
+		if item.has("variant"):
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.selected_variant = item.get("variant")
+				if not DEBUG_DISABLED:
+					print("[SubMenu] Stored variant in GlobalData: ", item.get("variant"))
+		
 		var scene_path = item.get("success_scene", "")
 		if scene_path and is_inside_tree():
 			get_tree().change_scene_to_file(scene_path)

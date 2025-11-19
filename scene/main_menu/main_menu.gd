@@ -169,7 +169,15 @@ func on_stage_pressed():
 					"text": "ipsc",
 					"action": "http_call",
 					"http_call": "start_game",
-					"success_scene": "res://scene/intro/intro.tscn"
+					"success_scene": "res://scene/intro/intro.tscn",
+					"variant": "IPSC"
+				},
+				{
+					"text": "idpa",
+					"action": "http_call",
+					"http_call": "start_game",
+					"success_scene": "res://scene/intro/intro.tscn",
+					"variant": "IDPA"
 				},
 				{
 					"text": "back_to_main",

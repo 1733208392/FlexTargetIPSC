@@ -60,10 +60,6 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
-	# Set up collision detection for bullets
-	# NOTE: Collision detection is now obsolete due to WebSocket fast path
-	# collision_layer = 7  # Target layer
-	# collision_mask = 0   # Don't detect other targets
 
 	# If loaded by drills_network (networked drills loader), set max_shots high for testing
 	var drills_network = get_node_or_null("/root/drills_network")
@@ -150,57 +146,7 @@ func spawn_bullet_at_position(world_pos: Vector2):
 
 		# Use the new set_spawn_position method to ensure proper positioning
 		bullet.set_spawn_position(world_pos)
-
-func handle_bullet_collision(bullet_position: Vector2):
-	"""Handle collision detection when a bullet hits this target"""
-	# NOTE: This collision handling is now obsolete due to WebSocket fast path
-	# WebSocket hits use handle_websocket_bullet_hit_fast() instead
-
-	# Don't process bullet collisions if target is disappearing
-	if is_disappearing:
-		return "ignored"
-
-
-	# Convert bullet world position to local coordinates for zone checking
-	var local_pos = to_local(bullet_position)
-
-	var zone_hit = ""
-	var points = 0
-
-	# Check which zone was hit (highest score first)
-	# TODO: Update zone names and scoring for IPDA
-	if is_point_in_zone("head-0", local_pos):
-		zone_hit = "head-0"
-		points = 5
-	elif is_point_in_zone("heart-0", local_pos):
-		zone_hit = "heart-0"
-		points = 4
-	elif is_point_in_zone("body-1", local_pos):
-		zone_hit = "body-1"
-		points = 3
-	elif is_point_in_zone("other-3", local_pos):
-		zone_hit = "other-3"
-		points = 2
-	else:
-		zone_hit = "miss"
-		points = 0
-
-	# Update score and emit signal
-	total_score += points
-	target_hit.emit(zone_hit, points, bullet_position)
-
-	# Note: Bullet hole is now spawned by bullet script before this method is called
-
-	# Increment shot count and check for disappearing animation (only for valid target hits)
-	var is_target_hit = zone_hit != "miss" and points > 0
-	if is_target_hit:
-		shot_count += 1
-
-		# Check if we've reached the maximum shots
-		if shot_count >= max_shots:
-			play_disappearing_animation()
-	return zone_hit
-
+		
 func get_total_score() -> int:
 	"""Get the current total score for this target"""
 	return total_score
@@ -230,16 +176,8 @@ func _on_animation_finished(animation_name: String):
 func _on_disappear_animation_finished():
 	"""Called when the disappearing animation completes"""
 
-	# Disable collision detection completely
-	# NOTE: Collision detection was already obsolete due to WebSocket fast path
-	# set_collision_layer(0)
-	# set_collision_mask(0)
-
 	# Emit signal to notify the drills system that the target has disappeared
 	target_disappeared.emit()
-
-	# Keep the disappearing state active to prevent any further interactions
-	# is_disappearing remains true
 
 func reset_target():
 	"""Reset the target to its original state (useful for restarting)"""
@@ -253,11 +191,6 @@ func reset_target():
 	modulate = Color.WHITE
 	rotation = 0.0
 	scale = Vector2.ONE
-
-	# Re-enable collision detection
-	# NOTE: Collision detection disabled as it's obsolete due to WebSocket fast path
-	# collision_layer = 7
-	# collision_mask = 0
 
 	# Reset score
 	reset_score()
@@ -388,31 +321,31 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# TODO: Update zone names and scoring for IPDA
 	if is_point_in_zone("head-0", local_pos):
 		zone_hit = "head-0"
-		points = 5
+		points = 0
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[IDPA] Hit detected in head-0 zone at local_pos:", local_pos)
 	elif is_point_in_zone("heart-0", local_pos):
 		zone_hit = "heart-0"
-		points = 4
+		points = 0
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[IDPA] Hit detected in heart-0 zone at local_pos:", local_pos)
 	elif is_point_in_zone("body-1", local_pos):
 		zone_hit = "body-1"
-		points = 3
+		points = -1
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[IDPA] Hit detected in body-1 zone at local_pos:", local_pos)
 	elif is_point_in_zone("other-3", local_pos):
 		zone_hit = "other-3"
-		points = 2
+		points = -3
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[IDPA] Hit detected in other-3 zone at local_pos:", local_pos)
 	else:
 		zone_hit = "miss"
-		points = 0
+		points = -3
 		is_target_hit = false
 		if not DEBUG_DISABLED:
 			print("[IDPA] Miss detected at local_pos:", local_pos)
@@ -589,23 +522,23 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 		# TODO: Update zone names and scoring for IPDA
 		if is_point_in_zone("head-0", local_pos):
 			zone_hit = "head-0"
-			points = 5
+			points = 0
 			is_target_hit = true
 		elif is_point_in_zone("heart-0", local_pos):
 			zone_hit = "heart-0"
-			points = 4
+			points = 0
 			is_target_hit = true
 		elif is_point_in_zone("body-1", local_pos):
 			zone_hit = "body-1"
-			points = 3
+			points = 01
 			is_target_hit = true
 		elif is_point_in_zone("other-3", local_pos):
 			zone_hit = "other-3"
-			points = 2
+			points = -3
 			is_target_hit = true
 		else:
 			zone_hit = "miss"
-			points = 0
+			points = -3
 			is_target_hit = false
 
 	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
@@ -625,14 +558,6 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
 			play_disappearing_animation()
-	# DISABLE activity decrease for rotating targets - let ipda_rotate.gd control animation
-	# # Decrease activity after a short delay (simulate bullet lifetime)
-	# var tree = get_tree()
-	# if tree:
-	# 	tree.create_timer(0.2).timeout.connect(func():
-	# 		bullet_activity_count = max(0, bullet_activity_count - 1)
-	# 		monitor_bullet_activity()
-	# 	)
 
 func monitor_bullet_activity():
 	"""Monitor bullet activity and pause/resume animation accordingly"""

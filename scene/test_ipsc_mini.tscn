@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://3dg310kbhdth"]
 
-[ext_resource type="PackedScene" uid="uid://mwlyybpg6fhe" path="res://scene/idpa.tscn" id="2_ffgvl"]
+[ext_resource type="PackedScene" uid="uid://mwlyybpg6fhe" path="res://scene/idpa-ns.tscn" id="2_ffgvl"]
 [ext_resource type="Script" uid="uid://b8a08gxcx8dgt" path="res://script/test_ipsc_mini.gd" id="2_test_script"]
 
 [node name="Node2D" type="Node2D"]

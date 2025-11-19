@@ -16,8 +16,9 @@ description,"The Grwolf Smart Target is designed for shooting enthusiasts who wa
 * 即時命中點顯示，讓您可以即時追蹤射擊併計分。
 * 同一裝置可選擇不同的練習方式，例如槍枝練習和自由射擊，提升您的射擊體驗。 "
 copyright,© 2025 FlexTarget IPSC@Grwolf.com,© 2025 FlexTarget IPSC@Grwolf.com,© 2025 FlexTarget IPSC@Grwolf.com,2025 FlexTarget IPSC@Grwolf.com
-ipsc,IPSC Drill,IPSC場景,IPSCステージ,IPSC場景
-stage,Mini Stage,迷你場景,ミニステージ,迷你場景
+ipsc,IPSC Drill,IPSC场景,IPSCステージ,IPSC場景
+idpa,IDPA Drill,IDPA场景,IDPAステージ,IDPA場景
+stage,Mini Stage,迷你场景,ミニステージ,迷你场景
 standard_stage,Standard Stage,标准阶段,スタンダードステージ,標準階段
 stage_mini,Stage Mini,迷你阶段,ステージミニ,迷你階段
 stage_white,Stage White,白色阶段,ホワイトステージ,白色階段
@@ -265,6 +266,283 @@ Strategy:
 策略:
 • 平衡速度與準確度
 • 追求最小懲罰""}"
+idpa_score_rule,"{""title"": ""SCORING RULES - IDPA"",
+""content"": ""[center]SCORING RULES - IDPA[/center]
+
+Target Scoring Zones:
+• Center Mass: 5 pts per round
+• Head Area (Optional): 3 pts per round
+• Emergency 8 Ring: 2 pts per round
+• Outside Zones: 0 pts
+• Miss: 0 pts (no -5 penalty like paper targets)
+
+Overall Stage Score:
+• Stage Raw Score (total points)
+• Stage Time (total seconds)
+• Stage Points = Raw Score ÷ Time""}","{""title"": ""记分规则 - IDPA"",
+""content"": ""[center]记分规则 - IDPA[/center]
+
+靶子计分区域:
+• 躯干中心: 每发 5 分
+• 头部区域 (可选): 每发 3 分
+• 应急 8 环: 每发 2 分
+• 区域外: 0 分
+• 脱靶: 0 分 (不像纸靶有 -5 惩罚)
+
+总体阶段计分:
+• 阶段原始分数 (总点数)
+• 阶段时间 (总秒数)
+• 阶段点数 = 原始分数 ÷ 时间""}","{""title"": ""採点ルール - IDPA"",
+""content"": ""[center]採点ルール - IDPA[/center]
+
+ターゲットスコアリングゾーン:
+• 躯干中心: 1ラウンド 5ポイント
+• 頭部エリア (オプション): 1ラウンド 3ポイント
+• 緊急 8 リング: 1ラウンド 2ポイント
+• ゾーン外: 0ポイント
+• ミス: 0ポイント (紙ターゲットの -5 ペナルティなし)
+
+全体ステージスコア:
+• ステージ生スコア (総ポイント)
+• ステージタイム (総秒数)
+• ステージポイント = 生スコア ÷ タイム""}","{""title"": ""記分規則 - IDPA"",
+""content"": ""[center]記分規則 - IDPA[/center]
+
+靶子計分區域:
+• 軀幹中心: 每發 5 分
+• 頭部區域 (可選): 每發 3 分
+• 應急 8 環: 每發 2 分
+• 區域外: 0 分
+• 脫靶: 0 分 (不像紙靶有 -5 懲罰)
+
+總體階段計分:
+• 階段原始分數 (總點數)
+• 階段時間 (總秒數)
+• 階段點數 = 原始分數 ÷ 時間""}"
+idpa_penalty_rule,"{""title"": ""PENALTY RULES - IDPA"",
+""content"": ""[center]PENALTY RULES - IDPA[/center]
+
+Time Penalties (Added to Stage Time):
+• Concealment Violation: +3 sec
+• Safety Violation: +3 sec
+• Procedural Error: +1 sec
+• Failure to Stop: +3 sec
+
+Disqualification (DQ):
+• Unsafe firearm handling
+• Pointing gun at self/others
+• Negligent discharge""}","{""title"": ""惩罚规则 - IDPA"",
+""content"": ""[center]惩罚规则 - IDPA[/center]
+
+时间惩罚 (加入舞台时间):
+• 隐蔽违规: +3 秒
+• 安全违规: +3 秒
+• 程序错误: +1 秒
+• 失败停止: +3 秒
+
+失格 (DQ):
+• 不安全的枪支操作
+• 指向自己/他人的枪
+• 意外射击""}","{""title"": ""ペナルティルール - IDPA"",
+""content"": ""[center]ペナルティルール - IDPA[/center]
+
+時間ペナルティ (ステージタイムに追加):
+• 隠蔽違反: +3 秒
+• 安全違反: +3 秒
+• 手順エラー: +1 秒
+• 停止失敗: +3 秒
+
+失格 (DQ):
+• 不安全な銃器の取り扱い
+• 自分/他人に銃を向ける
+• 不注意な射撃""}","{""title"": ""懲罰規則 - IDPA"",
+""content"": ""[center]懲罰規則 - IDPA[/center]
+
+時間懲罰 (加入舞台時間):
+• 隱蔽違規: +3 秒
+• 安全違規: +3 秒
+• 程序錯誤: +1 秒
+• 失敗停止: +3 秒
+
+失格 (DQ):
+• 不安全的槍支操作
+• 指向自己/他人的槍
+• 意外射擊""}"
+idpa_timer_system,"{""title"": ""TIMER SYSTEM - IDPA"",
+""content"": ""[center]TIMER SYSTEM - IDPA[/center]
+
+Drill Start:
+• Drill begins with BEEPING sound
+• 3-5 second random delay from standby to beep
+
+Timing:
+• Timer starts on beep
+• Timer stops when stage is complete
+• Total time includes penalties""}","{""title"": ""计时系统 - IDPA"",
+""content"": ""[center]计时系统 - IDPA[/center]
+
+游戏开始:
+• 游戏滴声后开始计时
+• 从预备到滴声有3-5秒随机延迟
+
+计时:
+• 滴声后开始
+• 阶段完成后结束
+• 总时长包含惩罚时长""}","{""title"": ""タイマーシステム - IDPA"",
+""content"": ""[center]タイマーシステム - IDPA[/center]
+
+ドリル開始:
+• ドリルはビープ音で開始します
+• スタンバイ状態からビープ音まで、3～5秒のランダムな遅延があります
+
+タイミング:
+• ビープ音でタイマーがスタートします
+• ステージが完了するとタイマーが停止します
+• 合計時間にはペナルティが含まれます""}","{""title"": ""計時系統 - IDPA"",
+""content"": ""[center]計時系統 - IDPA[/center]
+
+遊戲開始:
+• 遊戲滴聲後開始計時
+• 從預備到滴聲有3-5秒隨機延遲
+
+計時:
+• 滴聲後開始
+• 階段完成後結束
+• 總時長包含懲罰時長""}"
+idpa_drill_rule,"{""title"": ""STAGE RULES - IDPA"",
+""content"": ""[center]STAGE RULES - IDPA[/center]
+
+Stage Setup:
+• Real-world scenarios (home, building, outdoor)
+• Varying distances (5 to 25 yards)
+• Tactical movement required
+• Concealment/barricade use
+• Hostage/No-shoot targets
+
+Required Actions:
+• Follow specific shooting order/sequence
+• Engage targets from designated positions
+• Use appropriate cover/concealment
+• Prove firearm safety at stage end
+• Stage time includes all movement and shooting""}","{""title"": ""阶段规则 - IDPA"",
+""content"": ""[center]阶段规则 - IDPA[/center]
+
+阶段设置:
+• 真实世界场景 (家里、建筑、户外)
+• 不同距离 (5 到 25 码)
+• 需要战术移动
+• 使用掩护/屏障
+• 人质/禁止射击目标
+
+所需操作:
+• 遵循特定的射击顺序/序列
+• 从指定位置接触目标
+• 使用适当的掩护/隐蔽
+• 在阶段末端证明枪支安全
+• 阶段时间包括所有移动和射击""}","{""title"": ""ステージルール - IDPA"",
+""content"": ""[center]ステージルール - IDPA[/center]
+
+ステージセットアップ:
+• リアルワールドシナリオ (家、建築、屋外)
+• 異なる距離 (5 から 25 ヤード)
+• 戦術的な動きが必要
+• 掩護/バリケード使用
+• 人質/非射撃ターゲット
+
+必要なアクション:
+• 特定の射撃順序/シーケンスに従う
+• 指定された位置からターゲットに接触
+• 適切なカバー/隠蔽を使用
+• ステージ終了時に銃器安全を実証
+• ステージタイムはすべての移動と射撃を含む""}","{""title"": ""階段規則 - IDPA"",
+""content"": ""[center]階段規則 - IDPA[/center]
+
+階段設置:
+• 真實世界場景 (家裡、建築、戶外)
+• 不同距離 (5 到 25 碼)
+• 需要戰術移動
+• 使用掩護/屏障
+• 人質/禁止射擊目標
+
+所需操作:
+• 遵循特定的射擊順序/序列
+• 從指定位置接觸目標
+• 使用適當的掩護/隱蔽
+• 在階段末端證明槍支安全
+• 階段時間包括所有移動和射擊""}"
+idpa_hit_factor_rule,"{""title"": ""STAGE POINTS - IDPA"",
+""content"": ""[center]STAGE POINTS - IDPA[/center]
+
+Stage Scoring Formula:
+
+[center]Stage Points = Raw Score ÷ Time[/center]
+
+Raw Score:
+• Sum of all points from targets engaged
+
+Stage Time:
+• Includes all movement, shooting, reloads
+• Starts on signal, stops at final shot
+• Time penalties added here
+
+Competitor Ranking:
+• Each stage scored individually
+• Overall match = average of all stage points
+• Highest points wins the match""}","{""title"": ""阶段点数 - IDPA"",
+""content"": ""[center]阶段点数 - IDPA[/center]
+
+阶段计分公式:
+
+[center]阶段点数 = 原始分数 ÷ 时间[/center]
+
+原始分数:
+• 接触所有目标的所有点数之和
+
+阶段时间:
+• 包括所有移动、射击、填弹
+• 信号开始，最后一枪停止
+• 时间惩罚添加到这里
+
+竞争者排名:
+• 每个阶段单独计分
+• 整个比赛 = 所有阶段点数的平均值
+• 最高分获胜""}","{""title"": ""ステージポイント - IDPA"",
+""content"": ""[center]ステージポイント - IDPA[/center]
+
+ステージスコアリング公式:
+
+[center]ステージポイント = 生スコア ÷ タイム[/center]
+
+生スコア:
+• 接触されたすべてのターゲットからのすべてのポイントの合計
+
+ステージタイム:
+• すべての動き、射撃、リロードを含む
+• 信号で開始、最後のショットで停止
+• ここに時間ペナルティが追加される
+
+競争相手のランキング:
+• 各ステージは個別にスコア
+• 全試合 = すべてのステージポイントの平均
+• 最高ポイントが勝利""}","{""title"": ""階段點數 - IDPA"",
+""content"": ""[center]階段點數 - IDPA[/center]
+
+階段計分公式:
+
+[center]階段點數 = 原始分數 ÷ 時間[/center]
+
+原始分數:
+• 接觸所有目標的所有點數之和
+
+階段時間:
+• 包括所有移動、射擊、填彈
+• 信號開始，最後一槍停止
+• 時間懲罰添加到這裡
+
+競爭者排名:
+• 每個階段單獨計分
+• 整個比賽 = 所有階段點數的平均值
+• 最高分獲勝""}"
 shots,Shots,射击,ショット,射擊
 on_text,on,于,で,於
 target_text,Target,标靶,ターゲット,標靶

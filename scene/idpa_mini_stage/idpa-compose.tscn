@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3 uid="uid://dj8sj4i4rqcxa"]
+
+[ext_resource type="PackedScene" uid="uid://b6gm7b6lv1klv" path="res://scene/idpa.tscn" id="1_do2wk"]
+[ext_resource type="PackedScene" uid="uid://mwlyybpg6fhe" path="res://scene/idpa-ns.tscn" id="2_qa43s"]
+[ext_resource type="Script" uid="uid://t5jh4pyiw6jx" path="res://scene/idpa_mini_stage/idpa-compose.gd" id="3_abc12"]
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource("3_abc12")
+
+[node name="IDPA" parent="." instance=ExtResource("1_do2wk")]
+
+[node name="IDPA-NS" parent="." instance=ExtResource("2_qa43s")]
+position = Vector2(250, 152)
+script = null
