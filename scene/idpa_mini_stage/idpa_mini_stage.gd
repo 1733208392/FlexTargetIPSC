@@ -5,10 +5,11 @@ extends Control
 @export var idpa_mini_ns_scene: PackedScene = preload("res://scene/idpa_mini_stage/idpa-compose.tscn")
 @export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/idpa-hard-cover-1.tscn")
 @export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/idpa-hard-cover-2.tscn")
+@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/idpa_mini_rotate.tscn")
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2"]
+var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
 var target_sequence: Array[String] = []
 var current_target_index: int = 0
 var current_target_instance: Node = null
@@ -235,6 +236,7 @@ func initialize_target_sequence():
 	print("[INIT DEBUG] idpa_mini_ns_scene: ", idpa_mini_ns_scene)
 	print("[INIT DEBUG] idpa_hard_cover_1_scene: ", idpa_hard_cover_1_scene)
 	print("[INIT DEBUG] idpa_hard_cover_2_scene: ", idpa_hard_cover_2_scene)
+	print("[INIT DEBUG] idpa_mini_rotate_scene: ", idpa_mini_rotate_scene)
 	if not DEBUG_DISABLED:
 		print("=== TARGET SEQUENCE INITIALIZED ===")
 		print("Sequence: ", target_sequence)
@@ -368,6 +370,10 @@ func spawn_idpa_mini():
 		print("[SPAWN DEBUG] About to instantiate idpa-hard-cover-2")
 		target = idpa_hard_cover_2_scene.instantiate()
 		print("[SPAWN DEBUG] Instantiated idpa-hard-cover-2, target is: ", target)
+	elif target_type == "idpa-mini-rotate":
+		print("[SPAWN DEBUG] Match: idpa-mini-rotate")
+		target = idpa_mini_rotate_scene.instantiate()
+		print("[SPAWN DEBUG] Instantiated idpa-mini-rotate")
 	else:
 		print("ERROR: Unknown target type: ", target_type)
 		return
