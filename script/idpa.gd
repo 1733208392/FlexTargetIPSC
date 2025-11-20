@@ -29,7 +29,7 @@ var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 # Performance optimization
-const DEBUG_DISABLED = true
+const DEBUG_DISABLED = false
 
 # Performance optimization for rotating targets
 var rotation_cache_angle: float = 0.0
@@ -82,7 +82,11 @@ func _on_input_event(_viewport, event, _shape_idx):
 		# Get the click position in local coordinates
 		var local_pos = to_local(event.global_position)
 
-		# Check zones in priority order (highest score first)
+		# Check zones in priority order (highest priority first)
+		# HIGHEST PRIORITY: Hard-cover blocks all shots
+		if is_point_in_zone("hard-cover", local_pos):
+			return
+
 		# Head zone has highest priority (5 points)
 		if is_point_in_zone("head-0", local_pos):
 			return
@@ -317,9 +321,16 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	var points = 0
 	var is_target_hit = false
 
-	# Check which zone was hit (highest score first)
-	# TODO: Update zone names and scoring for IPDA
-	if is_point_in_zone("head-0", local_pos):
+	# Check which zone was hit (highest priority first)
+	# HIGHEST PRIORITY: Hard-cover - no scoring, no shot counting
+	if is_point_in_zone("hard-cover", local_pos):
+		zone_hit = "hard-cover"
+		points = 0
+		is_target_hit = false  # Hard-cover shots don't count as valid hits
+		if not DEBUG_DISABLED:
+			print("[IDPA] Hit detected on hard-cover zone at local_pos:", local_pos, " - NO SCORE, NO COUNT")
+	# Head zone (5 points equivalent in original IPDA)
+	elif is_point_in_zone("head-0", local_pos):
 		zone_hit = "head-0"
 		points = 0
 		is_target_hit = true
@@ -345,7 +356,7 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 			print("[IDPA] Hit detected in other-3 zone at local_pos:", local_pos)
 	else:
 		zone_hit = "miss"
-		points = -3
+		points = -5
 		is_target_hit = false
 		if not DEBUG_DISABLED:
 			print("[IDPA] Miss detected at local_pos:", local_pos)

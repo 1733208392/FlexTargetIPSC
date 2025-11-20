@@ -3,16 +3,21 @@ extends Control
 # Preload the IDPA mini scene
 @export var idpa_mini_scene: PackedScene = preload("res://scene/idpa.tscn")
 @export var idpa_mini_ns_scene: PackedScene = preload("res://scene/idpa_mini_stage/idpa-compose.tscn")
+@export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/idpa-hard-cover-1.tscn")
+@export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/idpa-hard-cover-2.tscn")
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["idpa", "idpa-ns"]
+var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2"]
 var target_sequence: Array[String] = []
 var current_target_index: int = 0
 var current_target_instance: Node = null
 var total_drill_score: int = 0
 var drill_completed: bool = false
 var bullets_allowed: bool = false
+var connected_hit_nodes: Array[Node] = []
+var connected_disappear_nodes: Array[Node] = []
+var observed_target_node: Node = null
 
 # Elapsed time tracking
 var elapsed_seconds: float = 0.0
@@ -35,7 +40,7 @@ signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, 
 signal drills_finished
 
 # Performance optimization
-const DEBUG_DISABLED = true
+const DEBUG_DISABLED = false
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
@@ -219,6 +224,17 @@ func _on_timeout_timer_timeout():
 func initialize_target_sequence():
 	"""Initialize the target sequence"""
 	target_sequence = base_target_sequence.duplicate()
+	print("\n[INIT DEBUG] === TARGET SEQUENCE INITIALIZED ===")
+	print("[INIT DEBUG] Base target sequence: ", base_target_sequence)
+	print("[INIT DEBUG] Target sequence: ", target_sequence)
+	print("[INIT DEBUG] Sequence size: ", target_sequence.size())
+	for i in range(target_sequence.size()):
+		print("[INIT DEBUG] Target[", i, "]: ", target_sequence[i])
+	print("[INIT DEBUG] === CHECKING SCENE PRELOADS ===")
+	print("[INIT DEBUG] idpa_mini_scene: ", idpa_mini_scene)
+	print("[INIT DEBUG] idpa_mini_ns_scene: ", idpa_mini_ns_scene)
+	print("[INIT DEBUG] idpa_hard_cover_1_scene: ", idpa_hard_cover_1_scene)
+	print("[INIT DEBUG] idpa_hard_cover_2_scene: ", idpa_hard_cover_2_scene)
 	if not DEBUG_DISABLED:
 		print("=== TARGET SEQUENCE INITIALIZED ===")
 		print("Sequence: ", target_sequence)
@@ -241,9 +257,23 @@ func update_target_title():
 	if not DEBUG_DISABLED:
 		print("Updated title to: Target ", current_target_index + 1, "/", target_sequence.size())
 
+func _find_nodes_with_signal(parent_node: Node, signal_name: String, results: Array) -> void:
+	if parent_node == null:
+		return
+	if parent_node.has_signal(signal_name):
+		results.append(parent_node)
+	for child in parent_node.get_children():
+		if child is Node:
+			_find_nodes_with_signal(child, signal_name, results)
+
 func spawn_next_target():
 	"""Spawn the next target in the sequence"""
+	print("[SPAWN_NEXT] Current target index: ", current_target_index)
+	print("[SPAWN_NEXT] Target sequence size: ", target_sequence.size())
+	print("[SPAWN_NEXT] Full sequence: ", target_sequence)
+	
 	if current_target_index >= target_sequence.size():
+		print("[SPAWN_NEXT] Index out of bounds - completing drill")
 		complete_drill()
 		return
 	
@@ -285,8 +315,24 @@ func spawn_next_target():
 
 func clear_current_target():
 	"""Remove the current target from the scene"""
-	if current_target_instance:
-		set_target_drill_active(current_target_instance, false)
+	# Disconnect and clear any connected signals from previous target
+	for n in connected_hit_nodes:
+		if is_instance_valid(n) and n.has_signal("target_hit") and n.target_hit.is_connected(_on_target_hit):
+			n.target_hit.disconnect(_on_target_hit)
+	connected_hit_nodes.clear()
+
+	for n in connected_disappear_nodes:
+		if is_instance_valid(n):
+			if n.has_signal("target_disappeared") and n.target_disappeared.is_connected(_on_target_disappeared):
+				n.target_disappeared.disconnect(_on_target_disappeared)
+			if n.has_signal("composition_disappeared") and n.composition_disappeared.is_connected(_on_target_disappeared):
+				n.composition_disappeared.disconnect(_on_target_disappeared)
+	connected_disappear_nodes.clear()
+
+	# Deactivate drill on observed node if any
+	if observed_target_node:
+		set_target_drill_active(observed_target_node, false)
+	observed_target_node = null
 	
 	for child in center_container.get_children():
 		center_container.remove_child(child)
@@ -299,12 +345,36 @@ func spawn_idpa_mini():
 	var target_type = target_sequence[current_target_index]
 	var target: Node = null
 	
+	print("[SPAWN DEBUG] Target type requested: ", target_type)
+	print("[SPAWN DEBUG] idpa_hard_cover_1_scene: ", idpa_hard_cover_1_scene)
+	print("[SPAWN DEBUG] idpa_hard_cover_2_scene: ", idpa_hard_cover_2_scene)
+	print("[SPAWN DEBUG] Entering spawn_idpa_mini - target_type is: '", target_type, "'")
+	
 	if target_type == "idpa":
+		print("[SPAWN DEBUG] Match: idpa")
 		target = idpa_mini_scene.instantiate()
+		print("[SPAWN DEBUG] Instantiated idpa")
 	elif target_type == "idpa-ns":
+		print("[SPAWN DEBUG] Match: idpa-ns")
 		target = idpa_mini_ns_scene.instantiate()
+		print("[SPAWN DEBUG] Instantiated idpa-ns")
+	elif target_type == "idpa-hard-cover-1":
+		print("[SPAWN DEBUG] Match: idpa-hard-cover-1")
+		print("[SPAWN DEBUG] About to instantiate idpa-hard-cover-1")
+		target = idpa_hard_cover_1_scene.instantiate()
+		print("[SPAWN DEBUG] Instantiated idpa-hard-cover-1, target is: ", target)
+	elif target_type == "idpa-hard-cover-2":
+		print("[SPAWN DEBUG] Match: idpa-hard-cover-2")
+		print("[SPAWN DEBUG] About to instantiate idpa-hard-cover-2")
+		target = idpa_hard_cover_2_scene.instantiate()
+		print("[SPAWN DEBUG] Instantiated idpa-hard-cover-2, target is: ", target)
 	else:
 		print("ERROR: Unknown target type: ", target_type)
+		return
+	
+	print("[SPAWN DEBUG] After spawn logic, target is: ", target)
+	if target == null:
+		print("ERROR: Failed to instantiate target! target_type was: ", target_type)
 		return
 	
 	center_container.add_child(target)
@@ -321,26 +391,47 @@ func connect_target_signals():
 	
 	if not DEBUG_DISABLED:
 		print("=== CONNECTING IDPA TARGET SIGNALS ===")
-	
-	if current_target_instance.has_signal("target_hit"):
-		if current_target_instance.target_hit.is_connected(_on_target_hit):
-			current_target_instance.target_hit.disconnect(_on_target_hit)
-		current_target_instance.target_hit.connect(_on_target_hit)
-		if not DEBUG_DISABLED:
-			print("Connected to target_hit signal")
+
+	# Helper: using top-level _find_nodes_with_signal
+
+	# Find and connect all target_hit signals in the instance or its children
+	var hit_nodes: Array = []
+	_find_nodes_with_signal(current_target_instance, "target_hit", hit_nodes)
+	if hit_nodes.size() > 0:
+		for n in hit_nodes:
+			if n.target_hit.is_connected(_on_target_hit):
+				n.target_hit.disconnect(_on_target_hit)
+			n.target_hit.connect(_on_target_hit)
+			connected_hit_nodes.append(n)
+			if not DEBUG_DISABLED:
+				print("Connected to target_hit on node:", n.name)
 	else:
 		if not DEBUG_DISABLED:
-			print("WARNING: target_hit signal not found!")
-	
-	if current_target_instance.has_signal("target_disappeared"):
-		if current_target_instance.target_disappeared.is_connected(_on_target_disappeared):
-			current_target_instance.target_disappeared.disconnect(_on_target_disappeared)
-		current_target_instance.target_disappeared.connect(_on_target_disappeared)
-		if not DEBUG_DISABLED:
-			print("Connected to target_disappeared signal")
+			print("WARNING: target_hit signal not found on instance or children!")
+
+	# Find and connect target_disappeared or composition_disappeared
+	var disp_nodes: Array = []
+	_find_nodes_with_signal(current_target_instance, "target_disappeared", disp_nodes)
+	_find_nodes_with_signal(current_target_instance, "composition_disappeared", disp_nodes)
+	if disp_nodes.size() > 0:
+		for n in disp_nodes:
+			if n.has_signal("target_disappeared"):
+				if n.target_disappeared.is_connected(_on_target_disappeared):
+					n.target_disappeared.disconnect(_on_target_disappeared)
+				n.target_disappeared.connect(_on_target_disappeared)
+				connected_disappear_nodes.append(n)
+				if not DEBUG_DISABLED:
+					print("Connected to target_disappeared on node:", n.name)
+			if n.has_signal("composition_disappeared"):
+				if n.composition_disappeared.is_connected(_on_target_disappeared):
+					n.composition_disappeared.disconnect(_on_target_disappeared)
+				n.composition_disappeared.connect(_on_target_disappeared)
+				connected_disappear_nodes.append(n)
+				if not DEBUG_DISABLED:
+					print("Connected to composition_disappeared on node:", n.name)
 	else:
 		if not DEBUG_DISABLED:
-			print("WARNING: target_disappeared signal not found!")
+			print("WARNING: No disappearing signal found on instance or children!")
 	
 	if not DEBUG_DISABLED:
 		print("=== SIGNAL CONNECTION COMPLETE ===")
@@ -352,6 +443,8 @@ func _on_target_disappeared(target_id: String = ""):
 		print("Target ID: ", target_id)
 		print("Target index: ", current_target_index)
 	
+	print("[TARGET_DISAPPEARED] Before increment - index: ", current_target_index, " size: ", target_sequence.size())
+	
 	# Disable bullet spawning during target transition
 	bullets_allowed = false
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
@@ -359,9 +452,11 @@ func _on_target_disappeared(target_id: String = ""):
 		ws_listener.set_bullet_spawning_enabled(false)
 	
 	current_target_index += 1
+	print("[TARGET_DISAPPEARED] After increment - index: ", current_target_index, " size: ", target_sequence.size())
 	emit_signal("ui_progress_update", current_target_index)
 	
-	# Move to completion since there's only one target
+	# Move to next target
+	print("[TARGET_DISAPPEARED] Calling spawn_next_target()")
 	spawn_next_target()
 
 func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null):
