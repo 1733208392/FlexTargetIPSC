@@ -12,6 +12,9 @@ var current_theme_style: String = "golden"
 # Timeout warning state
 var timeout_warning_active: bool = false
 
+# Drill type tracking
+var is_idpa_drill: bool = false
+
 # UI Node references
 @onready var target_type_title = $TopContainer/TopLayout/HeaderContainer/TargetTypeTitle
 @onready var fps_label = $FPSLabel
@@ -38,6 +41,12 @@ func _ready():
 	# Connect to the parent drills manager signals
 	var drills_manager = get_parent()
 	if drills_manager:
+		# Detect if this is an IDPA or IPSC drill
+		var script_path = drills_manager.get_script().resource_path
+		is_idpa_drill = "idpa" in script_path.to_lower()
+		if not DEBUG_DISABLED:
+			print("[DrillUI] Detected drill type - IDPA: ", is_idpa_drill, " (script: ", script_path, ")")
+		
 		# Connect UI update signals
 		if drills_manager.has_signal("ui_timer_update"):
 			drills_manager.ui_timer_update.connect(_on_timer_update)
@@ -174,6 +183,7 @@ func _on_fastest_time_update(fastest_time: float):
 
 func _on_score_update(score: int):
 	"""Update the score display"""
+	# For IPSC, just show the score number
 	score_label.text = str(score)
 
 func _on_progress_update(targets_completed: int):
@@ -184,7 +194,7 @@ func _on_progress_update(targets_completed: int):
 		if not DEBUG_DISABLED:
 			print("Warning: Progress bar not found or missing update_progress method")
 
-func _on_show_completion(final_time: float, fastest_time: float, final_score: int):
+func _on_show_completion(final_time: float, fastest_time: float, final_score: int, _show_hit_factor: bool):
 	"""Show the completion overlay with drill statistics"""
 	if not DEBUG_DISABLED:
 		print("Showing completion overlay")
@@ -241,7 +251,7 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	timeout_warning_active = false
 	timer_label.modulate = Color.WHITE
 
-func _on_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool):
+func _on_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool, _show_hit_factor: bool):
 	"""Show the completion overlay with timeout message"""
 	if not DEBUG_DISABLED:
 		print("Showing completion overlay with timeout")

@@ -823,7 +823,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		hit_area = "Paddle"
 		if not DEBUG_DISABLED:
 			print("Target hit: ", current_target_type, " paddle: ", paddle_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
-		total_drill_score += actual_points
+		total_drill_score += int(actual_points)
 	elif current_target_type == "2poppers":
 		# 2poppers sends: popper_id, zone, points, hit_position
 		var popper_id = param1
@@ -840,7 +840,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 			if not DEBUG_DISABLED:
 				print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 		
-		total_drill_score += actual_points
+		total_drill_score += int(actual_points)
 	else:
 		# Simple targets send: zone, points, hit_position
 		var zone = param1
@@ -849,7 +849,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		hit_area = zone
 		if not DEBUG_DISABLED:
 			print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
-		total_drill_score += actual_points
+		total_drill_score += int(actual_points)
 	
 	if not DEBUG_DISABLED:
 		print("Total drill score: ", total_drill_score)

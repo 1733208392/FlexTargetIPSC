@@ -31,18 +31,6 @@ var active_sounds: int = 0
 # Performance optimization
 const DEBUG_DISABLED = false
 
-# Performance optimization for rotating targets
-var rotation_cache_angle: float = 0.0
-var rotation_cache_time: float = 0.0
-var rotation_cache_duration: float = 0.1  # Cache rotation for 100ms
-
-# Bullet activity monitoring for animation pausing
-var bullet_activity_count: int = 0
-var activity_threshold: int = 3  # Pause rotation if 3+ bullets in flight
-var activity_cooldown_timer: float = 0.0
-var activity_cooldown_duration: float = 1.0  # Resume after 1 second of low activity
-var animation_paused: bool = false
-
 # Scoring system
 var total_score: int = 0
 var drill_active: bool = false  # Flag to ignore shots before drill starts
@@ -65,6 +53,9 @@ func _ready():
 	var drills_network = get_node_or_null("/root/drills_network")
 	if drills_network:
 		max_shots = 1000
+	
+	# Play reset animation to ensure scene starts in clean state
+	reset_target_visual()
 
 func _on_input_event(_viewport, event, _shape_idx):
 	# Don't process input events if target is disappearing
@@ -87,51 +78,57 @@ func _on_input_event(_viewport, event, _shape_idx):
 		if is_point_in_zone("hard-cover", local_pos):
 			return
 
-		# Head zone has highest priority (5 points)
+		# Head zone has highest priority (0 points in IDPA-NS scoring)
 		if is_point_in_zone("head-0", local_pos):
 			return
 
-		# Heart zone has high priority (4 points)
+		# Heart zone has high priority (0 points in IDPA-NS scoring)
 		if is_point_in_zone("heart-0", local_pos):
 			return
 
-		# Body zone has medium priority (3 points)
+		# Body zone has medium priority (-1 points in IDPA-NS scoring)
 		if is_point_in_zone("body-1", local_pos):
 			return
 
-		# Other zone has lowest priority (2 points)
+		# Other zone has lowest priority (-3 points in IDPA-NS scoring)
 		if is_point_in_zone("other-3", local_pos):
 			return
 
 
 func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
+	"""Check if a point (in Area2D local space) is in a collision zone"""
 	# Find the collision shape by name
-	var zone_node = get_node(zone_name)
-	if zone_node:
-		if zone_node is CollisionPolygon2D:
-			# For polygons, adjust point relative to the polygon's position
-			var relative_point = point - zone_node.position
-			var result = Geometry2D.is_point_in_polygon(relative_point, zone_node.polygon)
+	var zone_node = get_node_or_null(zone_name)
+	if not zone_node:
+		if not DEBUG_DISABLED:
+			print("[IDPA-NS] Zone node not found: ", zone_name)
+		return false
+	
+	if zone_node is CollisionPolygon2D:
+		# For polygons, adjust point relative to the polygon's position
+		var relative_point = point - zone_node.position
+		var result = Geometry2D.is_point_in_polygon(relative_point, zone_node.polygon)
+		if not DEBUG_DISABLED and result:
+			print("[IDPA-NS] Point", point, "is in polygon zone", zone_name, "at relative pos", relative_point)
+		return result
+	elif zone_node is CollisionShape2D:
+		# For shapes, check relative to the shape's position
+		var shape = zone_node.shape
+		if shape is CircleShape2D:
+			var distance = point.distance_to(zone_node.position)
+			var result = distance <= shape.radius
 			if not DEBUG_DISABLED and result:
-				print("[IDPA] Point", point, "is in polygon zone", zone_name, "at relative pos", relative_point)
+				print("[IDPA-NS] Point", point, "is in circle zone", zone_name, "distance:", distance, "radius:", shape.radius)
 			return result
-		elif zone_node is CollisionShape2D:
-			# For shapes, check relative to the shape's position
-			var shape = zone_node.shape
-			if shape is CircleShape2D:
-				var distance = point.distance_to(zone_node.position)
-				var result = distance <= shape.radius
-				if not DEBUG_DISABLED and result:
-					print("[IDPA] Point", point, "is in circle zone", zone_name, "distance:", distance, "radius:", shape.radius)
-				return result
-			elif shape is RectangleShape2D:
-				var rect = Rect2(zone_node.position - shape.size / 2, shape.size)
-				var result = rect.has_point(point)
-				if not DEBUG_DISABLED and result:
-					print("[IDPA] Point", point, "is in rectangle zone", zone_name)
-				return result
+		elif shape is RectangleShape2D:
+			var rect = Rect2(zone_node.position - shape.size / 2, shape.size)
+			var result = rect.has_point(point)
+			if not DEBUG_DISABLED and result:
+				print("[IDPA-NS] Point", point, "is in rectangle zone", zone_name)
+			return result
+	
 	if not DEBUG_DISABLED:
-		print("[IDPA] Point", point, "not in any zone, checking", zone_name)
+		print("[IDPA-NS] Point", point, "not in zone", zone_name)
 	return false
 
 func spawn_bullet_at_position(world_pos: Vector2):
@@ -203,6 +200,35 @@ func reset_target():
 	reset_bullet_hole_pool()
 
 
+func reset_target_visual():
+	"""Reset the visual state by playing the reset animation"""
+	# Reset animation state
+	is_disappearing = false
+
+	# Reset shot count
+	shot_count = 0
+
+	# Reset score
+	reset_score()
+
+	# Reset bullet hole pool
+	reset_bullet_hole_pool()
+	
+	# Play reset animation to ensure clean visual state
+	var animation_player = get_node_or_null("AnimationPlayer")
+	if animation_player:
+		animation_player.play("reset")
+		if not DEBUG_DISABLED:
+			print("[IDPA-NS] Playing reset animation")
+	else:
+		# Fallback: manually set properties if animation player not found
+		modulate = Color.WHITE
+		rotation = 0.0
+		scale = Vector2.ONE
+		if not DEBUG_DISABLED:
+			print("[IDPA-NS] WARNING: AnimationPlayer not found, manually reset properties")
+
+
 func reset_bullet_hole_pool():
 	"""Reset the bullet hole pool by hiding all active holes"""
 
@@ -228,7 +254,7 @@ func initialize_bullet_hole_pool():
 	bullet_hole_pool.clear()
 	active_bullet_holes.clear()
 
-	# Pre-instantiate bullet holes
+	# Pre-instantiate bullet holes as children of Area2D root
 	for i in range(pool_size):
 		var bullet_hole = BulletHoleScene.instantiate()
 		add_child(bullet_hole)
@@ -236,6 +262,9 @@ func initialize_bullet_hole_pool():
 		# Set z-index to ensure bullet holes appear below effects
 		bullet_hole.z_index = 0
 		bullet_hole_pool.append(bullet_hole)
+	
+	if not DEBUG_DISABLED:
+		print("[IDPA-NS] Initialized bullet hole pool with ", pool_size, " holes")
 
 
 func get_pooled_bullet_hole() -> Node:
@@ -282,13 +311,22 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	# Ignore shots if drill is not active yet
 	if not drill_active:
 		if not DEBUG_DISABLED:
-			print("[IDPA] Ignoring WebSocket hit - drill not active")
+			print("[IDPA-NS] Ignoring WebSocket hit - drill not active")
 		return
 
-	handle_websocket_bullet_hit_fast(pos)
+	handle_websocket_bullet_hit_ns(pos)
 
-func handle_websocket_bullet_hit_fast(world_pos: Vector2):
-	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
+func handle_websocket_bullet_hit_ns(world_pos: Vector2):
+	"""Handle WebSocket bullet hits with IDPA-NS specific scoring logic
+	
+	Scoring logic:
+	- If hit in ns-5 collision area: -5 points
+	- If not in ns-5, check zones:
+	  - Head/Heart: 0 points
+	  - Body: -1 point
+	  - Other: -3 points
+	  - Miss: -5 points
+	"""
 
 	# Don't process if target is disappearing
 	if is_disappearing:
@@ -297,62 +335,66 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# Convert world position to local coordinates
 	var local_pos = to_local(world_pos)
 
-	# 1. FIRST: Determine hit zone and scoring
+	# 1. Determine hit zone and scoring
 	var zone_hit = ""
 	var points = 0
 	var is_target_hit = false
 
-	# Check which zone was hit (highest priority first)
-	# HIGHEST PRIORITY: Hard-cover - no scoring, no shot counting
-	if is_point_in_zone("hard-cover", local_pos):
-		zone_hit = "hard-cover"
-		points = 0
-		is_target_hit = false  # Hard-cover shots don't count as valid hits
+	# Check if point is in ns-5 collision area (highest priority - IDPA-NS specific zone)
+	if is_point_in_zone("ns-5", local_pos):
+		zone_hit = "ns-5"
+		points = -5
+		is_target_hit = true
 		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected on hard-cover zone at local_pos:", local_pos, " - NO SCORE, NO COUNT")
-	# Head zone (5 points equivalent in original IPDA)
+			print("[IDPA-NS] Hit detected in ns-5 zone at local_pos:", local_pos)
+	# Head zone (0 points in IDPA-NS scoring)
 	elif is_point_in_zone("head-0", local_pos):
 		zone_hit = "head-0"
 		points = 0
 		is_target_hit = true
 		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected in head-0 zone at local_pos:", local_pos)
+			print("[IDPA-NS] Hit detected in head-0 zone at local_pos:", local_pos)
+	# Heart zone (0 points in IDPA-NS scoring)
 	elif is_point_in_zone("heart-0", local_pos):
 		zone_hit = "heart-0"
 		points = 0
 		is_target_hit = true
 		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected in heart-0 zone at local_pos:", local_pos)
+			print("[IDPA-NS] Hit detected in heart-0 zone at local_pos:", local_pos)
+	# Body zone (-1 point in IDPA-NS scoring)
 	elif is_point_in_zone("body-1", local_pos):
 		zone_hit = "body-1"
 		points = -1
 		is_target_hit = true
 		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected in body-1 zone at local_pos:", local_pos)
+			print("[IDPA-NS] Hit detected in body-1 zone at local_pos:", local_pos)
+	# Other zone (-3 points in IDPA-NS scoring)
 	elif is_point_in_zone("other-3", local_pos):
 		zone_hit = "other-3"
 		points = -3
 		is_target_hit = true
 		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected in other-3 zone at local_pos:", local_pos)
+			print("[IDPA-NS] Hit detected in other-3 zone at local_pos:", local_pos)
 	else:
+		# Miss
 		zone_hit = "miss"
 		points = -5
 		is_target_hit = false
 		if not DEBUG_DISABLED:
-			print("[IDPA] Miss detected at local_pos:", local_pos)
+			print("[IDPA-NS] Miss detected at local_pos:", local_pos)
 
-	# 2. CONDITIONAL: Only spawn bullet hole if target was actually hit
+	# 2. Spawn bullet hole if target was actually hit
 	if is_target_hit:
 		spawn_bullet_hole(local_pos)
-	# 3. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
+	
+	# 3. Spawn bullet effects (impact/sound)
 	spawn_bullet_effects_at_position(world_pos, is_target_hit)
 
 	# 4. Update score and emit signal
 	total_score += points
 	target_hit.emit(zone_hit, points, world_pos)
 	if not DEBUG_DISABLED:
-		print("[IDPA] Emitted target_hit signal: zone=", zone_hit, " points=", points, " pos=", world_pos)
+		print("[IDPA-NS] Emitted target_hit signal: zone=", zone_hit, " points=", points, " pos=", world_pos)
 
 	# 5. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
@@ -363,22 +405,17 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 			play_disappearing_animation()
 
 func spawn_bullet_effects_at_position(world_pos: Vector2, _is_target_hit: bool = true):
-	"""Spawn bullet smoke and impact effects with throttling for performance"""
+	"""Spawn bullet impact effects with throttling for performance"""
 
 	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
 
 	# Load the effect scenes directly
-	# var bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
 	var bullet_impact_scene = preload("res://scene/bullet_impact.tscn")
 
 	# Find the scene root for effects
 	var scene_root = get_tree().current_scene
 	var effects_parent = scene_root if scene_root else get_parent()
 
-	# Throttled smoke effect - DISABLED for performance optimization
-	# Smoke is the most expensive effect (GPUParticles2D) and not essential for gameplay
-	if false:  # Completely disabled
-		pass
 	# Throttled impact effect - ALWAYS spawn (for both hits and misses)
 	if bullet_impact_scene and (time_stamp - last_impact_time) >= impact_cooldown:
 		var impact = bullet_impact_scene.instantiate()
@@ -426,6 +463,7 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 			active_sounds -= 1
 			audio_player.queue_free()
 		)
+
 func play_impact_sound_at_position(world_pos: Vector2):
 	"""Play paper impact sound effect at specific position (legacy - non-throttled)"""
 	# Load the paper impact sound for paper targets
@@ -447,21 +485,3 @@ func play_impact_sound_at_position(world_pos: Vector2):
 
 		# Clean up audio player after sound finishes
 		audio_player.finished.connect(func(): audio_player.queue_free())
-# ROTATION PERFORMANCE OPTIMIZATIONS
-
-func get_cached_rotation_angle() -> float:
-	"""Get the current rotation angle with caching for performance"""
-	var current_time = Time.get_ticks_msec() / 1000.0
-
-	# Use cached value if still valid
-	if (current_time - rotation_cache_time) < rotation_cache_duration:
-		return rotation_cache_angle
-
-	# Update cache with current rotation
-	var rotation_center = get_parent()
-	if rotation_center and rotation_center.name == "RotationCenter":
-		rotation_cache_angle = rotation_center.rotation
-		rotation_cache_time = current_time
-		return rotation_cache_angle
-
-	return 0.0

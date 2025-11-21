@@ -2,14 +2,15 @@ extends Control
 
 # Preload the IDPA mini scene
 @export var idpa_mini_scene: PackedScene = preload("res://scene/idpa.tscn")
-@export var idpa_mini_ns_scene: PackedScene = preload("res://scene/idpa_mini_stage/idpa-compose.tscn")
+@export var idpa_ns_scene: PackedScene = preload("res://scene/idpa_mini_stage/idpa-ns.tscn")
 @export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/idpa-hard-cover-1.tscn")
 @export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/idpa-hard-cover-2.tscn")
 @export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/idpa_mini_rotate.tscn")
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
+#var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
+var base_target_sequence: Array[String] = ["idpa-ns"]
 var target_sequence: Array[String] = []
 var current_target_index: int = 0
 var current_target_instance: Node = null
@@ -47,8 +48,8 @@ const DEBUG_DISABLED = false
 signal ui_timer_update(elapsed_seconds: float)
 signal ui_target_title_update(target_index: int, total_targets: int)
 signal ui_fastest_time_update(fastest_time: float)
-signal ui_show_completion(final_time: float, fastest_time: float, final_score: int)
-signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool)
+signal ui_show_completion(final_time: float, fastest_time: float, final_score: int, show_hit_factor: bool)
+signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool, show_hit_factor: bool)
 signal ui_hide_completion()
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
@@ -169,6 +170,10 @@ func _on_shot_timer_ready(delay: float):
 	# Activate drill on the spawned target
 	if current_target_instance:
 		set_target_drill_active(current_target_instance, true)
+		# Also ensure the IDPA child has drill_active set
+		if current_target_instance.has_node("RotationCenter/IDPA"):
+			var idpa = current_target_instance.get_node("RotationCenter/IDPA")
+			set_target_drill_active(idpa, true)
 
 func _on_shot_timer_reset():
 	"""Handle when shot timer is reset"""
@@ -233,7 +238,7 @@ func initialize_target_sequence():
 		print("[INIT DEBUG] Target[", i, "]: ", target_sequence[i])
 	print("[INIT DEBUG] === CHECKING SCENE PRELOADS ===")
 	print("[INIT DEBUG] idpa_mini_scene: ", idpa_mini_scene)
-	print("[INIT DEBUG] idpa_mini_ns_scene: ", idpa_mini_ns_scene)
+	print("[INIT DEBUG] idpa_ns_scene: ", idpa_ns_scene)
 	print("[INIT DEBUG] idpa_hard_cover_1_scene: ", idpa_hard_cover_1_scene)
 	print("[INIT DEBUG] idpa_hard_cover_2_scene: ", idpa_hard_cover_2_scene)
 	print("[INIT DEBUG] idpa_mini_rotate_scene: ", idpa_mini_rotate_scene)
@@ -305,6 +310,10 @@ func spawn_next_target():
 	# Activate drill on the spawned target
 	if current_target_instance:
 		set_target_drill_active(current_target_instance, true)
+		# Also ensure the IDPA child has drill_active set
+		if current_target_instance.has_node("RotationCenter/IDPA"):
+			var idpa = current_target_instance.get_node("RotationCenter/IDPA")
+			set_target_drill_active(idpa, true)
 	
 	# Re-enable bullet spawning after target is fully ready
 	await get_tree().process_frame
@@ -327,8 +336,6 @@ func clear_current_target():
 		if is_instance_valid(n):
 			if n.has_signal("target_disappeared") and n.target_disappeared.is_connected(_on_target_disappeared):
 				n.target_disappeared.disconnect(_on_target_disappeared)
-			if n.has_signal("composition_disappeared") and n.composition_disappeared.is_connected(_on_target_disappeared):
-				n.composition_disappeared.disconnect(_on_target_disappeared)
 	connected_disappear_nodes.clear()
 
 	# Deactivate drill on observed node if any
@@ -358,7 +365,7 @@ func spawn_idpa_mini():
 		print("[SPAWN DEBUG] Instantiated idpa")
 	elif target_type == "idpa-ns":
 		print("[SPAWN DEBUG] Match: idpa-ns")
-		target = idpa_mini_ns_scene.instantiate()
+		target = idpa_ns_scene.instantiate()
 		print("[SPAWN DEBUG] Instantiated idpa-ns")
 	elif target_type == "idpa-hard-cover-1":
 		print("[SPAWN DEBUG] Match: idpa-hard-cover-1")
@@ -389,22 +396,20 @@ func spawn_idpa_mini():
 		print("IDPA target spawned - Type: ", target_type)
 
 func connect_target_signals():
-	"""Connect to the current target's signals"""
-	if not current_target_instance:
-		if not DEBUG_DISABLED:
-			print("WARNING: No current target instance to connect signals")
-		return
-	
-	if not DEBUG_DISABLED:
-		print("=== CONNECTING IDPA TARGET SIGNALS ===")
-
-	# Helper: using top-level _find_nodes_with_signal
-
 	# Find and connect all target_hit signals in the instance or its children
 	var hit_nodes: Array = []
 	_find_nodes_with_signal(current_target_instance, "target_hit", hit_nodes)
+	
 	if hit_nodes.size() > 0:
 		for n in hit_nodes:
+			# Skip paddle nodes - only connect to actual targets for scoring
+			if n.name == "Paddle":
+				continue
+			# Only connect if the node actually has the target_hit signal
+			if not n.has_signal("target_hit"):
+				if not DEBUG_DISABLED:
+					print("Skipping node ", n.name, " - no target_hit signal")
+				continue
 			if n.target_hit.is_connected(_on_target_hit):
 				n.target_hit.disconnect(_on_target_hit)
 			n.target_hit.connect(_on_target_hit)
@@ -415,12 +420,14 @@ func connect_target_signals():
 		if not DEBUG_DISABLED:
 			print("WARNING: target_hit signal not found on instance or children!")
 
-	# Find and connect target_disappeared or composition_disappeared
+	# Find and connect target_disappeared signal
 	var disp_nodes: Array = []
 	_find_nodes_with_signal(current_target_instance, "target_disappeared", disp_nodes)
-	_find_nodes_with_signal(current_target_instance, "composition_disappeared", disp_nodes)
 	if disp_nodes.size() > 0:
 		for n in disp_nodes:
+			# Skip paddle nodes - only connect to actual targets
+			if n.name == "Paddle":
+				continue
 			if n.has_signal("target_disappeared"):
 				if n.target_disappeared.is_connected(_on_target_disappeared):
 					n.target_disappeared.disconnect(_on_target_disappeared)
@@ -428,13 +435,6 @@ func connect_target_signals():
 				connected_disappear_nodes.append(n)
 				if not DEBUG_DISABLED:
 					print("Connected to target_disappeared on node:", n.name)
-			if n.has_signal("composition_disappeared"):
-				if n.composition_disappeared.is_connected(_on_target_disappeared):
-					n.composition_disappeared.disconnect(_on_target_disappeared)
-				n.composition_disappeared.connect(_on_target_disappeared)
-				connected_disappear_nodes.append(n)
-				if not DEBUG_DISABLED:
-					print("Connected to composition_disappeared on node:", n.name)
 	else:
 		if not DEBUG_DISABLED:
 			print("WARNING: No disappearing signal found on instance or children!")
@@ -485,7 +485,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null):
 	if not DEBUG_DISABLED:
 		print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 	
-	total_drill_score += actual_points
+	total_drill_score += int(actual_points)
 	
 	if not DEBUG_DISABLED:
 		print("Total drill score: ", total_drill_score)
@@ -519,9 +519,9 @@ func complete_drill():
 	# Show the completion overlay
 	var fastest_time = performance_tracker.get_fastest_time_diff()
 	if drill_timed_out:
-		emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true)
+		emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true, false)
 	else:
-		emit_signal("ui_show_completion", elapsed_seconds, fastest_time, total_drill_score)
+		emit_signal("ui_show_completion", elapsed_seconds, fastest_time, total_drill_score, false)
 	
 	# Set the total elapsed time in performance tracker
 	performance_tracker.set_total_elapsed_time(elapsed_seconds)
@@ -588,7 +588,7 @@ func complete_drill_with_timeout():
 	
 	# Show the completion overlay with timeout indication
 	var fastest_time = performance_tracker.get_fastest_time_diff()
-	emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true)
+	emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true, false)
 	
 	await get_tree().create_timer(0.1).timeout
 	

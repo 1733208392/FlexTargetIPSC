@@ -1,7 +1,8 @@
-[gd_scene load_steps=8 format=3 uid="uid://b6gm7b6lv1klv"]
+[gd_scene load_steps=9 format=3 uid="uid://dj8sj4i4rqcxa"]
 
-[ext_resource type="Script" uid="uid://b2c4e54ec4vkl" path="res://script/idpa.gd" id="1_5wlg2"]
-[ext_resource type="Texture2D" uid="uid://cane2y7sy4bht" path="res://asset/idpa.png" id="2_ijw1i"]
+[ext_resource type="Script" uid="uid://t5jh4pyiw6jx" path="res://scene/idpa_mini_stage/idpa-ns.gd" id="3_abc12"]
+[ext_resource type="Texture2D" uid="uid://ctby376nubs78" path="res://asset/idpa-ns.png" id="3_hwcas"]
+[ext_resource type="Texture2D" uid="uid://cane2y7sy4bht" path="res://asset/idpa.png" id="3_y3jvt"]
 
 [sub_resource type="Animation" id="Animation_1"]
 resource_name = "disappear"
@@ -88,33 +89,40 @@ _data = {
 &"reset": SubResource("Animation_2")
 }
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_knpln"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_uw1ls"]
 radius = 60.0
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_jfwqr"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_suqho"]
 radius = 116.72617
 
-[node name="IDPA" type="Area2D"]
-collision_layer = 7
-collision_mask = 0
-script = ExtResource("1_5wlg2")
-
-[node name="TargetSprite" type="Sprite2D" parent="."]
-scale = Vector2(1.5, 1.5)
-texture = ExtResource("2_ijw1i")
+[node name="Node2D" type="Area2D"]
+script = ExtResource("3_abc12")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
 &"": SubResource("AnimationLibrary_1")
 }
 
+[node name="ipda-sprite" type="Sprite2D" parent="."]
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("3_y3jvt")
+
+[node name="ipda-ns-sprite" type="Sprite2D" parent="."]
+position = Vector2(200, 200)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("3_hwcas")
+
+[node name="ns-5" type="CollisionPolygon2D" parent="."]
+position = Vector2(200, 200)
+polygon = PackedVector2Array(84, -455, -86, -454, -92, -279, -209, -275, -266, -179, -268, 293, -188, 451, 188, 454, 265, 302, 264, -180, 203, -280, 89, -282)
+
 [node name="head-0" type="CollisionShape2D" parent="."]
 position = Vector2(1, -342)
-shape = SubResource("CircleShape2D_knpln")
+shape = SubResource("CircleShape2D_uw1ls")
 
 [node name="heart-0" type="CollisionShape2D" parent="."]
 position = Vector2(0, -60)
-shape = SubResource("CircleShape2D_jfwqr")
+shape = SubResource("CircleShape2D_suqho")
 
 [node name="body-1" type="CollisionPolygon2D" parent="."]
 position = Vector2(-1127, -380)

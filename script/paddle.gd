@@ -24,7 +24,7 @@ var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 # Performance optimization
-const DEBUG_DISABLED = true  # Set to true for verbose debugging
+const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Scoring system
 var total_score: int = 0
@@ -228,54 +228,23 @@ func spawn_bullet_at_position(world_pos: Vector2):
 	else:
 		print("PADDLE ERROR: BulletScene is null!")
 
-func handle_bullet_collision(bullet_position: Vector2):
-	"""Handle collision detection when a bullet hits this target"""
-	# NOTE: This collision handling is now obsolete due to WebSocket fast path
-	# WebSocket hits use handle_websocket_bullet_hit_fast() instead
-	
-	print("PADDLE %s: Bullet collision detected at position: %s" % [paddle_id, bullet_position])
-	
-	# If paddle has already fallen, ignore further collisions
-	if is_fallen:
-		print("PADDLE %s: Already fallen, ignoring collision" % paddle_id)
-		return "already_fallen"
-	
-	# Convert bullet world position to local coordinates
-	var local_pos = to_local(bullet_position)
-	print("PADDLE %s: Local position: %s" % [paddle_id, local_pos])
-	
-	var zone_hit = ""
-	var points = 0
-	
-	# Check which collision area the bullet hit
-	if is_point_in_circle_area(local_pos):
-		zone_hit = "CircleArea"
-		points = 5
-		print("COLLISION: Paddle %s circle area hit by bullet - %d points!" % [paddle_id, points])
-		trigger_fall_animation()
-	elif is_point_in_stand_area(local_pos):
-		zone_hit = "StandArea"
-		points = 0
-		print("COLLISION: Paddle %s stand area hit by bullet - %d points!" % [paddle_id, points])
-	else:
-		zone_hit = "miss"
-		points = 0
-		print("COLLISION: Bullet hit paddle %s but outside defined areas" % paddle_id)
-	
-	# Update score and emit signal
-	total_score += points
-	target_hit.emit(paddle_id, zone_hit, points, bullet_position)
-	print("PADDLE %s: Total score: %d" % [paddle_id, total_score])
-	
-	return zone_hit
-
 func is_point_in_circle_area(point: Vector2) -> bool:
 	var circle_area = get_node("CircleArea")
 	if circle_area and circle_area is CollisionShape2D:
 		var shape = circle_area.shape
 		if shape is CircleShape2D:
 			var distance = point.distance_to(circle_area.position)
-			return distance <= shape.radius
+			var result = distance <= shape.radius
+			if not DEBUG_DISABLED:
+				print("[paddle %s] Circle area check: point=%s, circle_pos=%s, distance=%s, radius=%s, result=%s" % 
+					[paddle_id, point, circle_area.position, distance, shape.radius, result])
+			return result
+		else:
+			if not DEBUG_DISABLED:
+				print("[paddle %s] CircleArea shape is not CircleShape2D: %s" % [paddle_id, shape])
+	else:
+		if not DEBUG_DISABLED:
+			print("[paddle %s] CircleArea node not found or not CollisionShape2D: %s" % [paddle_id, circle_area])
 	return false
 
 func is_point_in_stand_area(point: Vector2) -> bool:
@@ -418,6 +387,7 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	print("[paddle %s] Received bullet hit at position: %s" % [paddle_id, pos])
 	
 	# FAST PATH: Direct processing for WebSocket hits
+	
 	handle_websocket_bullet_hit_fast(pos)
 
 func handle_websocket_bullet_hit_fast(world_pos: Vector2):
@@ -476,11 +446,12 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: No effects - bullet missed target" % paddle_id)
 	
-	# 4. Update score and emit signal
-	total_score += points
-	target_hit.emit(paddle_id, zone_hit, points, world_pos)
-	if not DEBUG_DISABLED:
-		print("[paddle %s] FAST: Total score: %d" % [paddle_id, total_score])
+	# 4. Update score and emit signal only for target hits
+	if is_target_hit:
+		total_score += points
+		target_hit.emit(paddle_id, zone_hit, points, world_pos)
+		if not DEBUG_DISABLED:
+			print("[paddle %s] FAST: Emitted target_hit: zone=%s, points=%d, total_score=%d" % [paddle_id, zone_hit, points, total_score])
 	
 	# 5. Trigger fall animation if needed (only for hits that should cause falling)
 	if should_fall:

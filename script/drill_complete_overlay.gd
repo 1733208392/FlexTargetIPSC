@@ -383,7 +383,7 @@ func setup_button_focus():
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] ReviewReplayButton focus enabled")
 
-func update_drill_results(score: int, hit_factor: float, fastest_shot: float):
+func update_drill_results(score: int, hit_factor: float, fastest_shot: float, show_hit_factor: bool = true):
 	"""Update the drill completion display with results"""
 	var score_label = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/Score")
 	var hf_label = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/HitFactor")
@@ -395,16 +395,22 @@ func update_drill_results(score: int, hit_factor: float, fastest_shot: float):
 			print("[drill_complete_overlay] Updated score: %d" % score)
 	
 	if hf_label:
-		hf_label.text = tr("hit_factor") + ": %.2f" % hit_factor
-		if not DEBUG_DISABLED:
-			print("[drill_complete_overlay] Updated hit factor: %.2f" % hit_factor)
+		if show_hit_factor:
+			hf_label.text = tr("hit_factor") + ": %.2f" % hit_factor
+			hf_label.visible = true
+			if not DEBUG_DISABLED:
+				print("[drill_complete_overlay] Updated hit factor: %.2f" % hit_factor)
+		else:
+			hf_label.visible = false
+			if not DEBUG_DISABLED:
+				print("[drill_complete_overlay] Hit factor hidden")
 	
 	if fastest_label:
 		fastest_label.text = tr("fastest_shot") + ": %.2fs" % fastest_shot
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Updated fastest shot: %.2fs" % fastest_shot)
 
-func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0):
+func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0, show_hit_factor: bool = true):
 	"""Show the drill complete overlay with updated results"""
 	# First make sure we're visible so the nodes are available
 	visible = true
@@ -416,7 +422,7 @@ func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: 
 	call_deferred("_update_ui_after_visible")
 	
 	# Update the results
-	update_drill_results(score, hit_factor, fastest_shot)
+	update_drill_results(score, hit_factor, fastest_shot, show_hit_factor)
 	
 	# Check auto restart setting and disable restart button if enabled
 	_check_and_disable_restart_button()
@@ -424,7 +430,7 @@ func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: 
 	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Drill complete overlay shown with results")
 
-func show_drill_complete_with_timeout(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0, timed_out: bool = false):
+func show_drill_complete_with_timeout(score: int = 0, hit_factor: float = 0.0, fastest_shot: float = 0.0, timed_out: bool = false, show_hit_factor: bool = true):
 	"""Show the drill complete overlay with timeout handling"""
 	# First make sure we're visible so the nodes are available
 	visible = true
@@ -436,7 +442,7 @@ func show_drill_complete_with_timeout(score: int = 0, hit_factor: float = 0.0, f
 	call_deferred("_update_ui_after_visible_with_timeout", timed_out)
 	
 	# Update the results
-	update_drill_results(score, hit_factor, fastest_shot)
+	update_drill_results(score, hit_factor, fastest_shot, show_hit_factor)
 	
 	# Check auto restart setting and disable restart button if enabled
 	_check_and_disable_restart_button()
