@@ -2,6 +2,8 @@ extends Node2D
 
 const DEBUG_DISABLE = true
 
+const BulletImpactScene = preload("res://scene/bullet_impact.tscn")
+
 signal target_hit(zone: String, points: int, hit_position: Vector2)
 
 var drill_active: bool = false:
@@ -34,11 +36,6 @@ func _ready():
 		ws_listener.bullet_hit.disconnect(Callable(idpa, "_on_websocket_bullet_hit"))
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
 		if not DEBUG_DISABLE: print("[idpa_rotate] Intercepted WebSocket bullet hit signal")
-	
-	# Connect to child's target_hit signal and forward it
-	if idpa and idpa.has_signal("target_hit"):
-		idpa.target_hit.connect(_on_child_target_hit)
-		if not DEBUG_DISABLE: print("[idpa_rotate] Connected to child IDPA's target_hit signal")
 	
 	# Ensure IDPA max_shots is 2
 	if idpa:
@@ -79,10 +76,16 @@ func _on_paddle_hit(_paddle_id: String, _zone: String, _points: int, _hit_positi
 	if animation_player:
 		if not DEBUG_DISABLE: print("[idpa_rotate] Paddle hit - starting continuous animation")
 		_play_random_animations_continuous(animation_player)
-
-func _on_child_target_hit(zone: String, points: int, hit_position: Vector2):
-	# Forward the signal from child to root
-	target_hit.emit(zone, points, hit_position)
+	
+	# Emit the root's target_hit signal for paddle hits
+	target_hit.emit("paddle", 0, _hit_position)
+	
+	# Spawn impact effect
+	var impact = BulletImpactScene.instantiate()
+	var scene_root = get_tree().current_scene
+	var effects_parent = scene_root if scene_root else get_parent()
+	effects_parent.add_child(impact)
+	impact.position = _hit_position
 
 func _on_target_disappeared():
 	"""Called when the IDPA target disappears after 2 hits"""
@@ -105,6 +108,12 @@ func _on_websocket_bullet_hit(pos: Vector2):
 		if rect.has_point(pos):
 			# Block the bullet
 			if not DEBUG_DISABLE: print("[idpa_rotate] Bullet blocked by barrel wall at pos: ", pos)
+			# Spawn impact effect
+			var impact = BulletImpactScene.instantiate()
+			var scene_root = get_tree().current_scene
+			var effects_parent = scene_root if scene_root else get_parent()
+			effects_parent.add_child(impact)
+			impact.position = pos
 			return
 	
 	# Check if hit is in paddle collision circle

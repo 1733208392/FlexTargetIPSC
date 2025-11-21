@@ -29,7 +29,7 @@ var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 # Performance optimization
-const DEBUG_DISABLED = false
+const DEBUG_DISABLED = true
 
 # Performance optimization for rotating targets
 var rotation_cache_angle: float = 0.0
@@ -60,6 +60,10 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
+	# Set up collision detection for bullets
+	# NOTE: Collision detection is now obsolete due to WebSocket fast path
+	# collision_layer = 7  # Target layer
+	# collision_mask = 0   # Don't detect other targets
 
 	# If loaded by drills_network (networked drills loader), set max_shots high for testing
 	var drills_network = get_node_or_null("/root/drills_network")
@@ -82,11 +86,7 @@ func _on_input_event(_viewport, event, _shape_idx):
 		# Get the click position in local coordinates
 		var local_pos = to_local(event.global_position)
 
-		# Check zones in priority order (highest priority first)
-		# HIGHEST PRIORITY: Hard-cover blocks all shots
-		if is_point_in_zone("hard-cover", local_pos):
-			return
-
+		# Check zones in priority order (highest score first)
 		# Head zone has highest priority (5 points)
 		if is_point_in_zone("head-0", local_pos):
 			return
@@ -107,31 +107,22 @@ func _on_input_event(_viewport, event, _shape_idx):
 func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 	# Find the collision shape by name
 	var zone_node = get_node(zone_name)
-	if zone_node:
-		if zone_node is CollisionPolygon2D:
-			# For polygons, adjust point relative to the polygon's position
-			var relative_point = point - zone_node.position
-			var result = Geometry2D.is_point_in_polygon(relative_point, zone_node.polygon)
-			if not DEBUG_DISABLED and result:
-				print("[IDPA] Point", point, "is in polygon zone", zone_name, "at relative pos", relative_point)
-			return result
-		elif zone_node is CollisionShape2D:
-			# For shapes, check relative to the shape's position
-			var shape = zone_node.shape
-			if shape is CircleShape2D:
-				var distance = point.distance_to(zone_node.position)
-				var result = distance <= shape.radius
-				if not DEBUG_DISABLED and result:
-					print("[IDPA] Point", point, "is in circle zone", zone_name, "distance:", distance, "radius:", shape.radius)
-				return result
-			elif shape is RectangleShape2D:
-				var rect = Rect2(zone_node.position - shape.size / 2, shape.size)
-				var result = rect.has_point(point)
-				if not DEBUG_DISABLED and result:
-					print("[IDPA] Point", point, "is in rectangle zone", zone_name)
-				return result
-	if not DEBUG_DISABLED:
-		print("[IDPA] Point", point, "not in any zone, checking", zone_name)
+	if not zone_node:
+		return false
+	
+	if zone_node is CollisionPolygon2D:
+		# Check if point is inside the polygon
+		return Geometry2D.is_point_in_polygon(point, zone_node.polygon)
+	elif zone_node is CollisionShape2D:
+		var shape = zone_node.shape
+		var local_point = point - zone_node.position
+		if shape is CircleShape2D:
+			return local_point.length() <= shape.radius
+		elif shape is RectangleShape2D:
+			var rect = shape.get_rect()
+			rect.position -= shape.size / 2  # Center the rect
+			return rect.has_point(local_point)
+		# Add other shape types if needed
 	return false
 
 func spawn_bullet_at_position(world_pos: Vector2):
@@ -150,7 +141,7 @@ func spawn_bullet_at_position(world_pos: Vector2):
 
 		# Use the new set_spawn_position method to ensure proper positioning
 		bullet.set_spawn_position(world_pos)
-		
+
 func get_total_score() -> int:
 	"""Get the current total score for this target"""
 	return total_score
@@ -180,8 +171,16 @@ func _on_animation_finished(animation_name: String):
 func _on_disappear_animation_finished():
 	"""Called when the disappearing animation completes"""
 
+	# Disable collision detection completely
+	# NOTE: Collision detection was already obsolete due to WebSocket fast path
+	# set_collision_layer(0)
+	# set_collision_mask(0)
+
 	# Emit signal to notify the drills system that the target has disappeared
 	target_disappeared.emit()
+
+	# Keep the disappearing state active to prevent any further interactions
+	# is_disappearing remains true
 
 func reset_target():
 	"""Reset the target to its original state (useful for restarting)"""
@@ -195,6 +194,11 @@ func reset_target():
 	modulate = Color.WHITE
 	rotation = 0.0
 	scale = Vector2.ONE
+
+	# Re-enable collision detection
+	# NOTE: Collision detection disabled as it's obsolete due to WebSocket fast path
+	# collision_layer = 7
+	# collision_mask = 0
 
 	# Reset score
 	reset_score()
@@ -281,10 +285,25 @@ func _on_websocket_bullet_hit(pos: Vector2):
 
 	# Ignore shots if drill is not active yet
 	if not drill_active:
-		if not DEBUG_DISABLED:
-			print("[IDPA] Ignoring WebSocket hit - drill not active")
 		return
 
+	# Check if bullet spawning is enabled
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener and not ws_listener.bullet_spawning_enabled:
+		return
+
+	# Check if this target is part of a rotating scene (ipda_rotate)
+	# Use optimized rotation-aware processing instead of bullet spawning
+	var parent_node = get_parent()
+	while parent_node:
+		if parent_node.name.contains("IPDARotate") or parent_node.name.contains("RotationCenter"):
+			# Use optimized direct hit processing for rotating targets
+			handle_websocket_bullet_hit_rotating(pos)
+			return
+		parent_node = parent_node.get_parent()
+
+
+	# FAST PATH: Direct bullet hole spawning for WebSocket hits (non-rotating targets only)
 	handle_websocket_bullet_hit_fast(pos)
 
 func handle_websocket_bullet_hit_fast(world_pos: Vector2):
@@ -302,45 +321,28 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	var points = 0
 	var is_target_hit = false
 
-	# Check which zone was hit (highest priority first)
-	# HIGHEST PRIORITY: Hard-cover - no scoring, no shot counting
-	if is_point_in_zone("hard-cover", local_pos):
-		zone_hit = "hard-cover"
-		points = 0
-		is_target_hit = false  # Hard-cover shots don't count as valid hits
-		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected on hard-cover zone at local_pos:", local_pos, " - NO SCORE, NO COUNT")
-	# Head zone (5 points equivalent in original IPDA)
-	elif is_point_in_zone("head-0", local_pos):
+	# Check which zone was hit (highest score first)
+	# TODO: Update zone names and scoring for IPDA
+	if is_point_in_zone("head-0", local_pos):
 		zone_hit = "head-0"
 		points = 0
 		is_target_hit = true
-		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected in head-0 zone at local_pos:", local_pos)
 	elif is_point_in_zone("heart-0", local_pos):
 		zone_hit = "heart-0"
 		points = 0
 		is_target_hit = true
-		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected in heart-0 zone at local_pos:", local_pos)
 	elif is_point_in_zone("body-1", local_pos):
 		zone_hit = "body-1"
 		points = -1
 		is_target_hit = true
-		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected in body-1 zone at local_pos:", local_pos)
 	elif is_point_in_zone("other-3", local_pos):
 		zone_hit = "other-3"
 		points = -3
 		is_target_hit = true
-		if not DEBUG_DISABLED:
-			print("[IDPA] Hit detected in other-3 zone at local_pos:", local_pos)
 	else:
 		zone_hit = "miss"
 		points = -5
 		is_target_hit = false
-		if not DEBUG_DISABLED:
-			print("[IDPA] Miss detected at local_pos:", local_pos)
 
 	# 2. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if is_target_hit:
@@ -351,8 +353,6 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# 4. Update score and emit signal
 	total_score += points
 	target_hit.emit(zone_hit, points, world_pos)
-	if not DEBUG_DISABLED:
-		print("[IDPA] Emitted target_hit signal: zone=", zone_hit, " points=", points, " pos=", world_pos)
 
 	# 5. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
@@ -361,7 +361,6 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
 			play_disappearing_animation()
-
 func spawn_bullet_effects_at_position(world_pos: Vector2, _is_target_hit: bool = true):
 	"""Spawn bullet smoke and impact effects with throttling for performance"""
 
@@ -465,3 +464,125 @@ func get_cached_rotation_angle() -> float:
 		return rotation_cache_angle
 
 	return 0.0
+
+func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
+	"""Optimized hit processing for rotating targets without bullet spawning"""
+
+	# Don't process if target is disappearing
+	if is_disappearing:
+		return
+
+	# DISABLE animation pausing for rotating targets - let ipda_rotate.gd control animation
+	# bullet_activity_count += 1
+	# monitor_bullet_activity()
+
+	# Convert world position to local coordinates (this handles rotation automatically)
+	var local_pos = to_local(world_pos)
+
+	# 1. FIRST: Check if bullet hit the BarrelWall (for rotating targets)
+	var barrel_wall_hit = false
+	var parent_scene = get_parent().get_parent()  # Get the IPDARotate scene
+	if parent_scene and parent_scene.name.contains("IPDARotate"):
+		var barrel_wall = parent_scene.get_node_or_null("BarrelWall")
+		if barrel_wall:
+			var collision_shape = barrel_wall.get_node_or_null("CollisionShape2D")
+			if collision_shape and collision_shape.shape:
+				# Convert world position to barrel wall's local coordinate system
+				var barrel_local_pos = barrel_wall.to_local(world_pos)
+				# Check if point is inside barrel wall collision shape
+				var shape = collision_shape.shape
+				if shape is RectangleShape2D:
+					var rect_shape = shape as RectangleShape2D
+					var half_extents = rect_shape.size / 2.0
+					var shape_pos = collision_shape.position
+					var relative_pos = barrel_local_pos - shape_pos
+					if abs(relative_pos.x) <= half_extents.x and abs(relative_pos.y) <= half_extents.y:
+						barrel_wall_hit = true
+
+	# 2. SECOND: Determine hit zone and scoring
+	var zone_hit = ""
+	var points = 0
+	var is_target_hit = false
+
+	if barrel_wall_hit:
+		# Barrel wall hit - count as miss
+		zone_hit = "barrel_miss"
+		points = 0
+		is_target_hit = false
+	else:
+		# Check target zones (highest score first)
+		# TODO: Update zone names and scoring for IPDA
+		if is_point_in_zone("head-0", local_pos):
+			zone_hit = "head-0"
+			points = 0
+			is_target_hit = true
+		elif is_point_in_zone("heart-0", local_pos):
+			zone_hit = "heart-0"
+			points = 0
+			is_target_hit = true
+		elif is_point_in_zone("body-1", local_pos):
+			zone_hit = "body-1"
+			points = -1
+			is_target_hit = true
+		elif is_point_in_zone("other-3", local_pos):
+			zone_hit = "other-3"
+			points = -3
+			is_target_hit = true
+		else:
+			zone_hit = "miss"
+			points = -5
+			is_target_hit = false
+
+	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
+	if is_target_hit:
+		spawn_bullet_hole(local_pos)
+	# 4. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
+	spawn_bullet_effects_at_position(world_pos, is_target_hit)
+
+	# 5. Update score and emit signal
+	total_score += points
+	target_hit.emit(zone_hit, points, world_pos)
+
+	# 6. Increment shot count and check for disappearing animation (only for valid target hits)
+	if is_target_hit:
+		shot_count += 1
+
+		# Check if we've reached the maximum valid target hits
+		if shot_count >= max_shots:
+			play_disappearing_animation()
+
+func monitor_bullet_activity():
+	"""Monitor bullet activity and pause/resume animation accordingly"""
+	# Pause animation if activity is high
+	if bullet_activity_count >= activity_threshold and not animation_paused:
+		pause_rotation_animation()
+
+	# Reset cooldown timer when activity increases
+	if bullet_activity_count > 0:
+		activity_cooldown_timer = 0.0
+	else:
+		# Increment cooldown timer when no activity
+		activity_cooldown_timer += get_process_delta_time()
+
+		# Resume animation after cooldown period
+		if activity_cooldown_timer >= activity_cooldown_duration and animation_paused:
+			resume_rotation_animation()
+
+func pause_rotation_animation():
+	"""Pause the rotation animation to improve performance"""
+	var rotation_center = get_parent()
+	if rotation_center and rotation_center.name == "RotationCenter":
+		var animation_player = rotation_center.get_parent().get_node_or_null("AnimationPlayer")
+		if animation_player and animation_player.is_playing():
+			animation_player.pause()
+			animation_paused = true
+
+func resume_rotation_animation():
+	"""Resume the rotation animation"""
+	var rotation_center = get_parent()
+	if rotation_center and rotation_center.name == "RotationCenter":
+		var animation_player = rotation_center.get_parent().get_node_or_null("AnimationPlayer")
+		if animation_player and not animation_player.is_playing():
+			animation_player.play()
+			animation_paused = false
+			activity_cooldown_timer = 0.0
