@@ -1,6 +1,6 @@
 [gd_scene load_steps=9 format=3 uid="uid://dj8sj4i4rqcxa"]
 
-[ext_resource type="Script" uid="uid://t5jh4pyiw6jx" path="res://scene/idpa_mini_stage/idpa-ns.gd" id="3_abc12"]
+[ext_resource type="Script" uid="uid://t5jh4pyiw6jx" path="res://scene/targets/idpa_ns.gd" id="3_abc12"]
 [ext_resource type="Texture2D" uid="uid://ctby376nubs78" path="res://asset/idpa-ns.png" id="3_hwcas"]
 [ext_resource type="Texture2D" uid="uid://cane2y7sy4bht" path="res://asset/idpa.png" id="3_y3jvt"]
 

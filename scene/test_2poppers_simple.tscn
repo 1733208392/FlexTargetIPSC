@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://irhreem8mugs"]
 
-[ext_resource type="PackedScene" uid="uid://xjeojreh01hf" path="res://scene/2poppers_simple.tscn" id="1_2poppers_simple"]
+[ext_resource type="PackedScene" uid="uid://xjeojreh01hf" path="res://scene/targets/2poppers_simple.tscn" id="1_2poppers_simple"]
 [ext_resource type="Script" uid="uid://dphvu3fdrbc7d" path="res://script/test_2poppers_simple.gd" id="2_test_script"]
 
 [node name="Test2PoppersSimple" type="Node2D"]

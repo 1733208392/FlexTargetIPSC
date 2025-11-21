@@ -45,7 +45,7 @@ var animation_paused: bool = false
 
 # Scoring system
 var total_score: int = 0
-var drill_active: bool = false  # Flag to ignore shots before drill starts
+@export var drill_active: bool = false  # Flag to ignore shots before drill starts
 signal target_hit(zone: String, points: int, hit_position: Vector2)
 signal target_disappeared
 

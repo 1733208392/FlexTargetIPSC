@@ -1,11 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://um1c6ifqwor4"]
+[gd_scene load_steps=2 format=3 uid="uid://um1c6ifqwor4"]
 
-[ext_resource type="PackedScene" uid="uid://mwlyybpg6fhe" path="res://scene/idpa-ns.tscn" id="1_idpa"]
-[ext_resource type="Script" uid="uid://ckfsgswmdv4nx" path="res://script/test_idpa.gd" id="2_test_script"]
+[ext_resource type="PackedScene" uid="uid://3lu02qh8ewqp" path="res://scene/targets/idpa_hard_cover_2.tscn" id="2_32nkg"]
 
 [node name="Node2D" type="Node2D"]
-script = ExtResource("2_test_script")
 
-[node name="IDPA" parent="." instance=ExtResource("1_idpa")]
-position = Vector2(360, 640)
-max_shots = 1000
+[node name="IDPA-black-2" parent="." instance=ExtResource("2_32nkg")]
+position = Vector2(362, 597)

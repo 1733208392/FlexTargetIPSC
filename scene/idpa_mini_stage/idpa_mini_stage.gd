@@ -1,16 +1,16 @@
 extends Control
 
 # Preload the IDPA mini scene
-@export var idpa_mini_scene: PackedScene = preload("res://scene/idpa.tscn")
-@export var idpa_ns_scene: PackedScene = preload("res://scene/idpa_mini_stage/idpa-ns.tscn")
-@export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/idpa-hard-cover-1.tscn")
-@export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/idpa-hard-cover-2.tscn")
-@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/idpa_mini_rotate.tscn")
+@export var idpa_mini_scene: PackedScene = preload("res://scene/targets/idpa.tscn")
+@export var idpa_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
+@export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa-hard-cover-1.tscn")
+@export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa-hard-cover-2.tscn")
+@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_mini_rotate.tscn")
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-#var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
-var base_target_sequence: Array[String] = ["idpa-mini-rotate"]
+var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
+#var base_target_sequence: Array[String] = ["idpa-mini-rotate"]
 var target_sequence: Array[String] = []
 var current_target_index: int = 0
 var current_target_instance: Node = null

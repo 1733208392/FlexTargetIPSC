@@ -4,9 +4,9 @@ extends Control
 @export var ipsc_mini_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
 @export var ipsc_mini_black_1_scene: PackedScene = preload("res://scene/ipsc_mini_black_1.tscn")
 @export var ipsc_mini_black_2_scene: PackedScene = preload("res://scene/ipsc_mini_black_2.tscn")
-@export var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
-@export var two_poppers_scene: PackedScene = preload("res://scene/2poppers_simple.tscn")
-@export var three_paddles_scene: PackedScene = preload("res://scene/3paddles_simple.tscn")
+@export var hostage_scene: PackedScene = preload("res://scene/targets/hostage.tscn")
+@export var two_poppers_scene: PackedScene = preload("res://scene/targets/2poppers_simple.tscn")
+@export var three_paddles_scene: PackedScene = preload("res://scene/targets/3paddles_simple.tscn")
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 

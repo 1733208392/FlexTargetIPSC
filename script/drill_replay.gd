@@ -13,10 +13,15 @@ var target_scenes = {
 	"ipsc_mini": "res://scene/ipsc_mini.tscn",
 	"ipsc_mini_black_1": "res://scene/ipsc_mini_black_1.tscn",
 	"ipsc_mini_black_2": "res://scene/ipsc_mini_black_2.tscn",
-	"hostage": "res://scene/hostage.tscn",
+	"hostage": "res://scene/targets/hostage.tscn",
 	"ipsc_mini_rotate": "res://scene/ipsc_mini_rotate.tscn",
-	"3paddles": "res://scene/3paddles_simple.tscn",
-	"2poppers": "res://scene/2poppers_simple.tscn",
+	"3paddles": "res://scene/targets/3paddles_simple.tscn",
+	"2poppers": "res://scene/targets/2poppers_simple.tscn",
+	"idpa": "res://scene/targets/idpa.tscn",
+	"idpa-mini-rotate": "res://scene/targets/idpa_mini_rotate.tscn",
+	"idpa-hard-cover-1": "res://scene/targets/idpa-hard-cover-1.tscn",
+	"idpa-hard-cover-2": "res://scene/targets/idpa-hard-cover-2.tscn",
+	"idpa-ns": "res://scene/targets/idpa_ns.tscn"
 	# Add more as needed
 }
 

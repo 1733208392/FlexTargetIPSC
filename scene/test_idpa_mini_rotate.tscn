@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://dprlfulhi0tna"]
 
 [ext_resource type="Script" uid="uid://dg5ixu8a5v12p" path="res://script/test_idpa_mini_rotate.gd" id="1_testscript"]
-[ext_resource type="PackedScene" uid="uid://uys12flus0u1" path="res://scene/idpa_mini_rotate.tscn" id="2_idpa_mini"]
+[ext_resource type="PackedScene" uid="uid://uys12flus0u1" path="res://scene/targets/idpa_mini_rotate.tscn" id="2_idpa_mini"]
 
 [node name="TestIDPAMiniRotate" type="Node2D"]
 script = ExtResource("1_testscript")
