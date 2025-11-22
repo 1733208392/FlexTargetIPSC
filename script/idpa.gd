@@ -70,6 +70,14 @@ func _ready():
 	if drills_network:
 		max_shots = 1000
 
+func _input(event: InputEvent):
+	"""Handle mouse clicks to simulate websocket bullet hits for testing"""
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var click_pos = event.position
+		if not DEBUG_DISABLED: print("[IDPA] Mouse click at position: ", click_pos)
+		_on_websocket_bullet_hit(click_pos)
+		get_tree().root.set_input_as_handled()
+
 func _on_input_event(_viewport, event, _shape_idx):
 	# Don't process input events if target is disappearing
 	if is_disappearing:
@@ -124,23 +132,6 @@ func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 			return rect.has_point(local_point)
 		# Add other shape types if needed
 	return false
-
-func spawn_bullet_at_position(world_pos: Vector2):
-
-	if BulletScene:
-		var bullet = BulletScene.instantiate()
-
-		# Find the top-level scene node to add bullet effects
-		# This ensures effects don't get rotated with rotating targets
-		var scene_root = get_tree().current_scene
-		if scene_root:
-			scene_root.add_child(bullet)
-		else:
-			# Fallback to immediate parent if scene_root not found
-			get_parent().add_child(bullet)
-
-		# Use the new set_spawn_position method to ensure proper positioning
-		bullet.set_spawn_position(world_pos)
 
 func get_total_score() -> int:
 	"""Get the current total score for this target"""
@@ -479,59 +470,33 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	# Convert world position to local coordinates (this handles rotation automatically)
 	var local_pos = to_local(world_pos)
 
-	# 1. FIRST: Check if bullet hit the BarrelWall (for rotating targets)
-	var barrel_wall_hit = false
-	var parent_scene = get_parent().get_parent()  # Get the IPDARotate scene
-	if parent_scene and parent_scene.name.contains("IPDARotate"):
-		var barrel_wall = parent_scene.get_node_or_null("BarrelWall")
-		if barrel_wall:
-			var collision_shape = barrel_wall.get_node_or_null("CollisionShape2D")
-			if collision_shape and collision_shape.shape:
-				# Convert world position to barrel wall's local coordinate system
-				var barrel_local_pos = barrel_wall.to_local(world_pos)
-				# Check if point is inside barrel wall collision shape
-				var shape = collision_shape.shape
-				if shape is RectangleShape2D:
-					var rect_shape = shape as RectangleShape2D
-					var half_extents = rect_shape.size / 2.0
-					var shape_pos = collision_shape.position
-					var relative_pos = barrel_local_pos - shape_pos
-					if abs(relative_pos.x) <= half_extents.x and abs(relative_pos.y) <= half_extents.y:
-						barrel_wall_hit = true
-
-	# 2. SECOND: Determine hit zone and scoring
+	# Determine hit zone and scoring
 	var zone_hit = ""
 	var points = 0
 	var is_target_hit = false
 
-	if barrel_wall_hit:
-		# Barrel wall hit - count as miss
-		zone_hit = "barrel_miss"
+	# Check target zones (highest score first)
+	# TODO: Update zone names and scoring for IPDA
+	if is_point_in_zone("head-0", local_pos):
+		zone_hit = "head-0"
 		points = 0
-		is_target_hit = false
+		is_target_hit = true
+	elif is_point_in_zone("heart-0", local_pos):
+		zone_hit = "heart-0"
+		points = 0
+		is_target_hit = true
+	elif is_point_in_zone("body-1", local_pos):
+		zone_hit = "body-1"
+		points = -1
+		is_target_hit = true
+	elif is_point_in_zone("other-3", local_pos):
+		zone_hit = "other-3"
+		points = -3
+		is_target_hit = true
 	else:
-		# Check target zones (highest score first)
-		# TODO: Update zone names and scoring for IPDA
-		if is_point_in_zone("head-0", local_pos):
-			zone_hit = "head-0"
-			points = 0
-			is_target_hit = true
-		elif is_point_in_zone("heart-0", local_pos):
-			zone_hit = "heart-0"
-			points = 0
-			is_target_hit = true
-		elif is_point_in_zone("body-1", local_pos):
-			zone_hit = "body-1"
-			points = -1
-			is_target_hit = true
-		elif is_point_in_zone("other-3", local_pos):
-			zone_hit = "other-3"
-			points = -3
-			is_target_hit = true
-		else:
-			zone_hit = "miss"
-			points = -5
-			is_target_hit = false
+		zone_hit = "miss"
+		points = -5
+		is_target_hit = false
 
 	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if is_target_hit:

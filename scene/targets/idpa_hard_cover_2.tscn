@@ -57,7 +57,6 @@ radius = 121.9
 collision_layer = 7
 collision_mask = 0
 script = ExtResource("1_script")
-max_shots = 100
 drill_active = true
 
 [node name="TargetSprite" type="Sprite2D" parent="."]

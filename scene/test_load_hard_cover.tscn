@@ -1,8 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://dcf3hcvg8ljdy"]
-
-[ext_resource type="Script" path="res://scene/test_load_hard_cover.gd" id="1_abcde"]
-
-[node name="TestLoadHardCover" type="Node"]
-script = ExtResource("1_abcde")
-
-[node name="ScriptContainer" type="Node" parent="."]

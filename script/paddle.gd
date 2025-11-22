@@ -474,7 +474,7 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
 	
 	# Load the effect scenes directly
-	var bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
+	# var bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
 	var bullet_impact_scene = preload("res://scene/bullet_impact.tscn")
 	
 	# Find the scene root for effects

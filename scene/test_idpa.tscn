@@ -1,8 +1,8 @@
 [gd_scene load_steps=2 format=3 uid="uid://um1c6ifqwor4"]
 
-[ext_resource type="PackedScene" uid="uid://3lu02qh8ewqp" path="res://scene/targets/idpa_hard_cover_2.tscn" id="2_32nkg"]
+[ext_resource type="PackedScene" uid="uid://dbk3n2lpxt0uo" path="res://scene/targets/idpa_hard_cover_1.tscn" id="1_1tiho"]
 
 [node name="Node2D" type="Node2D"]
 
-[node name="IDPA-black-2" parent="." instance=ExtResource("2_32nkg")]
-position = Vector2(362, 597)
+[node name="IDPA-Black-1" parent="." instance=ExtResource("1_1tiho")]
+position = Vector2(353, 645)

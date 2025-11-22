@@ -33,7 +33,7 @@ const DEBUG_DISABLED = false
 
 # Scoring system
 var total_score: int = 0
-var drill_active: bool = false  # Flag to ignore shots before drill starts
+@export var drill_active: bool = false  # Flag to ignore shots before drill starts
 signal target_hit(zone: String, points: int, hit_position: Vector2)
 signal target_disappeared
 
@@ -57,6 +57,14 @@ func _ready():
 	# Play reset animation to ensure scene starts in clean state
 	reset_target_visual()
 
+func _input(event: InputEvent):
+	"""Handle mouse clicks to simulate websocket bullet hits for testing"""
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var click_pos = event.position
+		if not DEBUG_DISABLED: print("[IDPA-NS] Mouse click at position: ", click_pos)
+		_on_websocket_bullet_hit(click_pos)
+		get_tree().root.set_input_as_handled()
+
 func _on_input_event(_viewport, event, _shape_idx):
 	# Don't process input events if target is disappearing
 	if is_disappearing:
@@ -72,11 +80,6 @@ func _on_input_event(_viewport, event, _shape_idx):
 
 		# Get the click position in local coordinates
 		var local_pos = to_local(event.global_position)
-
-		# Check zones in priority order (highest priority first)
-		# HIGHEST PRIORITY: Hard-cover blocks all shots
-		if is_point_in_zone("hard-cover", local_pos):
-			return
 
 		# Head zone has highest priority (0 points in IDPA-NS scoring)
 		if is_point_in_zone("head-0", local_pos):

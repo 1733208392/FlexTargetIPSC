@@ -3,9 +3,9 @@ extends Control
 # Preload the IDPA mini scene
 @export var idpa_mini_scene: PackedScene = preload("res://scene/targets/idpa.tscn")
 @export var idpa_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
-@export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa-hard-cover-1.tscn")
-@export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa-hard-cover-2.tscn")
-@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_mini_rotate.tscn")
+@export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
+@export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
+@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
