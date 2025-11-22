@@ -117,12 +117,7 @@ func _load_menu_config():
 		# Default configuration if none provided
 		menu_config = {
 			"title": "Sub Menu",
-			"items": [
-				{
-					"text": "back_to_main",
-					"action": "back_to_main"
-				}
-			]
+			"items": []
 		}
 		if not DEBUG_DISABLED:
 			print("[SubMenu] Using default menu config")
@@ -204,12 +199,6 @@ func _on_menu_item_pressed(button: Button):
 			var http_method = item.get("http_call", "")
 			if http_method:
 				_call_http_service(http_method, item)
-		"back_to_main":
-			if is_inside_tree():
-				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
-			else:
-				if not DEBUG_DISABLED:
-					print("[SubMenu] Warning: Not in tree, cannot change scene")
 		_:
 			if not DEBUG_DISABLED:
 				print("[SubMenu] Unknown action: ", action)
@@ -330,6 +319,16 @@ func _on_menu_control(directive: String):
 			if not DEBUG_DISABLED:
 				print("[SubMenu] Power off")
 			power_off()
+		"back":
+			if not DEBUG_DISABLED:
+				print("[SubMenu] Back to main menu")
+			if is_inside_tree():
+				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+		"home":
+			if not DEBUG_DISABLED:
+				print("[SubMenu] Home to main menu")
+			if is_inside_tree():
+				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:
 			if not DEBUG_DISABLED:
 				print("[SubMenu] Unknown directive: ", directive)

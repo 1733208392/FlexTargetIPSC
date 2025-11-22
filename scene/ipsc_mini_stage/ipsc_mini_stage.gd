@@ -190,6 +190,9 @@ func _on_shot_timer_ready(delay: float):
 	if not DEBUG_DISABLED:
 		print("=== SHOT TIMER READY - STARTING DRILL === Delay: ", delay, " seconds")
 	
+	# Reset performance tracker for new drill
+	performance_tracker.reset_all()
+	
 	# Pass the delay to performance tracker
 	performance_tracker.set_shot_timer_delay(delay)
 	

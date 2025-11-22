@@ -38,7 +38,7 @@ var last_beep_second: int = -1
 @onready var footsteps_node = $Footsteps
 
 # Performance tracking
-signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float)
+signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, score: int, rotation_angle: float)
 signal drills_finished
 
 # Performance optimization
@@ -58,7 +58,7 @@ signal ui_score_update(score: int)
 signal ui_progress_update(targets_completed: int)
 signal ui_timeout_warning(remaining_seconds: float)
 
-@onready var performance_tracker = preload("res://script/performance_tracker.gd").new()
+@onready var performance_tracker = preload("res://script/performance_tracker_idpa.gd").new()
 
 func _ready():
 	"""Initialize the drill"""
@@ -155,6 +155,9 @@ func _on_shot_timer_ready(delay: float):
 	"""Handle when shot timer beep occurs - start the drill"""
 	if not DEBUG_DISABLED:
 		print("=== SHOT TIMER READY - STARTING DRILL === Delay: ", delay, " seconds")
+	
+	# Reset performance tracker for new drill
+	performance_tracker.reset_all()
 	
 	# Pass the delay to performance tracker
 	performance_tracker.set_shot_timer_delay(delay)
@@ -465,7 +468,7 @@ func _on_target_disappeared(target_id: String = ""):
 	print("[TARGET_DISAPPEARED] Calling spawn_next_target()")
 	spawn_next_target()
 
-func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null):
+func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null, _param5 = null):
 	"""Handle when a target is hit"""
 	if current_target_index >= target_sequence.size():
 		if not DEBUG_DISABLED:
@@ -475,15 +478,24 @@ func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null):
 	var current_target_type = target_sequence[current_target_index]
 	var hit_area = ""
 	var hit_position = Vector2.ZERO
+	var actual_points = 0
 	
-	# IDPA mini sends: zone, points, hit_position
-	var zone = param1
-	var actual_points = param2
-	hit_position = param3
-	hit_area = zone
+	# Handle different parameter orders based on target type
+	if current_target_type == "idpa-mini-rotate":
+		# idpa_rotation.gd sends: (position, score, area, is_hit, rotation)
+		hit_position = param1  # Vector2
+		actual_points = param2  # int
+		hit_area = param3  # String
+		# param4 = is_hit (bool), param5 = rotation (float)
+	else:
+		# Other IDPA targets send: (zone, points, hit_position)
+		var zone = param1  # String
+		actual_points = param2  # int
+		hit_position = param3  # Vector2
+		hit_area = zone
 	
 	if not DEBUG_DISABLED:
-		print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
+		print("Target hit: ", current_target_type, " in area: ", hit_area, " for ", actual_points, " points at ", hit_position)
 	
 	total_drill_score += int(actual_points)
 	
@@ -493,7 +505,9 @@ func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null):
 	
 	# Emit the target_hit signal for performance tracking
 	var rotation_angle = 0.0
-	emit_signal("target_hit", current_target_type, hit_position, hit_area, rotation_angle)
+	if current_target_type == "idpa-mini-rotate":
+		rotation_angle = _param5  # Use actual rotation from idpa_rotation.gd
+	emit_signal("target_hit", current_target_type, hit_position, hit_area, int(actual_points), rotation_angle)
 	
 	# Update the fastest interval display
 	var fastest_time = performance_tracker.get_fastest_time_diff()
