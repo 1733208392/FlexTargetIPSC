@@ -12,12 +12,12 @@ func _ready():
 	http_service = get_node("/root/HttpService")
 	
 	# Connect to remote control for back/home button
-	var remote_control = get_node_or_null("/root/RemoteControl")
+	var remote_control = get_node_or_null("/root/MenuController")
 	if remote_control:
 		remote_control.back_pressed.connect(_on_remote_back_pressed)
-		print("[Leaderboard] Connected to RemoteControl back_pressed signal")
+		print("[Leaderboard] Connected to MenuController back_pressed signal")
 	else:
-		print("[Leaderboard] RemoteControl autoload not found!")
+		print("[Leaderboard] MenuController autoload not found!")
 	
 func load_leaderboard(score_to_add: int = -1):
 	is_new_file = false  # Reset flag

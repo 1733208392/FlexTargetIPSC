@@ -1,14 +1,13 @@
-[gd_scene load_steps=12 format=3 uid="uid://3kxxqr2vk31v"]
+[gd_scene load_steps=11 format=3 uid="uid://3kxxqr2vk31v"]
 
 [ext_resource type="Script" uid="uid://bs3sx1fus0bj0" path="res://script/games/mole_level_complete.gd" id="1_mole"]
 [ext_resource type="FontFile" uid="uid://d2eub6rd80tjp" path="res://asset/games/soupofjustice.ttf" id="3_4n79r"]
 [ext_resource type="Texture2D" uid="uid://c55e2ghwmvqda" path="res://asset/games/wack-a-mole/GUI/star-coin.png" id="4_22ndk"]
-[ext_resource type="PackedScene" uid="uid://djaooqy653j1t" path="res://scenes/back_button.tscn" id="5_r8ohr"]
-[ext_resource type="PackedScene" uid="uid://ccokjfuh6mp6x" path="res://scenes/next_button.tscn" id="6_raqs2"]
-[ext_resource type="PackedScene" path="res://scenes/wack-a-mole/replay_button.tscn" id="6_yga03"]
-[ext_resource type="PackedScene" uid="uid://benwj6w5un0vk" path="res://scenes/coin_particles.tscn" id="7_1r4r6"]
-[ext_resource type="AudioStream" uid="uid://du5manoclpv67" path="res://audio/victory-chime.mp3" id="8_jv7kj"]
-[ext_resource type="Shader" uid="uid://5ioxufo56rw0" path="res://asset/games/circle.gdshader" id="9_circle"]
+[ext_resource type="PackedScene" path="res://scene/games/back_button.tscn" id="5_r8ohr"]
+[ext_resource type="PackedScene" path="res://scene/games/next_button.tscn" id="6_yga03"]
+[ext_resource type="PackedScene" path="res://scene/games/coin_particles.tscn" id="7_1r4r6"]
+[ext_resource type="AudioStream" uid="uid://dxpul16876qad" path="res://audio/victory-chime.mp3" id="8_jv7kj"]
+[ext_resource type="Shader" path="res://asset/games/circle.gdshader" id="9_circle"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_raqs2"]
 shader = ExtResource("9_circle")
@@ -220,7 +219,7 @@ visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 
-[node name="NextButton" parent="Control/VBoxContainer/Content/PanelContent/ButtonsContainer" instance=ExtResource("6_raqs2")]
+[node name="NextButton" parent="Control/VBoxContainer/Content/PanelContent/ButtonsContainer" instance=ExtResource("6_yga03")]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 

@@ -2,16 +2,16 @@
 
 [ext_resource type="Script" uid="uid://clk687odfmnw" path="res://script/games/game_monkey.gd" id="1_cqg8j"]
 [ext_resource type="Texture2D" uid="uid://dsmp0g7fmay4t" path="res://asset/games/fruitblast-background.png" id="1_mnm2d"]
-[ext_resource type="PackedScene" uid="uid://iutkhax33s2e" path="res://scenes/monkey/vine_horizontal.tscn" id="2_5qubs"]
-[ext_resource type="PackedScene" uid="uid://cjv0rr75domcd" path="res://scenes/monkey/vine_left.tscn" id="2_nbvh4"]
+[ext_resource type="PackedScene" path="res://scene/games/monkey/vine_horizontal.tscn" id="2_5qubs"]
+[ext_resource type="PackedScene" path="res://scene/games/monkey/vine_left.tscn" id="2_nbvh4"]
 [ext_resource type="Texture2D" uid="uid://d4imqxr41c7mh" path="res://asset/games/woodlog.png" id="3_ftrqu"]
-[ext_resource type="PackedScene" uid="uid://28k7ayds2psb" path="res://scenes/monkey/vine_right.tscn" id="4_cotjv"]
-[ext_resource type="PackedScene" uid="uid://cojbyh3nmp67k" path="res://scenes/monkey/player1.tscn" id="4_kaqtb"]
-[ext_resource type="PackedScene" uid="uid://csf1xvhgjc0d5" path="res://scenes/monkey/player2.tscn" id="5_nbvh4"]
-[ext_resource type="PackedScene" uid="uid://dqo443goubdgu" path="res://scenes/monkey/monkey.tscn" id="8_6gbdr"]
+[ext_resource type="PackedScene" path="res://scene/games/monkey/vine_right.tscn" id="4_cotjv"]
+[ext_resource type="PackedScene" path="res://scene/games/monkey/player1.tscn" id="4_kaqtb"]
+[ext_resource type="PackedScene" path="res://scene/games/monkey/player2.tscn" id="5_nbvh4"]
+[ext_resource type="PackedScene" path="res://scene/games/monkey/monkey.tscn" id="8_6gbdr"]
 [ext_resource type="FontFile" uid="uid://d2eub6rd80tjp" path="res://asset/games/soupofjustice.ttf" id="10_ycl44"]
-[ext_resource type="PackedScene" uid="uid://dxhw3r7t4daxm" path="res://scenes/monkey/game_over_overlay.tscn" id="11_5o0eu"]
-[ext_resource type="PackedScene" uid="uid://bhnpxiwmuviv6" path="res://scenes/monkey/monkey_settings.tscn" id="11_qg3xo"]
+[ext_resource type="PackedScene" path="res://scene/games/monkey/game_over_overlay.tscn" id="11_5o0eu"]
+[ext_resource type="PackedScene" uid="uid://bcfxuxp4tc752" path="res://scene/games/monkey/monkey_settings.tscn" id="11_qg3xo"]
 
 [node name="GameMonkey" type="Node2D"]
 script = ExtResource("1_cqg8j")
@@ -56,10 +56,10 @@ scale = Vector2(2, 2)
 texture = ExtResource("3_ftrqu")
 
 [node name="Jiong" parent="." instance=ExtResource("4_kaqtb")]
-position = Vector2(158, 1200)
+position = Vector2(158, 1100)
 
 [node name="xuyang" parent="." instance=ExtResource("5_nbvh4")]
-position = Vector2(560, 1200)
+position = Vector2(560, 1100)
 
 [node name="Monkey" parent="." instance=ExtResource("8_6gbdr")]
 position = Vector2(349, 82)

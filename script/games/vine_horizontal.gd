@@ -20,12 +20,14 @@ func _ready():
 		var signal_bus = get_node("/root/SignalBus")
 		if signal_bus.has_signal("monkey_landed"):
 			signal_bus.monkey_landed.connect(_on_monkey_landed)
+			print("VineHorizontal: Connected to monkey_landed signal")
 		else:
 			print("Warning: monkey_landed signal not found in SignalBus")
 		
 		# Connect to settings_applied signal
 		if signal_bus.has_signal("settings_applied"):
 			signal_bus.settings_applied.connect(_on_settings_applied)
+			print("VineHorizontal: Connected to settings_applied signal")
 		else:
 			print("Warning: settings_applied signal not found in SignalBus")
 	else:

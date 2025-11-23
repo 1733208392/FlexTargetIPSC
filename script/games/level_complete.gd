@@ -27,14 +27,14 @@ func _ready():
 	set_process_input(true)
 	
 	# Connect to remote control
-	var remote_control = get_node_or_null("/root/RemoteControl")
+	var remote_control = get_node_or_null("/root/MenuController")
 	if remote_control:
 		remote_control.navigate.connect(_on_remote_navigate)
 		remote_control.enter_pressed.connect(_on_enter_pressed)
 		remote_control.back_pressed.connect(_on_back_pressed)
-		print("[LevelComplete] Connected to RemoteControl")
+		print("[LevelComplete] Connected to MenuController")
 	else:
-		print("[LevelComplete] RemoteControl autoload not found!")
+		print("[LevelComplete] MenuController autoload not found!")
 	
 	if coin_particles:
 		coin_particles.emitting = true
@@ -196,9 +196,9 @@ func hide_level_complete():
 		coin_particles.emitting = false
 	
 	# Disconnect from remote control signals
-	var remote_control = get_node_or_null("/root/RemoteControl")
+	var remote_control = get_node_or_null("/root/MenuController")
 	if remote_control:
 		remote_control.navigate.disconnect(_on_remote_navigate)
 		remote_control.enter_pressed.disconnect(_on_enter_pressed)
 		remote_control.back_pressed.disconnect(_on_back_pressed)
-		print("[LevelComplete] Disconnected from RemoteControl signals")
+		print("[LevelComplete] Disconnected from MenuController signals")

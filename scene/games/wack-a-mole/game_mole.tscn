@@ -1,9 +1,9 @@
 [gd_scene load_steps=5 format=3 uid="uid://dunndq3e043lq"]
 
 [ext_resource type="Texture2D" uid="uid://xwlbbbi42pqq" path="res://asset/games/wack-a-mole/Background/Background_2.png" id="2_xiawl"]
-[ext_resource type="PackedScene" uid="uid://b7xxmkj4ycdi3" path="res://scenes/wack-a-mole/top_bar_mole.tscn" id="3_bj317"]
+[ext_resource type="PackedScene" path="res://scene/games/wack-a-mole/top_bar_mole.tscn" id="3_bj317"]
 [ext_resource type="Script" uid="uid://dkf58chmrv7d" path="res://script/games/game_mole.gd" id="game_mole"]
-[ext_resource type="PackedScene" uid="uid://bw71nta7ndmqs" path="res://scenes/wack-a-mole/mole.tscn" id="mole"]
+[ext_resource type="PackedScene" path="res://scene/games/wack-a-mole/mole.tscn" id="mole"]
 
 [node name="GameMole" type="Node2D"]
 script = ExtResource("game_mole")

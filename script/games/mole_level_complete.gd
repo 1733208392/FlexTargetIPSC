@@ -1,8 +1,8 @@
 extends CanvasLayer
 
-@onready var back_button = $Control/VBoxContainer/Content/PanelContent/ButtonsContainer/BackButton
-@onready var next_button = $Control/VBoxContainer/Content/PanelContent/ButtonsContainer/NextButton
-@onready var replay_button = $Control/VBoxContainer/Content/PanelContent/ButtonsContainer/ReplayButton
+var back_button: Button
+var next_button: Button
+var replay_button: Button
 @onready var level_number = $Control/VBoxContainer/HeaderCircle/CircleContent/LevelNumber
 @onready var score_value = $Control/VBoxContainer/Content/PanelContent/ScoreContainer/ScoreValue
 @onready var coin_value = $Control/VBoxContainer/Content/PanelContent/CoinContainer/CoinValue
@@ -25,27 +25,56 @@ var victory_sound = preload("res://audio/victory-chime.mp3")
 var game_node: Node = null  # Reference to the GameMole node
 
 func _ready():
+	# Debug: Print the scene tree
+	print_tree_pretty()
+	
+	# Get button references using get_node_or_null with correct paths
+	back_button = get_node_or_null("Control/VBoxContainer/Content/PanelContent/ButtonsContainer/BackButton")
+	next_button = get_node_or_null("Control/VBoxContainer/Content/PanelContent/ButtonsContainer/NextButton")
+	replay_button = get_node_or_null("Control/VBoxContainer/Content/PanelContent/ButtonsContainer/ReplayButton")
+	
+	# Debug: Print button references
+	print("Back button: ", back_button)
+	print("Next button: ", next_button)
+	print("Replay button: ", replay_button)
+	
 	# Connect button signals
-	back_button.pressed.connect(_on_back_pressed)
-	next_button.pressed.connect(_on_next_pressed)
-	replay_button.pressed.connect(_on_replay_pressed)
+	if back_button:
+		back_button.pressed.connect(_on_back_pressed)
+		print("[MoleLevelComplete] Connected back_button")
+	else:
+		print("[MoleLevelComplete] Back button not found")
+	
+	if next_button:
+		next_button.pressed.connect(_on_next_pressed)
+		print("[MoleLevelComplete] Connected next_button")
+	else:
+		print("[MoleLevelComplete] Next button not found")
+	
+	if replay_button:
+		replay_button.pressed.connect(_on_replay_pressed)
+		print("[MoleLevelComplete] Connected replay_button")
+	else:
+		print("[MoleLevelComplete] Replay button not found")
+	
 	print("[MoleLevelComplete] Connected button signals")
 	
-	# Set focus to next button by default
-	next_button.grab_focus()
+	# Set focus to next button by default (if it exists)
+	if next_button:
+		next_button.grab_focus()
 	
 	# Enable input processing for navigation
 	set_process_input(true)
 	
 	# Connect to remote control
-	var remote_control = get_node_or_null("/root/RemoteControl")
+	var remote_control = get_node_or_null("/root/MenuController")
 	if remote_control:
 		remote_control.navigate.connect(_on_remote_navigate)
 		remote_control.enter_pressed.connect(_on_enter_pressed)
 		remote_control.back_pressed.connect(_on_back_pressed)
-		print("[MoleLevelComplete] Connected to RemoteControl")
+		print("[MoleLevelComplete] Connected to MenuController")
 	else:
-		print("[MoleLevelComplete] RemoteControl autoload not found!")
+		print("[MoleLevelComplete] MenuController autoload not found!")
 	
 	if coin_particles:
 		coin_particles.emitting = true
@@ -219,9 +248,9 @@ func hide_level_complete():
 		coin_particles.emitting = false
 	
 	# Disconnect from remote control signals
-	var remote_control = get_node_or_null("/root/RemoteControl")
+	var remote_control = get_node_or_null("/root/MenuController")
 	if remote_control:
 		remote_control.navigate.disconnect(_on_remote_navigate)
 		remote_control.enter_pressed.disconnect(_on_enter_pressed)
 		remote_control.back_pressed.disconnect(_on_back_pressed)
-		print("[MoleLevelComplete] Disconnected from RemoteControl signals")
+		print("[MoleLevelComplete] Disconnected from MenuController signals")

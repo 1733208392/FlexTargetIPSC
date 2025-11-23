@@ -4,8 +4,6 @@ enum GameState { SETTINGS, COUNTDOWN, RUNNING, PAUSED, GAME_OVER }
 
 var current_state = GameState.SETTINGS
 
-signal settings_applied(start_side: String, growth_speed: float, duration: float)
-
 var countdown_label: Label
 var countdown_overlay: CanvasLayer
 var countdown_value: int = 5
@@ -24,15 +22,15 @@ var remote_control: Node
 func _ready():
 	print("[GameMonkey] Game started in SETTINGS state")
 	
-	# Load translations
-	var translations = ["zh.po", "ja.po", "zh_TW.po"]
-	for trans_file in translations:
-		var translation = load("res://translations/" + trans_file)
-		if translation:
-			TranslationServer.add_translation(translation)
-			print("[GameMonkey] Translation loaded: ", trans_file)
-		else:
-			print("[GameMonkey] Failed to load translation: ", trans_file)
+	# Load language setting from GlobalData (like option.gd does)
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[GameMonkey] Loaded language from GlobalData: ", language)
+	else:
+		print("[GameMonkey] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
 	
 	# Enable input processing
 	set_process_input(true)
@@ -60,40 +58,59 @@ func _ready():
 		if play_button:
 			play_button.connect("pressed", _resume_game)
 	
-	# Get RemoteControl
-	remote_control = get_node_or_null("/root/RemoteControl")
+	# Get MenuController
+	remote_control = get_node_or_null("/root/MenuController")
 	if remote_control:
 		remote_control.enter_pressed.connect(_on_enter_pressed)
 		remote_control.back_pressed.connect(_on_back_pressed)
-		print("[GameMonkey] Connected to RemoteControl signals")
+		print("[GameMonkey] Connected to MenuController signals")
 	else:
-		print("[GameMonkey] RemoteControl not found")
+		print("[GameMonkey] MenuController not found")
 	
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+	TranslationServer.set_locale(locale)
+
 	# Hide countdown overlay initially
 	if countdown_overlay:
 		countdown_overlay.visible = false
 	
-	# Connect settings signal to self and children
-	settings_applied.connect(self._on_settings_applied)
-	var monkey = get_node_or_null("Monkey")
-	if monkey:
-		settings_applied.connect(monkey._on_settings_applied)
-	
-	var vine_left = get_node_or_null("VineLeft")
-	if vine_left:
-		settings_applied.connect(vine_left._on_settings_applied)
-	
-	var vine_right = get_node_or_null("VineRight")
-	if vine_right:
-		settings_applied.connect(vine_right._on_settings_applied)
-	
-	var vine_horizontal = get_node_or_null("VineHorizontal")
-	if vine_horizontal:
-		settings_applied.connect(vine_horizontal._on_settings_applied)
-		self.vine_horizontal = vine_horizontal
+	# Connect settings signal to self and children via SignalBus
+	if has_node("/root/SignalBus"):
+		var signal_bus = get_node("/root/SignalBus")
+		if signal_bus.has_signal("settings_applied"):
+			signal_bus.settings_applied.connect(self._on_settings_applied)
+			var monkey = get_node_or_null("Monkey")
+			if monkey:
+				signal_bus.settings_applied.connect(monkey._on_settings_applied)
+			
+			var vine_left = get_node_or_null("VineLeft")
+			if vine_left:
+				signal_bus.settings_applied.connect(vine_left._on_settings_applied)
+			
+			var vine_right = get_node_or_null("VineRight")
+			if vine_right:
+				signal_bus.settings_applied.connect(vine_right._on_settings_applied)
+			
+			vine_horizontal = get_node_or_null("VineHorizon")
+			if vine_horizontal:
+				signal_bus.settings_applied.connect(vine_horizontal._on_settings_applied)
+		else:
+			print("[GameMonkey] settings_applied signal not found on SignalBus")
+	else:
+		print("[GameMonkey] SignalBus not found")
 	
 	# Load game over overlay
-	game_over_overlay_scene = load("res://scenes/monkey/game_over_overlay.tscn")
+	game_over_overlay_scene = load("res://scene/games/monkey/game_over_overlay.tscn")
 	
 	# Connect to player hit signals
 	var player1 = get_node_or_null("Jiong")
@@ -175,6 +192,7 @@ func _show_game_over(winner_id: int):
 	if game_over_overlay_scene:
 		game_over_overlay = game_over_overlay_scene.instantiate()
 		add_child(game_over_overlay)
+		game_over_overlay.visible = true
 		
 		# Hide pause overlay if visible
 		if pause_overlay:
@@ -192,12 +210,12 @@ func _show_game_over(winner_id: int):
 			if name_label:
 				name_label.text = tr("Jiong")
 			if avatar_sprite:
-				avatar_sprite.texture = load("res://assets/jiong-avatar.png")
+				avatar_sprite.texture = load("res://assets/games/jiong-avatar.png")
 		else:
 			if name_label:
 				name_label.text = tr("Xuyang")
 			if avatar_sprite:
-				avatar_sprite.texture = load("res://assets/xuyang-avatar.png")
+				avatar_sprite.texture = load("res://assets/games/xuyang-avatar.png")
 		
 		# Stop the vines
 		var vine_left = get_node_or_null("VineLeft")
@@ -255,6 +273,21 @@ func start_countdown():
 	if countdown_overlay:
 		countdown_overlay.visible = true
 		print("[GameMonkey] Countdown overlay shown")
+	
+	# Call HttpService to start the game
+	if has_node("/root/HttpService"):
+		var http_service = get_node("/root/HttpService")
+		if http_service.has_method("start_game"):
+			# Callback to handle the response
+			var callback = func(_result, response_code, _headers, _body):
+				print("[GameMonkey] Game started response - Code: ", response_code)
+			http_service.start_game(callback)
+			print("[GameMonkey] Called HttpService.start_game()")
+		else:
+			print("[GameMonkey] HttpService does not have start_game method")
+	else:
+		print("[GameMonkey] HttpService autoload not found")
+	
 	_start_countdown()
 
 func _start_countdown():
@@ -308,20 +341,6 @@ func _start_game():
 	display_timer.timeout.connect(_update_timer_display)
 	display_timer.start()
 	_update_timer_display()  # Set initial display
-	
-	# Call HttpService to start the game
-	if has_node("/root/HttpService"):
-		var http_service = get_node("/root/HttpService")
-		if http_service.has_method("start_game"):
-			# Callback to handle the response
-			var callback = func(_result, response_code, _headers, _body):
-				print("[GameMonkey] Game started response - Code: ", response_code)
-			http_service.start_game(callback)
-			print("[GameMonkey] Called HttpService.start_game()")
-		else:
-			print("[GameMonkey] HttpService does not have start_game method")
-	else:
-		print("[GameMonkey] HttpService autoload not found")
 
 func _on_game_duration_timeout():
 	"""Handle game duration timeout"""

@@ -11,7 +11,7 @@ var current_vine: Node2D = null
 @onready var hit_sound: AudioStreamPlayer = $HitSound
 
 # Preload bullet impact scene
-var bullet_impact_scene = preload("res://scenes/bullet_impact.tscn")
+var bullet_impact_scene = preload("res://scene/bullet_impact.tscn")
 
 # Cache parent reference
 var game_parent: Node2D = null
@@ -163,6 +163,9 @@ func _on_bullet_hit(pos: Vector2):
 	# Check if the bullet hit position is inside the monkey's collision shape
 	if not _is_point_in_collision_shape(pos):
 		print("Bullet missed the monkey at position: ", pos)
+		# Spawn bullet impact and play sound for miss
+		_spawn_bullet_impact(pos)
+		_play_hit_sound()
 		return
 	
 	print("Bullet hit the monkey at position: ", pos)

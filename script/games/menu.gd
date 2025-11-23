@@ -43,9 +43,9 @@ func _ready():
 		remote_control.navigate.connect(_on_remote_navigate)
 		remote_control.enter_pressed.connect(_on_remote_enter)
 		remote_control.back_pressed.connect(_on_remote_back_pressed)
-		print("[Menu] Connected to RemoteControl signals")
+		print("[Menu] Connected to MenuController signals")
 	else:
-		print("[Menu] RemoteControl autoload not found!")
+		print("[Menu] MenuController autoload not found!")
 
 	# Set translated game names
 	if fruitcatcher_label:

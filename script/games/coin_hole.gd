@@ -3,7 +3,7 @@ extends Area2D
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var audio_player: AudioStreamPlayer = $AudioStreamPlayer
-@onready var smoke_scene = preload("res://scenes/wack-a-mole/mole_smoke.tscn")
+@onready var smoke_scene = preload("res://scene/games/wack-a-mole/smoke.tscn")
 
 var coin_visible: bool = true
 

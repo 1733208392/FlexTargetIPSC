@@ -48,15 +48,15 @@ func _ready():
 	# Enable input processing
 	set_process_input(true)
 	
-	# Load translations
-	var translations = ["zh.po", "ja.po", "zh_TW.po"]
-	for trans_file in translations:
-		var translation = load("res://translations/" + trans_file)
-		if translation:
-			TranslationServer.add_translation(translation)
-			print("[Game] Translation loaded: ", trans_file)
-		else:
-			print("[Game] Failed to load translation: ", trans_file)
+	# Load language setting from GlobalData (like option.gd does)
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[Game] Loaded language from GlobalData: ", language)
+	else:
+		print("[Game] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
 	
 	# Set score target based on current level (30% increase per level, rounded to nearest 10)
 	var base_target = 120 * pow(1.3, current_level - 1)
@@ -106,13 +106,26 @@ func _ready():
 			play_button.connect("pressed", _resume_game)
 	
 	# Connect to remote control directives
-	var remote_control = get_node_or_null("/root/RemoteControl")
+	var remote_control = get_node_or_null("/root/MenuController")
 	if remote_control:
-		print("[Game] Connected to RemoteControl signals")
+		print("[Game] Connected to MenuController signals")
 		remote_control.enter_pressed.connect(_on_enter_pressed)
 		remote_control.back_pressed.connect(_on_remote_back_pressed)
 	else:
-		print("[Game] RemoteControl autoload not found!")
+		print("[Game] MenuController autoload not found!")
+
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+	TranslationServer.set_locale(locale)
 
 	# Spawn the first fruit immediately
 	spawn_random_fruit()

@@ -133,7 +133,7 @@ func _on_mole_hit(hit_pos: Vector2, score_gained: int) -> void:
 	print("Score increased to: ", score, " | Moles hit: ", moles_hit, " / ", total_moles_appeared)
 	
 	# Create and spawn score label animation
-	var score_label = preload("res://scenes/wack-a-mole/score_label.tscn").instantiate()
+	var score_label = preload("res://scene/games/wack-a-mole/score_label.tscn").instantiate()
 	score_label.global_position = hit_pos
 	score_label.display_score(score_gained)
 	add_child(score_label)
@@ -174,7 +174,7 @@ func _on_coin_hit() -> void:
 	
 	# Create and spawn score label animation at coin position
 	if current_coin:
-		var score_label = preload("res://scenes/wack-a-mole/score_label.tscn").instantiate()
+		var score_label = preload("res://scene/games/wack-a-mole/score_label.tscn").instantiate()
 		score_label.global_position = current_coin.global_position
 		score_label.display_score(150)
 		add_child(score_label)
@@ -231,7 +231,7 @@ func _end_level() -> void:
 	print("Level passed: ", level_passed, " | Stars: ", stars_earned)
 	
 	# Show the level complete screen
-	var mole_level_complete_scene = preload("res://scenes/wack-a-mole/mole_level_complete.tscn").instantiate()
+	var mole_level_complete_scene = preload("res://scene/games/wack-a-mole/mole_level_complete.tscn").instantiate()
 	get_tree().root.add_child(mole_level_complete_scene)
 	
 	# Call show_level_complete with the stats including pass/fail status

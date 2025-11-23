@@ -10,14 +10,20 @@ var current_target_instance = null
 
 # Preload the scenes for bootcamp targets
 @onready var bullseye_scene: PackedScene = preload("res://scene/targets/bullseye.tscn")	
+
 @onready var ipsc_mini_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
 @onready var ipsc_mini_black_1_scene: PackedScene = preload("res://scene/ipsc_mini_black_1.tscn")
 @onready var ipsc_mini_black_2_scene: PackedScene = preload("res://scene/ipsc_mini_black_2.tscn")
-@onready var ipda_scene: PackedScene = preload("res://scene/idpa.tscn")
-@onready var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
-@onready var two_poppers_scene: PackedScene = preload("res://scene/2poppers_simple.tscn")
-@onready var three_paddles_scene: PackedScene = preload("res://scene/3paddles_simple.tscn")
+@onready var hostage_scene: PackedScene = preload("res://scene/targets/hostage.tscn")
+@onready var two_poppers_scene: PackedScene = preload("res://scene/targets/2poppers_simple.tscn")
+@onready var three_paddles_scene: PackedScene = preload("res://scene/targets/3paddles_simple.tscn")
 @onready var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
+
+@onready var ipda_scene: PackedScene = preload("res://scene/targets/idpa.tscn")
+@onready var ipda_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
+@onready var ipda_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
+@onready var ipda_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
+@onready var ipda_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
 
 @onready var canvas_layer = $CanvasLayer
 @onready var canvas_layer_stats = $CanvasLayerStats

@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://bhnpxiwmuviv6"]
+[gd_scene load_steps=4 format=3 uid="uid://bcfxuxp4tc752"]
 
 [ext_resource type="Script" uid="uid://cgok855xc8c5n" path="res://script/games/settings.gd" id="1_cjs7k"]
 [ext_resource type="FontFile" uid="uid://d2eub6rd80tjp" path="res://asset/games/soupofjustice.ttf" id="1_lk1hp"]

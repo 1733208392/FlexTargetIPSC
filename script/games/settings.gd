@@ -6,33 +6,32 @@ var current_focus_index = 0
 func _ready():
 	print("[Settings] _ready called")
 	
-	# Load translations if not already loaded
-	var translations = ["zh.po", "ja.po", "zh_TW.po"]
-	for trans_file in translations:
-		if not TranslationServer.get_loaded_locales().has(trans_file.get_basename()):
-			var translation = load("res://translations/" + trans_file)
-			if translation:
-				TranslationServer.add_translation(translation)
-				print("[Settings] Translation loaded: ", trans_file)
-			else:
-				print("[Settings] Failed to load translation: ", trans_file)
+	# Load language setting from GlobalData (like option.gd does)
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("language"):
+		var language = global_data.settings_dict.get("language", "English")
+		set_locale_from_language(language)
+		print("[Settings] Loaded language from GlobalData: ", language)
+	else:
+		print("[Settings] GlobalData not found or no language setting, using default English")
+		set_locale_from_language("English")
 	
 	# Set translatable texts
-	$VBoxContainer/DifficultyLabel.text = tr("Difficulty Level")
-	$VBoxContainer/DurationLabel.text = tr("Duration")
-	$StartButton.text = tr("Start")
+	$VBoxContainer/DifficultyLabel.text = tr("difficulty_level")
+	$VBoxContainer/DurationLabel.text = tr("duration")
+	$StartButton.text = tr("start")
 	
 	# Set option button items
 	$VBoxContainer/DifficultyOption.clear()
-	$VBoxContainer/DifficultyOption.add_item(tr("Low"))
-	$VBoxContainer/DifficultyOption.add_item(tr("Medium"))
-	$VBoxContainer/DifficultyOption.add_item(tr("High"))
+	$VBoxContainer/DifficultyOption.add_item(tr("low"))
+	$VBoxContainer/DifficultyOption.add_item(tr("medium"))
+	$VBoxContainer/DifficultyOption.add_item(tr("high"))
 	
 	$VBoxContainer/DurationOption.clear()
-	$VBoxContainer/DurationOption.add_item(tr("20s"))
-	$VBoxContainer/DurationOption.add_item(tr("30s"))
-	$VBoxContainer/DurationOption.add_item(tr("60s"))
-	$VBoxContainer/DurationOption.add_item(tr("90s"))
+	$VBoxContainer/DurationOption.add_item(tr("20_seconds"))
+	$VBoxContainer/DurationOption.add_item(tr("30_seconds"))
+	$VBoxContainer/DurationOption.add_item(tr("60_seconds"))
+	$VBoxContainer/DurationOption.add_item(tr("90_seconds"))
 	
 	controls = [$VBoxContainer/DifficultyOption, $VBoxContainer/DurationOption, $StartButton]
 	print("[Settings] Controls: ", controls)
@@ -43,14 +42,27 @@ func _ready():
 	$StartButton.pressed.connect(_on_start_pressed)
 	
 	# Connect to remote control for controller support
-	var remote_control = get_node_or_null("/root/RemoteControl")
+	var remote_control = get_node_or_null("/root/MenuController")
 	if remote_control:
 		remote_control.navigate.connect(_on_remote_navigate)
 		remote_control.enter_pressed.connect(_on_remote_enter)
 		remote_control.back_pressed.connect(_on_remote_back_pressed)
-		print("[Settings] Connected to RemoteControl signals")
+		print("[Settings] Connected to MenuController signals")
 	else:
-		print("[Settings] RemoteControl autoload not found!")
+		print("[Settings] MenuController autoload not found!")
+
+func set_locale_from_language(language: String):
+	var locale = ""
+	match language:
+		"English":
+			locale = "en"
+		"Chinese":
+			locale = "zh_CN"
+		"Traditional Chinese":
+			locale = "zh_TW"
+		"Japanese":
+			locale = "ja"
+	TranslationServer.set_locale(locale)
 
 func _on_remote_navigate(direction: String):
 	"""Handle navigation from remote control"""
@@ -111,7 +123,15 @@ func _on_start_pressed():
 	print("[Settings] Randomly chose monkey_start_side: ", start_side)
 	
 	# Emit settings signal
-	get_parent().settings_applied.emit(start_side, growth_speed, duration)
+	if has_node("/root/SignalBus"):
+		var signal_bus = get_node("/root/SignalBus")
+		if signal_bus.has_signal("settings_applied"):
+			signal_bus.settings_applied.emit(start_side, growth_speed, duration)
+			print("[Settings] Emitted settings_applied on SignalBus")
+		else:
+			print("[Settings] settings_applied signal not found on SignalBus")
+	else:
+		print("[Settings] SignalBus not found, cannot emit settings_applied")
 	
 	visible = false
 	get_parent().start_countdown()

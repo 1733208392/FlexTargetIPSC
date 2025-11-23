@@ -5,6 +5,8 @@ const DEBUG_DISABLED = true  # Set to true to disable debug prints for productio
 signal wifi_connected(ssid: String)
 signal network_started()
 signal onboard_debug_info(priority: int, content: String, sender: String)
+signal monkey_landed()
+signal settings_applied(start_side: String, growth_speed: float, duration: float)
 
 func emit_wifi_connected(ssid: String) -> void:
 	wifi_connected.emit(ssid)

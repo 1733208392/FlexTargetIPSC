@@ -37,6 +37,15 @@ options,Options,选项,オプション,選項
 prev,Prev,上页,上页,上頁
 next,Next,下页,ページ,下頁
 start,Start,启动,启アニメーション,啟動
+difficulty_level,Difficulty Level,难度等级,難易度レベル,難度等級
+duration,Duration,时长,期間,時長
+low,Low,低,低,低
+medium,Medium,中,中,中
+high,High,高,高,高
+20_seconds,20s,20秒,20秒,20秒
+30_seconds,30s,30秒,30秒,30秒
+60_seconds,60s,60秒,60秒,60秒
+90_seconds,90s,90秒,90秒,90秒
 loading,Loading,加载中,ロード中,載入中
 rules,IPSC Rules,IPSC训练规则,IPSC接続,IPSC訓練規則
 target,Target,标靶,标靶,標靶
