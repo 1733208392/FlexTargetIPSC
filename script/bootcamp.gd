@@ -4,7 +4,7 @@ extends Node2D
 const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-var target_sequence: Array[String] = ["bullseye", "ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "ipda"]
+var target_sequence: Array[String] = ["bullseye", "ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "ipda", "ipda_ns", "ipda_rotate", "ipda_hard_cover_1", "ipda_hard_cover_2", "mozambique"]
 var current_target_index: int = 0
 var current_target_instance = null
 
@@ -24,6 +24,8 @@ var current_target_instance = null
 @onready var ipda_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
 @onready var ipda_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
 @onready var ipda_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
+
+@onready var mozambique_scene: PackedScene = preload("res://scene/targets/mozambique.tscn")
 
 @onready var canvas_layer = $CanvasLayer
 @onready var canvas_layer_stats = $CanvasLayerStats
@@ -565,12 +567,53 @@ func spawn_target_by_type(target_type: String):
 				canvas_layer_stats.visible = true  # Show stats for IPDA
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Shown CanvasLayers and stats for IPDA target")
+		elif target_type == "ipda_ns":
+			canvas_layer.visible = true  # Show shot intervals for IPDA NS
+			if canvas_layer_stats:
+				canvas_layer_stats.visible = true  # Show stats for IPDA NS
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Shown CanvasLayers and stats for IPDA NS target")
+		elif target_type == "ipda_rotate":
+			canvas_layer.visible = false  # Hide shot intervals for IPDA rotation targets
+			if canvas_layer_stats:
+				canvas_layer_stats.visible = true  # Show stats for IPDA rotation targets
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Hidden shot intervals but kept stats visible for IPDA rotation target")
+		elif target_type == "ipda_hard_cover_1":
+			canvas_layer.visible = true  # Show shot intervals for IPDA hard cover 1
+			if canvas_layer_stats:
+				canvas_layer_stats.visible = true  # Show stats for IPDA hard cover 1
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Shown CanvasLayers and stats for IPDA hard cover 1 target")
+		elif target_type == "ipda_hard_cover_2":
+			canvas_layer.visible = true  # Show shot intervals for IPDA hard cover 2
+			if canvas_layer_stats:
+				canvas_layer_stats.visible = true  # Show stats for IPDA hard cover 2
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Shown CanvasLayers and stats for IPDA hard cover 2 target")
+		elif target_type == "mozambique":
+			canvas_layer.visible = false  # Hide shot intervals for mozambique
+			if canvas_layer_stats:
+				canvas_layer_stats.visible = false  # Hide stats for mozambique (it has its own overlay)
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Hidden CanvasLayers for mozambique (uses its own drill logic)")
 		else:
 			canvas_layer.visible = true  # Show shot intervals for other targets
 			if canvas_layer_stats:
 				canvas_layer_stats.visible = false  # Hide stats for other targets
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Shown shot intervals but hidden stats for non-IPSC target:", target_type)
+	
+	# Hide/show clear area based on target type
+	if clear_area:
+		if target_type == "mozambique":
+			clear_area.visible = false  # Hide clear area for mozambique
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Hidden clear area for mozambique")
+		else:
+			clear_area.visible = true  # Restore clear area for other targets
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Restored clear area for target: ", target_type)
 	
 	# Update statistics display
 	update_statistics_display()
@@ -589,6 +632,14 @@ func spawn_target_by_type(target_type: String):
 			target_scene = ipsc_mini_black_2_scene
 		"ipda":
 			target_scene = ipda_scene
+		"ipda_ns":
+			target_scene = ipda_ns_scene
+		"ipda_rotate":
+			target_scene = ipda_rotate_scene
+		"ipda_hard_cover_1":
+			target_scene = ipda_hard_cover_1_scene
+		"ipda_hard_cover_2":
+			target_scene = ipda_hard_cover_2_scene
 		"hostage":
 			target_scene = hostage_scene
 		"2poppers":
@@ -597,6 +648,8 @@ func spawn_target_by_type(target_type: String):
 			target_scene = three_paddles_scene
 		"ipsc_mini_rotate":
 			target_scene = ipsc_mini_rotate_scene
+		"mozambique":
+			target_scene = mozambique_scene
 		_:
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Unknown target type: ", target_type)

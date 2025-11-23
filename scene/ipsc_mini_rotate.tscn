@@ -101,6 +101,8 @@ collision_layer = 8
 collision_mask = 0
 
 [node name="Sprite2D" type="Sprite2D" parent="BarrelWall"]
+position = Vector2(7.1525574e-06, 0)
+scale = Vector2(1.0190476, 1)
 texture = ExtResource("2_fco47")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BarrelWall"]

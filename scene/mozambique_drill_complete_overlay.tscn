@@ -47,21 +47,28 @@ vertical_alignment = 1
 
 [node name="DurationLabel" type="Label" parent="VBoxContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "N/A"
+text = "--"
 label_settings = ExtResource("6_o7stp")
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="FirstShotLabel" type="Label" parent="VBoxContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "N/A"
+text = "--"
 label_settings = ExtResource("6_o7stp")
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="FastestShotLabel" type="Label" parent="VBoxContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "N/A"
+text = "--"
 label_settings = ExtResource("6_o7stp")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CountdownLabel" type="Label" parent="VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "--"
+label_settings = ExtResource("5_jwbrr")
 horizontal_alignment = 1
 vertical_alignment = 1

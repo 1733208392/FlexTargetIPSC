@@ -337,8 +337,19 @@ func get_bullet_hole_from_pool() -> Node:
 	"""Get a bullet hole from the pool or create new if pool is empty"""
 	if bullet_hole_pool.size() > 0:
 		var hole = bullet_hole_pool.pop_back()
-		active_bullet_holes.append(hole)
-		return hole
+		# Check if the hole is still valid before using it
+		if is_instance_valid(hole):
+			active_bullet_holes.append(hole)
+			return hole
+		else:
+			# Hole was freed, create a new one
+			if DEBUG_DISABLED:
+				print("[ipsc_mini_black_2] Hole from pool was freed, creating new bullet hole")
+			var bullet_hole = BulletHoleScene.instantiate()
+			add_child(bullet_hole)
+			bullet_hole.z_index = 0
+			active_bullet_holes.append(bullet_hole)
+			return bullet_hole
 	else:
 		# Pool exhausted, create new hole
 		if DEBUG_DISABLED:
@@ -466,7 +477,7 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
 	
 	# Load the effect scenes directly
-	var bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
+	var _bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
 	var bullet_impact_scene = preload("res://scene/bullet_impact.tscn")
 	
 	# Find the scene root for effects

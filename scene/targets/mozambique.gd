@@ -60,6 +60,7 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
+		ws_listener.set_bullet_spawning_enabled(true)
 		if not DEBUG_DISABLED:
 			print("[Mozambique] Connected to WebSocketListener bullet_hit signal")
 	else:
@@ -89,11 +90,8 @@ func _on_input_event(_viewport, event, _shape_idx):
 		
 		var world_pos = event.global_position
 		
-		# Process the hit
+		# Process the hit (this will spawn bullet and play sound)
 		handle_websocket_bullet_hit_fast(world_pos)
-		
-		# Spawn bullet visual feedback
-		spawn_bullet_at_position(world_pos)
 
 func spawn_bullet_at_position(pos: Vector2):
 	"""Spawn a bullet at the specified world position"""
@@ -128,17 +126,12 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	var is_head_hit = _is_point_in_head(local_pos)
 	var is_torso_hit = _is_point_in_torso(local_pos)
 	
-	if not is_head_hit and not is_torso_hit:
-		if not DEBUG_DISABLED:
-			print("[Mozambique] Shot outside head/torso areas - ignored")
-		return
-	
-	# Record shot time
+	# Record shot time (for all shots, including invalid ones)
 	var shot_time = Time.get_ticks_msec() / 1000.0
 	shot_times.append(shot_time)
 	
 	# Set first shot time on first hit
-	if shots_in_torso + shots_in_head == 1:
+	if shots_in_torso + shots_in_head + 1 == 1:  # This will be true on first shot
 		first_shot_time = shot_time
 	
 	# Calculate interval from last shot
@@ -147,7 +140,7 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 		if interval < fastest_shot_interval:
 			fastest_shot_interval = interval
 	
-	# Track shots by area
+	# Track shots by area and check drill completion
 	if is_torso_hit:
 		shots_in_torso += 1
 		if not DEBUG_DISABLED:
@@ -160,10 +153,21 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 			print("[Mozambique] Head hit! Count: ", shots_in_head)
 		_spawn_bullet_hole(local_pos)
 		target_hit.emit("head", 1, world_pos)
+	else:
+		# Shot outside head/torso areas - still spawn effects but mark as failure
+		if not DEBUG_DISABLED:
+			print("[Mozambique] Shot outside head/torso areas - FAILURE")
 	
 	_play_shot_sound()
 	
-	# Check if drill is complete
+	# Spawn bullet visual feedback regardless of hit location
+	spawn_bullet_at_position(world_pos)
+	
+	# Hide shot timer on first shot
+	if shot_timer_scene and shot_timer_scene.visible:
+		shot_timer_scene.visible = false
+	
+	# Check if drill is complete or failed
 	_check_drill_completion()
 
 func _is_point_in_head(point: Vector2) -> bool:
@@ -209,7 +213,7 @@ func _spawn_bullet_hole(local_position: Vector2):
 	if bullet_hole and bullet_hole.has_method("set_hole_position"):
 		bullet_hole.set_hole_position(local_position)
 		bullet_hole.visible = true
-		bullet_hole.z_index = 0
+		bullet_hole.z_index = 1
 		
 		if bullet_hole not in active_bullet_holes:
 			active_bullet_holes.append(bullet_hole)
@@ -227,22 +231,49 @@ func _get_bullet_hole_from_pool() -> Node:
 			print("[Mozambique] Pool exhausted, creating new bullet hole")
 		var bullet_hole = BulletHoleScene.instantiate()
 		add_child(bullet_hole)
-		bullet_hole.z_index = 0
+		bullet_hole.z_index = 1
 		return bullet_hole
 
 func _check_drill_completion():
 	"""Check if drill is complete and display results"""
 	var drill_complete = false
 	var success = false
+	var total_shots = shots_in_torso + shots_in_head
 	
-	# Success: 2 torso + 1 head
-	if shots_in_torso >= 2 and shots_in_head >= 1:
-		drill_complete = true
-		success = true
-	# Failure: any other combination with 3 or more shots
-	elif shots_in_torso + shots_in_head >= 3:
+	# Check for shots outside valid areas (head or torso)
+	if shot_times.size() > total_shots:
+		# A shot was fired outside head/torso - FAILURE
 		drill_complete = true
 		success = false
+	# Mozambique pattern validation: check each shot immediately
+	elif total_shots == 1:
+		# First shot must be in torso
+		if shots_in_torso == 1:
+			# Valid so far, waiting for 2nd shot
+			pass
+		else:
+			# First shot not in torso - FAILURE
+			drill_complete = true
+			success = false
+	elif total_shots == 2:
+		# Second shot must also be in torso
+		if shots_in_torso == 2:
+			# Valid so far, waiting for 3rd shot
+			pass
+		else:
+			# Second shot not in torso - FAILURE
+			drill_complete = true
+			success = false
+	elif total_shots == 3:
+		# Third shot must be in head
+		if shots_in_head == 1 and shots_in_torso == 2:
+			# Perfect sequence - SUCCESS
+			drill_complete = true
+			success = true
+		else:
+			# Third shot not in head or wrong pattern - FAILURE
+			drill_complete = true
+			success = false
 	
 	if drill_complete:
 		_finish_drill(success)
@@ -290,27 +321,32 @@ func _show_stats_overlay():
 		var fastest_shot_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/FastestShotLabel")
 		
 		if result_label:
-			result_label.text = "SUCCESS"
+			result_label.text = tr("SUCCESS")
 		
 		if duration_label:
-			duration_label.text = "Duration: %.2f s" % drill_duration
+			duration_label.text = tr("Duration") + ": %.2f s" % drill_duration
 		
 		if first_shot_label:
 			var first_shot_delay = first_shot_time - drill_start_time
-			first_shot_label.text = "First Shot: %.2f s" % first_shot_delay
+			first_shot_label.text = tr("First Shot") + ": %.2f s" % first_shot_delay
 		
 		if fastest_shot_label:
 			if fastest_shot_interval < 999.0:
-				fastest_shot_label.text = "Fastest Shot: %.2f s" % fastest_shot_interval
+				fastest_shot_label.text = tr("Fastest Shot") + ": %.2f s" % fastest_shot_interval
 			else:
-				fastest_shot_label.text = "Fastest Shot: N/A"
+				fastest_shot_label.text = tr("Fastest Shot") + ": N/A"
 	else:
 		# Show failure - no detailed stats
 		var result_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/ResultLabel")
 		if result_label:
-			result_label.text = "FAILURE"
+			result_label.text = tr("FAILURE")
 	
+	# Set overlay z_index to render on top of bullet holes
+	drill_complete_overlay.z_index = 2
 	drill_complete_overlay.visible = true
+	
+	# Start countdown display
+	_start_countdown_display()
 
 func _restart_drill():
 	"""Restart the drill"""
@@ -331,8 +367,28 @@ func _restart_drill():
 	# Reset bullet holes
 	_reset_bullet_hole_pool()
 	
+	# Enable bullet spawning for the new drill
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.set_bullet_spawning_enabled(true)
+		if not DEBUG_DISABLED:
+			print("[Mozambique] Bullet spawning enabled for restart")
+	
 	# Start shot timer
 	_start_shot_timer()
+
+func _start_countdown_display():
+	"""Start displaying countdown on overlay"""
+	var countdown_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/CountdownLabel")
+	if not countdown_label:
+		if not DEBUG_DISABLED:
+			print("[Mozambique] CountdownLabel not found in overlay")
+		return
+	
+	# Display countdown from 8 to 0
+	for i in range(8, -1, -1):
+		countdown_label.text = "(" + str(i) + ")"
+		await get_tree().create_timer(1.0).timeout
 
 func _start_shot_timer():
 	"""Start the shot timer using the existing ShotTimer scene child node"""
@@ -375,12 +431,7 @@ func _on_shot_timer_ready(delay: float):
 	if not DEBUG_DISABLED:
 		print("[Mozambique] Shot timer ready! Delay: %.2f seconds" % delay)
 	
-	# Hide the shot timer after beep
-	await get_tree().create_timer(1.0).timeout
-	if shot_timer_scene:
-		shot_timer_scene.visible = false
-	
-	# Activate drill
+	# Activate drill (shot timer will be hidden when first shot is detected)
 	drill_in_progress = true
 	drill_active = true
 	drill_start_time = Time.get_ticks_msec() / 1000.0
@@ -434,7 +485,7 @@ func initialize_bullet_hole_pool():
 		var bullet_hole = BulletHoleScene.instantiate()
 		add_child(bullet_hole)
 		bullet_hole.visible = false
-		bullet_hole.z_index = 0
+		bullet_hole.z_index = 1
 		bullet_hole_pool.append(bullet_hole)
 	
 	if not DEBUG_DISABLED:
