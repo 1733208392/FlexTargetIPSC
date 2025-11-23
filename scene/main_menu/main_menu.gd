@@ -248,7 +248,7 @@ func _on_bootcamp_response(result, response_code, _headers, body):
 func _on_games_pressed():
 	# Load the games scene
 	if is_inside_tree():
-		get_tree().change_scene_to_file("res://scene/games/game.tscn")
+		get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
 	else:
 		if not DEBUG_DISABLED:
 			print("[Menu] Warning: Node not in tree, cannot change scene")

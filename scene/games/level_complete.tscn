@@ -5,10 +5,10 @@
 [ext_resource type="Texture2D" uid="uid://dkihqlectndyi" path="res://asset/games/level-accomplised.png" id="1_rovvh"]
 [ext_resource type="Texture2D" uid="uid://xl4mfebm2k2w" path="res://asset/games/coin.png" id="2_6xvfp"]
 [ext_resource type="FontFile" uid="uid://d2eub6rd80tjp" path="res://asset/games/soupofjustice.ttf" id="3_4n79r"]
-[ext_resource type="PackedScene" uid="uid://djaooqy653j1t" path="res://scenes/back_button.tscn" id="5_r8ohr"]
-[ext_resource type="PackedScene" uid="uid://ccokjfuh6mp6x" path="res://scenes/next_button.tscn" id="6_1r4r6"]
-[ext_resource type="PackedScene" uid="uid://benwj6w5un0vk" path="res://scenes/coin_particles.tscn" id="7_1r4r6"]
-[ext_resource type="AudioStream" uid="uid://du5manoclpv67" path="res://audio/victory-chime.mp3" id="8_jv7kj"]
+[ext_resource type="PackedScene" path="res://scene/games/back_button.tscn" id="5_r8ohr"]
+[ext_resource type="PackedScene" path="res://scene/games/next_button.tscn" id="6_1r4r6"]
+[ext_resource type="PackedScene" path="res://scene/games/coin_particles.tscn" id="7_1r4r6"]
+[ext_resource type="AudioStream" uid="uid://dxpul16876qad" path="res://audio/victory-chime.mp3" id="8_jv7kj"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel_bg"]
 draw_center = false

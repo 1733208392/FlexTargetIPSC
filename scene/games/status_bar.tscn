@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://br3ifum8qg6xw"]
+[gd_scene load_steps=5 format=3 uid="uid://bvtdvj3rleh6v"]
 
 [ext_resource type="Texture2D" uid="uid://xl4mfebm2k2w" path="res://asset/games/coin.png" id="1_coin"]
 [ext_resource type="FontFile" uid="uid://d2eub6rd80tjp" path="res://asset/games/soupofjustice.ttf" id="2_font"]
@@ -8,7 +8,7 @@
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_green"]
 bg_color = Color(1, 0.41568628, 0, 1)
 
-[node name="StatusBar" type="CanvasLayer"]
+[node name="GameStatusBar" type="CanvasLayer"]
 
 [node name="TopBar" type="Panel" parent="."]
 custom_minimum_size = Vector2(720, 64)

@@ -67,11 +67,35 @@ func _explode():
 	# Play explosion sound
 	$AudioStreamPlayer2D.play()
 	
+	# Destroy all floating fruits when bomb explodes
+	_destroy_all_floating_fruits()
+	
 	print("Bomb exploded!")
 	
 	# Queue free after a short delay to let particles finish
 	await get_tree().create_timer(0.5).timeout
 	queue_free()
+
+func _destroy_all_floating_fruits():
+	"""Destroy all floating fruits in the scene when bomb explodes"""
+	var game = get_tree().current_scene
+	if not game:
+		print("ERROR: Could not get game scene reference")
+		return
+	
+	var fruits_destroyed = 0
+	
+	# Find all floating fruits (not in truck)
+	for child in game.get_children():
+		if child.get("is_fruit") == true:
+			if child is RigidBody2D:
+				# Only destroy if not a child of truck (floating fruits only)
+				if child.get_parent() == game:
+					print("Destroying floating fruit: ", child.name)
+					child.queue_free()
+					fruits_destroyed += 1
+	
+	print("Bomb explosion destroyed ", fruits_destroyed, " floating fruits")
 
 func _on_bullet_hit(hit_position: Vector2):
 	"""Check if bomb was hit by bullet"""

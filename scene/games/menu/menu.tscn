@@ -31,6 +31,7 @@ position = Vector2(360, 640)
 texture = ExtResource("2_3y2rt")
 
 [node name="Menu-title" type="Sprite2D" parent="Panel"]
+visible = false
 position = Vector2(363, 224)
 scale = Vector2(0.60795456, 0.60795456)
 texture = ExtResource("2_e0arn")
@@ -43,9 +44,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -279.5
-offset_top = -321.0
+offset_top = -446.0
 offset_right = 279.5
-offset_bottom = 321.0
+offset_bottom = 196.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
@@ -65,7 +66,7 @@ texture_focused = ExtResource("7_t0a87")
 layout_mode = 2
 theme_override_fonts/font = ExtResource("6_t0a87")
 theme_override_font_sizes/font_size = 40
-text = "FruitCatcher"
+text = "FruitNinja"
 horizontal_alignment = 1
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="Panel/VBoxContainer2"]
@@ -119,34 +120,6 @@ offset_right = 128.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/separation = 24
-
-[node name="LanguageContainer" type="HBoxContainer" parent="Panel/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="EnglishButton" type="Button" parent="Panel/VBoxContainer/LanguageContainer"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("6_t0a87")
-theme_override_font_sizes/font_size = 24
-text = "EN"
-
-[node name="ChineseButton" type="Button" parent="Panel/VBoxContainer/LanguageContainer"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("6_t0a87")
-theme_override_font_sizes/font_size = 24
-text = "中文"
-
-[node name="TraditionalButton" type="Button" parent="Panel/VBoxContainer/LanguageContainer"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("6_t0a87")
-theme_override_font_sizes/font_size = 24
-text = "繁中"
-
-[node name="JapaneseButton" type="Button" parent="Panel/VBoxContainer/LanguageContainer"]
-layout_mode = 2
-theme_override_fonts/font = ExtResource("6_t0a87")
-theme_override_font_sizes/font_size = 24
-text = "日本語"
 
 [node name="Label" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2

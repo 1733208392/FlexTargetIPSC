@@ -2,8 +2,8 @@
 
 [ext_resource type="Texture2D" uid="uid://bphhxo788pt8" path="res://asset/games/bomb.png" id="1_4kkau"]
 [ext_resource type="Script" uid="uid://c5jvq6q58px31" path="res://script/games/bomb.gd" id="2_bomb"]
-[ext_resource type="PackedScene" uid="uid://cl6ofyr5e1fyo" path="res://scenes/smoke.tscn" id="3_j15uc"]
-[ext_resource type="AudioStream" uid="uid://bj5a1to066jv6" path="res://audio/car-crash-sound-effect.mp3" id="4_84slv"]
+[ext_resource type="PackedScene" path="res://scene/games/smoke.tscn" id="3_j15uc"]
+[ext_resource type="AudioStream" uid="uid://bs8tkd0dt7qff" path="res://audio/car-crash-sound-effect.mp3" id="4_84slv"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_4kkau"]
 radius = 55.0

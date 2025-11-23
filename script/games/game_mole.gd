@@ -8,7 +8,7 @@ var score: int = 0
 var level_start_score: int = 0  # Track score at the start of each level
 var coins_collected: int = 0  # Track coins collected in current level
 var top_bar: Node = null
-var coin_scene = preload("res://scenes/wack-a-mole/coin-animate-hole.tscn")
+var coin_scene = preload("res://scene/games/wack-a-mole/coin-animate-hole.tscn")
 var current_coin: Node = null
 var coin_timer: Timer = null
 
