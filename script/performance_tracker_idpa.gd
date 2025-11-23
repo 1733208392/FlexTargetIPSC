@@ -1,7 +1,7 @@
 extends Node
 
 # Performance optimization
-const DEBUG_DISABLED = true  # Set to true for verbose debugging
+const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Scoring rules are now loaded dynamically from settings_dict.target_rule
 
@@ -87,9 +87,9 @@ func _on_drills_finished():
 	
 	var drill_summary = {
 		"total_elapsed_time": total_elapsed_time,
-		"fastest_shot_interval": fastest_value,
+		"fastest_shot_interval": snappedf(fastest_value, 0.01) if fastest_value != null else 0.0,
 		"total_shots": records.size(),
-		"timestamp": Time.get_unix_time_from_system()
+		"timestamp": snappedf(Time.get_unix_time_from_system(), 0.01)
 	}
 	
 	# Create the final data structure
@@ -237,16 +237,16 @@ func _save_leaderboard_index(drill_index: int):
 	# Create leaderboard entry with IDPA format
 	var leaderboard_entry = {
 		"index": int(drill_index),  # Ensure index is always an integer
-		"down_points": int(total_score),  # Down points
+		"down_points": abs(int(total_score)),  # Down points (positive count of penalties)
 		"raw_time": round(total_time * 10) / 10.0,  # Raw time, round to 1 decimal place
-		"final_score": round((total_time + total_score) * 10) / 10.0,  # Final Score = raw time + down_points
+		"final_score": round((total_time + total_score) * 10) / 10.0,  # Final Score = raw time + penalties
 		"fastest_shot": round(fastest_shot_time * 100) / 100.0  # Round to 2 decimal places
 	}
 	
 	if not DEBUG_DISABLED:
 		print("[PerformanceTrackerIDPA] Creating leaderboard index entry: ", leaderboard_entry)
 	
-	# Try to load existing leader_board_index.json or create new one if it doesn't exist
+	# Try to load existing idpa_leader_board_index.json or create new one if it doesn't exist
 	http_service.load_game(func(result, response_code, headers, body): _on_index_file_loaded(leaderboard_entry, result, response_code, headers, body), "idpa_leader_board_index")
 
 func _on_index_file_loaded(new_entry: Dictionary, _result, response_code, _headers, body):
@@ -256,7 +256,7 @@ func _on_index_file_loaded(new_entry: Dictionary, _result, response_code, _heade
 	
 	var index_data = []
 	
-	# If leader_board_index.json exists, load existing data for appending
+	# If idpa_leader_board_index.json exists, load existing data for appending
 	if response_code == 200:
 		var body_str = body.get_string_from_utf8()
 		var json = JSON.new()
@@ -268,7 +268,7 @@ func _on_index_file_loaded(new_entry: Dictionary, _result, response_code, _heade
 				if typeof(response_data["data"]) == TYPE_DICTIONARY and response_data["data"].is_empty():
 					# File doesn't exist - create new one
 					if not DEBUG_DISABLED:
-						print("[PerformanceTrackerIDPA] leader_board_index.json doesn't exist, creating new file")
+						print("[PerformanceTrackerIDPA] idpa_leader_board_index.json doesn't exist, creating new file")
 				elif typeof(response_data["data"]) == TYPE_ARRAY:
 					index_data = response_data["data"]
 					# Normalize existing data to ensure correct types
@@ -287,8 +287,8 @@ func _on_index_file_loaded(new_entry: Dictionary, _result, response_code, _heade
 						else:
 							# Add fastest_shot field if missing (for backward compatibility)
 							entry["fastest_shot"] = 0.0
-					if not DEBUG_DISABLED:
-						print("[PerformanceTrackerIDPA] Loaded existing leader_board_index.json with ", index_data.size(), " entries")
+						if not DEBUG_DISABLED:
+							print("[PerformanceTrackerIDPA] Loaded existing idpa_leader_board_index.json with ", index_data.size(), " entries")
 				else:
 					# Assume it's a JSON string
 					var index_json = JSON.new()
@@ -312,7 +312,7 @@ func _on_index_file_loaded(new_entry: Dictionary, _result, response_code, _heade
 								# Add fastest_shot field if missing (for backward compatibility)
 								entry["fastest_shot"] = 0.0
 						if not DEBUG_DISABLED:
-							print("[PerformanceTrackerIDPA] Loaded and normalized existing leader_board_index.json with ", index_data.size(), " entries")
+							print("[PerformanceTrackerIDPA] Loaded and normalized existing idpa_leader_board_index.json with ", index_data.size(), " entries")
 	else:
 		# Unexpected response code - create new file
 		if not DEBUG_DISABLED:
@@ -337,14 +337,14 @@ func _on_index_file_loaded(new_entry: Dictionary, _result, response_code, _heade
 	# Sort index data by final_score in ascending order (lower score is better)
 	index_data.sort_custom(func(a, b): return a.get("final_score", 0.0) < b.get("final_score", 0.0))
 	
-	# Save updated leader_board_index.json
+	# Save updated idpa_leader_board_index.json
 	var leaderboard_json = JSON.stringify(index_data)
 	http_service.save_game(_on_index_file_saved, "idpa_leader_board_index", leaderboard_json)
 
 func _on_index_file_saved(_result, response_code, _headers, _body):
-	if response_code == 200:
-		if not DEBUG_DISABLED:
-			print("[PerformanceTrackerIDPA] leader_board_index.json saved successfully")
-	else:
-		if not DEBUG_DISABLED:
-			print("[PerformanceTrackerIDPA] Failed to save leader_board_index.json - Response code: ", response_code)
+		if response_code == 200:
+			if not DEBUG_DISABLED:
+				print("[PerformanceTrackerIDPA] idpa_leader_board_index.json saved successfully")
+		else:
+			if not DEBUG_DISABLED:
+				print("[PerformanceTrackerIDPA] Failed to save idpa_leader_board_index.json - Response code: ", response_code)

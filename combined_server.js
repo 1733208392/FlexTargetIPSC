@@ -142,7 +142,7 @@ const httpServer = http.createServer((req, res) => {
           if (err) {
             console.error('Error loading file:', err);
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ code: 0, data: "{}", msg: "OK" }));
+            res.end(JSON.stringify({ code: 0, data: {}, msg: "OK" }));
           } else {
             console.log(`[HttpServer] Successfully loaded: ${fileName}`);
             console.log(`[HttpServer] Loaded content: ${content}`);

@@ -27,6 +27,8 @@ network,Netlink Drill,多靶训练,マルチターゲットドリル,多靶訓�
 drills,My Drills,我的练习,カスタムドリル,客製訓練
 boot_camp,Boot Camp,自由射击,フリーシュート,自由射擊
 leaderboard,Leaderboard,排行榜,リーダーボード,排行榜
+ipsc_leaderboard,Leaderboard(IPSC),排行榜(IPSC),リーダーボード(IPSC),排行榜(IPSC)
+idpa_leaderboard,Leaderboard(IDPA),排行榜(IDPA),リーダーボード(IDPA),排行榜(IDPA)
 games,Casual Games,休闲游戏,カジュアルゲーム,休閒遊戲
 options,Options,选项,オプション,選項
 prev,Prev,上页,上页,上頁

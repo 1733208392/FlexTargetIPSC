@@ -180,9 +180,14 @@ func on_stage_pressed():
 					"variant": "IDPA"
 				},
 				{
-					"text": "leaderboard",
+					"text": "ipsc_leaderboard",
 					"action": "load_scene",
 					"scene": "res://scene/history.tscn",
+				},
+				{
+					"text": "idpa_leaderboard",
+					"action": "load_scene",
+					"scene": "res://scene/history_idpa.tscn",
 				}
 			]
 		}
