@@ -1,7 +1,8 @@
 extends Control
 
 # Performance optimization
-const DEBUG_DISABLED = true  # Set to false for production release
+# NOTE: temporarily enable debug prints to diagnose overlay visibility issues
+const DEBUG_DISABLED = false  # Set to true to silence verbose debugging
 
 # Bullet system
 @export var bullet_scene: PackedScene = preload("res://scene/bullet.tscn")

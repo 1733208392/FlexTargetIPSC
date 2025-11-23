@@ -56,7 +56,7 @@ func _ready():
 		# Create unique animation with correct starting position
 		create_relative_animation()
 	
-		# Connect to WebSocket bullet hit signal
+	# Connect to WebSocket bullet hit signal
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)

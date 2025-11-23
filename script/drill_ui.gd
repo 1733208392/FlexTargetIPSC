@@ -1,7 +1,8 @@
 extends Control
 
 # Performance optimization
-const DEBUG_DISABLED = true  # Set to true for verbose debugging
+# NOTE: temporarily enable debug prints to diagnose overlay visibility issues
+const DEBUG_DISABLED = true  # Set to true to silence verbose debugging
 
 # Theme styles for title
 @export var golden_title_style: LabelSettings = preload("res://theme/target_title_settings.tres")
@@ -40,6 +41,9 @@ func _ready():
 	
 	# Connect to the parent drills manager signals
 	var drills_manager = get_parent()
+	if not DEBUG_DISABLED:
+		print("[DrillUI._ready()] drills_manager: ", drills_manager)
+		print("[DrillUI._ready()] drills_manager script: ", drills_manager.get_script() if drills_manager else "N/A")
 	if drills_manager:
 		# Detect if this is an IDPA or IPSC drill
 		var script_path = drills_manager.get_script().resource_path
@@ -48,14 +52,19 @@ func _ready():
 			print("[DrillUI] Detected drill type - IDPA: ", is_idpa_drill, " (script: ", script_path, ")")
 		
 		# Connect UI update signals
-		if drills_manager.has_signal("ui_timer_update"):
-			drills_manager.ui_timer_update.connect(_on_timer_update)
+		if drills_manager.has_signal("ui_show_completion"):
+			if not DEBUG_DISABLED:
+				print("[DrillUI._ready()] Connecting ui_show_completion signal")
+			drills_manager.ui_show_completion.connect(_on_show_completion)
+			if not DEBUG_DISABLED:
+				print("[DrillUI._ready()] ui_show_completion signal connected successfully")
+		else:
+			if not DEBUG_DISABLED:
+				print("[DrillUI._ready()] WARNING: drills_manager does NOT have ui_show_completion signal!")
 		if drills_manager.has_signal("ui_target_title_update"):
 			drills_manager.ui_target_title_update.connect(_on_target_title_update)
 		if drills_manager.has_signal("ui_fastest_time_update"):
 			drills_manager.ui_fastest_time_update.connect(_on_fastest_time_update)
-		if drills_manager.has_signal("ui_show_completion"):
-			drills_manager.ui_show_completion.connect(_on_show_completion)
 		if drills_manager.has_signal("ui_show_completion_with_timeout"):
 			drills_manager.ui_show_completion_with_timeout.connect(_on_show_completion_with_timeout)
 		if drills_manager.has_signal("ui_hide_completion"):
@@ -140,11 +149,6 @@ func _on_timeout_warning(remaining_seconds: float):
 	if not DEBUG_DISABLED:
 		print("[DrillUI] Timeout warning activated - %.1f seconds remaining" % remaining_seconds)
 
-func _process(_delta):
-	"""Update FPS counter every frame"""
-	var fps = Engine.get_frames_per_second()
-	fps_label.text = "FPS: " + str(fps)
-
 func _on_target_title_update(target_index: int, total_targets: int):
 	"""Update the target title based on the current target number"""
 	var target_number = target_index + 1
@@ -194,10 +198,13 @@ func _on_progress_update(targets_completed: int):
 		if not DEBUG_DISABLED:
 			print("Warning: Progress bar not found or missing update_progress method")
 
-func _on_show_completion(final_time: float, fastest_time: float, final_score: int, _show_hit_factor: bool):
+func _on_show_completion(final_time: float, fastest_time: float, final_score: int):
 	"""Show the completion overlay with drill statistics"""
 	if not DEBUG_DISABLED:
-		print("Showing completion overlay")
+		print("=== _on_show_completion CALLED ===")
+		print("final_time: ", final_time, ", fastest_time: ", fastest_time, ", final_score: ", final_score)
+		print("drill_complete_overlay node: ", drill_complete_overlay)
+		print("drill_complete_overlay visible before: ", drill_complete_overlay.visible)
 	
 	# Calculate hit factor (simple example: score / time)
 	var hit_factor = 0.0
@@ -217,12 +224,18 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 		else:
 			if not DEBUG_DISABLED:
 				print("[drill_ui] Failed to load drill_complete_overlay script")
+	else:
+		if not DEBUG_DISABLED:
+			print("[drill_ui] Overlay script is properly attached")
 	
 	# Try to use the new method if available
 	if drill_complete_overlay.has_method("show_drill_complete"):
+		if not DEBUG_DISABLED:
+			print("[drill_ui] Calling show_drill_complete method")
 		drill_complete_overlay.show_drill_complete(final_score, hit_factor, fastest_time)
 		if not DEBUG_DISABLED:
 			print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f" % [final_score, hit_factor, fastest_time])
+			print("drill_complete_overlay visible after show_drill_complete: ", drill_complete_overlay.visible)
 	else:
 		# Fallback to manual update
 		if not DEBUG_DISABLED:
@@ -241,6 +254,8 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 			var fastest_string = "%.2fs" % fastest_time if fastest_time < 999.0 else "--"
 			fastest_shot_label.text = "Fastest Shot: " + fastest_string
 		
+		if not DEBUG_DISABLED:
+			print("[drill_ui] Setting overlay visible = true")
 		drill_complete_overlay.visible = true
 	
 	# Connect button signals and set up focus
@@ -250,6 +265,11 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	# Reset timeout warning state and timer color
 	timeout_warning_active = false
 	timer_label.modulate = Color.WHITE
+	
+	if not DEBUG_DISABLED:
+		print("=== _on_show_completion FINISHED ===")
+		print("drill_complete_overlay visible final: ", drill_complete_overlay.visible)
+		print("drill_complete_overlay size final: ", drill_complete_overlay.size)
 
 func _on_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool, _show_hit_factor: bool):
 	"""Show the completion overlay with timeout message"""

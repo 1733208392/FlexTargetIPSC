@@ -11,8 +11,8 @@ extends Control
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
-#var base_target_sequence: Array[String] = ["2poppers","3paddles"]
+#var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var base_target_sequence: Array[String] = ["ipsc_mini_rotate"]
 
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
@@ -49,7 +49,8 @@ signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, 
 signal drills_finished
 
 # Performance optimization
-const DEBUG_DISABLED = true  # Set to false for production release
+# NOTE: temporarily enable debug prints to diagnose overlay visibility issues
+const DEBUG_DISABLED = false  # Set to true to silence verbose debugging
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
@@ -334,32 +335,6 @@ func stop_drill_timer():
 func _process(_delta):
 	"""Main process loop - UI updates are handled by drill_ui.gd"""
 	pass
-
-# func _unhandled_input(_event):
-# 	"""Handle input events for theme switching (testing purposes)"""
-# 	# Don't process input if the completion overlay is visible
-# 	var drill_ui = get_node_or_null("DrillUI")
-# 	if drill_ui:
-# 		var completion_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
-# 		if completion_overlay and completion_overlay.visible:
-# 			print("=== IPSC_MINI_STAGE.GD: Completion overlay is visible, ignoring input ===")
-# 			return
-	
-# 	if _event is InputEventMouseButton and _event.pressed:
-# 		print("=== IPSC_MINI_STAGE.GD received unhandled mouse click ===")
-# 		print("Position: ", _event.global_position)
-# 		print("Button: ", _event.button_index)
-	
-# 	if _event is InputEventKey and _event.pressed:
-# 		match _event.keycode:
-# 			KEY_1:
-# 				emit_signal("ui_theme_change", "golden")
-# 			KEY_2:
-# 				emit_signal("ui_theme_change", "tactical")
-# 			KEY_3:
-# 				emit_signal("ui_theme_change", "competitive")
-# 			KEY_R:
-# 				restart_drill()
 
 func update_target_title():
 	"""Update the target title based on the current target number"""
@@ -744,20 +719,25 @@ func _on_target_disappeared(target_id: String = ""):
 		spawn_next_target()
 
 func connect_ipsc_mini_rotate_signals():
-	"""Connect signals for ipsc_mini_rotate target (has child ipsc_mini)"""
-	var ipsc_mini = current_target_instance.get_node("RotationCenter/IPSCMini")
-	if ipsc_mini and ipsc_mini.has_signal("target_hit"):
-		if ipsc_mini.target_hit.is_connected(_on_target_hit):
-			ipsc_mini.target_hit.disconnect(_on_target_hit)
-		ipsc_mini.target_hit.connect(_on_target_hit)
+	"""Connect signals for ipsc_mini_rotate target (logic now in parent)"""
+	# Connect to the parent ipsc_mini_rotate's target_hit signal
+	if current_target_instance.has_signal("target_hit"):
+		if current_target_instance.target_hit.is_connected(_on_target_hit):
+			current_target_instance.target_hit.disconnect(_on_target_hit)
+		current_target_instance.target_hit.connect(_on_target_hit)
 		if not DEBUG_DISABLED:
-			print("Connected to ipsc_mini_rotate signals")
-		
-		# DO NOT connect target_disappeared signal for rotating targets
-		# Rotating targets handle their own completion logic in _on_target_hit
-		# Connecting target_disappeared would cause double incrementation of current_target_index
+			print("Connected to ipsc_mini_rotate target_hit signal")
+	
+	# Connect to the parent ipsc_mini_rotate's target_disappeared signal
+	if current_target_instance.has_signal("target_disappeared"):
+		if current_target_instance.target_disappeared.is_connected(_on_target_disappeared):
+			current_target_instance.target_disappeared.disconnect(_on_target_disappeared)
+		current_target_instance.target_disappeared.connect(_on_target_disappeared)
 		if not DEBUG_DISABLED:
-			print("Skipping target_disappeared connection for rotating target (handled manually)")
+			print("Connected to ipsc_mini_rotate target_disappeared signal")
+	else:
+		if not DEBUG_DISABLED:
+			print("WARNING: ipsc_mini_rotate target_disappeared signal not found!")
 
 func connect_paddle_signals():
 	"""Connect signals for paddle targets (3paddles composite target)"""
@@ -937,9 +917,19 @@ func complete_drill():
 	
 	# Show the completion overlay
 	var fastest_time = performance_tracker.get_fastest_time_diff()
+	if not DEBUG_DISABLED:
+		print("=== ABOUT TO EMIT ui_show_completion SIGNAL ===")
+		print("elapsed_seconds: ", elapsed_seconds)
+		print("fastest_time: ", fastest_time)
+		print("total_drill_score: ", total_drill_score)
+		print("drill_timed_out: ", drill_timed_out)
 	if drill_timed_out:
+		if not DEBUG_DISABLED:
+			print("=== EMITTING ui_show_completion_with_timeout ===")
 		emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true)
 	else:
+		if not DEBUG_DISABLED:
+			print("=== EMITTING ui_show_completion ===")
 		emit_signal("ui_show_completion", elapsed_seconds, fastest_time, total_drill_score)
 	
 	# Set the total elapsed time in performance tracker before finishing
