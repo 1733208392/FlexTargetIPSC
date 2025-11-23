@@ -15,7 +15,7 @@ enum TimerState {
 @onready var audio_player = $AudioStreamPlayer
 @onready var animation_player = $AnimationPlayer
 @onready var timer_delay = $TimerDelay
-@onready var instructions = $Instructions
+#@onready var instructions = $Instructions
 
 # Timer configuration
 @export var min_delay: float = 2.0  # Minimum delay before beep (seconds)
@@ -41,7 +41,7 @@ func _ready():
 	timer_delay.timeout.connect(_on_timer_timeout)
 	
 	# Hide instructions (not needed anymore)
-	instructions.visible = false
+	#instructions.visible = false
 	
 	# Don't start automatically - wait for drill UI to call start_timer_sequence()
 	current_state = TimerState.WAITING
@@ -116,7 +116,7 @@ func start_timer_sequence():
 		print("=== STARTING SHOT TIMER SEQUENCE ===")
 	
 	# Hide instructions (not needed)
-	instructions.visible = false
+	#instructions.visible = false
 	
 	# Set state to standby
 	current_state = TimerState.STANDBY
@@ -208,7 +208,7 @@ func reset_timer():
 	standby_label.modulate = Color.WHITE
 	
 	# Hide instructions (not needed anymore)
-	instructions.visible = false
+	#instructions.visible = false
 	
 	# Don't auto-start - wait for explicit call to start_timer_sequence()
 	

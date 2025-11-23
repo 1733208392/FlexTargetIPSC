@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://dl7hsl4ovohf2"]
+
+[ext_resource type="PackedScene" uid="uid://cxd2xq70pq0ln" path="res://scene/targets/mozambique.tscn" id="1_qky4i"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="Mosambique" parent="." instance=ExtResource("1_qky4i")]
+position = Vector2(364, 621)

@@ -215,9 +215,9 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 32
 
 [node name="ReplayButton" parent="Control/VBoxContainer/Content/PanelContent/ButtonsContainer" instance=ExtResource("6_yga03")]
-visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
+text = "Replay"
 
 [node name="NextButton" parent="Control/VBoxContainer/Content/PanelContent/ButtonsContainer" instance=ExtResource("6_yga03")]
 layout_mode = 2
