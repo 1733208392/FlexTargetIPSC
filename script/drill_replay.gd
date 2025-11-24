@@ -71,6 +71,7 @@ func _ready():
 				load_selected_drill_data(global_data.selected_drill_data)
 				# Clear the data after loading to prevent reuse
 				global_data.selected_drill_data = {}
+				global_data.is_idpa_history = false  # Clear the flag
 				# Initialize UI after data load
 				initialize_ui()
 			return
@@ -113,7 +114,7 @@ func load_latest_performance_from_memory():
 		print("[Drill Replay] No latest performance data in memory, nothing to display")
 
 func load_performance_from_http(drill_index: int):
-	# Load the detailed performance data from performance_[index].json file
+	# Load the detailed performance data from performance_[index].json file (or performance_idpa_ for IDPA)
 	if not DEBUG_DISABLED:
 		print("[Drill Replay] Loading performance file for drill index: ", drill_index)
 	
@@ -126,7 +127,12 @@ func load_performance_from_http(drill_index: int):
 		initialize_ui()
 		return
 	
-	var file_id = "performance_" + str(drill_index)
+	var global_data = get_node("/root/GlobalData")
+	var prefix = "performance_"
+	if global_data and global_data.is_idpa_history:
+		prefix = "performance_idpa_"
+	
+	var file_id = prefix + str(drill_index)
 	if not DEBUG_DISABLED:
 		print("[Drill Replay] Loading file: ", file_id)
 	
@@ -157,6 +163,7 @@ func _on_performance_file_loaded(result, response_code, _headers, body):
 					var global_data = get_node("/root/GlobalData")
 					if global_data:
 						global_data.selected_drill_data = {}
+						global_data.is_idpa_history = false  # Clear the flag
 					
 					# Initialize UI after successful load
 					initialize_ui()
@@ -175,6 +182,10 @@ func _on_performance_file_loaded(result, response_code, _headers, body):
 						var global_data = get_node("/root/GlobalData")
 						if global_data:
 							global_data.selected_drill_data = {}
+						
+						# Clear the is_idpa_history flag after use
+						if global_data:
+							global_data.is_idpa_history = false
 						
 						# Initialize UI after successful load
 						initialize_ui()
@@ -495,10 +506,10 @@ func add_bullet_hole_for_record(index):
 
 	# Determine the parent node for bullet holes
 	var parent_node = target_data["scene"]
-	if target_type == "ipsc_mini_rotate":
-		var ipsc_mini_node = target_data["scene"].get_node("IPSCMini")
-		if ipsc_mini_node:
-			parent_node = ipsc_mini_node
+	if target_type == "ipsc_mini_rotate" || target_type == "idpa-mini-rotate":
+		var node = target_data["scene"].get_node("IPSCMini") if target_type == "ipsc_mini_rotate" else target_data["scene"].get_node("Target")
+		if node:
+			parent_node = node
 	
 	# Add bullet hole
 	var hit_pos = record["hit_position"]
@@ -600,7 +611,7 @@ func load_target_if_needed(target_type: String) -> bool:
 			var target_pos = Vector2(-200, 200) if target_type == "ipsc_mini_rotate" else Vector2(0, 0)
 			target_scene.position = target_pos
 			get_node("CenterContainer").add_child(target_scene)
-			if target_type == "ipsc_mini_rotate":
+			if target_type == "ipsc_mini_rotate" || target_type == "idpa-mini-rotate":
 				var animation_player = target_scene.get_node("AnimationPlayer")
 				if animation_player:
 					animation_player.stop()
@@ -615,24 +626,23 @@ func load_target_if_needed(target_type: String) -> bool:
 	return true
 
 func apply_target_position_and_rotation(record: Dictionary, target_type: String, direction: String, same_target: bool):
-	if target_type != "ipsc_mini_rotate":
+	if target_type != "ipsc_mini_rotate" and target_type != "idpa-mini-rotate":
 		return
 	
 	var target_scene = loaded_targets[target_type]["scene"]
-	var ipsc_mini_node = target_scene.get_node("IPSCMini")
+	var node = target_scene.get_node("IPSCMini") if target_type == "ipsc_mini_rotate" else target_scene.get_node("Target")
 	var paddle_node = target_scene.get_node("Paddle")
 	
 	if record.has("target_position") and record.has("rotation_angle"):
 		var pos_data = record["target_position"]
 		var rotation_data = record["rotation_angle"]
-		if ipsc_mini_node:
-			ipsc_mini_node.global_position = Vector2(pos_data["x"], pos_data["y"])
-			ipsc_mini_node.global_rotation = rotation_data
-			loaded_targets[target_type]["pos"] = ipsc_mini_node.global_position
+		if node:
+			node.global_position = Vector2(pos_data["x"], pos_data["y"])
+			node.global_rotation = rotation_data
+			loaded_targets[target_type]["pos"] = node.global_position
 		else:
-			target_scene.global_position = Vector2(pos_data["x"], pos_data["y"])
-			target_scene.global_rotation = rotation_data
-			loaded_targets[target_type]["pos"] = target_scene.global_position
+			if not DEBUG_DISABLED:
+				print("Drill Replay: target node is not found")
 			
 		if not DEBUG_DISABLED:
 			var context = direction + (", Same Target" if same_target else "")

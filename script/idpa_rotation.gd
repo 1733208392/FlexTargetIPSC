@@ -6,6 +6,8 @@ signal target_disappeared
 @onready var animation_player: AnimationPlayer = $Target/AnimationPlayer
 @onready var target_area: Area2D = $Target
 @onready var cover_area: Area2D = $Cover
+@onready var paddle_area: Area2D = $Paddle/Paddle
+@onready var paddle_animation_player: AnimationPlayer = $Paddle/Paddle/AnimationPlayer
 
 # Assuming these resources exist; adjust paths as needed
 const BULLET_HOLE_SCENE = preload("res://scene/bullet_hole.tscn")
@@ -38,9 +40,6 @@ func _ready() -> void:
 	
 	# Initialize bullet hole pool for performance
 	initialize_bullet_hole_pool()
-	
-	# Start random animation loop
-	play_random_animation()
 
 func play_random_animation() -> void:
 	var animations = ["up", "rotation"]
@@ -71,7 +70,19 @@ func process_bullet_hit(pos: Vector2) -> void:
 		score = -5
 		area = "cover"
 		is_hit = false
-	else:
+	if is_instance_valid(paddle_area):
+		var paddle_shapes = get_collision_shapes(paddle_area)
+		if is_point_in_shapes(pos, paddle_shapes, paddle_area.global_position):
+			score = -5
+			area = "paddle"
+			is_hit = false
+			# Trigger paddle fall
+			play_paddle_fall()
+			# Start target animation since paddle is hit
+			play_random_animation()
+	
+	# If neither cover nor paddle hit, check target
+	if area == "":
 		# Check target areas
 		var target_shapes = get_collision_shapes(target_area)
 		var hit_shape = get_hit_shape(pos, target_shapes, target_area.global_position)
@@ -275,3 +286,17 @@ func _on_disappear_animation_finished():
 	"""Called when the disappearing animation completes"""
 	# Emit signal to notify the drills system that the target has disappeared
 	target_disappeared.emit()
+
+func play_paddle_fall():
+	"""Trigger the paddle's fall_down animation"""
+	if paddle_animation_player and paddle_animation_player.has_animation("fall_down"):
+		paddle_animation_player.play("fall_down")
+		# Connect to animation finished to queue_free after animation
+		if not paddle_animation_player.animation_finished.is_connected(_on_paddle_fall_finished):
+			paddle_animation_player.animation_finished.connect(_on_paddle_fall_finished)
+
+func _on_paddle_fall_finished(animation_name: String):
+	"""Called when paddle fall animation finishes"""
+	if animation_name == "fall_down":
+		if is_instance_valid(paddle_area):
+			paddle_area.queue_free()

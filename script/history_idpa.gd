@@ -256,14 +256,14 @@ func _on_file_loaded(result, response_code, _headers, body):
 	load_next_file()
 
 func process_loaded_data(data: Dictionary, file_id: String):
-	# Extract the drill number from file_id (e.g., "performance_idpa_1" -> 1)
+	# Extract the drill number from file_id (e.g., "performance_1" -> 1)
 	if DEBUG_PRINTS:
 		print("[HistoryIDPA] Processing file_id: ", file_id)
 
 	var drill_number: int
-	if file_id.begins_with("performance_idpa_"):
-		# IDPA naming scheme: "performance_idpa_1" -> 1
-		drill_number = int(file_id.replace("performance_idpa_", ""))
+	if file_id.begins_with("performance_"):
+		# IDPA naming scheme: "performance_1" -> 1
+		drill_number = int(file_id.replace("performance_", ""))
 	else:
 		# Fallback for any legacy files
 		drill_number = int(file_id)
@@ -474,18 +474,303 @@ func update_score_header_visual():
 	# This would need to be implemented based on the UI structure
 	pass
 
+func find_latest_record_index() -> int:
+	"""Find the index of the latest record (highest drill number) in the current sorted list"""
+	if history_data.size() == 0:
+		return 0
+	
+	var latest_drill_number = -1
+	var latest_index = 0
+	
+	for i in range(history_data.size()):
+		var drill_number = history_data[i]["drill_number"]
+		if drill_number > latest_drill_number:
+			latest_drill_number = drill_number
+			latest_index = i
+	
+	if DEBUG_PRINTS:
+		print("[History] Latest record found at index ", latest_index, " with drill number ", latest_drill_number)
+	
+	return latest_index
+
 func setup_clickable_items():
-	# Setup clickable functionality for list items
-	# This would need to be implemented based on the UI structure
-	pass
+	# Convert each HBoxContainer item to clickable buttons
+	if not list_container:
+		return
+	
+	for i in range(list_container.get_child_count()):
+		var item = list_container.get_child(i)
+		if item is HBoxContainer:
+			# Make the item focusable
+			item.focus_mode = Control.FOCUS_ALL
+			# Make the item clickable by detecting mouse input
+			item.gui_input.connect(_on_item_clicked.bind(i))
+			# Add visual feedback for hover
+			item.mouse_entered.connect(_on_item_hover_enter.bind(item))
+			item.mouse_exited.connect(_on_item_hover_exit.bind(item))
+			# Add focus feedback
+			item.focus_entered.connect(_on_item_focus_enter.bind(item))
+			item.focus_exited.connect(_on_item_focus_exit.bind(item))
+			# Connect resize signal to update panel sizes
+			item.resized.connect(_on_item_resized.bind(item))
+	
+	# Set focus to latest record by default
+	if list_container.get_child_count() > 0:
+		var latest_index = find_latest_record_index()
+		if latest_index < list_container.get_child_count():
+			var latest_item = list_container.get_child(latest_index)
+			if latest_item is HBoxContainer:
+				latest_item.grab_focus()
+				current_focused_index = latest_index
+				if DEBUG_PRINTS:
+					print("[History] Focused on latest record at index ", latest_index)
+		else:
+			# Fallback to first item if latest index is out of bounds
+			var first_item = list_container.get_child(0)
+			if first_item is HBoxContainer:
+				first_item.grab_focus()
+				current_focused_index = 0
+
+func _on_item_clicked(event: InputEvent, item_index: int):
+	if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) or (event is InputEventKey and event.keycode == KEY_ENTER and event.pressed):
+		if DEBUG_PRINTS:
+			print("History item ", item_index + 1, " selected")
+		
+		# Store drill data in GlobalData instead of creating temp file
+		if item_index < history_data.size():
+			var drill_data = history_data[item_index]
+			if DEBUG_PRINTS:
+				print("[History] Storing drill data in GlobalData for drill ", drill_data["drill_number"])
+			var global_data = get_node("/root/GlobalData")
+			if global_data:
+				global_data.selected_drill_data = drill_data
+				global_data.upper_level_scene = "res://scene/history_idpa.tscn"
+				global_data.is_idpa_history = true
+		
+		# Navigate to drill_replay scene
+		get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
+
+func _on_item_hover_enter(item: HBoxContainer):
+	# Add visual feedback when hovering over items
+	var panel = Panel.new()
+	panel.name = "HighlightPanel"
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.3, 0.3, 0.3, 0.5)  # Semi-transparent dark background
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(0.7, 0.7, 0.7, 1.0)  # Light border
+	style.corner_radius_top_left = 5
+	style.corner_radius_top_right = 5
+	style.corner_radius_bottom_left = 5
+	style.corner_radius_bottom_right = 5
+	panel.add_theme_stylebox_override("panel", style)
+	
+	# Remove existing highlight if any
+	var existing_panel = item.get_node_or_null("HighlightPanel")
+	if existing_panel:
+		existing_panel.queue_free()
+	
+	item.add_child(panel)
+	item.move_child(panel, 0)  # Move to back
+	# Size the panel to cover the entire item
+	call_deferred("_size_panel", panel, item)
+
+func _on_item_hover_exit(item: HBoxContainer):
+	# Remove visual feedback when not hovering
+	var panel = item.get_node_or_null("HighlightPanel")
+	if panel:
+		panel.queue_free()
+
+func _on_item_focus_enter(item: HBoxContainer):
+	# Add visual feedback when focusing on items
+	var panel = Panel.new()
+	panel.name = "FocusPanel"
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.4, 0.4, 0.4, 0.7)  # Semi-transparent darker background for focus
+	style.border_width_left = 3
+	style.border_width_right = 3
+	style.border_width_top = 3
+	style.border_width_bottom = 3
+	style.border_color = Color(1.0, 1.0, 1.0, 1.0)  # White border for focus
+	style.corner_radius_top_left = 5
+	style.corner_radius_top_right = 5
+	style.corner_radius_bottom_left = 5
+	style.corner_radius_bottom_right = 5
+	panel.add_theme_stylebox_override("panel", style)
+	
+	# Remove existing focus highlight if any
+	var existing_panel = item.get_node_or_null("FocusPanel")
+	if existing_panel:
+		existing_panel.queue_free()
+	
+	item.add_child(panel)
+	item.move_child(panel, 0)  # Move to back
+	# Size the panel to cover the entire item
+	call_deferred("_size_panel", panel, item)
+
+func _on_item_focus_exit(item: HBoxContainer):
+	# Remove visual feedback when not focusing
+	var panel = item.get_node_or_null("FocusPanel")
+	if panel:
+		panel.queue_free()
+
+func _on_item_resized(item: HBoxContainer):
+	# Update panel sizes when item is resized
+	var hover_panel = item.get_node_or_null("HighlightPanel")
+	if hover_panel:
+		hover_panel.size = item.size
+	
+	var focus_panel = item.get_node_or_null("FocusPanel")
+	if focus_panel:
+		focus_panel.size = item.size
+
+func _size_panel(panel: Panel, item: HBoxContainer):
+	# Size the panel to cover the entire item
+	if panel and item and is_instance_valid(panel) and is_instance_valid(item):
+		# Use a small delay to ensure layout is complete
+		var tree = get_tree()
+		if tree:
+			await tree.create_timer(0.01).timeout
+			if panel and item and is_instance_valid(panel) and is_instance_valid(item):
+				panel.size = item.size
+				panel.position = Vector2.ZERO
+		else:
+			# Fallback if tree is not available
+			if panel and item and is_instance_valid(panel) and is_instance_valid(item):
+				panel.size = item.size
+				panel.position = Vector2.ZERO
 
 func _on_back_pressed():
-	# Handle back button press
-	var global_data = get_node_or_null("/root/GlobalData")
-	if global_data:
-		global_data.return_source = "history_idpa"
+	# Navigate back to the previous scene (intro or main menu)
+	if DEBUG_PRINTS:
+		print("Back button pressed - returning to intro")
+	get_tree().change_scene_to_file("res://scene/intro.tscn")
 
-	get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+func _on_menu_control(directive: String):
+	if has_visible_power_off_dialog():
+		return
+	if DEBUG_PRINTS:
+		print("[History] Received menu_control signal with directive: ", directive)
+	match directive:
+		"volume_up":
+			if DEBUG_PRINTS:
+				print("[History] Volume up")
+			volume_up()
+		"volume_down":
+			if DEBUG_PRINTS:
+				print("[History] Volume down")
+			volume_down()
+		"power":
+			if DEBUG_PRINTS:
+				print("[History] Power off")
+			power_off()
+		"back", "homepage":
+			if DEBUG_PRINTS:
+				print("[History] ", directive, " - navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "leaderboard"
+				if DEBUG_PRINTS:
+					print("[History] Set return_source to leaderboard")
+			
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+		"up":
+			if DEBUG_PRINTS:
+				print("[History] Moving focus up")
+			navigate_up()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+		"down":
+			if DEBUG_PRINTS:
+				print("[History] Moving focus down")
+			navigate_down()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+		"enter":
+			if DEBUG_PRINTS:
+				print("[History] Enter pressed")
+			select_current_item()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+		"sort", "toggle_sort":
+			if DEBUG_PRINTS:
+				print("[History] Sort mode toggle")
+			toggle_sort_mode()
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+		_:
+			if DEBUG_PRINTS:
+				print("[History] Unknown directive: ", directive)
+
+func navigate_up():
+	if list_container.get_child_count() == 0:
+		return
+	current_focused_index = (current_focused_index - 1 + list_container.get_child_count()) % list_container.get_child_count()
+	var item = list_container.get_child(current_focused_index)
+	if item is HBoxContainer:
+		item.grab_focus()
+
+func navigate_down():
+	if list_container.get_child_count() == 0:
+		return
+	current_focused_index = (current_focused_index + 1) % list_container.get_child_count()
+	var item = list_container.get_child(current_focused_index)
+	if item is HBoxContainer:
+		item.grab_focus()
+
+func select_current_item():
+	if current_focused_index < history_data.size():
+		if DEBUG_PRINTS:
+			print("History item ", current_focused_index + 1, " selected via keyboard")
+		
+		# Store drill data in GlobalData instead of creating temp file
+		var drill_data = history_data[current_focused_index]
+		if DEBUG_PRINTS:
+			print("[History] Storing drill data in GlobalData for drill ", drill_data["drill_number"])
+		var global_data = get_node("/root/GlobalData")
+		if global_data:
+			global_data.selected_drill_data = drill_data
+			global_data.upper_level_scene = "res://scene/history_idpa.tscn"
+		
+		# Navigate to drill_replay scene
+		get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
+
+func volume_up():
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		if DEBUG_PRINTS:
+			print("[History] Sending volume up HTTP request...")
+		http_service.volume_up(_on_volume_response)
+	else:
+		if DEBUG_PRINTS:
+			print("[History] HttpService singleton not found!")
+
+func volume_down():
+	var http_service = get_node("/root/HttpService")
+	if http_service:
+		if DEBUG_PRINTS:
+			print("[History] Sending volume down HTTP request...")
+		http_service.volume_down(_on_volume_response)
+	else:
+		if DEBUG_PRINTS:
+			print("[History] HttpService singleton not found!")
+
+func _on_volume_response(result, response_code, _headers, body):
+	var body_str = body.get_string_from_utf8()
+	if DEBUG_PRINTS:
+		print("[History] Volume HTTP response:", result, response_code, body_str)
+
 
 func load_language_from_global_settings():
 	# Load language setting from GlobalData
@@ -515,22 +800,6 @@ func update_ui_texts():
 	# Update UI texts with current language
 	if back_button:
 		back_button.text = tr("back")
-
-func _on_menu_control(directive: String):
-	if has_visible_power_off_dialog():
-		return
-	if DEBUG_PRINTS:
-		print("[HistoryIDPA] Received menu_control signal with directive: ", directive)
-
-	match directive:
-		"back", "homepage":
-			if DEBUG_PRINTS:
-				print("[HistoryIDPA] Back/Home pressed")
-			_on_back_pressed()
-		"power":
-			if DEBUG_PRINTS:
-				print("[HistoryIDPA] Power off")
-			power_off()
 
 func power_off():
 	var dialog_scene = preload("res://scene/power_off_dialog.tscn")

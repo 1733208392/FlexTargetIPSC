@@ -60,7 +60,6 @@ signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, f
 signal ui_hide_completion()
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
-signal ui_theme_change(theme_name: String)
 signal ui_score_update(score: int)
 signal ui_progress_update(targets_completed: int)
 signal ui_timeout_warning(remaining_seconds: float)
@@ -96,7 +95,6 @@ func _ready():
 	
 	if not DEBUG_DISABLED:
 		print("=== STARTING DRILL ===")
-	emit_signal("ui_theme_change", "golden")  # Set default theme
 	emit_signal("ui_progress_update", 0)  # Initialize progress bar
 	
 	# Clear any existing targets in the center container

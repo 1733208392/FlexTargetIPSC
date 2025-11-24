@@ -6,11 +6,10 @@ extends Control
 @export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
 @export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
 @export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
-@export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
-#var base_target_sequence: Array[String] = ["idpa-mini-rotate"]
+#var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
+var base_target_sequence: Array[String] = ["idpa-mini-rotate"]
 var target_sequence: Array[String] = []
 var current_target_index: int = 0
 var current_target_instance: Node = null
@@ -53,7 +52,6 @@ signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, f
 signal ui_hide_completion()
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
-signal ui_theme_change(theme_name: String)
 signal ui_score_update(score: int)
 signal ui_progress_update(targets_completed: int)
 signal ui_timeout_warning(remaining_seconds: float)
@@ -67,7 +65,6 @@ func _ready():
 	
 	if not DEBUG_DISABLED:
 		print("=== STARTING IDPA MINI DRILL ===")
-	emit_signal("ui_theme_change", "golden")
 	emit_signal("ui_progress_update", 0)
 	
 	# Clear any existing targets
@@ -460,9 +457,21 @@ func _on_target_disappeared(target_id: String = ""):
 	if ws_listener:
 		ws_listener.set_bullet_spawning_enabled(false)
 	
+	# Check if this is the last target
+	if current_target_index + 1 >= target_sequence.size():
+		print("[TARGET_DISAPPEARED] Last target disappeared - completing drill")
+		complete_drill()
+		return
+	
 	current_target_index += 1
 	print("[TARGET_DISAPPEARED] After increment - index: ", current_target_index, " size: ", target_sequence.size())
 	emit_signal("ui_progress_update", current_target_index)
+	
+	# Show footsteps between targets
+	show_footsteps()
+	
+	# Wait for footsteps animation to complete (1 second)
+	await get_tree().create_timer(1.0).timeout
 	
 	# Move to next target
 	print("[TARGET_DISAPPEARED] Calling spawn_next_target()")
@@ -505,9 +514,13 @@ func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null, _param
 	
 	# Emit the target_hit signal for performance tracking
 	var rotation_angle = 0.0
-	if current_target_type == "idpa-mini-rotate":
+	var target_position = Vector2.ZERO
+	if current_target_type == "idpa-mini-rotate" and current_target_instance:
 		rotation_angle = _param5  # Use actual rotation from idpa_rotation.gd
-	emit_signal("target_hit", current_target_type, hit_position, hit_area, int(actual_points), rotation_angle)
+		var target_node = current_target_instance.get_node_or_null("Target")
+		if target_node:
+			target_position = target_node.global_position
+	emit_signal("target_hit", current_target_type, hit_position, hit_area, int(actual_points), rotation_angle, target_position)
 	
 	# Update the fastest interval display
 	var fastest_time = performance_tracker.get_fastest_time_diff()
@@ -683,9 +696,15 @@ func restart_drill():
 	if not DEBUG_DISABLED:
 		print("Drill restarted!")
 
-func is_bullet_spawning_allowed() -> bool:
-	"""Check if bullet spawning is currently allowed"""
-	return bullets_allowed
+func show_footsteps():
+	"""Show footsteps animation between targets"""
+	if footsteps_node:
+		footsteps_node.visible = true
+		var animation_player = footsteps_node.get_node_or_null("AnimationPlayer")
+		if animation_player:
+			animation_player.play("footstep_reveal")  # Use the correct animation name
+		if not DEBUG_DISABLED:
+			print("Showing footsteps between targets")
 
 func get_drills_manager():
 	"""Return reference to this drills manager for targets to use"""

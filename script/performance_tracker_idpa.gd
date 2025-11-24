@@ -62,6 +62,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		"target_type": target_type,
 		"time_diff": round(time_diff * 100.0) / 100.0,
 		"hit_position": {"x": round(hit_position.x * 10.0) / 10.0, "y": round(hit_position.y * 10.0) / 10.0},
+		"target_position": {"x": round(target_position.x * 10.0) / 10.0, "y": round(target_position.y * 10.0) / 10.0},
 		"hit_area": hit_area,
 		"score": score,
 		"rotation_angle": rotation_angle,

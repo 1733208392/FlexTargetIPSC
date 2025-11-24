@@ -4,12 +4,6 @@ extends Control
 # NOTE: temporarily enable debug prints to diagnose overlay visibility issues
 const DEBUG_DISABLED = true  # Set to true to silence verbose debugging
 
-# Theme styles for title
-@export var golden_title_style: LabelSettings = preload("res://theme/target_title_settings.tres")
-@export var tactical_title_style: LabelSettings = preload("res://theme/target_title_tactical.tres")
-@export var competitive_title_style: LabelSettings = preload("res://theme/target_title_competitive.tres")
-var current_theme_style: String = "golden"
-
 # Timeout warning state
 var timeout_warning_active: bool = false
 
@@ -18,7 +12,6 @@ var is_idpa_drill: bool = false
 
 # UI Node references
 @onready var target_type_title = $TopContainer/TopLayout/HeaderContainer/TargetTypeTitle
-@onready var fps_label = $FPSLabel
 @onready var shot_timer_overlay = $ShotTimerOverlay
 @onready var drill_complete_overlay = $drill_complete_overlay
 @onready var fastest_interval_label = $TopContainer/TopLayout/HeaderContainer/FastestContainer/FastestInterval
@@ -37,8 +30,6 @@ func _ready():
 	# Load drill sequence setting from global settings
 	load_drill_sequence_from_global_settings()
 	
-	apply_title_theme("golden")  # Set default theme
-	
 	# Connect to the parent drills manager signals
 	var drills_manager = get_parent()
 	if not DEBUG_DISABLED:
@@ -53,14 +44,9 @@ func _ready():
 		
 		# Connect UI update signals
 		if drills_manager.has_signal("ui_show_completion"):
-			if not DEBUG_DISABLED:
-				print("[DrillUI._ready()] Connecting ui_show_completion signal")
 			drills_manager.ui_show_completion.connect(_on_show_completion)
-			if not DEBUG_DISABLED:
-				print("[DrillUI._ready()] ui_show_completion signal connected successfully")
-		else:
-			if not DEBUG_DISABLED:
-				print("[DrillUI._ready()] WARNING: drills_manager does NOT have ui_show_completion signal!")
+		if drills_manager.has_signal("ui_timer_update"):
+			drills_manager.ui_timer_update.connect(_on_timer_update)
 		if drills_manager.has_signal("ui_target_title_update"):
 			drills_manager.ui_target_title_update.connect(_on_target_title_update)
 		if drills_manager.has_signal("ui_fastest_time_update"):
@@ -73,8 +59,6 @@ func _ready():
 			drills_manager.ui_timeout_warning.connect(_on_timeout_warning)
 		if drills_manager.has_signal("ui_score_update"):
 			drills_manager.ui_score_update.connect(_on_score_update)
-		if drills_manager.has_signal("ui_theme_change"):
-			drills_manager.ui_theme_change.connect(_on_theme_change)
 		if drills_manager.has_signal("ui_show_shot_timer"):
 			drills_manager.ui_show_shot_timer.connect(_on_show_shot_timer)
 		if drills_manager.has_signal("ui_hide_shot_timer"):
@@ -130,9 +114,10 @@ func set_locale_from_language(language: String):
 
 func _on_timer_update(time_elapsed: float):
 	"""Update the timer display with the current elapsed time"""
-	var minutes = int(time_elapsed) / 60
-	var seconds = int(time_elapsed) % 60
-	var milliseconds = int((time_elapsed - int(time_elapsed)) * 100)
+	var total_seconds = int(time_elapsed)
+	var minutes = int(total_seconds / 60.0)
+	var seconds = total_seconds % 60
+	var milliseconds = int((time_elapsed - total_seconds) * 100)
 	
 	var time_string = "%02d:%02d:%02d" % [minutes, seconds, milliseconds]
 	timer_label.text = time_string
@@ -156,28 +141,6 @@ func _on_target_title_update(target_index: int, total_targets: int):
 	if not DEBUG_DISABLED:
 		print("Updated title to: ", tr("target"), " ", target_number, "/", total_targets)
 
-func _on_theme_change(theme_name: String):
-	"""Apply a specific theme style to the target title"""
-	apply_title_theme(theme_name)
-
-func apply_title_theme(theme_name: String):
-	"""Apply a specific theme style to the target title"""
-	match theme_name:
-		"golden":
-			target_type_title.label_settings = golden_title_style
-		"tactical":
-			target_type_title.label_settings = tactical_title_style
-		"competitive":
-			target_type_title.label_settings = competitive_title_style
-		_:
-			if not DEBUG_DISABLED:
-				print("Unknown theme: ", theme_name)
-			return
-	
-	current_theme_style = theme_name
-	if not DEBUG_DISABLED:
-		print("Applied theme: ", theme_name)
-
 func _on_fastest_time_update(fastest_time: float):
 	"""Update the fastest interval label with the current fastest time"""
 	if fastest_time < 999.0:  # Only update if we have a valid time
@@ -198,7 +161,7 @@ func _on_progress_update(targets_completed: int):
 		if not DEBUG_DISABLED:
 			print("Warning: Progress bar not found or missing update_progress method")
 
-func _on_show_completion(final_time: float, fastest_time: float, final_score: int):
+func _on_show_completion(final_time: float, fastest_time: float, final_score: int, _show_hit_factor: bool):
 	"""Show the completion overlay with drill statistics"""
 	if not DEBUG_DISABLED:
 		print("=== _on_show_completion CALLED ===")
@@ -232,9 +195,9 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	if drill_complete_overlay.has_method("show_drill_complete"):
 		if not DEBUG_DISABLED:
 			print("[drill_ui] Calling show_drill_complete method")
-		drill_complete_overlay.show_drill_complete(final_score, hit_factor, fastest_time)
+		drill_complete_overlay.show_drill_complete(final_score, hit_factor, fastest_time, _show_hit_factor)
 		if not DEBUG_DISABLED:
-			print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f" % [final_score, hit_factor, fastest_time])
+			print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f, show_hit_factor=%s" % [final_score, hit_factor, fastest_time, _show_hit_factor])
 			print("drill_complete_overlay visible after show_drill_complete: ", drill_complete_overlay.visible)
 	else:
 		# Fallback to manual update

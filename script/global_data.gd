@@ -28,6 +28,9 @@ var sub_menu_config: Dictionary = {
 # Track which scene we're returning from for focus management
 var return_source: String = ""
 
+# Flag to indicate if we're coming from IDPA history (affects file loading in drill_replay)
+var is_idpa_history: bool = false
+
 # Store the selected variant (IPSC or IDPA)
 var selected_variant: String = "IPSC"
 
