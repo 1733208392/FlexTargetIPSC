@@ -113,6 +113,10 @@ func _ready():
 				focused_index = 2  # drills_button
 			"leaderboard":
 				focused_index = 1  # stage_button
+			"stage":
+				focused_index = 1  # stage_button
+			"games":
+				focused_index = 3  # games_button
 			"options":
 				focused_index = 4  # option_button
 			_:
@@ -191,6 +195,7 @@ func on_stage_pressed():
 				}
 			]
 		}
+		global_data.return_source = "stage"
 		if not DEBUG_DISABLED:
 			print("[Menu] Set sub menu config for Stage options")
 	
@@ -203,6 +208,9 @@ func on_stage_pressed():
 
 func _on_drills_pressed():
 	# Load the drills scene
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.return_source = "drills"
 	if not DEBUG_DISABLED:
 		print("[Menu] _on_drills_pressed called, is_inside_tree: ", is_inside_tree())
 	if is_inside_tree():
@@ -236,6 +244,9 @@ func _on_bootcamp_response(result, response_code, _headers, body):
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
 		if not DEBUG_DISABLED:
 			print("[Menu] Bootcamp Start game success, changing scene.")
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data:
+			global_data.return_source = "bootcamp"
 		if is_inside_tree():
 			get_tree().change_scene_to_file("res://scene/bootcamp.tscn")
 		else:
@@ -247,6 +258,9 @@ func _on_bootcamp_response(result, response_code, _headers, body):
 
 func _on_games_pressed():
 	# Load the games scene
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.return_source = "games"
 	if is_inside_tree():
 		get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
 	else:
@@ -255,6 +269,9 @@ func _on_games_pressed():
 
 func _on_option_pressed():
 	# Load the options scene
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.return_source = "options"
 	if is_inside_tree():
 		get_tree().change_scene_to_file("res://scene/option/option.tscn")
 	else:
@@ -370,6 +387,9 @@ func _on_ble_ready_command(content: Dictionary) -> void:
 			print("[Menu] HttpService not available; cannot send ACK")
 
 	if is_inside_tree():
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data:
+			global_data.return_source = "drills"
 		get_tree().change_scene_to_file("res://scene/drills_network/drills_network.tscn")
 	else:
 		if not DEBUG_DISABLED:

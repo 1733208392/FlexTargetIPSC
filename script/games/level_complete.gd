@@ -135,7 +135,7 @@ func _on_back_pressed():
 	print("[LevelComplete] Back button pressed - returning to menu")
 	hide_level_complete()
 	if get_tree():
-		var error = get_tree().change_scene_to_file("res://scenes/menu/menu.tscn")
+		var error = get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
 		if error != OK:
 			print("[LevelComplete] Failed to change scene: ", error)
 	
@@ -181,7 +181,7 @@ func _on_next_pressed():
 		print("[LevelComplete] Could not find game node after walking parent tree")
 		print("[LevelComplete] Reloading scene as fallback")
 		if get_tree():
-			var error = get_tree().change_scene_to_file("res://scenes/game.tscn")
+			var error = get_tree().change_scene_to_file("res://scene/games/game.tscn")
 			if error != OK:
 				print("[LevelComplete] Failed to change scene: ", error)
 	

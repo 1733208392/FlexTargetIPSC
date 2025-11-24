@@ -96,15 +96,8 @@ func _ready():
 	_load_menu_config()
 	_create_menu_buttons()
 
-	# Connect to WebSocket menu control signals
-	var ws_listener = get_node_or_null("/root/WebSocketListener")
-	if ws_listener:
-		ws_listener.menu_control.connect(_on_menu_control)
-		if not DEBUG_DISABLED:
-			print("[SubMenu] Connected to WebSocketListener.menu_control signal")
-	else:
-		if not DEBUG_DISABLED:
-			print("[SubMenu] WebSocketListener singleton not found!")
+	# Connect to WebSocket menu control signals (deferred to ensure WebSocketListener is ready)
+	call_deferred("_connect_to_websocket")
 
 func _load_menu_config():
 	"""Load menu configuration from GlobalData"""
@@ -270,6 +263,17 @@ func has_visible_power_off_dialog() -> bool:
 			return true
 	return false
 
+func _connect_to_websocket():
+	"""Connect to WebSocketListener signals (called deferred to ensure WebSocketListener is ready)"""
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.menu_control.connect(_on_menu_control)
+		if not DEBUG_DISABLED:
+			print("[SubMenu] Connected to WebSocketListener.menu_control signal")
+	else:
+		if not DEBUG_DISABLED:
+			print("[SubMenu] WebSocketListener singleton not found!")
+
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
 		return
@@ -324,9 +328,9 @@ func _on_menu_control(directive: String):
 				print("[SubMenu] Back to main menu")
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
-		"home":
+		"homepage":
 			if not DEBUG_DISABLED:
-				print("[SubMenu] Home to main menu")
+				print("[SubMenu] Homepage to main menu")
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:

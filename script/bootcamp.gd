@@ -685,7 +685,7 @@ func spawn_target_by_type(target_type: String):
 		# Special positioning for rotating target (offset from center)
 		if target_type == "ipsc_mini_rotate":
 			target.position = Vector2(160, 840)  # Center (360,640) + offset (-200,200)
-			target.z_index = 0  # Ensure it's behind ClearArea (z=2)
+			# Z-index is set manually in the editor
 		
 		# Special scaling for bullseye target
 		if target_type == "bullseye":

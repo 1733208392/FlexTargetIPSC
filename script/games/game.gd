@@ -64,6 +64,13 @@ func _ready():
 	
 	# Initialize fruit scenes array
 	fruit_scenes = [watermelon_whole_scene, banana_whole_scene, avocado_whole_scene, tomato_whole_scene, lemon_whole_scene, pineapple_whole_scene, pear_whole_scene]
+	
+	# Filter out any null scenes (in case preload failed)
+	fruit_scenes = fruit_scenes.filter(func(scene): return scene != null)
+	
+	if fruit_scenes.is_empty():
+		print("ERROR: No fruit scenes loaded! Check that the scene files exist at res://scene/games/")
+		return
 
 	# Get game over panel and hide it initially
 	var game_over_panel = get_node("GameOverLayer/GameOverPanel")
@@ -296,6 +303,10 @@ func _create_coin_animation(start_pos: Vector2, end_pos: Vector2):
 
 func spawn_random_fruit():
 	"""Spawn a random fruit from the array"""
+	if fruit_scenes.is_empty():
+		print("ERROR: fruit_scenes is empty, cannot spawn fruit")
+		return
+	
 	# Track spawn count and spawn bomb if needed
 	fruits_spawned += 1
 	print("Fruit spawn count: ", fruits_spawned, " / ", bomb_spawn_interval)

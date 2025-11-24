@@ -63,6 +63,9 @@ func _ready():
 	if remote_control:
 		remote_control.enter_pressed.connect(_on_enter_pressed)
 		remote_control.back_pressed.connect(_on_back_pressed)
+		if remote_control.has_signal("homepage_pressed"):
+			remote_control.homepage_pressed.connect(_on_homepage_pressed)
+			print("[GameMonkey] Connected to MenuController homepage_pressed signal")
 		print("[GameMonkey] Connected to MenuController signals")
 	else:
 		print("[GameMonkey] MenuController not found")
@@ -147,6 +150,11 @@ func _on_back_pressed():
 	# Allow back button to work during any state to return to menu
 	_return_to_menu()
 
+func _on_homepage_pressed():
+	print("[GameMonkey] Homepage pressed, current state: ", current_state)
+	# Allow homepage button to work during any state to return to menu
+	_return_to_menu()
+
 func _input(event):
 	if current_state in [GameState.RUNNING, GameState.PAUSED]:
 		if event is InputEventKey and event.pressed:
@@ -182,7 +190,7 @@ func _resume_game():
 
 func _return_to_menu():
 	print("[GameMonkey] Returning to menu scene")
-	var error = get_tree().change_scene_to_file("res://scenes/menu/menu.tscn")
+	var error = get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
 	if error != OK:
 		print("[GameMonkey] Failed to change scene: ", error)
 	else:
@@ -359,7 +367,7 @@ func _on_game_duration_timeout():
 	else:
 		print("[GameMonkey] Error: Could not find vines!")
 		# Fallback, change to menu scene
-		get_tree().change_scene_to_file("res://scenes/menu.tscn")
+		get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
 	
 	# Clean up timer
 	if game_duration_timer:

@@ -200,7 +200,7 @@ func _on_back_pressed():
 	print("[MoleLevelComplete] Back button pressed - returning to menu")
 	hide_level_complete()
 	if get_tree():
-		var error = get_tree().change_scene_to_file("res://scenes/menu/menu.tscn")
+		var error = get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
 		if error != OK:
 			print("[MoleLevelComplete] Failed to change scene: ", error)
 	

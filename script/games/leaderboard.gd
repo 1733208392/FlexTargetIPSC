@@ -174,7 +174,7 @@ func _return_to_menu():
 	print("[Leaderboard] Returning to menu scene")
 	var tree = get_tree()
 	if tree:
-		var error = tree.change_scene_to_file("res://scenes/menu/menu.tscn")
+		var error = tree.change_scene_to_file("res://scene/games/menu/menu.tscn")
 		if error != OK:
 			print("[Leaderboard] Failed to change scene: ", error)
 		else:

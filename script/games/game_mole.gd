@@ -11,6 +11,7 @@ var top_bar: Node = null
 var coin_scene = preload("res://scene/games/wack-a-mole/coin-animate-hole.tscn")
 var current_coin: Node = null
 var coin_timer: Timer = null
+var remote_control: Node
 
 # Level timing variables
 var level_duration: float = 30.0  # 30 seconds per level
@@ -94,6 +95,20 @@ func _ready() -> void:
 	coin_timer.wait_time = randf_range(5.0, 10.0)
 	coin_timer.timeout.connect(_on_coin_timer_timeout)
 	coin_timer.start()
+	
+	# Enable input processing
+	set_process_input(true)
+	
+	# Get MenuController
+	remote_control = get_node_or_null("/root/MenuController")
+	if remote_control:
+		remote_control.back_pressed.connect(_on_back_pressed)
+		if remote_control.has_signal("homepage_pressed"):
+			remote_control.homepage_pressed.connect(_on_homepage_pressed)
+			print("[GameMole] Connected to MenuController homepage_pressed signal")
+		print("[GameMole] Connected to MenuController signals")
+	else:
+		print("[GameMole] MenuController not found")
 
 func _start_pop_timer() -> void:
 	"""Start the pop timer with interval-based mole spawning"""
@@ -324,3 +339,24 @@ func _calculate_stars(hit_percentage: float) -> int:
 		return 1
 	else:  # Less than 60% (failed)
 		return 0
+
+func _input(event):
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_BACK or event.keycode == KEY_HOME:
+			_return_to_menu()
+
+func _on_back_pressed():
+	print("[GameMole] Back pressed")
+	_return_to_menu()
+
+func _on_homepage_pressed():
+	print("[GameMole] Homepage pressed")
+	_return_to_menu()
+
+func _return_to_menu():
+	print("[GameMole] Returning to menu scene")
+	var error = get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
+	if error != OK:
+		print("[GameMole] Failed to change scene: ", error)
+	else:
+		print("[GameMole] Scene change initiated")

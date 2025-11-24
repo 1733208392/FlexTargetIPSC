@@ -57,8 +57,7 @@ func _ready():
 	# Initialize bullet hole pool for performance
 	initialize_bullet_hole_pool()
 	
-	# Set up proper z-index layering for visual elements
-	setup_z_index_layering()
+	# Z-index values are set manually in the editor
 	
 	# Connect to WebSocket bullet hit signal
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
@@ -246,9 +245,7 @@ func spawn_bullet_hole(target_node: Node, local_position: Vector2):
 		# Configure the bullet hole
 		bullet_hole.visible = true
 		
-		# Set z-index to be between target (0) and barrel wall (10+)
-		# This ensures bullet holes appear in front of target but behind barrel wall
-		bullet_hole.z_index = 5
+		# Z-index is set manually in the editor
 		
 		# Add to IPSCMini node so it moves with the target
 		target_node.add_child(bullet_hole)
@@ -275,8 +272,7 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, _is_target_hit: bool =
 		var impact = bullet_impact_scene.instantiate()
 		impact.global_position = world_pos
 		effects_parent.add_child(impact)
-		# Ensure impact effects appear above bullet holes
-		impact.z_index = 15
+		# Z-index is set manually in the editor
 		last_impact_time = time_stamp
 	# Throttled sound effect - only plays for hits since this function is only called for hits
 	play_impact_sound_at_position_throttled(world_pos, time_stamp)
@@ -430,8 +426,7 @@ func initialize_bullet_hole_pool():
 		var bullet_hole = BulletHoleScene.instantiate()
 		# Don't add to scene yet - will be added when spawned
 		bullet_hole.visible = false  # Hide until needed
-		# Set z-index to be between target (0) and barrel wall (10)
-		bullet_hole.z_index = 5
+		# Z-index is set manually in the editor
 		bullet_hole_pool.append(bullet_hole)
 
 func get_pooled_bullet_hole() -> Node:
@@ -459,17 +454,5 @@ func return_bullet_hole_to_pool(hole: Node):
 
 func setup_z_index_layering():
 	"""Set up proper z-index layering for visual elements"""
-	# Ensure target appears behind bullet holes
-	var ipsc_mini = get_node_or_null("IPSCMini")
-	if ipsc_mini:
-		ipsc_mini.z_index = 0
-	
-	# Ensure barrel wall appears in front of bullet holes
-	var barrel_wall = get_node_or_null("BarrelWall")
-	if barrel_wall:
-		barrel_wall.z_index = 10
-	
-	# Ensure paddle appears appropriately
-	var paddle = get_node_or_null("Paddle")
-	if paddle:
-		paddle.z_index = 15
+	# Z-index values are now set manually in the editor
+	pass

@@ -146,7 +146,7 @@ func _on_remote_back_pressed():
 
 func _return_to_menu():
 	print("[Settings] Returning to menu scene")
-	var error = get_tree().change_scene_to_file("res://scenes/menu/menu.tscn")
+	var error = get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
 	if error != OK:
 		print("[Settings] Failed to change scene: ", error)
 	else:
