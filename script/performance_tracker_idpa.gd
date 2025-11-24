@@ -18,7 +18,7 @@ var shot_timer_delay = 0.0  # Store the shot timer delay duration
 func _ready():
 	pass
 
-func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, score: int, rotation_angle: float = 0.0):
+func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, score: int, rotation_angle: float = 0.0, target_position: Vector2 = Vector2.ZERO):
 	var current_time_usec = Time.get_ticks_usec()  # Use microsecond precision
 	var time_diff = 0.0  # Initialize to 0
 	
@@ -116,8 +116,8 @@ func _on_drills_finished():
 		var data_id = "performance_idpa_" + str(next_index)
 		if not DEBUG_DISABLED:
 			print("[PerformanceTrackerIDPA] Saving drill data to file: ", data_id, " (previous index: ", current_index, ", next index: ", next_index, ")")
-		var json_data = JSON.stringify(pending_drill_data)
-		http_service.save_game(_on_performance_saved, data_id, json_data)
+		#var json_data = JSON.stringify(pending_drill_data)
+		http_service.save_game(_on_performance_saved, data_id, pending_drill_data)
 	else:
 		if not DEBUG_DISABLED:
 			print("HttpService not found")

@@ -1,6 +1,6 @@
 extends Node2D
 
-const DEBUG_DISABLE = true
+const DEBUG_DISABLE = false
 
 signal target_disappeared
 
@@ -48,7 +48,7 @@ var animation_paused: bool = false
 
 # Scoring system
 var total_score: int = 0
-signal target_hit(zone: String, points: int, hit_position: Vector2)
+signal target_hit(zone: String, points: int, hit_position: Vector2, target_position: Vector2, target_rotation: float)
 
 func _ready():
 	# Initialize drill_active to false by default
@@ -78,6 +78,14 @@ func _ready():
 	var drills_network = get_node_or_null("/root/drills_network")
 	if drills_network:
 		max_shots = 1000
+
+func _input(event):
+	"""Handle mouse clicks for testing - simulate websocket bullet hits"""
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Simulate websocket bullet hit at mouse position
+		var mouse_pos = get_global_mouse_position()
+		if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Mouse click simulated bullet hit at: %s" % mouse_pos)
+		_on_websocket_bullet_hit(mouse_pos)
 
 func _play_random_animations_continuous(animation_player: AnimationPlayer):
 	"""Continuously play random sequences of the available animations"""
@@ -154,6 +162,7 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 			is_target_hit = false
 	
 	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
+	if not DEBUG_DISABLE: print("[ipsc_mini_rotate] zone_hit: %s, is_target_hit: %s, local_pos: %s" % [zone_hit, is_target_hit, local_pos])
 	if is_target_hit:
 		spawn_bullet_hole(ipsc_mini, local_pos)
 	# 4. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
@@ -161,7 +170,7 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	
 	# 5. Update score and emit signal
 	total_score += points
-	target_hit.emit(zone_hit, points, world_pos)
+	target_hit.emit(zone_hit, points, world_pos, ipsc_mini.global_position, ipsc_mini.global_rotation)
 	
 	# 6. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
@@ -220,30 +229,35 @@ func is_point_in_zone(target_node: Node, zone_name: String, point: Vector2) -> b
 	var zone_node = target_node.get_node(zone_name)
 	if zone_node and zone_node is CollisionPolygon2D:
 		# Check if point is inside the polygon
-		return Geometry2D.is_point_in_polygon(point, zone_node.polygon)
+		var inside = Geometry2D.is_point_in_polygon(point, zone_node.polygon)
+		if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Checking zone %s at point %s, inside: %s" % [zone_name, point, inside])
+		return inside
+	if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Zone %s not found or not CollisionPolygon2D" % zone_name)
 	return false
 
 func spawn_bullet_hole(target_node: Node, local_position: Vector2):
 	"""Spawn a bullet hole at the specified local position using object pool"""
+	if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Spawning bullet hole at local pos: %s" % local_position)
 	var bullet_hole = get_pooled_bullet_hole()
 	if bullet_hole:
-		# Convert local position to global position for proper placement
-		var hole_global_pos = target_node.to_global(local_position)
+		# Set position relative to the target node
+		bullet_hole.position = local_position
 		
 		# Configure the bullet hole
-		bullet_hole.global_position = hole_global_pos
 		bullet_hole.visible = true
 		
 		# Set z-index to be between target (0) and barrel wall (10+)
 		# This ensures bullet holes appear in front of target but behind barrel wall
 		bullet_hole.z_index = 5
 		
-		# Add to root node instead of target node for proper layering
-		add_child(bullet_hole)
+		# Add to IPSCMini node so it moves with the target
+		target_node.add_child(bullet_hole)
 		
 		# Track as active
 		if bullet_hole not in active_bullet_holes:
 			active_bullet_holes.append(bullet_hole)
+	else:
+		if not DEBUG_DISABLE: print("[ipsc_mini_rotate] No bullet hole available from pool")
 
 func spawn_bullet_effects_at_position(world_pos: Vector2, _is_target_hit: bool = true):
 	"""Spawn bullet smoke and impact effects with throttling for performance"""

@@ -11,8 +11,8 @@ extends Control
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-#var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
-var base_target_sequence: Array[String] = ["ipsc_mini_rotate"]
+var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+#var base_target_sequence: Array[String] = ["ipsc_mini_rotate"]
 
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
@@ -45,7 +45,7 @@ var last_beep_second: int = -1  # Track last second we beeped
 @onready var footsteps_node = $Footsteps
 
 # Performance tracking
-signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float)
+signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, target_position: Vector2)
 signal drills_finished
 
 # Performance optimization
@@ -783,7 +783,7 @@ func connect_2poppers_signals():
 		if not DEBUG_DISABLED:
 			print("WARNING: 2poppers target doesn't have expected signals!")
 
-func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
+func _on_target_hit(param1, param2 = null, param3 = null, param4 = null, param5 = null):
 	"""Handle when a target is hit - supports both simple targets and composite targets"""
 	# Check bounds before accessing target_sequence
 	if current_target_index >= target_sequence.size():
@@ -824,6 +824,18 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 				print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 		
 		total_drill_score += int(actual_points)
+	elif current_target_type == "ipsc_mini_rotate":
+		# ipsc_mini_rotate sends: zone, points, hit_position, target_position, target_rotation
+		var zone = param1
+		var actual_points = param2
+		hit_position = param3
+		var target_position = param4
+		var target_rotation = param5
+		hit_area = zone
+		if not DEBUG_DISABLED:
+			print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
+			print("Target was at position: ", target_position, " with rotation: ", target_rotation, " radians (", rad_to_deg(target_rotation), " degrees)")
+		total_drill_score += int(actual_points)
 	else:
 		# Simple targets send: zone, points, hit_position
 		var zone = param1
@@ -838,17 +850,30 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		print("Total drill score: ", total_drill_score)
 	emit_signal("ui_score_update", total_drill_score)
 	
-	# Get rotation angle for rotating targets
+	# Get rotation angle and position for rotating targets
 	var rotation_angle = 0.0
-	if current_target_type == "ipsc_mini_rotate" and current_target_instance:
-		var rotation_center = current_target_instance.get_node("RotationCenter")
-		if rotation_center:
-			rotation_angle = rotation_center.rotation
+	var captured_target_position = Vector2.ZERO
+	if current_target_type == "ipsc_mini_rotate":
+		# For ipsc_mini_rotate, use the position and rotation passed in the signal
+		if param5 != null:
+			rotation_angle = param5
 			if not DEBUG_DISABLED:
 				print("Rotating target hit at rotation angle: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees)")
+		if param4 != null:
+			captured_target_position = param4
+			if not DEBUG_DISABLED:
+				print("Rotating target was at position: ", captured_target_position)
+	else:
+		# For other rotating targets, get from RotationCenter node
+		if current_target_instance:
+			var rotation_center = current_target_instance.get_node("RotationCenter")
+			if rotation_center:
+				rotation_angle = rotation_center.rotation
+				if not DEBUG_DISABLED:
+					print("Rotating target hit at rotation angle: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees)")
 	
 	# Emit the enhanced target_hit signal for performance tracking
-	emit_signal("target_hit", current_target_type, hit_position, hit_area, rotation_angle)
+	emit_signal("target_hit", current_target_type, hit_position, hit_area, rotation_angle, captured_target_position)
 	
 	# Special handling for rotating target - only count valid target hits (not misses or barrel hits)
 	if current_target_type == "ipsc_mini_rotate":

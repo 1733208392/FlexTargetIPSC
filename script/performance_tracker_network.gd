@@ -13,7 +13,7 @@ var shot_timer_delay = 0.0  # Store the shot timer delay duration
 func _ready():
 	pass
 
-func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float = 0.0, repeat: int = 0):
+func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float = 0.0, target_position: Vector2 = Vector2.ZERO, repeat: int = 0):
 	print("PERFORMANCE TRACKER NETWORK: _on_target_hit called with:", target_type, hit_position, hit_area, rotation_angle, repeat)
 	var current_time_usec = Time.get_ticks_usec()  # Use microsecond precision
 	var time_diff = 0.0  # Initialize to 0

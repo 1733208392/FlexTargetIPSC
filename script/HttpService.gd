@@ -126,9 +126,17 @@ func post(url: String, data: Dictionary, callback: Callable):
 
 func save_game(callback: Callable, data_id: String, content: Variant, ns: String = "default"):
 	var url = base_url + "/game/save"
+	
+	# Pre-serialize content to ensure it's a string
+	var content_str = ""
+	if content is Dictionary or content is Array:
+		content_str = JSON.stringify(content)
+	else:
+		content_str = str(content)
+	
 	var data = {
 		"data_id": data_id,
-		"content": content,
+		"content": content_str,
 		"namespace": ns
 	}
 	var http = HTTPRequest.new()

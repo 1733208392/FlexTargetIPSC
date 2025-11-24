@@ -1,7 +1,7 @@
 extends Sprite2D
 
 # Performance optimization
-const DEBUG_DISABLED = true  # Set to true for verbose debugging
+const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Array of bullet hole textures
 const BULLET_HOLE_TEXTURES = [
@@ -34,13 +34,14 @@ func _ready():
 		var scale_factor = randf_range(scale_range.x, scale_range.y)
 		scale = Vector2(scale_factor, scale_factor)
 	
-	# print("Bullet hole created with:")
-	# print("  - Texture: ", texture.resource_path if texture else "none")
-	# print("  - Position: ", position)
-	# print("  - Scale: ", scale)
-	# print("  - Z-index: ", z_index)
-	# print("  - Visible: ", visible)
-	# print("  - Modulate: ", modulate)
+	if not DEBUG_DISABLED:
+		print("Bullet hole created with:")
+		print("  - Texture: ", texture.resource_path if texture else "none")
+		print("  - Position: ", position)
+		print("  - Scale: ", scale)
+		print("  - Z-index: ", z_index)
+		print("  - Visible: ", visible)
+		print("  - Modulate: ", modulate)
 
 func randomize_texture():
 	"""Randomly select one of the bullet hole textures"""
