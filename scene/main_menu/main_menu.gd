@@ -93,9 +93,9 @@ func _ready():
 	# Connect button signals
 	focused_index = 0
 	buttons = [
+		bootcamp_button,
 		stage_button,
 		drills_button,
-		bootcamp_button,
 		games_button,
 		option_button]
 	
@@ -106,13 +106,13 @@ func _ready():
 		# Set focus based on return source
 		match source:
 			"drills":
-				focused_index = 0  # stage_button
+				focused_index = 2  # drills_button
 			"bootcamp":
-				focused_index = 2  # bootcamp_button
+				focused_index = 0  # bootcamp_button
 			"network":
-				focused_index = 1  # drills_button
+				focused_index = 2  # drills_button
 			"leaderboard":
-				focused_index = 3  # leaderboard_button
+				focused_index = 1  # stage_button
 			"options":
 				focused_index = 4  # option_button
 			_:
