@@ -202,6 +202,9 @@ func _on_websocket_bullet_hit(pos: Vector2):
 				if distance <= circle_radius:
 					if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Paddle hit detected at position %s, distance: %.2f, radius: %.2f" % [pos, distance, circle_radius])
 					
+					# Play metal hit sound for paddle
+					play_paddle_hit_sound(pos)
+					
 					# Disable the collision area to prevent further hits
 					circle_area.disabled = true
 					if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Disabled paddle collision area")
@@ -311,6 +314,45 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 		# Create AudioStreamPlayer2D for positional audio
 		var audio_player = AudioStreamPlayer2D.new()
 		audio_player.stream = impact_sound
+		audio_player.volume_db = -5  # Adjust volume as needed
+		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
+		
+		# Add to scene and play
+		var scene_root = get_tree().current_scene
+		var audio_parent = scene_root if scene_root else get_parent()
+		audio_parent.add_child(audio_player)
+		audio_player.global_position = world_pos
+		audio_player.play()
+		
+		# Update throttling state
+		last_sound_time = current_time
+		active_sounds += 1
+		
+		# Clean up audio player after sound finishes and decrease active count
+		audio_player.finished.connect(func(): 
+			active_sounds -= 1
+			audio_player.queue_free()
+		)
+
+func play_paddle_hit_sound(world_pos: Vector2):
+	"""Play metal hit sound for paddle hits"""
+	var current_time = Time.get_ticks_msec() / 1000.0
+	
+	# Check time-based throttling
+	if (current_time - last_sound_time) < sound_cooldown:
+		return
+	
+	# Check concurrent sound limiting
+	if active_sounds >= max_concurrent_sounds:
+		return
+	
+	# Load the metal hit sound for paddle
+	var metal_sound = preload("res://audio/metal_hit.WAV")
+	
+	if metal_sound:
+		# Create AudioStreamPlayer2D for positional audio
+		var audio_player = AudioStreamPlayer2D.new()
+		audio_player.stream = metal_sound
 		audio_player.volume_db = -5  # Adjust volume as needed
 		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
 		

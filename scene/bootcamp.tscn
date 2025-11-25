@@ -62,41 +62,48 @@ offset_right = 714.0
 offset_bottom = 250.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayerStats/Control"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="HBoxContainerLine1" type="HBoxContainer" parent="CanvasLayerStats/Control/VBoxContainer"]
-custom_minimum_size = Vector2(720, 0)
 layout_mode = 2
 theme_override_constants/separation = 24
 alignment = 1
 
 [node name="A" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 text = "A: 100%"
 horizontal_alignment = 1
 
 [node name="C" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 text = "C: 100%"
 horizontal_alignment = 1
 
 [node name="D" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 text = "D: 100%"
 horizontal_alignment = 1
 
 [node name="NS" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 text = "NS: 100%"
 horizontal_alignment = 1
 
 [node name="Miss" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 text = "Miss: 100%"

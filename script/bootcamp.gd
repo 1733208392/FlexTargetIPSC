@@ -5,7 +5,7 @@ const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
 #var target_sequence: Array[String] = ["bullseye", "ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique"]
-var target_sequence: Array[String] = ["idpa_rotate"]
+var target_sequence: Array[String] = ["idpa_rotate", "ipsc_mini_rotate"]
 var current_target_index: int = 0
 var current_target_instance = null
 
@@ -934,7 +934,7 @@ func update_statistics_display():
 				if not DEBUG_DISABLED:
 					print("[Bootcamp] Set NS label to:", ns_label.text)
 			else:
-				ns_label.text = ""
+				ns_label.text = "NS:--"
 	else:
 		# When no shots, show 0% for all zones
 		if a_label:
@@ -960,7 +960,7 @@ func update_statistics_display():
 			if show_ns_stat:
 				ns_label.text = "NS: 0.0%"
 			else:
-				ns_label.text = ""
+				ns_label.text = "NS:--"
 	
 	if shot_speeds.size() > 0:
 		var fastest = shot_speeds.min()

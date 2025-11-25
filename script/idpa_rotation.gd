@@ -87,6 +87,8 @@ func process_bullet_hit(pos: Vector2) -> void:
 			area = "paddle"
 			is_hit = false
 			paddle_hit = true
+			# Play metal hit sound for paddle
+			play_paddle_hit_sound(pos)
 			# Trigger paddle fall
 			play_paddle_fall()
 			# Start target animation since paddle is hit
@@ -322,6 +324,42 @@ func play_impact_sound_at_position(world_pos: Vector2):
 		audio_player.play()
 		
 		# Clean up audio player after sound finishes
+		audio_player.finished.connect(func(): 
+			active_sounds -= 1
+			audio_player.queue_free())
+
+func play_paddle_hit_sound(world_pos: Vector2):
+	"""Play metal hit sound for paddle hits"""
+	var current_time = Time.get_ticks_msec() / 1000.0
+	
+	# Check time-based throttling
+	if (current_time - last_sound_time) < sound_cooldown:
+		return
+	
+	# Check concurrent sound limiting
+	if active_sounds >= max_concurrent_sounds:
+		return
+	
+	# Load the metal hit sound for paddle
+	var metal_sound = preload("res://audio/metal_hit.WAV")
+	
+	if metal_sound:
+		# Create AudioStreamPlayer2D for positional audio
+		var audio_player = AudioStreamPlayer2D.new()
+		audio_player.stream = metal_sound
+		audio_player.volume_db = -5  # Adjust volume as needed
+		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
+		
+		# Add to scene and play
+		get_parent().add_child(audio_player)
+		audio_player.global_position = world_pos
+		audio_player.play()
+		
+		# Update throttling state
+		last_sound_time = current_time
+		active_sounds += 1
+		
+		# Clean up audio player after sound finishes and decrease active count
 		audio_player.finished.connect(func(): 
 			active_sounds -= 1
 			audio_player.queue_free())
