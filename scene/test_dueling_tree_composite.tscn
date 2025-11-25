@@ -1,29 +1,35 @@
-[gd_scene load_steps=2 format=3 uid="uid://cxcf7ci5mr56m"]
+[gd_scene load_steps=3 format=3 uid="uid://cxcf7ci5mr56m"]
 
 [ext_resource type="PackedScene" uid="uid://d376nuesjyhe2" path="res://scene/test_dueling_tree.tscn" id="1_124jw"]
+[ext_resource type="Texture2D" uid="uid://bvnmip7l1v4so" path="res://asset/duelling-tree-stand.png" id="2_447go"]
 
 [node name="Node2D" type="Node2D"]
 
 [node name="Node2D5" parent="." instance=ExtResource("1_124jw")]
-position = Vector2(216, 802)
+position = Vector2(298, 790)
 rotation = -6.2831855
 
 [node name="Node2D6" parent="." instance=ExtResource("1_124jw")]
-position = Vector2(214, 985)
+position = Vector2(298, 914)
 rotation = -6.2831855
 
 [node name="Node2D7" parent="." instance=ExtResource("1_124jw")]
-position = Vector2(216, 613)
+position = Vector2(301, 679)
 
 [node name="Node2D8" parent="." instance=ExtResource("1_124jw")]
-position = Vector2(212, 442)
+position = Vector2(304, 557)
 
 [node name="Node2D3" parent="." instance=ExtResource("1_124jw")]
-position = Vector2(218, 1163)
+position = Vector2(313, 144)
 rotation = -6.2831855
 
 [node name="Node2D2" parent="." instance=ExtResource("1_124jw")]
-position = Vector2(214, 282)
+position = Vector2(302, 421)
 
 [node name="Node2D" parent="." instance=ExtResource("1_124jw")]
-position = Vector2(210, 111)
+position = Vector2(306, 288)
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(360, 680)
+scale = Vector2(3, 3.3722224)
+texture = ExtResource("2_447go")

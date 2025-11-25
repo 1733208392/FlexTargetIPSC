@@ -4,7 +4,8 @@ extends Node2D
 const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-var target_sequence: Array[String] = ["bullseye", "ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "ipda", "ipda_ns", "ipda_rotate", "ipda_hard_cover_1", "ipda_hard_cover_2", "mozambique"]
+#var target_sequence: Array[String] = ["bullseye", "ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique"]
+var target_sequence: Array[String] = ["idpa_rotate"]
 var current_target_index: int = 0
 var current_target_instance = null
 
@@ -17,11 +18,11 @@ var current_target_instance = null
 @onready var hostage_scene: PackedScene = preload("res://scene/targets/hostage.tscn")
 @onready var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
-@onready var ipda_scene: PackedScene = preload("res://scene/targets/idpa.tscn")
-@onready var ipda_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
-@onready var ipda_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
-@onready var ipda_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
-@onready var ipda_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
+@onready var idpa_scene: PackedScene = preload("res://scene/targets/idpa.tscn")
+@onready var idpa_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
+@onready var idpa_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
+@onready var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
+@onready var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
 
 @onready var two_poppers_scene: PackedScene = preload("res://scene/targets/2poppers_simple.tscn")
 @onready var three_paddles_scene: PackedScene = preload("res://scene/targets/3paddles_simple.tscn")
@@ -56,7 +57,33 @@ var d_zone_count = 0
 var miss_count = 0
 var ns_zone_count = 0
 
+func stop_all_background_music():
+	"""Stop any background music that might still be playing from previous scenes"""
+	# Find all AudioStreamPlayer nodes in the scene tree that might be playing background music
+	var root = get_tree().root
+	var audio_players = []
+	
+	# Recursively find all AudioStreamPlayer nodes
+	_find_audio_stream_players(root, audio_players)
+	
+	for player in audio_players:
+		if player.is_playing() and (player.name == "BackgroundMusic" or player.stream and "battle" in player.stream.resource_path.to_lower()):
+			player.stop()
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Stopped background music from previous scene: ", player.name)
+
+func _find_audio_stream_players(node: Node, result: Array):
+	"""Recursively find all AudioStreamPlayer nodes"""
+	if node is AudioStreamPlayer:
+		result.append(node)
+	
+	for child in node.get_children():
+		_find_audio_stream_players(child, result)
+
 func _ready():
+	# Stop any background music from previous scenes (like main menu)
+	stop_all_background_music()
+	
 	# Load and apply current language setting from global settings
 	load_language_from_global_settings()
 	
@@ -173,11 +200,7 @@ func _start_drill_immediately():
 	current_target_index = 0
 	spawn_target_by_type(target_sequence[current_target_index])
 	
-	# Play background music
-	if background_music:
-		background_music.play()
-		if not DEBUG_DISABLED:
-			print("[Bootcamp] Playing background music")
+	# Background music is stopped when entering bootcamp
 	
 	# Any additional drill initialization can go here
 	# For bootcamp, the drill is already "active" since it's free practice
@@ -215,8 +238,8 @@ func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null, _arg5 = null):
 	# Handle different signal signatures based on target type:
 	# IPSC Mini: target_hit(zone, points, hit_position)
 	# Poppers/Paddles: target_hit(id, zone, points, hit_position)
-	# IPDA (regular, ns, hard_cover): target_hit(zone, points, hit_position)
-	# IPDA Rotate: target_hit(hit_position, points, zone, is_hit, rotation)
+	# idpa (regular, ns, hard_cover): target_hit(zone, points, hit_position)
+	# idpa Rotate: target_hit(hit_position, points, zone, is_hit, rotation)
 	
 	# Only process hits if drill has started
 	if not drill_started:
@@ -233,8 +256,8 @@ func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null, _arg5 = null):
 	var zone
 	var track_stats = _should_show_stats(current_target_type)
 	
-	if current_target_type == "ipda_rotate":
-		# IPDA Rotate: target_hit(hit_position, points, zone, is_hit, rotation)
+	if current_target_type == "idpa_rotate":
+		# idpa Rotate: target_hit(hit_position, points, zone, is_hit, rotation)
 		hit_position = _arg1
 		zone = _arg3
 	elif current_target_type in ["2poppers", "3paddles"]:
@@ -242,7 +265,7 @@ func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null, _arg5 = null):
 		hit_position = _arg4
 		zone = _arg2
 	else:
-		# IPSC Mini and IPDA variants: target_hit(zone, points, hit_position)
+		# IPSC Mini and idpa variants: target_hit(zone, points, hit_position)
 		hit_position = _arg3
 		zone = _arg1
 	
@@ -342,7 +365,7 @@ func _collect_bullet_holes(node: Node, result: Array):
 
 func _normalize_zone_for_stats(zone: String, target_type: String) -> String:
 	"""Translate rotation-specific area names into the standard zones used by the stats UI"""
-	if target_type == "ipda_rotate":
+	if target_type == "idpa_rotate":
 		match zone:
 			"head_heart":
 				return "AZone"
@@ -354,16 +377,16 @@ func _normalize_zone_for_stats(zone: String, target_type: String) -> String:
 				return "miss"
 			_: 
 				return zone
-	if _is_ipda_stats_target(target_type) and (zone.begins_with("ns") or zone.begins_with("hard-cover")):
+	if _is_idpa_stats_target(target_type) and (zone.begins_with("ns") or zone.begins_with("hard-cover")):
 		return "NS"
 	if _is_ipsc_ns_stats_target(target_type):
 		if zone.begins_with("WhiteZone") or zone.begins_with("BlackZone"):
 			return "NS"
 	return zone
 
-func _is_ipda_stats_target(target_type: String) -> bool:
-	var ipda_targets = ["ipda", "ipda_ns", "ipda_rotate", "ipda_hard_cover_1", "ipda_hard_cover_2"]
-	return target_type in ipda_targets
+func _is_idpa_stats_target(target_type: String) -> bool:
+	var idpa_targets = ["idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2"]
+	return target_type in idpa_targets
 
 func _is_ipsc_stats_target(target_type: String) -> bool:
 	var ipsc_targets = ["ipsc_mini", "ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "ipsc_mini_rotate"]
@@ -374,11 +397,11 @@ func _is_ipsc_ns_stats_target(target_type: String) -> bool:
 	return target_type in ipsc_ns_targets
 
 func _is_ns_stats_target(target_type: String) -> bool:
-	return _is_ipda_stats_target(target_type) or _is_ipsc_ns_stats_target(target_type)
+	return _is_idpa_stats_target(target_type) or _is_ipsc_ns_stats_target(target_type)
 
 func _should_show_stats(target_type: String) -> bool:
 	"""Determine whether the stats overlay should be visible for this target"""
-	return _is_ipda_stats_target(target_type) or _is_ipsc_stats_target(target_type)
+	return _is_idpa_stats_target(target_type) or _is_ipsc_stats_target(target_type)
 
 func _hide_stats_labels() -> void:
 	for label in [count_label, a_label, c_label, d_label, ns_label, miss_label, fastest_label, average_label]:
@@ -543,12 +566,31 @@ func get_localized_shots_text() -> String:
 		_:
 			return "Shots"
 
+func clear_stats():
+	"""Clear all statistics and shot data"""
+	# Clear shot list
+	for label in shot_labels:
+		label.text = ""
+	shot_times.clear()
+	
+	# Reset statistics
+	shot_speeds.clear()
+	a_zone_count = 0
+	c_zone_count = 0
+	d_zone_count = 0
+	miss_count = 0
+	ns_zone_count = 0
+	# Note: update_statistics_display() will be called after target switch
+
 func switch_to_next_target():
 	"""Switch to the next target in the sequence"""
 	if not drill_started:
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Drill not started yet, ignoring target switch")
 		return
+	
+	# Clear stats when switching targets
+	clear_stats()
 	
 	# Deactivate current target
 	if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("set"):
@@ -563,6 +605,9 @@ func switch_to_next_target():
 		print("[Bootcamp] Switching to next target: ", target_sequence[current_target_index], " (index: ", current_target_index, ")")
 	
 	spawn_target_by_type(target_sequence[current_target_index])
+	
+	# Update statistics display after target switch
+	update_statistics_display()
 
 func switch_to_previous_target():
 	"""Switch to the previous target in the sequence"""
@@ -570,6 +615,9 @@ func switch_to_previous_target():
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Drill not started yet, ignoring target switch")
 		return
+	
+	# Clear stats when switching targets
+	clear_stats()
 	
 	# Deactivate current target
 	if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("set"):
@@ -584,6 +632,9 @@ func switch_to_previous_target():
 		print("[Bootcamp] Switching to previous target: ", target_sequence[current_target_index], " (index: ", current_target_index, ")")
 	
 	spawn_target_by_type(target_sequence[current_target_index])
+	
+	# Update statistics display after target switch
+	update_statistics_display()
 
 func _on_target_disappeared(target_name: String):
 	"""Handle when all poppers or paddles have disappeared - respawn them"""
@@ -633,26 +684,26 @@ func spawn_target_by_type(target_type: String):
 			canvas_layer.visible = true  # Show shot intervals for IPSC mini
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Shown CanvasLayers and stats for IPSC mini target")
-		elif target_type == "ipda":
-			canvas_layer.visible = true  # Show shot intervals for IPDA
+		elif target_type == "idpa":
+			canvas_layer.visible = true  # Show shot intervals for idpa
 			if not DEBUG_DISABLED:
-				print("[Bootcamp] Shown CanvasLayers and stats for IPDA target")
-		elif target_type == "ipda_ns":
-			canvas_layer.visible = true  # Show shot intervals for IPDA NS
+				print("[Bootcamp] Shown CanvasLayers and stats for idpa target")
+		elif target_type == "idpa_ns":
+			canvas_layer.visible = true  # Show shot intervals for idpa NS
 			if not DEBUG_DISABLED:
-				print("[Bootcamp] Shown CanvasLayers and stats for IPDA NS target")
-		elif target_type == "ipda_rotate":
-			canvas_layer.visible = false  # Hide shot intervals for IPDA rotation targets
+				print("[Bootcamp] Shown CanvasLayers and stats for idpa NS target")
+		elif target_type == "idpa_rotate":
+			canvas_layer.visible = false  # Hide shot intervals for idpa rotation targets
 			if not DEBUG_DISABLED:
-				print("[Bootcamp] Hidden shot intervals but kept stats visible for IPDA rotation target")
-		elif target_type == "ipda_hard_cover_1":
-			canvas_layer.visible = true  # Show shot intervals for IPDA hard cover 1
+				print("[Bootcamp] Hidden shot intervals but kept stats visible for idpa rotation target")
+		elif target_type == "idpa_hard_cover_1":
+			canvas_layer.visible = true  # Show shot intervals for idpa hard cover 1
 			if not DEBUG_DISABLED:
-				print("[Bootcamp] Shown CanvasLayers and stats for IPDA hard cover 1 target")
-		elif target_type == "ipda_hard_cover_2":
-			canvas_layer.visible = true  # Show shot intervals for IPDA hard cover 2
+				print("[Bootcamp] Shown CanvasLayers and stats for idpa hard cover 1 target")
+		elif target_type == "idpa_hard_cover_2":
+			canvas_layer.visible = true  # Show shot intervals for idpa hard cover 2
 			if not DEBUG_DISABLED:
-				print("[Bootcamp] Shown CanvasLayers and stats for IPDA hard cover 2 target")
+				print("[Bootcamp] Shown CanvasLayers and stats for idpa hard cover 2 target")
 		elif target_type == "mozambique":
 			canvas_layer.visible = false  # Hide shot intervals for mozambique
 			if not DEBUG_DISABLED:
@@ -688,16 +739,16 @@ func spawn_target_by_type(target_type: String):
 			target_scene = ipsc_mini_black_1_scene
 		"ipsc_mini_black_2":
 			target_scene = ipsc_mini_black_2_scene
-		"ipda":
-			target_scene = ipda_scene
-		"ipda_ns":
-			target_scene = ipda_ns_scene
-		"ipda_rotate":
-			target_scene = ipda_rotate_scene
-		"ipda_hard_cover_1":
-			target_scene = ipda_hard_cover_1_scene
-		"ipda_hard_cover_2":
-			target_scene = ipda_hard_cover_2_scene
+		"idpa":
+			target_scene = idpa_scene
+		"idpa_ns":
+			target_scene = idpa_ns_scene
+		"idpa_rotate":
+			target_scene = idpa_rotate_scene
+		"idpa_hard_cover_1":
+			target_scene = idpa_hard_cover_1_scene
+		"idpa_hard_cover_2":
+			target_scene = idpa_hard_cover_2_scene
 		"hostage":
 			target_scene = hostage_scene
 		"2poppers":
@@ -746,7 +797,7 @@ func spawn_target_by_type(target_type: String):
 			print("[Bootcamp] Reset ", paddles_reset, " paddle(s) for target type ", target_type)
 		
 		# Special positioning for rotating target (offset from center)
-		if target_type == "ipsc_mini_rotate":
+		if target_type == "ipsc_mini_rotate" || target_type == "idpa_rotate":
 			target.position = Vector2(160, 740)  # Center (360,640) + offset (-200,100)
 			# Z-index is set manually in the editor
 		
@@ -844,7 +895,7 @@ func update_statistics_display():
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] ERROR: Count label not found! count_label =", count_label)
 	
-	var is_ipda_target = _is_ipda_stats_target(current_target_type)
+	var is_idpa_target = _is_idpa_stats_target(current_target_type)
 	var show_ns_stat = _is_ns_stats_target(current_target_type)
 	
 	if total_shots > 0:
@@ -854,7 +905,7 @@ func update_statistics_display():
 		var miss_percent = (float(miss_count) / total_shots) * 100
 		
 		if a_label:
-			var a_label_text = "0: %.0f%%" % a_percent if is_ipda_target else tr("stats_a_zone") % a_percent
+			var a_label_text = "0: %.0f%%" % a_percent if is_idpa_target else tr("stats_a_zone") % a_percent
 			a_label.text = a_label_text
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Set A label to:", a_label.text)
@@ -863,12 +914,12 @@ func update_statistics_display():
 				print("[Bootcamp] A label not found!")
 				
 		if c_label:
-			var c_label_text = "-1: %.0f%%" % c_percent if is_ipda_target else tr("stats_c_zone") % c_percent
+			var c_label_text = "-1: %.0f%%" % c_percent if is_idpa_target else tr("stats_c_zone") % c_percent
 			c_label.text = c_label_text
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Set C label to:", c_label.text)
 		if d_label:
-			var d_label_text = "-3: %.0f%%" % d_percent if is_ipda_target else tr("stats_d_zone") % d_percent
+			var d_label_text = "-3: %.0f%%" % d_percent if is_idpa_target else tr("stats_d_zone") % d_percent
 			d_label.text = d_label_text
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Set D label to:", d_label.text)
@@ -887,17 +938,17 @@ func update_statistics_display():
 	else:
 		# When no shots, show 0% for all zones
 		if a_label:
-			var a_label_text = "0: %.0f%%" % 0.0 if is_ipda_target else tr("stats_a_zone") % 0.0
+			var a_label_text = "0: %.0f%%" % 0.0 if is_idpa_target else tr("stats_a_zone") % 0.0
 			a_label.text = a_label_text
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Set A label to: A:0.0%")
 		if c_label:
-			var c_label_text = "-1: %.0f%%" % 0.0 if is_ipda_target else tr("stats_c_zone") % 0.0
+			var c_label_text = "-1: %.0f%%" % 0.0 if is_idpa_target else tr("stats_c_zone") % 0.0
 			c_label.text = c_label_text
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Set C label to: C:0.0%")
 		if d_label:
-			var d_label_text = "-3: %.0f%%" % 0.0 if is_ipda_target else tr("stats_d_zone") % 0.0
+			var d_label_text = "-3: %.0f%%" % 0.0 if is_idpa_target else tr("stats_d_zone") % 0.0
 			d_label.text = d_label_text
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Set D label to: D:0.0%")

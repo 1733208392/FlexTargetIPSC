@@ -103,7 +103,7 @@ position = Vector2(-29, -314)
 shape = SubResource("CircleShape2D_knpln")
 
 [node name="torso" type="CollisionShape2D" parent="."]
-position = Vector2(-26.5, 26)
+position = Vector2(-24.5, 26)
 shape = SubResource("RectangleShape2D_s8c5b")
 
 [node name="ShotTimer" parent="." instance=ExtResource("3_s8c5b")]

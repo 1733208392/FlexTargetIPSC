@@ -190,11 +190,14 @@ func _resume_game():
 
 func _return_to_menu():
 	print("[GameMonkey] Returning to menu scene")
-	var error = get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
-	if error != OK:
-		print("[GameMonkey] Failed to change scene: ", error)
+	if get_tree():
+		var error = get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
+		if error != OK:
+			print("[GameMonkey] Failed to change scene: ", error)
+		else:
+			print("[GameMonkey] Scene change initiated")
 	else:
-		print("[GameMonkey] Scene change initiated")
+		print("[GameMonkey] Cannot return to menu: SceneTree not available")
 
 func _show_game_over(winner_id: int):
 	if game_over_overlay_scene:
@@ -367,7 +370,10 @@ func _on_game_duration_timeout():
 	else:
 		print("[GameMonkey] Error: Could not find vines!")
 		# Fallback, change to menu scene
-		get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
+		if get_tree():
+			get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
+		else:
+			print("[GameMonkey] Cannot change scene: SceneTree not available")
 	
 	# Clean up timer
 	if game_duration_timer:

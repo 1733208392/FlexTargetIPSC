@@ -294,6 +294,10 @@ func spawn_target():
 	target_instance = target_scene.instantiate()
 	center_container.add_child(target_instance)
 	
+	# Offset rotation target by -200, 200 from center
+	if current_target_type == "rotation":
+		target_instance.position = Vector2(-200, 200)
+	
 	# Set drill active flag to false initially
 	if target_instance.has_method("set"):
 		target_instance.set("drill_active", false)

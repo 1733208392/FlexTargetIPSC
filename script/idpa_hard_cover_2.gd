@@ -201,7 +201,7 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	if is_point_in_zone("hard-cover", local_pos):
 		zone_hit = "hard-cover"
 		points = 0  # No score for hard cover
-		is_target_hit = false
+		is_target_hit = true
 	# Check which zone was hit (highest score first)
 	elif is_point_in_zone("head-0", local_pos):
 		zone_hit = "head-0"
@@ -231,12 +231,12 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# 3. ALWAYS: Spawn bullet effects (impact/sound) for all hits
 	spawn_bullet_effects_at_position(world_pos, is_target_hit)
 
-	# 4. Update score and emit signal (only for actual target hits, not hard cover)
-	if is_target_hit:
-		total_score += points
-		target_hit.emit(zone_hit, points, world_pos)
+	# 4. Update score and emit signal (emit for all hits including misses for bootcamp stats)
+	total_score += points
+	target_hit.emit(zone_hit, points, world_pos)
 
-		# 5. Increment shot count and check for disappearing animation (only for valid target hits)
+	# 5. Increment shot count and check for disappearing animation (only for valid target hits)
+	if is_target_hit:
 		shot_count += 1
 
 		# Check if we've reached the maximum valid target hits

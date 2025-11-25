@@ -14,8 +14,8 @@ func _on_sprite_input_event(_viewport, event, _shape_idx):
 		var tween = create_tween()
 		if is_moving_left:
 			animated_sprite.play()
-			tween.tween_property(animated_sprite, "position:x", original_x + 100, 1.0)
+			tween.tween_property(animated_sprite, "position:x", original_x + 200, 0.5)
 		else:
 			animated_sprite.play_backwards()
-			tween.tween_property(animated_sprite, "position:x", original_x, 1.0)
+			tween.tween_property(animated_sprite, "position:x", original_x, 0.5)
 		is_moving_left = not is_moving_left

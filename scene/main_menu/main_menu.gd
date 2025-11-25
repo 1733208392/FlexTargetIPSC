@@ -247,6 +247,11 @@ func _on_bootcamp_response(result, response_code, _headers, body):
 		var global_data = get_node_or_null("/root/GlobalData")
 		if global_data:
 			global_data.return_source = "bootcamp"
+		# Stop background music before transitioning to bootcamp
+		if background_music:
+			background_music.stop()
+			if not DEBUG_DISABLED:
+				print("[Menu] Stopped background music for bootcamp transition")
 		if is_inside_tree():
 			get_tree().change_scene_to_file("res://scene/bootcamp.tscn")
 		else:
