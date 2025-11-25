@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3 uid="uid://cxcf7ci5mr56m"]
+
+[ext_resource type="PackedScene" uid="uid://d376nuesjyhe2" path="res://scene/test_dueling_tree.tscn" id="1_124jw"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="Node2D5" parent="." instance=ExtResource("1_124jw")]
+position = Vector2(216, 802)
+rotation = -6.2831855
+
+[node name="Node2D6" parent="." instance=ExtResource("1_124jw")]
+position = Vector2(214, 985)
+rotation = -6.2831855
+
+[node name="Node2D7" parent="." instance=ExtResource("1_124jw")]
+position = Vector2(216, 613)
+
+[node name="Node2D8" parent="." instance=ExtResource("1_124jw")]
+position = Vector2(212, 442)
+
+[node name="Node2D3" parent="." instance=ExtResource("1_124jw")]
+position = Vector2(218, 1163)
+rotation = -6.2831855
+
+[node name="Node2D2" parent="." instance=ExtResource("1_124jw")]
+position = Vector2(214, 282)
+
+[node name="Node2D" parent="." instance=ExtResource("1_124jw")]
+position = Vector2(210, 111)

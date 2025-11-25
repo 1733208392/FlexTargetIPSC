@@ -112,7 +112,10 @@ func process_bullet_hit(pos: Vector2) -> void:
 	
 	# Spawn bullet effects (impact/sound) for all hits
 	spawn_bullet_effects_at_position(pos, is_hit)
-	
+
+	# Emit signal for all shots so bootcamp can respond (e.g., clear area)
+	emit_signal("target_hit", pos, score, area, is_hit, target_area.rotation)
+
 	# Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_hit:
 		shot_count += 1
@@ -120,9 +123,6 @@ func process_bullet_hit(pos: Vector2) -> void:
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
 			play_disappearing_animation()
-		
-		# Emit signal for target hits
-		emit_signal("target_hit", pos, score, area, is_hit, target_area.rotation)
 
 func get_collision_shapes(area: Area2D) -> Array:
 	var shapes = []

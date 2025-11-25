@@ -239,18 +239,35 @@ func spawn_bullet_hole(target_node: Node, local_position: Vector2):
 	if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Spawning bullet hole at local pos: %s" % local_position)
 	var bullet_hole = get_pooled_bullet_hole()
 	if bullet_hole:
-		# Set position relative to the target node
-		bullet_hole.position = local_position
-		
-		# Configure the bullet hole
-		bullet_hole.visible = true
-		
-		# Z-index is set manually in the editor
-		
-		# Add to IPSCMini node so it moves with the target
+		# Add to target so it rotates/moves with it
 		target_node.add_child(bullet_hole)
-		
-		# Track as active
+		bullet_hole.position = local_position
+		# Desired draw order: target < bullet hole < barrel wall.
+		# Ensure barrel wall sits highest; adjust if scene was misconfigured.
+		var target_z = 0
+		if target_node is CanvasItem:
+			target_z = target_node.z_index
+		var hole_z = target_z + 1
+		var barrel_wall := get_node_or_null("BarrelWall")
+		if barrel_wall and barrel_wall is CanvasItem:
+			var barrel_z = barrel_wall.z_index
+			# Raise barrel above target if necessary.
+			if barrel_z <= target_z:
+				barrel_z = target_z + 2
+				barrel_wall.z_index = barrel_z
+			# Keep barrel above planned hole.
+			if barrel_z <= hole_z:
+				barrel_z = hole_z + 1
+				barrel_wall.z_index = barrel_z
+			# Place hole directly beneath barrel while above target.
+			hole_z = max(target_z + 1, barrel_wall.z_index - 1)
+		bullet_hole.z_index = hole_z
+		# Persist offset (bullet_hole has exported var z_index_offset)
+		bullet_hole.z_index_offset = hole_z
+		bullet_hole.visible = true
+		if not DEBUG_DISABLE:
+			print("[ipsc_mini_rotate] Bullet hole positioned z_index=", hole_z, " target_z=", target_z, " barrel_z=", (barrel_wall.z_index if barrel_wall and barrel_wall is CanvasItem else "N/A"))
+		# Track active
 		if bullet_hole not in active_bullet_holes:
 			active_bullet_holes.append(bullet_hole)
 	else:
@@ -377,13 +394,7 @@ func reset_target():
 		ipsc_mini.rotation = 0.0
 		ipsc_mini.scale = Vector2.ONE
 	
-	# Re-enable paddle collision area
-	var paddle = get_node_or_null("Paddle/Paddle")
-	if paddle:
-		var circle_area = paddle.get_node_or_null("CircleArea")
-		if circle_area:
-			circle_area.disabled = false
-			if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Re-enabled paddle collision area")
+	_reset_local_paddle()
 	
 	# Reset score
 	reset_score()
@@ -408,6 +419,18 @@ func reset_bullet_hole_pool():
 	
 	# Clear active list
 	active_bullet_holes.clear()
+
+func reset_paddle():
+	"""External hook used by bootcamp to restore a disconnected paddle"""
+	_reset_local_paddle()
+
+func _reset_local_paddle():
+	var paddle = get_node_or_null("Paddle/Paddle")
+	if not paddle:
+		return
+	if paddle.has_method("reset_paddle"):
+		paddle.reset_paddle()
+		return
 
 func initialize_bullet_hole_pool():
 	"""Pre-instantiate bullet holes for performance optimization"""

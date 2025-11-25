@@ -1,8 +1,8 @@
 [gd_scene load_steps=2 format=3 uid="uid://um1c6ifqwor4"]
 
-[ext_resource type="PackedScene" uid="uid://dbk3n2lpxt0uo" path="res://scene/targets/idpa_hard_cover_1.tscn" id="1_1tiho"]
+[ext_resource type="PackedScene" uid="uid://6nm0fwntnbky" path="res://scene/ipsc_mini_rotate.tscn" id="1_1tiho"]
 
 [node name="Node2D" type="Node2D"]
 
-[node name="IDPA-Black-1" parent="." instance=ExtResource("1_1tiho")]
-position = Vector2(353, 645)
+[node name="IPSCMiniRotate" parent="." instance=ExtResource("1_1tiho")]
+position = Vector2(216, 710)

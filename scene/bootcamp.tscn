@@ -29,7 +29,7 @@ text = "switch_targets_instruction"
 horizontal_alignment = 1
 
 [node name="ClearArea" type="ColorRect" parent="."]
-z_index = 2
+z_index = 5
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -72,12 +72,6 @@ layout_mode = 2
 theme_override_constants/separation = 24
 alignment = 1
 
-[node name="Count" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
-layout_mode = 2
-theme = ExtResource("5_drill_theme")
-text = "Count: 1000"
-horizontal_alignment = 1
-
 [node name="A" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
@@ -96,6 +90,12 @@ theme = ExtResource("5_drill_theme")
 text = "D: 100%"
 horizontal_alignment = 1
 
+[node name="NS" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+text = "NS: 100%"
+horizontal_alignment = 1
+
 [node name="Miss" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
@@ -106,21 +106,34 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Control" type="Control" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2"]
-custom_minimum_size = Vector2(160, 0)
+[node name="space1" type="Control" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2"]
+custom_minimum_size = Vector2(144, 0)
 layout_mode = 2
 
+[node name="Count" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2"]
+custom_minimum_size = Vector2(144, 0)
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+text = "Count: 1000"
+horizontal_alignment = 1
+
 [node name="Fastest" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2"]
+custom_minimum_size = Vector2(144, 0)
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 text = "Fastest:100%"
 horizontal_alignment = 1
 
 [node name="Average" type="Label" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2"]
+custom_minimum_size = Vector2(144, 0)
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 text = "Average:100%"
 horizontal_alignment = 1
+
+[node name="space2" type="Control" parent="CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine2"]
+custom_minimum_size = Vector2(144, 0)
+layout_mode = 2
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 

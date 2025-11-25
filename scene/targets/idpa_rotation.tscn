@@ -1,9 +1,10 @@
-[gd_scene load_steps=13 format=3 uid="uid://donwma5fr4pur"]
+[gd_scene load_steps=14 format=3 uid="uid://donwma5fr4pur"]
 
 [ext_resource type="Script" uid="uid://cfaja7ny78ro" path="res://script/idpa_rotation.gd" id="1_euaii"]
 [ext_resource type="Texture2D" uid="uid://cane2y7sy4bht" path="res://asset/idpa.png" id="2_euaii"]
 [ext_resource type="Texture2D" uid="uid://d0m34j6rbnble" path="res://asset/logo-barrel.png" id="3_euaii"]
 [ext_resource type="PackedScene" uid="uid://b1o8o233dwg3s" path="res://scene/paddle_simple.tscn" id="3_j8eqe"]
+[ext_resource type="Script" uid="uid://dukv4x4iox6xu" path="res://script/paddle_ipsc_rotation.gd" id="5_magc1"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_knpln"]
 radius = 60.0
@@ -153,4 +154,4 @@ shape = SubResource("RectangleShape2D_2tt3g")
 position = Vector2(260, 0)
 
 [node name="Paddle" parent="Paddle" instance=ExtResource("3_j8eqe")]
-script = null
+script = ExtResource("5_magc1")

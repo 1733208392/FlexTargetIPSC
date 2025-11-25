@@ -360,6 +360,15 @@ func reset_paddle():
 	is_fallen = false
 	input_pickable = true
 	position = initial_position  # Reset to initial position, not (0,0)
+	# Re-enable collision area if it was disabled by a hit in another scene
+	var circle_area = get_node_or_null("CircleArea")
+	if circle_area and circle_area is CollisionShape2D:
+		circle_area.disabled = false
+		if not DEBUG_DISABLED:
+			print("[paddle %s] CircleArea collision re-enabled" % paddle_id)
+	# Ensure the paddle sprite and node are visible after reset
+	visible = true
+	sprite.visible = true
 	
 	var shader_material = sprite.material as ShaderMaterial
 	if shader_material:
@@ -372,6 +381,11 @@ func reset_paddle():
 	if animation_player:
 		animation_player.stop()
 		animation_player.seek(0.0)
+		if animation_player.has_animation("fall_down"):
+			animation_player.play("fall_down")
+			animation_player.stop() # ensure shader fall_progress resets visually
+		if not DEBUG_DISABLED:
+			print("[paddle %s] AnimationPlayer reset" % paddle_id)
 	
 	print("Paddle %s reset to initial position %s" % [paddle_id, initial_position])
 	

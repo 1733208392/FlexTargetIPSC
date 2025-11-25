@@ -1,9 +1,10 @@
-[gd_scene load_steps=10 format=3 uid="uid://6nm0fwntnbky"]
+[gd_scene load_steps=11 format=3 uid="uid://6nm0fwntnbky"]
 
 [ext_resource type="Script" uid="uid://d0k8vvwawfi16" path="res://script/ipsc_mini_rotate.gd" id="1_6qps3"]
 [ext_resource type="PackedScene" uid="uid://pxoma10oooh5" path="res://scene/ipsc_mini_small_png.tscn" id="1_ipsc_mini"]
 [ext_resource type="Texture2D" uid="uid://d0m34j6rbnble" path="res://asset/logo-barrel.png" id="2_fco47"]
 [ext_resource type="PackedScene" uid="uid://hi8aom0rumjj" path="res://scene/paddle.tscn" id="4_5wbws"]
+[ext_resource type="Script" uid="uid://dukv4x4iox6xu" path="res://script/paddle_ipsc_rotation.gd" id="5_504v5"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_6qps3"]
 size = Vector2(398.18182, 639.0908)
@@ -118,4 +119,4 @@ position = Vector2(400, 0)
 
 [node name="Paddle" parent="Paddle" instance=ExtResource("4_5wbws")]
 scale = Vector2(0.4, 0.4)
-script = null
+script = ExtResource("5_504v5")
