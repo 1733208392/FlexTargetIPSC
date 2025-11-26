@@ -9,6 +9,7 @@ const DEBUG_DISABLED = true  # Set to true to disable debug prints for productio
 signal navigate(direction: String)
 signal enter_pressed
 signal back_pressed
+signal homepage_pressed
 signal volume_up_requested
 signal volume_down_requested
 signal power_off_requested
@@ -44,8 +45,10 @@ func _on_menu_control(directive: String):
 			navigate.emit(directive)
 		"enter":
 			enter_pressed.emit()
-		"back", "homepage":
+		"back":
 			back_pressed.emit()
+		"homepage":
+			homepage_pressed.emit()
 		"volume_up":
 			volume_up_requested.emit()
 			_handle_volume_up()

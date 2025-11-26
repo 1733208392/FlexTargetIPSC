@@ -666,21 +666,7 @@ func _on_menu_control(directive: String):
 			if DEBUG_PRINTS:
 				print("[History] Power off")
 			power_off()
-		"back", "homepage":
-			if DEBUG_PRINTS:
-				print("[History] ", directive, " - navigating to main menu")
-			var menu_controller = get_node("/root/MenuController")
-			if menu_controller:
-				menu_controller.play_cursor_sound()
-			
-			# Set return source for focus management
-			var global_data = get_node_or_null("/root/GlobalData")
-			if global_data:
-				global_data.return_source = "leaderboard"
-				if DEBUG_PRINTS:
-					print("[History] Set return_source to leaderboard")
-			
-			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+		
 		"up":
 			if DEBUG_PRINTS:
 				print("[History] Moving focus up")
@@ -695,6 +681,37 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
+		"back":
+			if DEBUG_PRINTS:
+				print("[History] Back - navigating to sub menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "history"
+				if DEBUG_PRINTS:
+					print("[History] Set return_source to history")
+			
+			get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
+		"homepage":
+			if DEBUG_PRINTS:
+				print("[History] Homepage - navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "leaderboard"
+				if DEBUG_PRINTS:
+					print("[History] Set return_source to leaderboard")
+			
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+	
 		"enter":
 			if DEBUG_PRINTS:
 				print("[History] Enter pressed")

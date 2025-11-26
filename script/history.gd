@@ -31,10 +31,6 @@ func _ready():
 	# Load and apply current language setting from global settings
 	load_language_from_global_settings()
 	
-	# Connect back button
-	if back_button:
-		back_button.pressed.connect(_on_back_pressed)
-	
 	# Create loading overlay
 	create_loading_overlay()
 	
@@ -597,12 +593,6 @@ func _size_panel(panel: Panel, item: HBoxContainer):
 				panel.size = item.size
 				panel.position = Vector2.ZERO
 
-func _on_back_pressed():
-	# Navigate back to the previous scene (intro or main menu)
-	if DEBUG_PRINTS:
-		print("Back button pressed - returning to intro")
-	get_tree().change_scene_to_file("res://scene/intro.tscn")
-
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
 		return
@@ -621,9 +611,24 @@ func _on_menu_control(directive: String):
 			if DEBUG_PRINTS:
 				print("[History] Power off")
 			power_off()
-		"back", "homepage":
+		"back":
 			if DEBUG_PRINTS:
-				print("[History] ", directive, " - navigating to main menu")
+				print("[History] Back - navigating to sub menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "history"
+				if DEBUG_PRINTS:
+					print("[History] Set return_source to history")
+			
+			get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
+		"homepage":
+			if DEBUG_PRINTS:
+				print("[History] Homepage - navigating to main menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
