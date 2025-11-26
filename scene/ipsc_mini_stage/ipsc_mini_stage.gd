@@ -11,8 +11,8 @@ extends Control
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-#var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
-var base_target_sequence: Array[String] = ["3paddles","ipsc_mini_rotate"]
+var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+#var base_target_sequence: Array[String] = ["3paddles","ipsc_mini_rotate"]
 
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
@@ -1208,9 +1208,9 @@ func _on_menu_control(directive: String):
 			if not DEBUG_DISABLED:
 				print("[Drills] Power off")
 			power_off()
-		"back", "homepage":
+		"back":
 			if not DEBUG_DISABLED:
-				print("[Drills] ", directive, " - navigating to main menu")
+				print("[Drills] back - navigating to sub menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
@@ -1219,17 +1219,30 @@ func _on_menu_control(directive: String):
 			var global_data = get_node_or_null("/root/GlobalData")
 			if global_data:
 				global_data.return_source = "drills"
-				if not DEBUG_DISABLED:
-					print("[Drills] Set return_source to drills")
 			
-			# Show status bar when exiting drills
+			# Show status bar when exiting
 			if get_tree():
 				var status_bars = get_tree().get_nodes_in_group("status_bar")
 				for status_bar in status_bars:
 					status_bar.visible = true
-					if not DEBUG_DISABLED:
-						print("[Drills] Shown status bar: ", status_bar.name)
+				get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
+		"homepage":
+			if not DEBUG_DISABLED:
+				print("[Drills] homepage - navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
 			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "drills"
+			
+			# Show status bar when exiting
+			if get_tree():
+				var status_bars = get_tree().get_nodes_in_group("status_bar")
+				for status_bar in status_bars:
+					status_bar.visible = true
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:
 			if not DEBUG_DISABLED:

@@ -636,7 +636,7 @@ work_mode_slave,Slave,从机,スレーブ,從機
 stats_a_zone,"A:%.1f%%","A:%.1f%%","A:%.1f%%","A:%.1f%%"
 stats_c_zone,"C:%.1f%%","C:%.1f%%","C:%.1f%%","C:%.1f%%"
 stats_d_zone,"D:%.1f%%","D:%.1f%%","D:%.1f%%","D:%.1f%%"
-stats_miss,"Miss:%.1f%%","失误:%.1f%%","ミス:%.1f%%","失誤:%.1f%%"
+stats_miss,"Miss:%.1f%%","脱靶:%.1f%%","ミス:%.1f%%","脱靶:%.1f%%"
 stats_count,"Count:%d","弹数:%d","カウント:%d","彈數:%d"
 stats_fastest,"Fastest:%.2fs","最快:%.2fs","最速:%.2fs","最快:%.2fs"
 stats_average,"Average:%.2fs","平均:%.2fs","平均:%.2fs","平均:%.2fs"
@@ -646,3 +646,5 @@ points_down,"Points Down", "失分", "ポイントダウン", "失分"
 SUCCESS,"SUCCESS","成功","成功","成功"
 FAILURE,"FAILURE","失败","失敗","失敗"
 first_shot,"First Shot:","首发:","初弾:","首發:"
+idpa_drill_history,IDPA Drill History,IDPA 训练记录,IDPA 訓練履歴,IDPA 訓練記錄
+down_points,Downpts,扣分,減点,扣分

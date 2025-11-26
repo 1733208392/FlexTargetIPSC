@@ -1203,9 +1203,32 @@ func _on_menu_control(directive: String):
 			if not DEBUG_DISABLED:
 				print("[Drills] Power off")
 			power_off()
-		"back", "homepage":
+		"back":
 			if not DEBUG_DISABLED:
-				print("[Drills] ", directive, " - navigating to main menu")
+				print("[Drills] back - navigating to sub menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "drills"
+				if not DEBUG_DISABLED:
+					print("[Drills] Set return_source to drills")
+			
+			# Show status bar when exiting drills
+			if get_tree():
+				var status_bars = get_tree().get_nodes_in_group("status_bar")
+				for status_bar in status_bars:
+					status_bar.visible = true
+					if not DEBUG_DISABLED:
+						print("[Drills] Shown status bar: ", status_bar.name)
+			
+				get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
+		"homepage":
+			if not DEBUG_DISABLED:
+				print("[Drills] homepage - navigating to main menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()

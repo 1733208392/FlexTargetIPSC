@@ -71,7 +71,6 @@ func _ready():
 				load_selected_drill_data(global_data.selected_drill_data)
 				# Clear the data after loading to prevent reuse
 				global_data.selected_drill_data = {}
-				global_data.is_idpa_history = false  # Clear the flag
 				# Initialize UI after data load
 				initialize_ui()
 			return
@@ -127,9 +126,8 @@ func load_performance_from_http(drill_index: int):
 		initialize_ui()
 		return
 	
-	var global_data = get_node("/root/GlobalData")
 	var prefix = "performance_"
-	if global_data and global_data.is_idpa_history:
+	if upper_level_scene == "res://scene/history_idpa.tscn":
 		prefix = "performance_idpa_"
 	
 	var file_id = prefix + str(drill_index)
@@ -163,7 +161,6 @@ func _on_performance_file_loaded(result, response_code, _headers, body):
 					var global_data = get_node("/root/GlobalData")
 					if global_data:
 						global_data.selected_drill_data = {}
-						global_data.is_idpa_history = false  # Clear the flag
 					
 					# Initialize UI after successful load
 					initialize_ui()
@@ -770,7 +767,7 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-			back_to_upper_level()
+			get_tree().change_scene_to_file("res://scene/sub_menu.tscn")
 		"homepage":
 			if not DEBUG_DISABLED:
 						print("[Drill Replay] Back to main menu")

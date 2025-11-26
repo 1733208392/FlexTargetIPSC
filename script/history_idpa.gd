@@ -545,7 +545,6 @@ func _on_item_clicked(event: InputEvent, item_index: int):
 			if global_data:
 				global_data.selected_drill_data = drill_data
 				global_data.upper_level_scene = "res://scene/history_idpa.tscn"
-				global_data.is_idpa_history = true
 		
 		# Navigate to drill_replay scene
 		get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
@@ -814,9 +813,29 @@ func set_locale_from_language(language: String):
 	TranslationServer.set_locale(locale)
 
 func update_ui_texts():
-	# Update UI texts with current language
-	if back_button:
-		back_button.text = tr("back")
+	# Update static UI elements with translations
+	var title_label = get_node_or_null("MarginContainer/VBoxContainer/TitleLabel")
+	var no_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/NoLabel")
+	var time_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/RawTimeLabel")
+	var down_points_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/DownPointsLabel")
+	var fast_shot_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/FastShotLabel")
+	var score_label = get_node_or_null("MarginContainer/VBoxContainer/HeaderContainer/TotalScoreLabel")
+	var back_btn = get_node_or_null("MarginContainer/VBoxContainer/BackButton")
+	
+	if title_label:
+		title_label.text = tr("idpa_drill_history")
+	if no_label:
+		no_label.text = tr("no")
+	if time_label:
+		time_label.text = tr("time")
+	if down_points_label:
+		down_points_label.text = tr("down_points")
+	if fast_shot_label:
+		fast_shot_label.text = tr("fastest_t")
+	if score_label:
+		score_label.text = tr("score") + "↑"
+	if back_btn:
+		back_btn.text = tr("back_button")
 
 func power_off():
 	var dialog_scene = preload("res://scene/power_off_dialog.tscn")

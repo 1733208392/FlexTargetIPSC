@@ -171,7 +171,14 @@ func _create_menu_buttons():
 
 	# Set initial focus
 	if buttons.size() > 0:
-		buttons[0].grab_focus()
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data and global_data.has_meta("sub_menu_focused_index"):
+			focused_index = global_data.get_meta("sub_menu_focused_index")
+			if focused_index < 0 or focused_index >= buttons.size():
+				focused_index = 0
+		else:
+			focused_index = 0
+		buttons[focused_index].grab_focus()
 
 func _on_menu_item_pressed(button: Button):
 	var item = button.get_meta("menu_item")
@@ -184,6 +191,9 @@ func _on_menu_item_pressed(button: Button):
 		"load_scene":
 			var scene_path = item.get("scene", "")
 			if scene_path and is_inside_tree():
+				var global_data = get_node_or_null("/root/GlobalData")
+				if global_data:
+					global_data.set_meta("sub_menu_focused_index", focused_index)
 				get_tree().change_scene_to_file(scene_path)
 			else:
 				if not DEBUG_DISABLED:
@@ -230,6 +240,9 @@ func _on_http_response(result, response_code, _headers, body, item):
 		
 		var scene_path = item.get("success_scene", "")
 		if scene_path and is_inside_tree():
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.set_meta("sub_menu_focused_index", focused_index)
 			get_tree().change_scene_to_file(scene_path)
 		else:
 			if not DEBUG_DISABLED:
@@ -326,11 +339,17 @@ func _on_menu_control(directive: String):
 		"back":
 			if not DEBUG_DISABLED:
 				print("[SubMenu] Back to main menu")
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.set_meta("sub_menu_focused_index", 0)
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"homepage":
 			if not DEBUG_DISABLED:
 				print("[SubMenu] Homepage to main menu")
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.set_meta("sub_menu_focused_index", 0)
 			if is_inside_tree():
 				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		_:

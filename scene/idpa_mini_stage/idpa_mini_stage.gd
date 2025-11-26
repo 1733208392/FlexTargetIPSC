@@ -753,9 +753,27 @@ func _on_menu_control(directive: String):
 			if not DEBUG_DISABLED:
 				print("[IDPA] Power off")
 			power_off()
-		"back", "homepage":
+		"back":
 			if not DEBUG_DISABLED:
-				print("[IDPA] ", directive, " - navigating to main menu")
+				print("[IDPA] back - navigating to sub menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "drills"
+			
+			# Show status bar when exiting
+			if get_tree():
+				var status_bars = get_tree().get_nodes_in_group("status_bar")
+				for status_bar in status_bars:
+					status_bar.visible = true
+				get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
+		"homepage":
+			if not DEBUG_DISABLED:
+				print("[IDPA] homepage - navigating to main menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()

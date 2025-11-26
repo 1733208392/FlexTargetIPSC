@@ -422,9 +422,31 @@ func _on_menu_control(directive: String):
 			switch_to_previous_target()
 		"right":
 			switch_to_next_target()
-		"back", "homepage":
+		"back":
 			if not DEBUG_DISABLED:
-				print("[Bootcamp] ", directive, " - navigating to main menu")
+				print("[Bootcamp] back - navigating to sub menu")
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "bootcamp"
+				if not DEBUG_DISABLED:
+					print("[Bootcamp] Set return_source to bootcamp")
+			
+			# Deactivate current target before exiting
+			if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("set"):
+				current_target_instance.set("drill_active", false)
+				if not DEBUG_DISABLED:
+					print("[Bootcamp] Deactivated target before exiting")
+			
+			if is_inside_tree():
+				get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
+			else:
+				if not DEBUG_DISABLED:
+					print("[Bootcamp] Warning: Node not in tree, cannot change scene")
+		"homepage":
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] homepage - navigating to main menu")
 			
 			# Set return source for focus management
 			var global_data = get_node_or_null("/root/GlobalData")

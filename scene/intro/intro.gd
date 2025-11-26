@@ -315,14 +315,36 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-		"back", "homepage":
+		"back":
 			if not DEBUG_DISABLED:
-				print("[Intro] ", directive, " - navigating to main menu")
+				print("[Intro] Back - navigating to sub menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-			if get_tree():
-				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "history"
+				if not DEBUG_DISABLED:
+					print("[Intro] Set return_source to history")
+			
+			get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
+		"homepage":
+			if not DEBUG_DISABLED:
+				print("[Intro] Homepage - navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "leaderboard"
+				if not DEBUG_DISABLED:
+					print("[Intro] Set return_source to leaderboard")
+			
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"volume_up":
 			if not DEBUG_DISABLED:
 				print("[Intro] Volume up")
