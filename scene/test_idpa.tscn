@@ -6,7 +6,7 @@
 [node name="Node2D" type="Node2D"]
 
 [node name="IDPA" parent="." instance=ExtResource("1_32nkg")]
-position = Vector2(88, 760)
+position = Vector2(-82, 710)
 
 [node name="IPSCMiniRotate" parent="." instance=ExtResource("1_1tiho")]
 visible = false

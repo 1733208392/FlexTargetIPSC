@@ -161,7 +161,7 @@ anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
 offset_left = -130.0
-offset_top = -268.0
+offset_top = -113.0
 offset_bottom = 268.0
 grow_horizontal = 0
 grow_vertical = 2
@@ -175,46 +175,55 @@ horizontal_alignment = 2
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="Shot3" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="Shot4" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="Shot5" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="Shot6" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="Shot7" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="Shot8" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="Shot9" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="Shot10" type="Label" parent="CanvasLayer/Control/ShotIntervalsOverlay"]
 layout_mode = 2
 theme = ExtResource("5_drill_theme")
 horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="BottomContainer" type="HBoxContainer" parent="CanvasLayer/Control"]
 visible = false

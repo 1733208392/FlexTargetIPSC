@@ -11,8 +11,8 @@ extends Control
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
-#var base_target_sequence: Array[String] = ["ipsc_mini_rotate"]
+#var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var base_target_sequence: Array[String] = ["3paddles","ipsc_mini_rotate"]
 
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
@@ -1179,48 +1179,16 @@ func _on_menu_control(directive: String):
 	if not DEBUG_DISABLED:
 		print("[Drills] Received menu_control signal with directive: ", directive)
 	
-	# Check if drill complete overlay is visible and should handle navigation
-	var drill_ui = get_node_or_null("DrillUI")
-	var drill_complete_overlay = null
-	if drill_ui:
-		drill_complete_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
-	
-	# Forward navigation commands to drill_complete_overlay if it's visible
-	if drill_complete_overlay and drill_complete_overlay.visible and directive in ["up", "down", "enter"]:
-		if not DEBUG_DISABLED:
-			print("[Drills] Forwarding navigation directive to drill_complete_overlay: ", directive)
-			print("[Drills] drill_complete_overlay script: ", drill_complete_overlay.get_script())
-			print("[Drills] drill_complete_overlay has method: ", drill_complete_overlay.has_method("_on_websocket_menu_control"))
+	# Navigation directives (up, down, enter) - forward to drill_complete_overlay if visible
+	if directive in ["up", "down", "enter"]:
+		var drill_ui = get_node_or_null("DrillUI")
+		if drill_ui:
+			var drill_complete_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
+			if drill_complete_overlay and drill_complete_overlay.visible and drill_complete_overlay.has_method("handle_menu_control"):
+				if not DEBUG_DISABLED:
+					print("[Drills] Forwarding navigation directive to drill_complete_overlay: ", directive)
+				drill_complete_overlay.handle_menu_control(directive)
 		
-		if drill_complete_overlay.has_method("_on_websocket_menu_control"):
-			drill_complete_overlay._on_websocket_menu_control(directive)
-		else:
-			# Fallback: Call the navigation methods directly if the main method is missing
-			if not DEBUG_DISABLED:
-				print("[Drills] Using fallback navigation methods")
-			match directive:
-				"up":
-					if drill_complete_overlay.has_method("_navigate_up"):
-						drill_complete_overlay._navigate_up()
-					else:
-						if not DEBUG_DISABLED:
-							print("[Drills] _navigate_up method not found")
-						_manual_navigate_up(drill_complete_overlay)
-				"down":
-					if drill_complete_overlay.has_method("_navigate_down"):
-						drill_complete_overlay._navigate_down()
-					else:
-						if not DEBUG_DISABLED:
-							print("[Drills] _navigate_down method not found")
-						_manual_navigate_down(drill_complete_overlay)
-				"enter":
-					if drill_complete_overlay.has_method("_activate_focused_button"):
-						drill_complete_overlay._activate_focused_button()
-					else:
-						if not DEBUG_DISABLED:
-							print("[Drills] _activate_focused_button method not found")
-						# Manual button activation
-						_manual_button_activation(drill_complete_overlay)
 		var menu_controller = get_node("/root/MenuController")
 		if menu_controller:
 			menu_controller.play_cursor_sound()
@@ -1304,83 +1272,5 @@ func has_visible_power_off_dialog() -> bool:
 			return true
 	return false
 
-func _manual_button_activation(overlay):
-	"""Manually activate the focused button when script methods are not available"""
-	if not DEBUG_DISABLED:
-		print("[Drills] Attempting manual button activation")
-	
-	# Try to find the focused button in the overlay
-	var restart_button = overlay.get_node_or_null("VBoxContainer/RestartButton")
-	var replay_button = overlay.get_node_or_null("VBoxContainer/ReviewReplayButton")
-	
-	# Check which button has focus using the viewport
-	var focused_control = get_viewport().gui_get_focus_owner()
-	
-	if focused_control == restart_button:
-		if not DEBUG_DISABLED:
-			print("[Drills] Manually activating restart button")
-		_manual_restart_drill()
-	elif focused_control == replay_button:
-		if not DEBUG_DISABLED:
-			print("[Drills] Manually activating replay button")
-		_manual_go_to_replay()
-	else:
-		# Default to restart if no focus
-		if not DEBUG_DISABLED:
-			print("[Drills] No button focused, defaulting to restart")
-		_manual_restart_drill()
 
-func _manual_restart_drill():
-	"""Manually restart the drill when script methods are not available"""
-	if not DEBUG_DISABLED:
-		print("[Drills] Manual restart drill")
-	
-	# Hide the completion overlay
-	var drill_ui = get_node_or_null("DrillUI")
-	if drill_ui:
-		var drill_complete_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
-		if drill_complete_overlay:
-			drill_complete_overlay.visible = false
-	
-	# Restart the drill
-	restart_drill()
-
-func _manual_go_to_replay():
-	"""Manually navigate to replay scene when script methods are not available"""
-	if not DEBUG_DISABLED:
-		print("[Drills] Manual navigation to drill replay")
-	get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
-
-func _manual_navigate_up(overlay):
-	"""Manually navigate up between buttons"""
-	if not DEBUG_DISABLED:
-		print("[Drills] Manual navigate up")
-	var restart_button = overlay.get_node_or_null("VBoxContainer/RestartButton")
-	var replay_button = overlay.get_node_or_null("VBoxContainer/ReviewReplayButton")
-	var focused_control = get_viewport().gui_get_focus_owner()
-	
-	if focused_control == replay_button and restart_button:
-		restart_button.grab_focus()
-		if not DEBUG_DISABLED:
-			print("[Drills] Focused restart button")
-	elif restart_button:
-		restart_button.grab_focus()
-		if not DEBUG_DISABLED:
-			print("[Drills] Default focus to restart button")
-
-func _manual_navigate_down(overlay):
-	"""Manually navigate down between buttons"""
-	if not DEBUG_DISABLED:
-		print("[Drills] Manual navigate down")
-	var restart_button = overlay.get_node_or_null("VBoxContainer/RestartButton")
-	var replay_button = overlay.get_node_or_null("VBoxContainer/ReviewReplayButton")
-	var focused_control = get_viewport().gui_get_focus_owner()
-	
-	if focused_control == restart_button and replay_button:
-		replay_button.grab_focus()
-		if not DEBUG_DISABLED:
-			print("[Drills] Focused replay button")
-	elif restart_button:
-		restart_button.grab_focus()
-		if not DEBUG_DISABLED:
-			print("[Drills] Default focus to restart button")
+# (All manual navigation methods removed - drill_complete_overlay handles navigation directly)

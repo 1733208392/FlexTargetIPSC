@@ -16,6 +16,7 @@ script = ExtResource("1_euaii")
 script = null
 
 [node name="Cover" type="Area2D" parent="."]
+z_index = 5
 
 [node name="Sprite2D" type="Sprite2D" parent="Cover"]
 position = Vector2(6, -10)

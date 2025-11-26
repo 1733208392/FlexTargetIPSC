@@ -35,8 +35,7 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
-		# Connect to WebSocket control directives
-		ws_listener.menu_control.connect(_on_websocket_menu_control)
+		# NOTE: menu_control signal is now handled by parent IDPA script to avoid duplication
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Connected to WebSocketListener signals")
 	else:
@@ -244,7 +243,7 @@ func _unhandled_input(event):
 		# Accept the event to prevent further processing
 		get_viewport().set_input_as_handled()
 
-func _handle_mouse_click(event):
+func _handle_mouse_click(_event):
 	"""Process the mouse click for bullet spawning"""
 	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Processing mouse click")
@@ -268,15 +267,15 @@ func _handle_mouse_click(event):
 		print("[drill_complete_overlay] Spawning bullet at: ", world_pos)
 	spawn_bullet_at_position(world_pos)
 
-func _on_websocket_bullet_hit(position: Vector2):
+func _on_websocket_bullet_hit(hit_position: Vector2):
 	"""Handle bullet hit from WebSocket data"""
 	# Only process websocket bullets when this overlay is visible
 	if not visible:
 		return
 		
 	if not DEBUG_DISABLED:
-		print("[drill_complete_overlay] WebSocket bullet hit at: ", position)
-	spawn_bullet_at_position(position)
+		print("[drill_complete_overlay] WebSocket bullet hit at: ", hit_position)
+	spawn_bullet_at_position(hit_position)
 
 func spawn_bullet_at_position(world_pos: Vector2):
 	"""Spawn a bullet at the specified world position"""
@@ -528,24 +527,24 @@ func _update_ui_after_visible():
 
 func grab_restart_button_focus():
 	"""Grab focus for the restart button, or replay button if restart is disabled"""
-	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
-	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	var current_restart_button = get_node_or_null("VBoxContainer/RestartButton")
+	var current_replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	
 	# Prefer restart button if it's enabled, otherwise use replay button
-	if restart_button and not restart_button.disabled:
-		restart_button.grab_focus()
+	if current_restart_button and not current_restart_button.disabled:
+		current_restart_button.grab_focus()
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] RestartButton focus grabbed")
-	elif replay_button and not replay_button.disabled:
-		replay_button.grab_focus()
+	elif current_replay_button and not current_replay_button.disabled:
+		current_replay_button.grab_focus()
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restart button disabled, focusing ReviewReplayButton")
 	else:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] No available button to focus")
 
-func _on_websocket_menu_control(directive: String):
-	"""Handle WebSocket control directives for menu navigation"""
+func handle_menu_control(directive: String):
+	"""Handle menu control directives for menu navigation (called by parent IDPA script)"""
 	if not DEBUG_DISABLED:
 		print("[drill_complete_overlay] Received control directive: ", directive)
 	
@@ -563,60 +562,32 @@ func _on_websocket_menu_control(directive: String):
 func _navigate_up():
 	"""Navigate to previous button"""
 	var focused_control = get_viewport().gui_get_focus_owner()
-	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
-	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	var current_restart_button = get_node_or_null("VBoxContainer/RestartButton")
+	var current_replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	
-	if focused_control == replay_button and restart_button and not restart_button.disabled:
-		restart_button.grab_focus()
+	if focused_control == current_restart_button and current_replay_button:
+		current_replay_button.grab_focus()
+		if not DEBUG_DISABLED:
+			print("[drill_complete_overlay] Navigated up to ReviewReplayButton")
+	elif focused_control == current_replay_button and current_restart_button:
+		current_restart_button.grab_focus()
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Navigated up to RestartButton")
-	elif focused_control == restart_button and replay_button and not replay_button.disabled:
-		replay_button.grab_focus()
-		if not DEBUG_DISABLED:
-			print("[drill_complete_overlay] Wrapped around to ReviewReplayButton")
-	elif focused_control == replay_button and restart_button and restart_button.disabled:
-		# If restart button is disabled, stay on replay button
-		if not DEBUG_DISABLED:
-			print("[drill_complete_overlay] Restart button disabled, staying on ReviewReplayButton")
-	else:
-		# Default focus logic - prefer restart button if enabled, otherwise replay button
-		if restart_button and not restart_button.disabled:
-			restart_button.grab_focus()
-			if not DEBUG_DISABLED:
-				print("[drill_complete_overlay] Default focus to RestartButton")
-		elif replay_button and not replay_button.disabled:
-			replay_button.grab_focus()
-			if not DEBUG_DISABLED:
-				print("[drill_complete_overlay] Restart button disabled, default focus to ReviewReplayButton")
 
 func _navigate_down():
 	"""Navigate to next button"""
 	var focused_control = get_viewport().gui_get_focus_owner()
-	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
-	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	var current_restart_button = get_node_or_null("VBoxContainer/RestartButton")
+	var current_replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	
-	if focused_control == restart_button and replay_button and not replay_button.disabled:
-		replay_button.grab_focus()
+	if focused_control == current_restart_button and current_replay_button:
+		current_replay_button.grab_focus()
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Navigated down to ReviewReplayButton")
-	elif focused_control == replay_button and restart_button and not restart_button.disabled:
-		restart_button.grab_focus()
+	elif focused_control == current_replay_button and current_restart_button:
+		current_restart_button.grab_focus()
 		if not DEBUG_DISABLED:
-			print("[drill_complete_overlay] Wrapped around to RestartButton")
-	elif focused_control == restart_button and replay_button and replay_button.disabled:
-		# If replay button is disabled, stay on restart button
-		if not DEBUG_DISABLED:
-			print("[drill_complete_overlay] Replay button disabled, staying on RestartButton")
-	else:
-		# Default focus logic - prefer restart button if enabled, otherwise replay button
-		if restart_button and not restart_button.disabled:
-			restart_button.grab_focus()
-			if not DEBUG_DISABLED:
-				print("[drill_complete_overlay] Default focus to RestartButton")
-		elif replay_button and not replay_button.disabled:
-			replay_button.grab_focus()
-			if not DEBUG_DISABLED:
-				print("[drill_complete_overlay] Restart button disabled, default focus to ReviewReplayButton")
+			print("[drill_complete_overlay] Navigated down to RestartButton")
 
 func _on_global_settings_loaded():
 	"""Handle when GlobalData settings are loaded/updated"""
@@ -628,18 +599,18 @@ func _on_global_settings_loaded():
 func _activate_focused_button():
 	"""Activate the currently focused button"""
 	var focused_control = get_viewport().gui_get_focus_owner()
-	var restart_button = get_node_or_null("VBoxContainer/RestartButton")
-	var replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
+	var current_restart_button = get_node_or_null("VBoxContainer/RestartButton")
+	var current_replay_button = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	
-	if focused_control == restart_button:
+	if focused_control == current_restart_button:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Activating RestartButton via WebSocket")
 		_on_area_restart_hit(null)  # Trigger restart action
-	elif focused_control == replay_button and not replay_button.disabled:
+	elif focused_control == current_replay_button and not current_replay_button.disabled:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Activating ReviewReplayButton via WebSocket")
 		_on_area_replay_hit(null)  # Trigger replay action
-	elif focused_control == replay_button and replay_button.disabled:
+	elif focused_control == current_replay_button and current_replay_button.disabled:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Replay button is disabled, defaulting to restart")
 		_on_area_restart_hit(null)  # Default to restart

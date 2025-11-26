@@ -161,11 +161,11 @@ func _on_progress_update(targets_completed: int):
 		if not DEBUG_DISABLED:
 			print("Warning: Progress bar not found or missing update_progress method")
 
-func _on_show_completion(final_time: float, fastest_time: float, final_score: int, _show_hit_factor: bool):
+func _on_show_completion(final_time: float, fastest_time: float, final_score: int, show_hit_factor: bool = true):
 	"""Show the completion overlay with drill statistics"""
 	if not DEBUG_DISABLED:
 		print("=== _on_show_completion CALLED ===")
-		print("final_time: ", final_time, ", fastest_time: ", fastest_time, ", final_score: ", final_score)
+		print("final_time: ", final_time, ", fastest_time: ", fastest_time, ", final_score: ", final_score, ", show_hit_factor: ", show_hit_factor)
 		print("drill_complete_overlay node: ", drill_complete_overlay)
 		print("drill_complete_overlay visible before: ", drill_complete_overlay.visible)
 	
@@ -195,9 +195,9 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	if drill_complete_overlay.has_method("show_drill_complete"):
 		if not DEBUG_DISABLED:
 			print("[drill_ui] Calling show_drill_complete method")
-		drill_complete_overlay.show_drill_complete(final_score, hit_factor, fastest_time, _show_hit_factor)
+		drill_complete_overlay.show_drill_complete(final_score, hit_factor, fastest_time, show_hit_factor)
 		if not DEBUG_DISABLED:
-			print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f, show_hit_factor=%s" % [final_score, hit_factor, fastest_time, _show_hit_factor])
+			print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f, show_hit_factor=%s" % [final_score, hit_factor, fastest_time, show_hit_factor])
 			print("drill_complete_overlay visible after show_drill_complete: ", drill_complete_overlay.visible)
 	else:
 		# Fallback to manual update

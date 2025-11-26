@@ -60,7 +60,7 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		"time_diff": round(time_diff * 100.0) / 100.0,
 		"hit_position": {"x": round(hit_position.x * 10.0) / 10.0, "y": round(hit_position.y * 10.0) / 10.0},
 		"hit_area": hit_area,
-		"rotation_angle": rotation_angle,
+		"rotation_angle": round(rotation_angle * 100.0) / 100.0,
 		"repeat": repeat,
 		"shot_timer_delay": round(shot_timer_delay * 100.0) / 100.0
 	}

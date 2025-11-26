@@ -8,8 +8,8 @@ extends Control
 @export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
 
 # Drill sequence and progress tracking
-#var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
-var base_target_sequence: Array[String] = ["idpa-mini-rotate"]
+var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
+#var base_target_sequence: Array[String] = ["idpa-mini-rotate"]
 var target_sequence: Array[String] = []
 var current_target_index: int = 0
 var current_target_instance: Node = null
@@ -392,6 +392,11 @@ func spawn_idpa_mini():
 	
 	center_container.add_child(target)
 	current_target_instance = target
+	
+	# Offset the rotating target position
+	if target_type == "idpa-mini-rotate":
+		target.position = Vector2(-200, 200)
+	
 	if not DEBUG_DISABLED:
 		print("IDPA target spawned - Type: ", target_type)
 
@@ -517,7 +522,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null, _param
 	var target_position = Vector2.ZERO
 	if current_target_type == "idpa-mini-rotate" and current_target_instance:
 		rotation_angle = _param5  # Use actual rotation from idpa_rotation.gd
-		var target_node = current_target_instance.get_node_or_null("Target")
+		var target_node = current_target_instance.get_node_or_null("IDPA")
 		if target_node:
 			target_position = target_node.global_position
 	emit_signal("target_hit", current_target_type, hit_position, hit_area, int(actual_points), rotation_angle, target_position)
@@ -727,8 +732,8 @@ func _on_menu_control(directive: String):
 		if not DEBUG_DISABLED:
 			print("[IDPA] Forwarding navigation directive to drill_complete_overlay: ", directive)
 		
-		if drill_complete_overlay.has_method("_on_websocket_menu_control"):
-			drill_complete_overlay._on_websocket_menu_control(directive)
+		if drill_complete_overlay.has_method("handle_menu_control"):
+			drill_complete_overlay.handle_menu_control(directive)
 		var menu_controller = get_node("/root/MenuController")
 		if menu_controller:
 			menu_controller.play_cursor_sound()

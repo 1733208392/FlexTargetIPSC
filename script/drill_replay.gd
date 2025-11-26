@@ -416,6 +416,9 @@ func load_record(index):
 			return
 		# Show current target
 		loaded_targets[target_type]["scene"].visible = true
+		# For 3paddles, reset the scene after showing it
+		if target_type == "3paddles":
+			reset_paddle_scene(loaded_targets[target_type]["scene"])
 	
 	# Apply position and rotation for the current shot if it's a rotating target
 	apply_target_position_and_rotation(record, target_type, "Load", false)
@@ -506,10 +509,18 @@ func add_bullet_hole_for_record(index):
 
 	# Determine the parent node for bullet holes
 	var parent_node = target_data["scene"]
-	if target_type == "ipsc_mini_rotate" || target_type == "idpa-mini-rotate":
-		var node = target_data["scene"].get_node("IPSCMini") if target_type == "ipsc_mini_rotate" else target_data["scene"].get_node("Target")
-		if node:
-			parent_node = node
+	if target_type == "ipsc_mini_rotate" or target_type == "idpa-mini-rotate":
+		var node_name = "IPSCMini" if target_type == "ipsc_mini_rotate" else "IDPA"
+		var target_node = target_data["scene"].get_node(node_name)
+		if target_node:
+			# Check if it's a hit or miss based on hit_area
+			var is_hit = true
+			if record.has("hit_area"):
+				var hit_area = record["hit_area"]
+				if hit_area == "miss" or hit_area == "Paddle" or hit_area == "paddle":
+					is_hit = false
+			if is_hit:
+				parent_node = target_node
 	
 	# Add bullet hole
 	var hit_pos = record["hit_position"]
@@ -608,7 +619,7 @@ func load_target_if_needed(target_type: String) -> bool:
 		if target_scenes.has(target_type):
 			var scene_path = target_scenes[target_type]
 			var target_scene = load(scene_path).instantiate()
-			var target_pos = Vector2(-200, 200) if target_type == "ipsc_mini_rotate" else Vector2(0, 0)
+			var target_pos = Vector2(-200, 200) if target_type == "ipsc_mini_rotate" or target_type == "idpa-mini-rotate" else Vector2(0, 0)
 			target_scene.position = target_pos
 			get_node("CenterContainer").add_child(target_scene)
 			if target_type == "ipsc_mini_rotate" || target_type == "idpa-mini-rotate":
@@ -618,6 +629,9 @@ func load_target_if_needed(target_type: String) -> bool:
 					if not DEBUG_DISABLED:
 						print("Drill Replay: Stopped rotation animation for replay")
 			disable_target_input(target_scene)
+			# Reset paddle scene for 3paddles AFTER disabling input
+			if target_type == "3paddles":
+				reset_paddle_scene(target_scene)
 			loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
 		else:
 			if not DEBUG_DISABLED:
@@ -625,12 +639,26 @@ func load_target_if_needed(target_type: String) -> bool:
 			return false
 	return true
 
+func reset_paddle_scene(target_scene: Node):
+	"""Reset the 3paddles scene to ensure paddles are in initial state for replay"""
+	if not DEBUG_DISABLED:
+		print("Drill Replay: Resetting 3paddles scene")
+	
+	# Call the reset_scene method on the 3paddles target
+	if target_scene and target_scene.has_method("reset_scene"):
+		target_scene.reset_scene()
+		if not DEBUG_DISABLED:
+			print("Drill Replay: 3paddles scene reset complete")
+	else:
+		if not DEBUG_DISABLED:
+			print("Drill Replay: ERROR - 3paddles scene doesn't have reset_scene method")
+
 func apply_target_position_and_rotation(record: Dictionary, target_type: String, direction: String, same_target: bool):
 	if target_type != "ipsc_mini_rotate" and target_type != "idpa-mini-rotate":
 		return
 	
 	var target_scene = loaded_targets[target_type]["scene"]
-	var node = target_scene.get_node("IPSCMini") if target_type == "ipsc_mini_rotate" else target_scene.get_node("Target")
+	var node = target_scene.get_node("IPSCMini") if target_type == "ipsc_mini_rotate" else target_scene.get_node("IDPA")
 	var paddle_node = target_scene.get_node("Paddle")
 	
 	if record.has("target_position") and record.has("rotation_angle"):
@@ -648,7 +676,9 @@ func apply_target_position_and_rotation(record: Dictionary, target_type: String,
 			var context = direction + (", Same Target" if same_target else "")
 			print("Drill Replay (%s): Applied pos %s and rotation %s radians (%s degrees) for shot %d" % [context, loaded_targets[target_type]["pos"], rotation_data, rad_to_deg(rotation_data), current_index + 1])
 	
-	paddle_node.visible = false  # Hide paddles during replay
+	# Hide paddles during replay for rotating targets
+	if paddle_node:
+		paddle_node.visible = false
 
 func _input(event):
 	if event is InputEventKey and event.keycode == KEY_N and event.pressed:
