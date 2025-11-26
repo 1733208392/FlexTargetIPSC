@@ -13,6 +13,8 @@ const DEBUG_DISABLED = true  # Set to true to disable debug prints for productio
 @onready var workmode_dropdown = $CenterContainer/VBoxContainer/WorkModeDropdown
 @onready var name_line_edit = $CenterContainer/VBoxContainer/NameLineEdit
 @onready var keyboard = $BottomContainer/OnscreenKeyboard
+@onready var confirm_button = $CenterContainer/VBoxContainer/HBoxContainer/ConfirmButton
+@onready var dismiss_button = $CenterContainer/VBoxContainer/HBoxContainer/DismissButton
 
 var focused_control = 0  # 0 = channel dropdown, 1 = workmode dropdown, 2 = name line edit
 var controls = []
@@ -28,7 +30,7 @@ var progress_text_key = ""
 
 func _ready():
 	# Initialize controls array
-	controls = [channel_dropdown, workmode_dropdown, name_line_edit]
+	controls = [channel_dropdown, workmode_dropdown, name_line_edit, confirm_button]
 	
 	# Update UI texts with translations
 	update_ui_texts()
@@ -151,7 +153,8 @@ func set_focused_control(index: int):
 		
 		# Show keyboard if name field is focused
 		if focused_control == 2:  # Name line edit
-			show_keyboard_for_name_input()
+			# Do not show keyboard by default
+			pass
 		else:
 			hide_keyboard()
 
@@ -271,8 +274,9 @@ func _on_keyboard_key_released(key_data):
 	# Handle special keys that need custom behavior
 	if is_enter:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Keyboard enter pressed, configuring network")
-		configure_network()
+			print("[NetworkingConfig] Keyboard enter pressed, hiding keyboard")
+		hide_keyboard()
+		name_line_edit.grab_focus()
 		return
 	
 	# For all other keys (including backspace), let the keyboard addon handle input automatically
@@ -283,16 +287,9 @@ func _on_navigate(direction: String):
 		print("[NetworkingConfig] Navigation: ", direction)
 	match direction:
 		"up":
-			if keyboard.visible:
-				var focus_owner = get_viewport().gui_get_focus_owner()
-				if focus_owner is Button and keyboard.keys.has(focus_owner):
-					var matrix = keyboard.layout_key_matrices.get(keyboard.current_layout, [])
-					for row_idx in range(matrix.size()):
-						if focus_owner in matrix[row_idx]:
-							if row_idx == 0:
-								set_focused_control(1)  # Move focus to workmode dropdown
-								return
-							break
+			if not keyboard.visible:
+				set_focused_control((focused_control - 1 + controls.size()) % controls.size())
+				return
 			if dropdown_open:
 				if focused_control == 0:  # Channel dropdown
 					var current_selected = channel_dropdown.selected
@@ -307,6 +304,9 @@ func _on_navigate(direction: String):
 				if not keyboard.visible:
 					set_focused_control((focused_control - 1 + controls.size()) % controls.size())
 		"down":
+			if not keyboard.visible:
+				set_focused_control((focused_control + 1) % controls.size())
+				return
 			if dropdown_open:
 				if focused_control == 0:  # Channel dropdown
 					var current_selected = channel_dropdown.selected
@@ -321,21 +321,31 @@ func _on_navigate(direction: String):
 				if not keyboard.visible:
 					set_focused_control((focused_control + 1) % controls.size())
 		"left", "right":
-			if dropdown_open:
-				if focused_control == 0:  # Channel dropdown
-					var current_selected = channel_dropdown.selected
-					if direction == "left" and current_selected > 0:
-						channel_dropdown.select(current_selected - 1)
-					elif direction == "right" and current_selected < channel_dropdown.item_count - 1:
-						channel_dropdown.select(current_selected + 1)
-				elif focused_control == 1:  # Workmode dropdown
-					var current_selected = workmode_dropdown.selected
-					if direction == "left" and current_selected > 0:
-						workmode_dropdown.select(current_selected - 1)
-					elif direction == "right" and current_selected < workmode_dropdown.item_count - 1:
-						workmode_dropdown.select(current_selected + 1)
+			var current = get_viewport().gui_get_focus_owner()
+			if current == confirm_button:
+				dismiss_button.grab_focus()
+			elif current == dismiss_button:
+				confirm_button.grab_focus()
+			else:
+				if dropdown_open:
+					if focused_control == 0:  # Channel dropdown
+						var current_selected = channel_dropdown.selected
+						if direction == "left" and current_selected > 0:
+							channel_dropdown.select(current_selected - 1)
+						elif direction == "right" and current_selected < channel_dropdown.item_count - 1:
+							channel_dropdown.select(current_selected + 1)
+					elif focused_control == 1:  # Workmode dropdown
+						var current_selected = workmode_dropdown.selected
+						if direction == "left" and current_selected > 0:
+							workmode_dropdown.select(current_selected - 1)
+						elif direction == "right" and current_selected < workmode_dropdown.item_count - 1:
+							workmode_dropdown.select(current_selected + 1)
 
 func _on_enter_pressed():
+	if keyboard.visible:
+		hide_keyboard()
+		name_line_edit.grab_focus()
+		return
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Enter pressed")
 	if focused_control == 0:  # Channel dropdown
@@ -356,8 +366,11 @@ func _on_enter_pressed():
 			workmode_dropdown.get_popup().hide()
 			dropdown_open = false
 			set_focused_control(2)  # Move to name field
-	else:  # focused_control == 2 (Name line edit)
-		save_settings()
+	else:  # focused_control == 2 (Name line edit) or 3 (Confirm button)
+		if focused_control == 2:
+			show_keyboard_for_name_input()
+		else:
+			configure_network()
 
 func _on_back_pressed():
 	if not DEBUG_DISABLED:

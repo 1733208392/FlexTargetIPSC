@@ -4,8 +4,7 @@ extends Node2D
 const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-#var target_sequence: Array[String] = ["bullseye", "ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique"]
-var target_sequence: Array[String] = ["idpa_rotate", "ipsc_mini_rotate"]
+var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique"]
 var current_target_index: int = 0
 var current_target_instance = null
 
@@ -27,6 +26,7 @@ var current_target_instance = null
 @onready var two_poppers_scene: PackedScene = preload("res://scene/targets/2poppers_simple.tscn")
 @onready var three_paddles_scene: PackedScene = preload("res://scene/targets/3paddles_simple.tscn")
 @onready var mozambique_scene: PackedScene = preload("res://scene/targets/mozambique.tscn")
+@onready var dueling_tree_scene: PackedScene = preload("res://scene/test_dueling_tree_composite.tscn")
 
 @onready var canvas_layer = $CanvasLayer
 @onready var canvas_layer_stats = $CanvasLayerStats
@@ -708,6 +708,10 @@ func spawn_target_by_type(target_type: String):
 			canvas_layer.visible = false  # Hide shot intervals for mozambique
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Hidden CanvasLayers for mozambique (uses its own drill logic)")
+		elif target_type == "dueling_tree_composite":
+			canvas_layer.visible = false  # Hide shot intervals for dueling tree composite
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Hidden CanvasLayers for dueling_tree_composite")
 		else:
 			canvas_layer.visible = true  # Show shot intervals for other targets
 			if not DEBUG_DISABLED:
@@ -719,6 +723,10 @@ func spawn_target_by_type(target_type: String):
 			clear_area.visible = false  # Hide clear area for mozambique
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Hidden clear area for mozambique")
+		elif target_type == "dueling_tree_composite":
+			clear_area.visible = false  # Hide clear area for dueling tree composite
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Hidden clear area for dueling_tree_composite")
 		else:
 			clear_area.visible = true  # Restore clear area for other targets
 			if not DEBUG_DISABLED:
@@ -759,6 +767,8 @@ func spawn_target_by_type(target_type: String):
 			target_scene = ipsc_mini_rotate_scene
 		"mozambique":
 			target_scene = mozambique_scene
+		"dueling_tree_composite":
+			target_scene = dueling_tree_scene
 		_:
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Unknown target type: ", target_type)
