@@ -87,6 +87,10 @@ func update_ui_texts():
 		workmode_label.text = tr("net_config_workmode")
 	if name_label:
 		name_label.text = tr("net_config_target_name")
+	if confirm_button:
+		confirm_button.text = tr("net_config_done")
+	if dismiss_button:
+		dismiss_button.text = tr("dismiss")
 
 func setup_timers():
 	# Setup guard timer (15 seconds)

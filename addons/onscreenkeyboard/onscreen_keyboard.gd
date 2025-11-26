@@ -262,6 +262,39 @@ func _set_focus_to_top_left_key():
 		print("[onscreenkbd] _set_focus_to_top_left_key: successfully focused top-left key=", top_left_key.text)
 
 
+func _set_focus_to_key(output: String):
+	# Find and focus the key with the specified output
+	var target_key = null
+	for key in keys:
+		if key.key_data and key.key_data.get("output") == output:
+			target_key = key
+			break
+	
+	if target_key == null:
+		if debug_remote:
+			print("[onscreenkbd] _set_focus_to_key: no key found with output=", output)
+		return
+	
+	if not target_key.is_inside_tree():
+		if debug_remote:
+			print("[onscreenkbd] _set_focus_to_key: target key not in tree, deferring")
+		call_deferred("_set_focus_to_key", output)
+		return
+	
+	# Verify the layout is actually visible
+	if current_layout != null and not current_layout.visible:
+		if debug_remote:
+			print("[onscreenkbd] _set_focus_to_key: current layout not visible, deferring")
+		call_deferred("_set_focus_to_key", output)
+		return
+	
+	# Finally grab the focus
+	target_key.grab_focus()
+	last_focused_key = target_key
+	if debug_remote:
+		print("[onscreenkbd] _set_focus_to_key: successfully focused key with output=", output, " key=", target_key.text)
+
+
 func _animate_show_keyboard():
 	# Now that the UI has been laid out, size.y should be correct
 	var viewport_rect = get_viewport().get_visible_rect()
@@ -359,8 +392,12 @@ func _switch_layout(key_data):
 		if prev_prev_layout != null:
 			_show_layout(prev_prev_layout)
 			# Use multiple deferred calls to ensure focus is set after layout is visible
-			call_deferred("_set_focus_to_top_left_key")
-			call_deferred("_set_focus_to_top_left_key")
+			if prev_prev_layout.get_meta("layout_name") == "special-characters":
+				call_deferred("_set_focus_to_key", "1")
+				call_deferred("_set_focus_to_key", "1")
+			else:
+				call_deferred("_set_focus_to_top_left_key")
+				call_deferred("_set_focus_to_top_left_key")
 			if debug_remote:
 				print("[onscreenkbd] _switch_layout: switching to PREVIOUS-LAYOUT")
 			return
@@ -369,8 +406,12 @@ func _switch_layout(key_data):
 		if layout.get_meta("layout_name") == key_data.get("layout-name"):
 			_show_layout(layout)
 			# Use multiple deferred calls to ensure focus is set after layout is visible
-			call_deferred("_set_focus_to_top_left_key")
-			call_deferred("_set_focus_to_top_left_key")
+			if key_data.get("layout-name") == "special-characters":
+				call_deferred("_set_focus_to_key", "1")
+				call_deferred("_set_focus_to_key", "1")
+			else:
+				call_deferred("_set_focus_to_top_left_key")
+				call_deferred("_set_focus_to_top_left_key")
 			if debug_remote:
 				print("[onscreenkbd] _switch_layout: switching to layout=", key_data.get("layout-name"))
 			return
