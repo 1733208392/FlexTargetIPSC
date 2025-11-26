@@ -286,9 +286,9 @@ func _finish_drill(success: bool):
 	drill_duration = (Time.get_ticks_msec() / 1000.0) - drill_start_time
 	
 	# Disable bullet spawning
-	var ws_listener = get_node_or_null("/root/WebSocketListener")
-	if ws_listener:
-		ws_listener.set_bullet_spawning_enabled(false)
+	# var ws_listener = get_node_or_null("/root/WebSocketListener")
+	# if ws_listener:
+	# 	ws_listener.set_bullet_spawning_enabled(false)
 	
 	if not DEBUG_DISABLED:
 		print("[Mozambique] Drill finished! Success: ", success, " Duration: ", drill_duration)
