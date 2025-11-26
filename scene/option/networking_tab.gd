@@ -116,7 +116,10 @@ func _populate_networking_fields(data: Dictionary):
 	if content2_label:
 		content2_label.text = str(data.get("device_name", ""))
 	if content3_label:
-		content3_label.text = str(int(data.get("channel", 0)))
+		var channel_value = int(data.get("channel", 0))
+		if channel_value > 10:
+			channel_value = 1
+		content3_label.text = str(channel_value)
 	if content4_label:
 		content4_label.text = str(data.get("wifi_ip", ""))
 	if content5_label:

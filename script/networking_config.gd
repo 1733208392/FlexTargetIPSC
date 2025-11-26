@@ -276,7 +276,7 @@ func _on_keyboard_key_released(key_data):
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] Keyboard enter pressed, hiding keyboard")
 		hide_keyboard()
-		name_line_edit.grab_focus()
+		name_line_edit.call_deferred("grab_focus")
 		return
 	
 	# For all other keys (including backspace), let the keyboard addon handle input automatically
@@ -344,7 +344,11 @@ func _on_navigate(direction: String):
 func _on_enter_pressed():
 	if keyboard.visible:
 		hide_keyboard()
-		name_line_edit.grab_focus()
+		name_line_edit.call_deferred("grab_focus")
+		return
+	var current = get_viewport().gui_get_focus_owner()
+	if current == dismiss_button:
+		_on_back_pressed()
 		return
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Enter pressed")
@@ -373,6 +377,9 @@ func _on_enter_pressed():
 			configure_network()
 
 func _on_back_pressed():
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.return_to_network_button = true
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Back pressed - navigating to main menu")
 	get_tree().change_scene_to_file("res://scene/option/option.tscn")

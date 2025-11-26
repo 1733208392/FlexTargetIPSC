@@ -34,6 +34,9 @@ var is_idpa_history: bool = false
 # Store the selected variant (IPSC or IDPA)
 var selected_variant: String = "IPSC"
 
+# Flag to focus network button when returning to options
+var return_to_network_button: bool = false
+
 # Timer for periodic netlink status updates
 var netlink_timer: Timer = null
 const NETLINK_UPDATE_INTERVAL = 60.0  # Request every 60 seconds

@@ -83,6 +83,13 @@ func _ready():
 	add_child(networking_tab)
 	networking_tab._ready()
 	
+	# Check if we need to focus the network button
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.return_to_network_button:
+		if networking_tab.network_button:
+			networking_tab.network_button.grab_focus()
+		global_data.return_to_network_button = false
+	
 	# Load saved settings from GlobalData
 	load_settings_from_global_data()
 	
