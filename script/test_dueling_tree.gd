@@ -11,6 +11,9 @@ var sound_cooldown: float = 0.05  # 50ms minimum between sounds
 var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
+# Animation state
+var is_animating = false
+
 func _ready():
 	$AnimatedSprite2D/Area2D.connect("input_event", Callable(self, "_on_sprite_input_event"))
 	original_x = animated_sprite.position.x
@@ -34,6 +37,11 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	"""Handle websocket bullet hit"""
 	print("[TestDuelingTree] WebSocket bullet hit at: %s" % pos)
 	
+	# Ignore hits while animating
+	if is_animating:
+		print("[TestDuelingTree] Ignoring bullet hit while animating")
+		return
+	
 	# Check if the hit is within the collision area
 	var area = $AnimatedSprite2D/Area2D
 	if area:
@@ -55,6 +63,7 @@ func _on_websocket_bullet_hit(pos: Vector2):
 				play_metal_hit_sound(pos)
 				
 				# Trigger the animation
+				is_animating = true
 				var tween = create_tween()
 				if is_moving_left:
 					animated_sprite.play()
@@ -63,6 +72,7 @@ func _on_websocket_bullet_hit(pos: Vector2):
 					animated_sprite.play_backwards()
 					tween.tween_property(animated_sprite, "position:x", original_x, 0.5)
 				is_moving_left = not is_moving_left
+				tween.finished.connect(func(): is_animating = false)
 			else:
 				print("[TestDuelingTree] Hit outside collision area, distance: %.2f, radius: %.2f" % [distance, circle_radius])
 
