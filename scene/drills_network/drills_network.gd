@@ -591,24 +591,7 @@ func _on_menu_control(directive: String):
 			volume_down()
 		"power":
 			power_off()
-		"back":
-			var menu_controller = get_node("/root/MenuController")
-			if menu_controller:
-				menu_controller.play_cursor_sound()
-			
-			# Set return source for focus management
-			if global_data:
-				global_data.return_source = "network"
-				if DEBUG_ENABLED:
-					print("[DrillsNetwork] Set return_source to network")
-			
-			# Clear BLE ready content before exiting the scene
-			if global_data:
-				global_data.ble_ready_content.clear()
-				if DEBUG_ENABLED:
-					print("[DrillsNetwork] Cleared ble_ready_content before returning to sub menu")
-			get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
-		"homepage":
+		"homepage", "back":
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
