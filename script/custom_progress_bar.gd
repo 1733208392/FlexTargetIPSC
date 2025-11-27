@@ -7,10 +7,10 @@ const DEBUG_DISABLED = true  # Set to true for verbose debugging
 @onready var progress_segments = $ProgressContainer/ProgressSegments
 
 # Progress configuration
-const TOTAL_SEGMENTS = 15
-const TOTAL_TARGETS = 7
-# Target segments: [2, 2, 2, 2, 2, 2, 3] for targets 0-6
-const SEGMENTS_PER_TARGET = [2, 2, 2, 2, 2, 2, 3]
+@export var total_targets: int = 7
+@export var segments_per_target: PackedInt32Array = PackedInt32Array([2, 2, 2, 2, 2, 2, 3])
+
+var total_segments: int
 
 # Colors for progress states
 const ACTIVE_COLOR = Color(1.0, 0.6, 0.0, 1.0)  # Orange
@@ -31,16 +31,21 @@ func _ready():
 	update_progress(0)
 
 func update_progress(targets_completed: int):
-	"""Update progress bar based on number of targets completed (0-7)"""
+	"""Update progress bar based on number of targets completed"""
+	# Calculate total segments
+	total_segments = 0
+	for seg in segments_per_target:
+		total_segments += seg
+	
 	# Calculate total active segments based on completed targets
 	var active_segments = 0
-	for i in range(min(targets_completed, TOTAL_TARGETS)):
-		active_segments += SEGMENTS_PER_TARGET[i]
+	for i in range(min(targets_completed, total_targets)):
+		active_segments += segments_per_target[i]
 	
-	active_segments = min(active_segments, TOTAL_SEGMENTS)
+	active_segments = min(active_segments, total_segments)
 	
 	# Update each segment's color based on progress
-	for i in range(TOTAL_SEGMENTS):
+	for i in range(total_segments):
 		var segment = progress_segments.get_child(i)
 		if segment and segment.name.begins_with("Segment"):
 			var bar_node = segment.get_node("SkewedBar" + str(i + 1))
@@ -54,11 +59,11 @@ func update_progress(targets_completed: int):
 	if DEBUG_DISABLED and targets_completed >= 0:
 		var segment_breakdown = []
 		var cumulative = 0
-		for i in range(TOTAL_TARGETS):
-			cumulative += SEGMENTS_PER_TARGET[i]
-			segment_breakdown.append("Target %d: %d segments (total: %d)" % [i, SEGMENTS_PER_TARGET[i], cumulative])
+		for i in range(total_targets):
+			cumulative += segments_per_target[i]
+			segment_breakdown.append("Target %d: %d segments (total: %d)" % [i, segments_per_target[i], cumulative])
 		if not DEBUG_DISABLED:
-			print("Progress updated: ", targets_completed, "/", TOTAL_TARGETS, " targets (", active_segments, "/", TOTAL_SEGMENTS, " segments)")
+			print("Progress updated: ", targets_completed, "/", total_targets, " targets (", active_segments, "/", total_segments, " segments)")
 			print("Segment breakdown: ", segment_breakdown)
 
 func reset_progress():

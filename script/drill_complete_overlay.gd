@@ -21,6 +21,10 @@ var countdown_timer: Timer = null
 var countdown_seconds: int = 0
 var original_restart_text: String = ""
 
+# Restart cooldown to prevent rapid successive restarts
+var last_restart_time: float = 0.0
+var restart_cooldown: float = 1.0  # 1 second cooldown between restarts
+
 func _ready():
 	"""Initialize the drill complete overlay"""
 	if not DEBUG_DISABLED:
@@ -182,7 +186,7 @@ func setup_collision_areas():
 		area_restart.collision_mask = 8   # Bullet layer
 		area_restart.monitoring = true
 		area_restart.monitorable = true
-		area_restart.area_entered.connect(_on_area_restart_hit)
+		#area_restart.area_entered.connect(_on_area_restart_hit)
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] AreaRestart collision setup complete")
 			print("[drill_complete_overlay] AreaRestart global position: ", area_restart.global_position)
@@ -315,6 +319,13 @@ func spawn_bullet_at_position(world_pos: Vector2):
 
 func _on_area_restart_hit(area: Area2D):
 	"""Handle bullet collision with restart area"""
+	# Check restart cooldown to prevent rapid successive restarts
+	var current_time = Time.get_ticks_msec() / 1000.0
+	if (current_time - last_restart_time) < restart_cooldown:
+		if not DEBUG_DISABLED:
+			print("[drill_complete_overlay] Restart cooldown active (%.2fs remaining), ignoring hit" % (restart_cooldown - (current_time - last_restart_time)))
+		return
+	
 	# Check if restart button is disabled (auto restart enabled)
 	var restart_btn = get_node_or_null("VBoxContainer/RestartButton")
 	if restart_btn and restart_btn.disabled:
@@ -329,11 +340,21 @@ func _on_area_restart_hit(area: Area2D):
 		else:
 			print("[drill_complete_overlay] Hit triggered without area (likely WebSocket control)")
 	
+	# Update last restart time
+	last_restart_time = current_time
+	
 	# Stop countdown if running
 	stop_countdown()
 	
 	# Hide the completion overlay
 	visible = false
+	
+	# Re-enable bullet spawning now that overlay is hidden
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.set_bullet_spawning_enabled(true)
+		if not DEBUG_DISABLED:
+			print("[drill_complete_overlay] Bullet spawning re-enabled after overlay hidden")
 	
 	# Find the drill manager and restart the drill
 	var drill_ui = get_parent()
@@ -352,6 +373,13 @@ func _on_area_restart_hit(area: Area2D):
 
 func _on_area_replay_hit(area: Area2D):
 	"""Handle bullet collision with replay area"""
+	# Check restart cooldown to prevent rapid successive actions (reuse same cooldown)
+	var current_time = Time.get_ticks_msec() / 1000.0
+	if (current_time - last_restart_time) < restart_cooldown:
+		if not DEBUG_DISABLED:
+			print("[drill_complete_overlay] Action cooldown active (%.2fs remaining), ignoring replay hit" % (restart_cooldown - (current_time - last_restart_time)))
+		return
+	
 	var replay_btn = get_node_or_null("VBoxContainer/ReviewReplayButton")
 	if replay_btn and replay_btn.disabled:
 		if not DEBUG_DISABLED:
@@ -364,6 +392,9 @@ func _on_area_replay_hit(area: Area2D):
 			print("[drill_complete_overlay] Hit by area: ", area.name, " at position: ", area.global_position)
 		else:
 			print("[drill_complete_overlay] Hit triggered without area (likely WebSocket control)")
+	
+	# Update last action time
+	last_restart_time = current_time
 	
 	# Navigate to the drill replay scene
 	get_tree().change_scene_to_file("res://scene/drill_replay.tscn")
@@ -389,10 +420,19 @@ func update_drill_results(score: int, hit_factor: float, fastest_shot: float, sh
 	var hf_label = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/HitFactor")
 	var fastest_label = get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/FastestShot")
 	
+	# Check if this is an IDPA drill
+	var is_idpa = false
+	var drill_manager = get_parent()
+	if drill_manager:
+		drill_manager = drill_manager.get_parent()
+		if drill_manager and drill_manager.get_script():
+			is_idpa = "idpa" in drill_manager.get_script().resource_path.to_lower()
+	
 	if score_label:
-		score_label.text = tr("score") + ": %d" % score
+		var score_key = "points_down" if is_idpa else "score"
+		score_label.text = tr(score_key) + ": %d" % score
 		if not DEBUG_DISABLED:
-			print("[drill_complete_overlay] Updated score: %d" % score)
+			print("[drill_complete_overlay] Updated score with key '%s': %d" % [score_key, score])
 	
 	if hf_label:
 		if show_hit_factor:
@@ -415,6 +455,13 @@ func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: 
 	# First make sure we're visible so the nodes are available
 	visible = true
 	
+	# Disable bullet spawning to prevent unwanted hits during overlay display
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.set_bullet_spawning_enabled(false)
+		if not DEBUG_DISABLED:
+			print("[drill_complete_overlay] Bullet spawning disabled during overlay display")
+	
 	# Re-setup collision areas to ensure they're properly positioned
 	call_deferred("setup_collision_areas")
 	
@@ -423,6 +470,9 @@ func show_drill_complete(score: int = 0, hit_factor: float = 0.0, fastest_shot: 
 	
 	# Update the results
 	update_drill_results(score, hit_factor, fastest_shot, show_hit_factor)
+	
+	# Temporarily disable restart button to prevent accidental restarts from stray bullets
+	_disable_restart_button_temporarily()
 	
 	# Check auto restart setting and disable restart button if enabled
 	_check_and_disable_restart_button()
@@ -605,19 +655,19 @@ func _activate_focused_button():
 	if focused_control == current_restart_button:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Activating RestartButton via WebSocket")
-		_on_area_restart_hit(null)  # Trigger restart action
+		#_on_area_restart_hit(null)  # Trigger restart action
 	elif focused_control == current_replay_button and not current_replay_button.disabled:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Activating ReviewReplayButton via WebSocket")
-		_on_area_replay_hit(null)  # Trigger replay action
+		#_on_area_replay_hit(null)  # Trigger replay action
 	elif focused_control == current_replay_button and current_replay_button.disabled:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Replay button is disabled, defaulting to restart")
-		_on_area_restart_hit(null)  # Default to restart
+		#_on_area_restart_hit(null)  # Default to restart
 	else:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] No button focused, defaulting to restart")
-		_on_area_restart_hit(null)  # Default to restart
+		#_on_area_restart_hit(null)  # Default to restart
 
 func _check_and_disable_restart_button():
 	"""Check if auto restart is enabled and disable the restart button accordingly"""
@@ -668,6 +718,31 @@ func _check_and_disable_restart_button():
 			area_restart.monitoring = true
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Restart button enabled in manual mode")
+
+func _disable_restart_button_temporarily():
+	"""Temporarily disable the restart button to prevent accidental restarts from stray bullets"""
+	var temp_restart_btn = get_node_or_null("VBoxContainer/RestartButton")
+	if temp_restart_btn:
+		temp_restart_btn.disabled = true
+		if not DEBUG_DISABLED:
+			print("[drill_complete_overlay] Restart button temporarily disabled")
+		
+		# Re-enable after a short delay
+		await get_tree().create_timer(0.5).timeout
+		
+		# Only re-enable if not in auto-restart mode
+		var temp_global_data = get_node_or_null("/root/GlobalData")
+		var temp_auto_restart_enabled = false
+		if temp_global_data:
+			temp_auto_restart_enabled = temp_global_data.settings_dict.get("auto_restart", false)
+		
+		if not temp_auto_restart_enabled:
+			temp_restart_btn.disabled = false
+			if not DEBUG_DISABLED:
+				print("[drill_complete_overlay] Restart button re-enabled")
+	else:
+		if not DEBUG_DISABLED:
+			print("[drill_complete_overlay] Restart button not found for temporary disable")
 
 func start_countdown(total_seconds: int):
 	"""Start countdown timer on the restart button"""

@@ -18,7 +18,7 @@ var target_scenes = {
 	"3paddles": "res://scene/targets/3paddles_simple.tscn",
 	"2poppers": "res://scene/targets/2poppers_simple.tscn",
 	"idpa": "res://scene/targets/idpa.tscn",
-	"idpa-mini-rotate": "res://scene/targets/idpa_rotation.tscn",
+	"idpa-mini-rotate": "res://scene/idpa_mini_rotation.tscn",
 	"idpa-hard-cover-1": "res://scene/targets/idpa_hard_cover_1.tscn",
 	"idpa-hard-cover-2": "res://scene/targets/idpa_hard_cover_2.tscn",
 	"idpa-ns": "res://scene/targets/idpa_ns.tscn"
@@ -662,9 +662,9 @@ func apply_target_position_and_rotation(record: Dictionary, target_type: String,
 		var pos_data = record["target_position"]
 		var rotation_data = record["rotation_angle"]
 		if node:
-			node.global_position = Vector2(pos_data["x"], pos_data["y"])
-			node.global_rotation = rotation_data
-			loaded_targets[target_type]["pos"] = node.global_position
+			node.position = Vector2(pos_data["x"], pos_data["y"])
+			node.rotation = rotation_data
+			loaded_targets[target_type]["pos"] = node.position
 		else:
 			if not DEBUG_DISABLED:
 				print("Drill Replay: target node is not found")

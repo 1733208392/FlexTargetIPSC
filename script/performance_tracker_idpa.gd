@@ -1,7 +1,7 @@
 extends Node
 
 # Performance optimization
-const DEBUG_DISABLED = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 # Scoring rules are now loaded dynamically from settings_dict.target_rule
 

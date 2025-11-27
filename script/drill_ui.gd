@@ -42,7 +42,12 @@ func _ready():
 		if not DEBUG_DISABLED:
 			print("[DrillUI] Detected drill type - IDPA: ", is_idpa_drill, " (script: ", script_path, ")")
 		
-		# Connect UI update signals
+		# Configure progress bar based on drill type
+		if progress_bar:
+			if "idpa_mini_stage" in script_path:
+				progress_bar.total_targets = 5
+				progress_bar.segments_per_target = PackedInt32Array([3, 3, 3, 3, 3])
+			# Add other configurations if needed
 		if drills_manager.has_signal("ui_show_completion"):
 			drills_manager.ui_show_completion.connect(_on_show_completion)
 		if drills_manager.has_signal("ui_timer_update"):

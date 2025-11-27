@@ -5,11 +5,11 @@ extends Control
 @export var idpa_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
 @export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
 @export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
-@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation_no_paddle.tscn")
-
+#@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
+@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/idpa_mini_rotation.tscn")
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]
-#var base_target_sequence: Array[String] = ["idpa-mini-rotate"]
+#var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2","idpa-mini-rotate"]
+var base_target_sequence: Array[String] = ["idpa-mini-rotate"]
 var target_sequence: Array[String] = []
 var current_target_index: int = 0
 var current_target_instance: Node = null
@@ -485,7 +485,7 @@ func _on_target_disappeared(target_id: String = ""):
 	print("[TARGET_DISAPPEARED] Calling spawn_next_target()")
 	spawn_next_target()
 
-func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null, _param5 = null):
+func _on_target_hit(param1, param2 = null, param3 = null, param4 = null, param5 = null, param6 = null):
 	"""Handle when a target is hit"""
 	if current_target_index >= target_sequence.size():
 		if not DEBUG_DISABLED:
@@ -496,14 +496,18 @@ func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null, _param
 	var hit_area = ""
 	var hit_position = Vector2.ZERO
 	var actual_points = 0
+	var rotation_angle = 0.0
+	var target_position = Vector2.ZERO
 	
 	# Handle different parameter orders based on target type
 	if current_target_type == "idpa-mini-rotate":
-		# idpa_rotation.gd sends: (position, score, area, is_hit, rotation)
+		# idpa_rotation.gd sends: (position, score, area, is_hit, rotation, target_position)
 		hit_position = param1  # Vector2
 		actual_points = param2  # int
 		hit_area = param3  # String
-		# param4 = is_hit (bool), param5 = rotation (float)
+		# param4 is is_hit (bool), ignored
+		rotation_angle = param5  # float
+		target_position = param6  # Vector2
 	else:
 		# Other IDPA targets send: (zone, points, hit_position)
 		var zone = param1  # String
@@ -521,13 +525,6 @@ func _on_target_hit(param1, param2 = null, param3 = null, _param4 = null, _param
 	emit_signal("ui_score_update", total_drill_score)
 	
 	# Emit the target_hit signal for performance tracking
-	var rotation_angle = 0.0
-	var target_position = Vector2.ZERO
-	if current_target_type == "idpa-mini-rotate" and current_target_instance:
-		rotation_angle = _param5  # Use actual rotation from idpa_rotation.gd
-		var target_node = current_target_instance.get_node_or_null("IDPA")
-		if target_node:
-			target_position = target_node.global_position
 	emit_signal("target_hit", current_target_type, hit_position, hit_area, int(actual_points), rotation_angle, target_position)
 	
 	# Update the fastest interval display
@@ -540,6 +537,12 @@ func complete_drill():
 		print("=== DRILL COMPLETED! ===")
 		print("Final score: ", total_drill_score)
 	drill_completed = true
+	
+	# Update progress to show all targets completed
+	emit_signal("ui_progress_update", target_sequence.size())
+	
+	# Allow UI to render the progress update
+	await get_tree().process_frame
 	
 	# Stop the drill timer
 	stop_drill_timer()
@@ -610,6 +613,12 @@ func complete_drill_with_timeout():
 		print("Final score: ", total_drill_score)
 	drill_completed = true
 	drill_timed_out = true
+	
+	# Update progress to show current completion status
+	emit_signal("ui_progress_update", current_target_index)
+	
+	# Allow UI to render the progress update
+	await get_tree().process_frame
 	
 	# Stop the drill timer
 	stop_drill_timer()

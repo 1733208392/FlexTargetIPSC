@@ -1,11 +1,11 @@
 extends Node2D
 
-signal target_hit(position: Vector2, score: int, area: String, is_hit: bool, rotation: float)
+signal target_hit(position: Vector2, score: int, area: String, is_hit: bool, rotation: float, target_position: Vector2)
 signal target_disappeared
 
-@onready var animation_player: AnimationPlayer = $IDPA/AnimationPlayer
+@onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var target_area: Area2D = $IDPA
-@onready var cover_area: Area2D = $Cover
+@onready var cover_area: Area2D = $BarrelWall
 @onready var paddle_area: Area2D = $Paddle/Paddle
 @onready var paddle_animation_player: AnimationPlayer = $Paddle/Paddle/AnimationPlayer
 
@@ -52,7 +52,7 @@ func play_random_animation() -> void:
 	if animation_player.is_playing():
 		return
 		
-	var animations = ["rotation","up"]
+	var animations = ["right","up"]
 	var random_anim = animations[randi() % animations.size()]
 	animation_player.play(random_anim)
 	await animation_player.animation_finished
@@ -78,7 +78,7 @@ func process_bullet_hit(pos: Vector2) -> void:
 	var cover_shapes = get_collision_shapes(cover_area)
 	if is_point_in_shapes(pos, cover_shapes):
 		score = -5
-		area = "cover"
+		area = "Cover"
 		is_hit = false
 	if is_instance_valid(paddle_area) and not paddle_hit:
 		var paddle_shapes = get_collision_shapes(paddle_area)
@@ -127,12 +127,11 @@ func process_bullet_hit(pos: Vector2) -> void:
 	spawn_bullet_effects_at_position(pos, is_hit)
 
 	# Emit signal for all shots so bootcamp can respond (e.g., clear area)
-	emit_signal("target_hit", pos, score, area, is_hit, target_area.rotation)
+	emit_signal("target_hit", pos, score, area, is_hit, target_area.rotation, target_area.position)
 
 	# Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_hit:
 		shot_count += 1
-
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
 			play_disappearing_animation()
@@ -258,14 +257,13 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, _is_target_hit: bool =
 func play_disappearing_animation():
 	"""Start the disappearing animation and disable collision detection"""
 	# Get the AnimationPlayer
-	var anim_player = animation_player
-	if anim_player:
+	if animation_player:
 		# Connect to the animation finished signal if not already connected
-		if not anim_player.animation_finished.is_connected(_on_animation_finished):
-			anim_player.animation_finished.connect(_on_animation_finished)
+		if not animation_player.animation_finished.is_connected(_on_animation_finished):
+			animation_player.animation_finished.connect(_on_animation_finished)
 
 		# Play the disappear animation
-		anim_player.play("disappear")
+		animation_player.play("disappear")
 
 func _on_animation_finished(animation_name: String):
 	"""Called when any animation finishes"""

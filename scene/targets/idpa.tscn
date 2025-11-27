@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://b6gm7b6lv1klv"]
+[gd_scene load_steps=8 format=3 uid="uid://b6gm7b6lv1klv"]
 
 [ext_resource type="Script" uid="uid://b2c4e54ec4vkl" path="res://script/idpa.gd" id="1_5wlg2"]
 [ext_resource type="Texture2D" uid="uid://cane2y7sy4bht" path="res://asset/idpa.png" id="2_ijw1i"]
@@ -20,110 +20,11 @@ tracks/0/keys = {
 
 [sub_resource type="Animation" id="Animation_1"]
 resource_name = "disappear"
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:modulate")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 1),
-"transitions": PackedFloat32Array(1, 1),
-"update": 0,
-"values": [Color(1, 1, 1, 1), Color(1, 1, 1, 0)]
-}
-
-[sub_resource type="Animation" id="Animation_2"]
-resource_name = "reset"
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:rotation")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [0.0]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath(".:modulate")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Color(1, 1, 1, 1)]
-}
-tracks/2/type = "value"
-tracks/2/imported = false
-tracks/2/enabled = true
-tracks/2/path = NodePath(".:scale")
-tracks/2/interp = 1
-tracks/2/loop_wrap = true
-tracks/2/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Vector2(1, 1)]
-}
-
-[sub_resource type="Animation" id="Animation_rotation"]
-resource_name = "rotation"
-length = 2.0
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:rotation")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 1, 2),
-"transitions": PackedFloat32Array(1, 1, 1),
-"update": 0,
-"values": [0.0, 0.5235987755982988, 0.0]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath(".:position")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0, 1, 2),
-"transitions": PackedFloat32Array(1, 1, 1),
-"update": 0,
-"values": [Vector2(0, 0), Vector2(256, 0), Vector2(0, 0)]
-}
-
-[sub_resource type="Animation" id="Animation_up"]
-resource_name = "up"
-length = 2.0
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:position")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 1, 2),
-"transitions": PackedFloat32Array(1, 1, 1),
-"update": 0,
-"values": [Vector2(0, 0), Vector2(0, -200), Vector2(0, 0)]
-}
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_1"]
 _data = {
 &"RESET": SubResource("Animation_ybhha"),
-&"disappear": SubResource("Animation_1"),
-&"reset": SubResource("Animation_2"),
-&"rotation": SubResource("Animation_rotation"),
-&"up": SubResource("Animation_up")
+&"disappear": SubResource("Animation_1")
 }
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_knpln"]

@@ -19,7 +19,7 @@ var current_target_instance = null
 
 @onready var idpa_scene: PackedScene = preload("res://scene/targets/idpa.tscn")
 @onready var idpa_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
-@onready var idpa_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
+@onready var idpa_rotate_scene: PackedScene = preload("res://scene/idpa_mini_rotation.tscn")
 @onready var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
 @onready var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
 
@@ -234,12 +234,12 @@ func _on_bullseye_time_diff(time_diff: float, hit_position: Vector2):
 	# Update statistics display
 	update_statistics_display()
 
-func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null, _arg5 = null):
+func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null, _arg5 = null, _arg6 = null):
 	# Handle different signal signatures based on target type:
 	# IPSC Mini: target_hit(zone, points, hit_position)
 	# Poppers/Paddles: target_hit(id, zone, points, hit_position)
 	# idpa (regular, ns, hard_cover): target_hit(zone, points, hit_position)
-	# idpa Rotate: target_hit(hit_position, points, zone, is_hit, rotation)
+	# idpa Rotate: target_hit(position, score, area, is_hit, rotation, target_position)
 	
 	# Only process hits if drill has started
 	if not drill_started:
@@ -248,7 +248,7 @@ func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null, _arg5 = null):
 		return
 	
 	if not DEBUG_DISABLED:
-		print("[Bootcamp] _on_target_hit called with args:", _arg1, _arg2, _arg3, _arg4, _arg5)
+		print("[Bootcamp] _on_target_hit called with args:", _arg1, _arg2, _arg3, _arg4, _arg5, _arg6)
 	
 	# Determine target type to extract arguments correctly
 	var current_target_type = target_sequence[current_target_index]
@@ -257,7 +257,7 @@ func _on_target_hit(_arg1, _arg2, _arg3, _arg4 = null, _arg5 = null):
 	var track_stats = _should_show_stats(current_target_type)
 	
 	if current_target_type == "idpa_rotate":
-		# idpa Rotate: target_hit(hit_position, points, zone, is_hit, rotation)
+		# idpa Rotate: target_hit(position, score, area, is_hit, rotation, target_position)
 		hit_position = _arg1
 		zone = _arg3
 	elif current_target_type in ["2poppers", "3paddles"]:
