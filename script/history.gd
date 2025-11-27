@@ -149,8 +149,8 @@ func process_leaderboard_data(leaderboard_data: Array):
 			"drill_number": drill_number,
 			"total_time": "%.2fs" % total_time,
 			"fastest_shot": "%.2fs" % fastest_shot if fastest_shot > 0.0 else "N/A",
-			"total_score": "%.1f" % total_score,
-			"hf": "%.2f" % hf,
+			"total_score": "%d" % int(total_score),
+			"hf": "%.1f" % hf,
 			"records": []  # Empty records array since we don't have individual shot data
 		}
 		
@@ -283,8 +283,8 @@ func process_loaded_data(data: Dictionary, file_id: String):
 			"drill_number": drill_number,
 			"total_time": "%.2fs" % (drill_summary.get("total_elapsed_time", 0.0)),
 			"fastest_shot": "%.2fs" % (drill_summary.get("fastest_shot_interval", 0.0) if drill_summary.get("fastest_shot_interval") != null else 0.0),
-			"total_score": "%.1f" % total_score,
-			"hf": "%.2f" % hf,
+			"total_score": "%d" % int(total_score),
+			"hf": "%.1f" % hf,
 			"records": records
 		}
 		history_data.append(drill_data)

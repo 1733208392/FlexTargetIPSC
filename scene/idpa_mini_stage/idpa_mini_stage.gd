@@ -58,6 +58,9 @@ signal ui_timeout_warning(remaining_seconds: float)
 
 @onready var performance_tracker = preload("res://script/performance_tracker_idpa.gd").new()
 
+func get_performance_tracker():
+	return performance_tracker
+
 func _ready():
 	"""Initialize the drill"""
 	# Initialize the target sequence

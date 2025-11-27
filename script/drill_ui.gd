@@ -169,10 +169,28 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 		print("drill_complete_overlay node: ", drill_complete_overlay)
 		print("drill_complete_overlay visible before: ", drill_complete_overlay.visible)
 	
-	# Calculate hit factor (simple example: score / time)
+	# Get the actual total score from the performance tracker to ensure consistency
+	var actual_total_score = 0
+	var drills_manager = get_parent()
+	if drills_manager and drills_manager.has_method("get_performance_tracker"):
+		var tracker = drills_manager.get_performance_tracker()
+		if tracker and tracker.has_method("get_current_total_score"):
+			actual_total_score = tracker.get_current_total_score()
+			if not DEBUG_DISABLED:
+				print("Using actual total score from performance tracker: ", actual_total_score)
+		else:
+			actual_total_score = final_score
+			if not DEBUG_DISABLED:
+				print("Performance tracker not available, using final_score: ", final_score)
+	else:
+		actual_total_score = final_score
+		if not DEBUG_DISABLED:
+			print("Drills manager not available, using final_score: ", final_score)
+	
+	# Calculate hit factor using the consistent total score
 	var hit_factor = 0.0
 	if final_time > 0:
-		hit_factor = final_score / final_time
+		hit_factor = actual_total_score / final_time
 	
 	# Check if the overlay has its script properly attached
 	if drill_complete_overlay.get_script() == null:
@@ -195,9 +213,9 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 	if drill_complete_overlay.has_method("show_drill_complete"):
 		if not DEBUG_DISABLED:
 			print("[drill_ui] Calling show_drill_complete method")
-		drill_complete_overlay.show_drill_complete(final_score, hit_factor, fastest_time, show_hit_factor)
+		drill_complete_overlay.show_drill_complete(actual_total_score, hit_factor, fastest_time, show_hit_factor)
 		if not DEBUG_DISABLED:
-			print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f, show_hit_factor=%s" % [final_score, hit_factor, fastest_time, show_hit_factor])
+			print("Updated drill complete overlay with: score=%d, hit_factor=%.2f, fastest=%.2f, show_hit_factor=%s" % [actual_total_score, hit_factor, fastest_time, show_hit_factor])
 			print("drill_complete_overlay visible after show_drill_complete: ", drill_complete_overlay.visible)
 	else:
 		# Fallback to manual update
@@ -210,9 +228,9 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 		var fastest_shot_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/FastestShot")
 		
 		if completion_score_label:
-			completion_score_label.text = "Score: %d points" % final_score
+			completion_score_label.text = "Score: %d points" % actual_total_score
 		if hf_label:
-			hf_label.text = "Hit Factor: %.2f" % hit_factor
+			hf_label.text = "Hit Factor: %.1f" % hit_factor
 		if fastest_shot_label:
 			var fastest_string = "%.2fs" % fastest_time if fastest_time < 999.0 else "--"
 			fastest_shot_label.text = "Fastest Shot: " + fastest_string
@@ -239,10 +257,28 @@ func _on_show_completion_with_timeout(final_time: float, fastest_time: float, fi
 	if not DEBUG_DISABLED:
 		print("Showing completion overlay with timeout")
 	
-	# Calculate hit factor (simple example: score / time)
+	# Get the actual total score from the performance tracker to ensure consistency
+	var actual_total_score = 0
+	var drills_manager = get_parent()
+	if drills_manager and drills_manager.has_method("get_performance_tracker"):
+		var tracker = drills_manager.get_performance_tracker()
+		if tracker and tracker.has_method("get_current_total_score"):
+			actual_total_score = tracker.get_current_total_score()
+			if not DEBUG_DISABLED:
+				print("Using actual total score from performance tracker: ", actual_total_score)
+		else:
+			actual_total_score = final_score
+			if not DEBUG_DISABLED:
+				print("Performance tracker not available, using final_score: ", final_score)
+	else:
+		actual_total_score = final_score
+		if not DEBUG_DISABLED:
+			print("Drills manager not available, using final_score: ", final_score)
+	
+	# Calculate hit factor using the consistent total score
 	var hit_factor = 0.0
 	if final_time > 0:
-		hit_factor = final_score / final_time
+		hit_factor = actual_total_score / final_time
 	
 	# Check if the overlay has its script properly attached
 	if drill_complete_overlay.get_script() == null:
@@ -283,9 +319,9 @@ func _on_show_completion_with_timeout(final_time: float, fastest_time: float, fi
 			title_label.modulate = Color.WHITE
 		
 		if completion_score_label:
-			completion_score_label.text = "Score: %d points" % final_score
+			completion_score_label.text = "Score: %d points" % actual_total_score
 		if hf_label:
-			hf_label.text = "Hit Factor: %.2f" % hit_factor
+			hf_label.text = "Hit Factor: %.1f" % hit_factor
 		if fastest_shot_label:
 			var fastest_string = "%.2fs" % fastest_time if fastest_time < 999.0 else "--"
 			fastest_shot_label.text = "Fastest Shot: " + fastest_string

@@ -396,7 +396,7 @@ func update_drill_results(score: int, hit_factor: float, fastest_shot: float, sh
 	
 	if hf_label:
 		if show_hit_factor:
-			hf_label.text = tr("hit_factor") + ": %.2f" % hit_factor
+			hf_label.text = tr("hit_factor") + ": %.1f" % hit_factor
 			hf_label.visible = true
 			if not DEBUG_DISABLED:
 				print("[drill_complete_overlay] Updated hit factor: %.2f" % hit_factor)

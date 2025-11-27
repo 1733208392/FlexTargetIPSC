@@ -91,7 +91,7 @@ func _on_drills_finished():
 	
 	var drill_summary = {
 		"total_elapsed_time": total_elapsed_time,
-		"fastest_shot_interval": fastest_value,
+		"fastest_shot_interval": snappedf(fastest_value, 0.01) if fastest_value != null else 0.0,
 		"total_shots": records.size(),
 		"timestamp": Time.get_unix_time_from_system()
 	}
@@ -188,6 +188,13 @@ func set_shot_timer_delay(delay: float):
 	shot_timer_delay = round(delay * 100.0) / 100.0  # Ensure 2 decimal precision
 	if not DEBUG_DISABLED:
 		print("PERFORMANCE TRACKER: Shot timer delay set to:", shot_timer_delay, "seconds")
+
+# Get the current total score from accumulated records
+func get_current_total_score() -> int:
+	var total = 0
+	for record in records:
+		total += record.get("score", 0)
+	return total
 
 func _on_settings_saved(result, response_code, headers, body):
 	if response_code == 200:
