@@ -375,9 +375,6 @@ func _on_enter_pressed():
 			configure_network()
 
 func _on_back_pressed():
-	var global_data = get_node_or_null("/root/GlobalData")
-	if global_data:
-		global_data.return_to_network_button = true
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Back pressed - navigating to main menu")
 	get_tree().change_scene_to_file("res://scene/option/option.tscn")

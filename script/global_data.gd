@@ -35,7 +35,7 @@ var is_idpa_history: bool = false
 var selected_variant: String = "IPSC"
 
 # Flag to focus network button when returning to options
-var return_to_network_button: bool = false
+var last_focused_networking_button: Node = null
 
 # Timer for periodic netlink status updates
 var netlink_timer: Timer = null
