@@ -5,7 +5,7 @@ extends Control
 @export var idpa_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
 @export var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
 @export var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
-@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
+@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation_no_paddle.tscn")
 
 # Drill sequence and progress tracking
 var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2", "idpa-mini-rotate"]

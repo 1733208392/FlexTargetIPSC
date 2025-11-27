@@ -15,7 +15,7 @@ const WebSocket = require('ws');
 // Netlink state variables (shared between HTTP and WS/BLE)
 let netlinkStarted = true;
 let netlinkChannel = 0;
-let netlinkWorkMode = "slave";
+let netlinkWorkMode = "master";
 let netlinkDeviceName = "01";
 let netlinkBluetoothName = "BLE-SIM";
 let netlinkWifiIp = "192.168.1.100"; // Mock IP for simulation
@@ -938,8 +938,7 @@ class WriteCharacteristic extends bleno.Characteristic {
             type: 'netlink',
             action: 'device_list',
             data: [
-              { mode: 'master', name: '02' },
-              { mode: 'slave', name: '01' }
+              { mode: 'master', name: '01' }
             ]
           };
           

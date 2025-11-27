@@ -4,9 +4,6 @@
 [ext_resource type="Texture2D" uid="uid://cs6gxkhjacg2u" path="res://asset/paddle.png" id="2_idco4"]
 [ext_resource type="Material" uid="uid://clvihc3cf0hk2" path="res://shader/paddle_fall_material.tres" id="3_fall_material"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_faqlu"]
-radius = 285.37695
-
 [sub_resource type="Animation" id="Animation_fall"]
 resource_name = "fall_down"
 length = 1.2
@@ -52,6 +49,9 @@ _data = {
 &"fall_down": SubResource("Animation_fall")
 }
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_45kxt"]
+radius = 250.0
+
 [node name="Paddle" type="Area2D"]
 scale = Vector2(0.5, 0.5)
 script = ExtResource("1_script")
@@ -60,11 +60,11 @@ script = ExtResource("1_script")
 material = ExtResource("3_fall_material")
 texture = ExtResource("2_idco4")
 
-[node name="CircleArea" type="CollisionShape2D" parent="."]
-position = Vector2(-4, -214)
-shape = SubResource("CircleShape2D_faqlu")
-
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
 &"": SubResource("AnimationLibrary_paddle")
 }
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -200)
+shape = SubResource("CircleShape2D_45kxt")
