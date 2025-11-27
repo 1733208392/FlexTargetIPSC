@@ -57,7 +57,7 @@ signal ui_timer_update(elapsed_seconds: float)
 signal ui_target_title_update(target_index: int, total_targets: int)
 signal ui_fastest_time_update(fastest_time: float)
 signal ui_show_completion(final_time: float, fastest_time: float, final_score: int)
-signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool)
+signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool, show_hit_factor: bool)
 signal ui_hide_completion()
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
@@ -952,7 +952,7 @@ func complete_drill():
 	if drill_timed_out:
 		if not DEBUG_DISABLED:
 			print("=== EMITTING ui_show_completion_with_timeout ===")
-		emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true)
+		emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true, false)
 	else:
 		if not DEBUG_DISABLED:
 			print("=== EMITTING ui_show_completion ===")
@@ -1050,7 +1050,7 @@ func complete_drill_with_timeout():
 	
 	# Show the completion overlay with timeout indication
 	var fastest_time = performance_tracker.get_fastest_time_diff()
-	emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true)
+	emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true, false)
 	
 	# DON'T set total elapsed time in performance tracker - we're not saving timeout data
 	# performance_tracker.set_total_elapsed_time(elapsed_seconds)

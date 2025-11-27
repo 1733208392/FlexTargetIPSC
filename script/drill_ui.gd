@@ -296,9 +296,9 @@ func _on_show_completion_with_timeout(final_time: float, fastest_time: float, fi
 	
 	# Try to use the new method if available
 	if drill_complete_overlay.has_method("show_drill_complete_with_timeout"):
-		drill_complete_overlay.show_drill_complete_with_timeout(final_score, hit_factor, fastest_time, timed_out)
+		drill_complete_overlay.show_drill_complete_with_timeout(final_score, hit_factor, fastest_time, timed_out, _show_hit_factor)
 		if not DEBUG_DISABLED:
-			print("Updated drill complete overlay with timeout: score=%d, hit_factor=%.2f, fastest=%.2f, timed_out=%s" % [final_score, hit_factor, fastest_time, timed_out])
+			print("Updated drill complete overlay with timeout: score=%d, hit_factor=%.2f, fastest=%.2f, timed_out=%s, show_hit_factor=%s" % [final_score, hit_factor, fastest_time, timed_out, _show_hit_factor])
 	else:
 		# Fallback to manual update with timeout handling
 		if not DEBUG_DISABLED:
