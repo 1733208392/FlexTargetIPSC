@@ -4,6 +4,16 @@ extends Area2D
 @onready var circle_area: CollisionShape2D = $CircleArea
 @onready var popper_sprite: Sprite2D = $PopperSprite
 
+func _ready():
+	# CRITICAL: Duplicate the material to avoid shader parameter sharing between instances
+	if popper_sprite and popper_sprite.material:
+		popper_sprite.material = popper_sprite.material.duplicate()
+	
+	# Initialize shader parameters to ensure paddle is visible initially
+	if popper_sprite and popper_sprite.material:
+		popper_sprite.material.set_shader_parameter("fall_progress", 0.0)
+		popper_sprite.material.set_shader_parameter("rotation_angle", 0.0)
+
 func reset_paddle():
 	visible = true
 	if popper_sprite:

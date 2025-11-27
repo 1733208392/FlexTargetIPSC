@@ -146,7 +146,7 @@ func process_leaderboard_data(leaderboard_data: Array):
 		var drill_number = int(entry.get("index", 0))
 		var down_points = entry.get("down_points", 0)  # Down points (penalty points)
 		var raw_time = entry.get("raw_time", 0.0)  # Raw time
-		var final_score = entry.get("final_score", 0.0)  # Total score (time + down points)
+		var final_score = raw_time + down_points  # Total score (time + down points)
 		var fastest_shot = entry.get("fastest_shot", 0.0)
 
 		# Convert to expected history data format for IDPA
@@ -281,7 +281,7 @@ func process_loaded_data(data: Dictionary, file_id: String):
 				total_down_points += record["score"]
 
 		var raw_time = drill_summary.get("total_elapsed_time", 0.0)
-		var final_score = raw_time - total_down_points  # IDPA final score = time - down_points (since down_points is negative)
+		var final_score = raw_time + abs(total_down_points) # IDPA final score = time + down_points (since down_points is negative)
 
 		var drill_data = {
 			"drill_number": drill_number,

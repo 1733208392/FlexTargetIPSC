@@ -77,9 +77,8 @@ func set_paddle_id(id: String):
 	paddle_id = id
 	print("Paddle ID set to: %s" % paddle_id)
 
-func get_paddle_id() -> String:
-	"""Get the unique identifier for this paddle"""
-	return paddle_id
+func is_paddle_fallen() -> bool:
+	return is_fallen
 
 func create_relative_animation():
 	"""Create a unique animation that starts from the paddle's actual position"""
@@ -347,7 +346,8 @@ func trigger_fall_animation():
 func _on_fall_animation_finished(anim_name: StringName):
 	if anim_name == "fall_down":
 		print("Paddle %s fall animation completed!" % paddle_id)
-		# Optional: Add scoring, sound effects, or remove the paddle
+		# Emit signal to notify that the paddle has disappeared
+		emit_signal("target_disappeared", paddle_id)
 		# For now, just disable further interactions
 		input_pickable = false
 		
@@ -380,10 +380,8 @@ func reset_paddle():
 	
 	if animation_player:
 		animation_player.stop()
-		animation_player.seek(0.0)
 		if animation_player.has_animation("fall_down"):
-			animation_player.play("fall_down")
-			animation_player.stop() # ensure shader fall_progress resets visually
+			animation_player.seek(0.0, true)  # Seek to start without playing
 		if not DEBUG_DISABLED:
 			print("[paddle %s] AnimationPlayer reset" % paddle_id)
 	

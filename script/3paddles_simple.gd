@@ -301,6 +301,11 @@ func trigger_paddle1_hit(hit_position: Vector2):
 		if DEBUG_DISABLED:
 			print("3PADDLES_SIMPLE: Paddle1 already hit, ignoring")
 		return  # Already hit
+	
+	if paddle1_simple and paddle1_simple.has_method("is_paddle_fallen") and paddle1_simple.is_paddle_fallen():
+		if DEBUG_DISABLED:
+			print("3PADDLES_SIMPLE: Paddle1 already fallen, ignoring")
+		return  # Already fallen
 		
 	if DEBUG_DISABLED:
 		print("3PADDLES_SIMPLE: 🎯 TRIGGERING PADDLE1 HIT")
@@ -330,6 +335,11 @@ func trigger_paddle2_hit(hit_position: Vector2):
 		if DEBUG_DISABLED:
 			print("3PADDLES_SIMPLE: Paddle2 already hit, ignoring")
 		return  # Already hit
+	
+	if paddle2_simple and paddle2_simple.has_method("is_paddle_fallen") and paddle2_simple.is_paddle_fallen():
+		if DEBUG_DISABLED:
+			print("3PADDLES_SIMPLE: Paddle2 already fallen, ignoring")
+		return  # Already fallen
 		
 	if DEBUG_DISABLED:
 		print("3PADDLES_SIMPLE: 🎯 TRIGGERING PADDLE2 HIT")
@@ -359,6 +369,11 @@ func trigger_paddle3_hit(hit_position: Vector2):
 		if DEBUG_DISABLED:
 			print("3PADDLES_SIMPLE: Paddle3 already hit, ignoring")
 		return  # Already hit
+	
+	if paddle3_simple and paddle3_simple.has_method("is_paddle_fallen") and paddle3_simple.is_paddle_fallen():
+		if DEBUG_DISABLED:
+			print("3PADDLES_SIMPLE: Paddle3 already fallen, ignoring")
+		return  # Already fallen
 		
 	if DEBUG_DISABLED:
 		print("3PADDLES_SIMPLE: 🎯 TRIGGERING PADDLE3 HIT")
