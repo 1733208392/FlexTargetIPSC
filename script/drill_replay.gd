@@ -767,7 +767,7 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-			get_tree().change_scene_to_file("res://scene/sub_menu.tscn")
+			get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
 		"homepage":
 			if not DEBUG_DISABLED:
 						print("[Drill Replay] Back to main menu")
