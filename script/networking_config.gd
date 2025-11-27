@@ -176,6 +176,10 @@ func show_keyboard_for_name_input():
 		# Connect keyboard button handlers
 		_attach_keyboard_handlers()
 		
+		# Connect text_submitted to hide keyboard
+		if not name_line_edit.text_submitted.is_connected(_on_name_text_submitted):
+			name_line_edit.text_submitted.connect(_on_name_text_submitted)
+		
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] Keyboard shown for name input")
 
@@ -347,8 +351,6 @@ func _on_navigate(direction: String):
 
 func _on_enter_pressed():
 	if keyboard.visible:
-		hide_keyboard()
-		name_line_edit.call_deferred("grab_focus")
 		return
 	var current = get_viewport().gui_get_focus_owner()
 	if current == dismiss_button:
@@ -627,6 +629,10 @@ func set_status_failed():
 
 func set_status_timeout():
 	status_label.text = tr("netlink_config_timeout")
+
+func _on_name_text_submitted(_new_text: String):
+	hide_keyboard()
+	name_line_edit.call_deferred("grab_focus")
 
 func set_status_stop_failed():
 	stop_timers()
