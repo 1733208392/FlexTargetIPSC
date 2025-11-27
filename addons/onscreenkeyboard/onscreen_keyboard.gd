@@ -255,11 +255,8 @@ func _set_focus_to_top_left_key():
 		call_deferred("_set_focus_to_top_left_key")
 		return
 	
-	# Finally grab the focus
-	top_left_key.grab_focus()
-	last_focused_key = top_left_key
-	if debug_remote:
-		print("[onscreenkbd] _set_focus_to_top_left_key: successfully focused top-left key=", top_left_key.text)
+	# Finally grab the focus (deferred to ensure visual update)
+	call_deferred("_grab_focus", top_left_key)
 
 
 func _set_focus_to_key(output: String):
@@ -288,11 +285,8 @@ func _set_focus_to_key(output: String):
 		call_deferred("_set_focus_to_key", output)
 		return
 	
-	# Finally grab the focus
-	target_key.grab_focus()
-	last_focused_key = target_key
-	if debug_remote:
-		print("[onscreenkbd] _set_focus_to_key: successfully focused key with output=", output, " key=", target_key.text)
+	# Finally grab the focus (deferred to ensure visual update)
+	call_deferred("_grab_focus", target_key)
 
 
 func _animate_show_keyboard():
@@ -678,9 +672,11 @@ func _finalize_key_delivery(target, key_value, before_text):
 	_set_caps_lock(false)
 
 
-func _refocus_last_activated_key():
-	if last_activated_key != null and last_activated_key.is_inside_tree():
-		last_activated_key.grab_focus()
+func _grab_focus(key):
+	key.grab_focus()
+	last_focused_key = key
+	if debug_remote:
+		print("[onscreenkbd] _grab_focus: successfully focused key=", key.text)
 
 
 func _create_keyboard(layout_data):
