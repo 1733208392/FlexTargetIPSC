@@ -10,10 +10,10 @@ var target_type_to_scene = {
 	"ipsc": "res://scene/ipsc_mini.tscn",
 	"special_1": "res://scene/ipsc_mini_black_1.tscn",
 	"special_2": "res://scene/ipsc_mini_black_2.tscn",
-	"hostage": "res://scene/hostage.tscn",
+	"hostage": "res://scene/targets/hostage.tscn",
 	"rotation": "res://scene/ipsc_mini_rotate.tscn",
-	"paddle": "res://scene/3paddles.tscn",
-	"popper": "res://scene/2poppers_simple.tscn",
+	"paddle": "res://scene/targets/3paddles.tscn",
+	"popper": "res://scene/targets/2poppers_simple.tscn",
 	"final": "res://scene/targets/final.tscn"
 }
 
