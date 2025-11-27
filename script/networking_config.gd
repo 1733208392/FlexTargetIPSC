@@ -295,9 +295,6 @@ func _on_navigate(direction: String):
 		print("[NetworkingConfig] Navigation: ", direction)
 	match direction:
 		"up":
-			if not keyboard.visible:
-				set_focused_control((focused_control - 1 + controls.size()) % controls.size())
-				return
 			if dropdown_open:
 				if focused_control == 0:  # Channel dropdown
 					var current_selected = channel_dropdown.selected
@@ -308,13 +305,9 @@ func _on_navigate(direction: String):
 					if current_selected > 0:
 						workmode_dropdown.select(current_selected - 1)
 			else:
-				# Don't switch focus if keyboard is visible (let keyboard handle navigation)
 				if not keyboard.visible:
 					set_focused_control((focused_control - 1 + controls.size()) % controls.size())
 		"down":
-			if not keyboard.visible:
-				set_focused_control((focused_control + 1) % controls.size())
-				return
 			if dropdown_open:
 				if focused_control == 0:  # Channel dropdown
 					var current_selected = channel_dropdown.selected
@@ -325,7 +318,6 @@ func _on_navigate(direction: String):
 					if current_selected < workmode_dropdown.item_count - 1:
 						workmode_dropdown.select(current_selected + 1)
 			else:
-				# Don't switch focus if keyboard is visible (let keyboard handle navigation)
 				if not keyboard.visible:
 					set_focused_control((focused_control + 1) % controls.size())
 		"left", "right":
