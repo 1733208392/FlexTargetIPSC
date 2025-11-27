@@ -5,7 +5,7 @@
 [ext_resource type="Material" uid="uid://clvihc3cf0hk2" path="res://shader/paddle_fall_material.tres" id="3_fall_material"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_faqlu"]
-radius = 210.0
+radius = 285.37695
 
 [sub_resource type="Animation" id="Animation_fall"]
 resource_name = "fall_down"

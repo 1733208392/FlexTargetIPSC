@@ -99,6 +99,11 @@ func _ready():
 	if wifi_button:
 		wifi_button.pressed.connect(_on_wifi_pressed)
 	
+	# Connect network button pressed
+	if network_button:
+		network_button.pressed.connect(_on_network_pressed)
+		network_button.disabled = false  # Ensure it's enabled
+	
 	# Connect start netlink button pressed
 	if start_netlink_button:
 		start_netlink_button.pressed.connect(_on_start_netlink_pressed)
