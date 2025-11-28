@@ -4,7 +4,7 @@ extends Node2D
 const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique"]
+var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","texas_start_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique"]
 var current_target_index: int = 0
 var current_target_instance = null
 
@@ -27,6 +27,7 @@ var current_target_instance = null
 @onready var three_paddles_scene: PackedScene = preload("res://scene/targets/3paddles_simple.tscn")
 @onready var mozambique_scene: PackedScene = preload("res://scene/targets/mozambique.tscn")
 @onready var dueling_tree_scene: PackedScene = preload("res://scene/test_dueling_tree_composite.tscn")
+@onready var texas_start_composite_scene: PackedScene = preload("res://scene/targets/texas_start_composite.tscn")
 
 @onready var canvas_layer = $CanvasLayer
 @onready var canvas_layer_stats = $CanvasLayerStats
@@ -708,8 +709,8 @@ func spawn_target_by_type(target_type: String):
 			canvas_layer.visible = false  # Hide shot intervals for mozambique
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Hidden CanvasLayers for mozambique (uses its own drill logic)")
-		elif target_type == "dueling_tree_composite":
-			canvas_layer.visible = false  # Hide shot intervals for dueling tree composite
+		elif target_type == "dueling_tree_composite" or target_type == "texas_start_composite":
+			canvas_layer.visible = false  # Hide shot intervals for dueling tree composite (and Texas composite)
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Hidden CanvasLayers for dueling_tree_composite")
 		else:
@@ -723,8 +724,8 @@ func spawn_target_by_type(target_type: String):
 			clear_area.visible = false  # Hide clear area for mozambique
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Hidden clear area for mozambique")
-		elif target_type == "dueling_tree_composite":
-			clear_area.visible = false  # Hide clear area for dueling tree composite
+		elif target_type == "dueling_tree_composite" or target_type == "texas_start_composite":
+			clear_area.visible = false  # Hide clear area for dueling tree composite (and Texas composite)
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Hidden clear area for dueling_tree_composite")
 		else:
@@ -769,6 +770,8 @@ func spawn_target_by_type(target_type: String):
 			target_scene = mozambique_scene
 		"dueling_tree_composite":
 			target_scene = dueling_tree_scene
+		"texas_start_composite":
+			target_scene = texas_start_composite_scene
 		_:
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Unknown target type: ", target_type)
@@ -839,6 +842,22 @@ func spawn_target_by_type(target_type: String):
 		# Enable the target
 		if target.has_method("set"):
 			target.set("drill_active", true)
+
+			# Connect WebSocketListener.bullet_hit to target's websocket handler if present
+			var ws_listener = get_node_or_null("/root/WebSocketListener")
+			if ws_listener:
+				# Prefer a child node named TexasStar (composite root) then the target itself
+				var target_handler_node: Node = null
+				if target.has_node("TexasStar"):
+					target_handler_node = target.get_node("TexasStar")
+				elif target.has_method("websocket_bullet_hit"):
+					target_handler_node = target
+					if target_handler_node and target_handler_node.has_method("websocket_bullet_hit"):
+						var cb = Callable(target_handler_node, "websocket_bullet_hit")
+						if not ws_listener.is_connected("bullet_hit", cb):
+							ws_listener.bullet_hit.connect(cb)
+							if not DEBUG_DISABLED:
+								print("[Bootcamp] Connected WebSocketListener.bullet_hit to ", target_handler_node.name)
 		
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Spawned and activated target: ", target_type, " at position: ", target.position)
