@@ -157,39 +157,80 @@ func _update_stars_display():
 func _on_enter_pressed():
 	"""Handle enter directive from remote control"""
 	print("[MoleLevelComplete] Remote enter pressed")
-	if next_button.has_focus():
+	# Prioritize the button that currently has focus. Support replay_button when shown.
+	if next_button and next_button.has_focus():
 		_on_next_pressed()
-	elif back_button.has_focus():
+	elif replay_button and replay_button.has_focus():
+		_on_replay_pressed()
+	elif back_button and back_button.has_focus():
 		_on_back_pressed()
 
 func _on_remote_navigate(direction: String):
 	"""Handle navigation directives from remote control"""
 	print("[MoleLevelComplete] Remote navigate: ", direction)
+	# Determine the secondary button shown to the right of Back:
+	var secondary_button: Button = null
+	if next_button and next_button.visible:
+		secondary_button = next_button
+	elif replay_button and replay_button.visible:
+		secondary_button = replay_button
+
 	if direction == "left":
-		if next_button.has_focus():
-			back_button.grab_focus()
+		# Move focus left: if currently on secondary -> go to back, else go to secondary
+		if secondary_button and secondary_button.has_focus():
+			if back_button:
+				back_button.grab_focus()
 		else:
-			next_button.grab_focus()
+			if secondary_button:
+				secondary_button.grab_focus()
+			elif back_button:
+				back_button.grab_focus()
 	elif direction == "right":
-		if back_button.has_focus():
-			next_button.grab_focus()
+		# Move focus right: if currently on back -> go to secondary, else go to back
+		if back_button and back_button.has_focus():
+			if secondary_button:
+				secondary_button.grab_focus()
 		else:
-			back_button.grab_focus()
+			if back_button:
+				back_button.grab_focus()
+			elif secondary_button:
+				secondary_button.grab_focus()
 
 func _input(event):
 	"""Handle left/right navigation between buttons"""
 	if event.is_action_pressed("ui_left"):
 		print("[MoleLevelComplete] UI left pressed")
-		if next_button.has_focus():
-			back_button.grab_focus()
+		# Mirror remote navigation logic for keyboard/gamepad arrows
+		var secondary_button: Button = null
+		if next_button and next_button.visible:
+			secondary_button = next_button
+		elif replay_button and replay_button.visible:
+			secondary_button = replay_button
+
+		if secondary_button and secondary_button.has_focus():
+			if back_button:
+				back_button.grab_focus()
 		else:
-			next_button.grab_focus()
+			if secondary_button:
+				secondary_button.grab_focus()
+			elif back_button:
+				back_button.grab_focus()
 	elif event.is_action_pressed("ui_right"):
 		print("[MoleLevelComplete] UI right pressed")
-		if back_button.has_focus():
-			next_button.grab_focus()
+		var secondary_button_r: Button = null
+		if next_button and next_button.visible:
+			secondary_button_r = next_button
+		elif replay_button and replay_button.visible:
+			secondary_button_r = replay_button
+
+		if back_button and back_button.has_focus():
+			if secondary_button_r:
+				secondary_button_r.grab_focus()
 		else:
-			back_button.grab_focus()
+			if back_button:
+				back_button.grab_focus()
+			elif secondary_button_r:
+				secondary_button_r.grab_focus()
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE or event.keycode == KEY_BACK:
 			print("[MoleLevelComplete] Keyboard back pressed")

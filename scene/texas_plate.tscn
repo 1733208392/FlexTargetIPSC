@@ -10,7 +10,6 @@ radius = 64.12488
 script = ExtResource("1_plate")
 
 [node name="Plate" type="Sprite2D" parent="."]
-scale = Vector2(2, 2)
 texture = ExtResource("2_duxvn")
 
 [node name="PlateArea2D" type="Area2D" parent="."]

@@ -55,11 +55,32 @@ func _ready():
 	if mole_attack_label:
 		mole_attack_label.text = tr("mole_attack")
 
-	# Set FruitCatcher as default focus
-	if button_fruitcatcher:
-		button_fruitcatcher.grab_focus()
-		selected_option = 0
-		print("[Menu] FruitCatcher button has focus by default")
+	# Load last pressed selection from GlobalData if available, otherwise default to first button
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("last_games_menu_selection"):
+		selected_option = int(global_data.settings_dict.get("last_games_menu_selection", 0))
+		# Clamp to valid range
+		if selected_option < 0 or selected_option >= main_menu_options.size():
+			selected_option = 0
+		# Apply focus to the saved option
+		_update_selection()
+		print("[Menu] Restored last menu selection from GlobalData: ", selected_option)
+	else:
+		# Default to FruitCatcher
+		if button_fruitcatcher:
+			button_fruitcatcher.grab_focus()
+			selected_option = 0
+			print("[Menu] FruitCatcher button has focus by default")
+
+
+func _save_last_selection():
+	"""Persist the last pressed menu selection into GlobalData.settings_dict"""
+	var gd = get_node_or_null("/root/GlobalData")
+	if gd:
+		gd.settings_dict["last_games_menu_selection"] = selected_option
+		print("[Menu] Saved last menu selection to GlobalData: ", selected_option)
+	else:
+		print("[Menu] GlobalData not found; cannot save last menu selection")
 
 func _on_remote_navigate(direction: String):
 	"""Handle navigation from remote control"""
@@ -120,14 +141,20 @@ func _on_fruitcatcher_pressed():
 	"""Handle FruitCatcher button press"""
 	print("[Menu] FruitCatcher selected")
 	# Load the game scene
+	selected_option = 0
+	_save_last_selection()
 	get_tree().change_scene_to_file("res://scene/games/fruitninja.tscn")
 
 func _on_monkeyduel_pressed():
 	"""Handle Monkey Duel button press"""
 	print("[Menu] Monkey Duel selected")
+	selected_option = 1
+	_save_last_selection()
 	get_tree().change_scene_to_file("res://scene/games/monkey/game_monkey.tscn")
 
 func _on_mole_attack_pressed():
 	"""Handle Mole Attack button press"""
 	print("[Menu] Mole Attack selected")
+	selected_option = 2
+	_save_last_selection()
 	get_tree().change_scene_to_file("res://scene/games/wack-a-mole/game_mole.tscn")

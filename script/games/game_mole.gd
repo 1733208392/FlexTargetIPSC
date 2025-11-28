@@ -110,6 +110,19 @@ func _ready() -> void:
 	else:
 		print("[GameMole] MenuController not found")
 
+	# Notify backend that a game session is starting via HttpService autoload (if present)
+	if has_node("/root/HttpService"):
+		var http_service = get_node("/root/HttpService")
+		if http_service and http_service.has_method("start_game"):
+			var _callback = func(_result, response_code, _headers, _body):
+				print("[GameMole] HttpService.start_game response - Code: ", response_code)
+			http_service.start_game(_callback)
+			print("[GameMole] Called HttpService.start_game()")
+		else:
+			print("[GameMole] HttpService does not have start_game method")
+	else:
+		print("[GameMole] HttpService autoload not found")
+
 func _start_pop_timer() -> void:
 	"""Start the pop timer with interval-based mole spawning"""
 	pop_timer.wait_time = randf_range(base_pop_interval_min * difficulty_multiplier, base_pop_interval_max * difficulty_multiplier)
