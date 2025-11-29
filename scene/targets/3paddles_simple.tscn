@@ -21,13 +21,13 @@ position = Vector2(-250, 0)
 [node name="Paddle1" parent="Paddle1Area" instance=ExtResource("2_jci2v")]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Paddle1Area"]
-position = Vector2(0, -135)
+position = Vector2(0, -100)
 shape = SubResource("CircleShape2D_jci2v")
 
 [node name="Paddle2Area" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Paddle2Area"]
-position = Vector2(0, 64)
+position = Vector2(-2, 99)
 shape = SubResource("CircleShape2D_iiedg")
 
 [node name="Paddle2" parent="Paddle2Area" instance=ExtResource("2_jci2v")]
@@ -36,7 +36,7 @@ position = Vector2(0, 200)
 [node name="Paddle3Area" type="Area2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Paddle3Area"]
-position = Vector2(250, -135)
+position = Vector2(250, -101)
 shape = SubResource("CircleShape2D_0ir4w")
 
 [node name="Paddle3" parent="Paddle3Area" instance=ExtResource("2_jci2v")]

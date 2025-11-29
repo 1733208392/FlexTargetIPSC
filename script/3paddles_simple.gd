@@ -38,7 +38,7 @@ var paddles_disappeared = []
 const PADDLE_POINTS = 5
 
 # Performance optimization
-const DEBUG_DISABLED = false  # Set to true for verbose debugging
+const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
 func _ready():
 	if DEBUG_DISABLED:
