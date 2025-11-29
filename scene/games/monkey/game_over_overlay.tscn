@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://xoqil48qkl7d" path="res://asset/games/jiong-avatar.png" id="1"]
 [ext_resource type="FontFile" uid="uid://d2eub6rd80tjp" path="res://asset/games/soupofjustice.ttf" id="2_ghm7o"]
 [ext_resource type="Texture2D" uid="uid://bt7v22nd4vwar" path="res://asset/games/trophy.png" id="3_um74f"]
-[ext_resource type="AudioStream" uid="uid://du5manoclpv67" path="res://audio/victory-chime.mp3" id="4_hefvv"]
+[ext_resource type="AudioStream" uid="uid://dxpul16876qad" path="res://audio/victory-chime.mp3" id="4_hefvv"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
 bg_color = Color(0, 0, 0, 0.8)

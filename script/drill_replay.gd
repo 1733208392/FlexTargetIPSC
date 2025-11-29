@@ -662,7 +662,12 @@ func apply_target_position_and_rotation(record: Dictionary, target_type: String,
 		var pos_data = record["target_position"]
 		var rotation_data = record["rotation_angle"]
 		if node:
-			node.position = Vector2(pos_data["x"], pos_data["y"])
+			var target_pos = Vector2(pos_data["x"], pos_data["y"])
+			if target_type == "ipsc_mini_rotate":
+				node.global_position = target_pos
+			else:
+				# For IDPA, target_position is local
+				node.position = target_pos
 			node.rotation = rotation_data
 			loaded_targets[target_type]["pos"] = node.position
 		else:

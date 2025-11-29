@@ -221,12 +221,12 @@ func _show_game_over(winner_id: int):
 			if name_label:
 				name_label.text = tr("Jiong")
 			if avatar_sprite:
-				avatar_sprite.texture = load("res://assets/games/jiong-avatar.png")
+				avatar_sprite.texture = load("res://asset/games/jiong-avatar.png")
 		else:
 			if name_label:
 				name_label.text = tr("Xuyang")
 			if avatar_sprite:
-				avatar_sprite.texture = load("res://assets/games/xuyang-avatar.png")
+				avatar_sprite.texture = load("res://assets/xuyang-avatar.png")
 		
 		# Stop the vines
 		var vine_left = get_node_or_null("VineLeft")
