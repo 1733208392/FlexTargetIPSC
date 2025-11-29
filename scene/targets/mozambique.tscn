@@ -1,7 +1,8 @@
-[gd_scene load_steps=10 format=3 uid="uid://cxd2xq70pq0ln"]
+[gd_scene load_steps=11 format=3 uid="uid://cxd2xq70pq0ln"]
 
 [ext_resource type="Script" uid="uid://bywkb3gjgcap0" path="res://scene/targets/mozambique.gd" id="1_tqo6r"]
 [ext_resource type="Texture2D" uid="uid://bulikg7fe0w3h" path="res://asset/mosambique.png" id="2_tqo6r"]
+[ext_resource type="Theme" uid="uid://dmg3xu7opmvt1" path="res://theme/drill_title_theme.tres" id="2_upr8q"]
 [ext_resource type="PackedScene" uid="uid://bvmw1s06twfav" path="res://scene/shot_timer.tscn" id="3_s8c5b"]
 [ext_resource type="PackedScene" uid="uid://56tkisbqcuaf" path="res://scene/mozambique_drill_complete_overlay.tscn" id="4_u875l"]
 
@@ -88,6 +89,20 @@ size = Vector2(319, 492)
 collision_layer = 7
 collision_mask = 0
 script = ExtResource("1_tqo6r")
+
+[node name="Label" type="Label" parent="."]
+custom_minimum_size = Vector2(720, 100)
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -360.0
+offset_top = 500.0
+offset_right = 360.0
+offset_bottom = 600.0
+grow_horizontal = 2
+theme = ExtResource("2_upr8q")
+text = "Mozambique Drill"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="TargetSprite" type="Sprite2D" parent="."]
 scale = Vector2(1.5, 1.5)

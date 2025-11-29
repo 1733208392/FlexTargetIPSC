@@ -12,7 +12,8 @@ enum TimerState {
 
 # Node references
 @onready var standby_label = $CenterContainer/StandbyLabel
-@onready var audio_player = $AudioStreamPlayer
+@onready var standby_player = $StandbyPlayer
+@onready var beep_player = $BeepPlayer
 @onready var animation_player = $AnimationPlayer
 @onready var timer_delay = $TimerDelay
 #@onready var instructions = $Instructions
@@ -126,6 +127,9 @@ func start_timer_sequence():
 	standby_label.label_settings.font_color = Color.YELLOW
 	standby_label.visible = true
 	
+	# Play standby sound
+	standby_player.play()
+	
 	# Start pulsing animation
 	animation_player.play("standby_pulse")
 	
@@ -163,7 +167,7 @@ func _on_timer_timeout():
 	beep_time = Time.get_unix_time_from_system()
 	
 	# Play the shot timer beep
-	audio_player.play()
+	beep_player.play()
 	
 	# Change to ready state
 	current_state = TimerState.READY
@@ -191,7 +195,8 @@ func reset_timer():
 	# Stop all timers and animations
 	timer_delay.stop()
 	animation_player.stop()
-	audio_player.stop()
+	standby_player.stop()
+	beep_player.stop()
 	
 	# Reset state
 	current_state = TimerState.WAITING

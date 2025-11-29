@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://bvmw1s06twfav"]
+[gd_scene load_steps=8 format=3 uid="uid://bvmw1s06twfav"]
 
 [ext_resource type="Script" uid="uid://clfaksioumf4c" path="res://script/shot_timer.gd" id="1_shot_timer_script"]
 [ext_resource type="AudioStream" uid="uid://b7v3qngslfsqw" path="res://audio/synthetic-shot-timer.wav" id="2_timer_beep"]
+[ext_resource type="AudioStream" uid="uid://don0vj400vxgd" path="res://audio/standby.mp3" id="3_cetwe"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_standby"]
 font_size = 120
@@ -70,7 +71,7 @@ label_settings = SubResource("LabelSettings_standby")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+[node name="BeepPlayer" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("2_timer_beep")
 volume_db = 5.0
 
@@ -82,3 +83,7 @@ libraries = {
 [node name="TimerDelay" type="Timer" parent="."]
 wait_time = 3.0
 one_shot = true
+
+[node name="StandbyPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_cetwe")
+volume_db = 5.0
