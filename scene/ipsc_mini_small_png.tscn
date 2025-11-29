@@ -53,7 +53,7 @@ collision_mask = 0
 script = ExtResource("1_2rqen")
 
 [node name="TargetSprite" type="Sprite2D" parent="."]
-scale = Vector2(2.2083335, 2.208989)
+scale = Vector2(2.2, 2.2)
 texture = ExtResource("2_g3v27")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]

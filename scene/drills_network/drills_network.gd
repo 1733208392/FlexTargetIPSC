@@ -62,7 +62,7 @@ var final_target_instance: Node = null
 
 # Performance tracking
 signal drills_finished
-signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int)
+signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int, target_position: Vector2)
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
@@ -406,7 +406,7 @@ func _on_final_target_hit(hit_position: Vector2):
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] HttpService not available; cannot send end ack")
 
-func _on_target_hit(arg1, arg2, arg3, arg4 = null):
+func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or_hit_pos = null, target_rot = null):
 	"""Handle target hit - supports different target signal signatures"""
 	# Ignore any shots after the drill has completed
 	if drill_completed:
@@ -422,18 +422,27 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	var zone: String
 	var points: int
 	var hit_position: Vector2
+	var rotation_angle: float = 0.0
+	var target_position: Vector2 = target_instance.global_position if target_instance else Vector2.ZERO
 	
 	# Handle different target signal signatures
-	if arg4 == null:
+	if target_pos_or_hit_pos == null:
 		# ipsc_mini style: (zone, points, hit_position)
-		zone = arg1
-		points = arg2
-		hit_position = arg3
-	else:
+		zone = zone_or_id
+		points = points_or_zone
+		hit_position = hit_pos_or_points
+	elif target_rot == null:
 		# 2poppers style: (popper_id, zone, points, hit_position)
-		zone = arg2
-		points = arg3
-		hit_position = arg4
+		zone = points_or_zone
+		points = hit_pos_or_points
+		hit_position = target_pos_or_hit_pos
+	else:
+		# rotation style: (zone, points, hit_position, target_position, target_rotation)
+		zone = zone_or_id
+		points = points_or_zone
+		hit_position = hit_pos_or_points
+		target_position = target_pos_or_hit_pos  # Use the actual target position from the signal
+		rotation_angle = target_rot  # Use the actual rotation angle for rotation targets
 	
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Target hit: zone=", zone, " points=", points, " pos=", hit_position)
@@ -460,7 +469,7 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	# Emit for performance tracking
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Emitting target_hit signal to performance tracker")
-	emit_signal("target_hit", current_target_type, hit_position, zone, 0.0, current_repeat)
+	emit_signal("target_hit", current_target_type, hit_position, zone, rotation_angle, current_repeat, target_position)
 
 func start_drill_timer():
 	"""Start the drill timer"""
