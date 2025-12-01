@@ -2,16 +2,12 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://2oiiw0mm5smg"
-path="res://.godot/imported/xuyang-avatar.png-45a56f14283b7f0b36998d581b7ad342.ctex"
-metadata={
-"vram_texture": false
-}
+uid="uid://we38ehtglrgt"
+valid=false
 
 [deps]
 
-source_file="res://asset/games/xuyang-avatar.png"
-dest_files=["res://.godot/imported/xuyang-avatar.png-45a56f14283b7f0b36998d581b7ad342.ctex"]
+source_file="res://assets/games/xuyang-avatar.png"
 
 [params]
 

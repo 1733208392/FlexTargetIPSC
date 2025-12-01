@@ -244,5 +244,42 @@ offset_bottom = -20.0
 grow_horizontal = 0
 grow_vertical = 0
 
+[node name="ScaleIndicatorLayer" type="CanvasLayer" parent="."]
+
+[node name="Control" type="Control" parent="ScaleIndicatorLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScaleIndicator" type="HBoxContainer" parent="ScaleIndicatorLayer/Control"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -190.0
+offset_bottom = -156.0
+grow_horizontal = 2
+grow_vertical = 0
+alignment = 1
+
+[node name="ScaleLabel" type="Label" parent="ScaleIndicatorLayer/Control/ScaleIndicator"]
+layout_mode = 2
+theme = ExtResource("5_drill_theme")
+theme_override_font_sizes/font_size = 24
+text = "Zoom: 1.0x"
+horizontal_alignment = 1
+
+[node name="ScaleProgressBar" type="ProgressBar" parent="ScaleIndicatorLayer/Control/ScaleIndicator"]
+custom_minimum_size = Vector2(200, 20)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+value = 100.0
+show_percentage = false
+
 [node name="BackgroundMusic" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("6_audio")

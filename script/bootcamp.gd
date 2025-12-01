@@ -4,9 +4,16 @@ extends Node2D
 const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","texas_start_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique"]
+var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","texas_start_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique", "custom_target"]
 var current_target_index: int = 0
 var current_target_instance = null
+
+# Zoom levels: 0.5x, 0.7x, 1x
+var scales = [0.5, 0.7, 1.0]
+var current_scale_index: int = 2  # Default to 1x
+
+# Targets that don't support zoom
+var zoom_excluded_targets = ["ipsc_mini_rotate", "idpa_rotate"]
 
 # Preload the scenes for bootcamp targets
 @onready var bullseye_scene: PackedScene = preload("res://scene/targets/bullseye.tscn")	
@@ -29,12 +36,18 @@ var current_target_instance = null
 @onready var dueling_tree_scene: PackedScene = preload("res://scene/test_dueling_tree_composite.tscn")
 @onready var texas_start_composite_scene: PackedScene = preload("res://scene/targets/texas_start_composite.tscn")
 
+@onready var custom_target_scene: PackedScene = preload("res://scene/custom_target.tscn")
+
 @onready var canvas_layer = $CanvasLayer
 @onready var canvas_layer_stats = $CanvasLayerStats
 @onready var shot_labels = []
 @onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
 @onready var background_music = $BackgroundMusic
 @onready var clear_area = $ClearArea
+
+# Scale indicator
+@onready var scale_label = $ScaleIndicatorLayer/Control/ScaleIndicator/ScaleLabel
+@onready var scale_progress_bar = $ScaleIndicatorLayer/Control/ScaleIndicator/ScaleProgressBar
 
 # Statistics labels
 @onready var a_label = $CanvasLayerStats/Control/VBoxContainer/HBoxContainerLine1/A
@@ -113,6 +126,9 @@ func _ready():
 	
 	# Update UI texts with translations
 	update_ui_texts()
+	
+	# Update scale indicator
+	update_scale_indicator()
 	
 	# Set clear button as default focus
 	clear_button.grab_focus()
@@ -445,6 +461,14 @@ func _on_menu_control(directive: String):
 			else:
 				if not DEBUG_DISABLED:
 					print("[Bootcamp] Warning: Node not in tree, cannot change scene")
+		"up":
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Zoom in")
+			zoom_in()
+		"down":
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Zoom out")
+			zoom_out()
 		"volume_up":
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Volume up")
@@ -502,6 +526,47 @@ func has_visible_power_off_dialog() -> bool:
 		if child.name == "PowerOffDialog":
 			return true
 	return false
+
+func zoom_in():
+	"""Zoom in to the next higher scale level"""
+	current_scale_index = min(current_scale_index + 1, 2)
+	apply_current_scale()
+
+func zoom_out():
+	"""Zoom out to the next lower scale level"""
+	current_scale_index = max(current_scale_index - 1, 0)
+	apply_current_scale()
+
+func apply_current_scale():
+	"""Apply the current scale to the active target"""
+	if current_target_instance and is_instance_valid(current_target_instance):
+		var current_target_type = target_sequence[current_target_index]
+		var scale_value = 1.0  # Default scale
+		if not (current_target_type in zoom_excluded_targets):
+			scale_value = scales[current_scale_index]
+		current_target_instance.scale = Vector2(scale_value, scale_value)
+		if not DEBUG_DISABLED:
+			print("[Bootcamp] Applied scale ", scale_value, "x to target: ", current_target_type)
+	
+	# Update scale indicator
+	update_scale_indicator()
+
+func update_scale_indicator():
+	"""Update the scale indicator UI"""
+	var current_target_type = target_sequence[current_target_index]
+	if scale_label:
+		if current_target_type in zoom_excluded_targets:
+			scale_label.text = "Zoom: N/A"
+		else:
+			var scale_value = scales[current_scale_index]
+			scale_label.text = "Zoom: %.1fx" % scale_value
+	if scale_progress_bar:
+		if current_target_type in zoom_excluded_targets:
+			scale_progress_bar.visible = false
+		else:
+			scale_progress_bar.visible = true
+			var scale_value = scales[current_scale_index]
+			scale_progress_bar.value = scale_value * 100  # 50, 70, 100
 
 func load_language_from_global_settings():
 	# Read language setting from GlobalData.settings_dict
@@ -766,6 +831,8 @@ func spawn_target_by_type(target_type: String):
 			target_scene = three_paddles_scene
 		"ipsc_mini_rotate":
 			target_scene = ipsc_mini_rotate_scene
+		"custom_target":
+			target_scene = custom_target_scene
 		"mozambique":
 			target_scene = mozambique_scene
 		"dueling_tree_composite":
@@ -858,6 +925,9 @@ func spawn_target_by_type(target_type: String):
 							ws_listener.bullet_hit.connect(cb)
 							if not DEBUG_DISABLED:
 								print("[Bootcamp] Connected WebSocketListener.bullet_hit to ", target_handler_node.name)
+		
+		# Apply current zoom scale
+		apply_current_scale()
 		
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Spawned and activated target: ", target_type, " at position: ", target.position)

@@ -8,6 +8,12 @@ var bullet_hole_pool: Array[Node] = []
 var pool_size: int = 8  # Keep 8 bullet holes pre-instantiated
 var active_bullet_holes: Array[Node] = []
 
+# Sound throttling for impact SFX (copied from ipsc_mini)
+var last_sound_time: float = 0.0
+var sound_cooldown: float = 0.05
+var max_concurrent_sounds: int = 3
+var active_sounds: int = 0
+
 # Image transfer state
 var image_transfer_state = {
 	"active": false,
@@ -21,6 +27,7 @@ var image_transfer_state = {
 
 @onready var image_display = $ImageDisplay
 @onready var status_label = $StatusLabel
+var default_image_texture: Texture = null
 
 func _ready():
 	# Initialize bullet hole pool for performance
@@ -40,8 +47,19 @@ func _ready():
 			print("[CustomTarget] WebSocketListener singleton not found!")
 	
 	# Initialize UI
-	status_label.text = "Waiting for image..."
+	status_label.text = tr("Waiting for image...")
+	# Remember the editor-assigned/default texture so we can restore it
+	default_image_texture = image_display.texture
+	# Keep status hidden until a transfer starts
+	status_label.visible = false
+	# Clear the displayed texture until we load a saved/custom image
 	image_display.texture = null
+
+	# Try to load a previously saved image from HttpService
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		# Request saved image (if any) with data_id "custom_target_image"
+		http_service.load_game(Callable(self, "_on_load_image_response"), "custom_target_image")
 
 # Initialize bullet hole pool for performance optimization
 func initialize_bullet_hole_pool():
@@ -166,8 +184,9 @@ func _handle_image_transfer_start(data: Dictionary):
 	image_transfer_state["chunks_data"] = {}  # Store individual chunks
 	image_transfer_state["image_data"] = ""  # Keep for legacy compatibility
 	
-	# Update UI
-	status_label.text = "Receiving image (%d chunks)..." % image_transfer_state["total_chunks"]
+	# Update UI: show status when transfer starts
+	status_label.visible = true
+	status_label.text = tr("Receiving image (%d chunks)...") % image_transfer_state["total_chunks"]
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Image transfer started: ", image_transfer_state["image_name"])
 		print("  Total chunks: ", image_transfer_state["total_chunks"])
@@ -228,8 +247,9 @@ func _handle_image_chunk(data: Dictionary):
 			image_transfer_state["image_data"].length()
 		])
 	
-	# Update status label
-	status_label.text = "Receiving image (%d/%d chunks)..." % [received_count, expected_count]
+	# Update status label while receiving
+	status_label.visible = true
+	status_label.text = tr("Receiving image (%d/%d chunks)...") % [received_count, expected_count]
 	
 	# Check if all chunks have been received
 	if received_count == expected_count:
@@ -241,6 +261,7 @@ func _handle_image_chunk(data: Dictionary):
 				if not DEBUG_DISABLED:
 					print("[CustomTarget] Missing chunk: %d" % i)
 		
+		# After checking all indices, handle result
 		if all_chunks_present:
 			if not DEBUG_DISABLED:
 				print("[CustomTarget] All %d chunks received successfully!" % expected_count)
@@ -273,7 +294,9 @@ func _handle_image_transfer_complete(data: Dictionary):
 	else:
 		if not DEBUG_DISABLED:
 			print("[CustomTarget] ⚠️  Transfer complete but only received %d/%d chunks" % [received_count, expected_count])
-		status_label.text = "Transfer complete: %d/%d chunks received" % [received_count, expected_count]
+		# Show incomplete transfer status
+		status_label.visible = true
+		status_label.text = tr("Transfer complete: %d/%d chunks received") % [received_count, expected_count]
 
 # Process the complete image once all chunks are received
 func _process_complete_image():
@@ -326,7 +349,8 @@ func _process_complete_image():
 				if chunk_binary == null or chunk_binary.is_empty():
 					if not DEBUG_DISABLED:
 						print("[CustomTarget] Error decoding chunk %d from base64" % i)
-					status_label.text = "Error: Failed to decode chunk %d" % i
+						status_label.visible = true
+						status_label.text = tr("Error: Failed to decode chunk %d") % i
 					return
 				
 				# Append to accumulated binary
@@ -339,7 +363,8 @@ func _process_complete_image():
 			else:
 				if not DEBUG_DISABLED:
 					print("[CustomTarget] Error: Chunk %d is missing during reconstruction!" % i)
-				status_label.text = "Error: Missing chunk during reconstruction"
+					status_label.visible = true
+					status_label.text = tr("Error: Missing chunk during reconstruction")
 				return
 		
 		if not DEBUG_DISABLED:
@@ -353,7 +378,8 @@ func _process_complete_image():
 		if not DEBUG_DISABLED:
 			print("[CustomTarget] Error: base64_to_raw returned null")
 			print("[CustomTarget] Base64 data sample (first 100 chars): ", base64_data.substr(0, 100))
-		status_label.text = "Error: Failed to decode base64 (null)"
+		status_label.visible = true
+		status_label.text = tr("Error: Failed to decode base64 (null)")
 		return
 	
 	if decoded_bytes.is_empty():
@@ -372,7 +398,8 @@ func _process_complete_image():
 					break
 			if not invalid_found:
 				print("[CustomTarget] Base64 string contains only valid characters")
-		status_label.text = "Error: Failed to decode image"
+		status_label.visible = true
+		status_label.text = tr("Error: Failed to decode image")
 		return
 	
 	if not DEBUG_DISABLED:
@@ -435,7 +462,8 @@ func _process_complete_image():
 	if load_result != OK:
 		if not DEBUG_DISABLED:
 			print("[CustomTarget] Error: Failed to load image from buffer (code: %d)" % load_result)
-		status_label.text = "Error: Failed to load image (code: %d)" % load_result
+		status_label.visible = true
+		status_label.text = tr("Error: Failed to load image (code: %d)") % load_result
 		return
 	
 	if not DEBUG_DISABLED:
@@ -445,18 +473,30 @@ func _process_complete_image():
 	var texture = ImageTexture.create_from_image(image)
 	image_display.texture = texture
 	
-	# Update status
-	status_label.text = "Image received: %s (%dx%d)" % [
+	# Update status (then hide — transfer complete)
+	status_label.text = tr("Image received: %s (%dx%d)") % [
 		image_transfer_state["image_name"],
 		image.get_width(),
 		image.get_height()
 	]
+	# Hide the status label now that transfer is complete
+	status_label.visible = false
 	
 	# Mark transfer as complete
 	image_transfer_state["active"] = false
 	
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Image displayed successfully!")
+
+	# Save the displayed image to server (as PNG base64) so it can be reloaded later
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		# Convert Image to PNG bytes and base64-encode
+		var png_bytes = image.save_png_to_buffer()
+		if png_bytes and png_bytes.size() > 0:
+			var b64 = Marshalls.raw_to_base64(png_bytes)
+			if b64:
+				http_service.save_game(Callable(self, "_on_save_image_response"), "custom_target_image", b64)
 
 # Scan JPEG for segment markers to check structural integrity
 func _scan_jpeg_markers(data: PackedByteArray):
@@ -632,3 +672,124 @@ func spawn_bullet_impact_effects(world_pos: Vector2):
 	
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Spawned bullet impact at: ", world_pos)
+
+	# Play impact sound with throttling
+	var time_stamp = Time.get_ticks_msec() / 1000.0
+	play_impact_sound_at_position_throttled(world_pos, time_stamp)
+
+
+func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: float):
+	"""Play impact sound with basic throttling and concurrent sound limiting"""
+	# Time-based throttling
+	if (current_time - last_sound_time) < sound_cooldown:
+		return
+
+	# Concurrent sound limiting
+	if active_sounds >= max_concurrent_sounds:
+		return
+
+	# Prefer metal impact sound if available
+	var impact_sound = preload("res://audio/bullet-hit-metal.mp3")
+	if not impact_sound:
+		# Fallback to generic bullet or paper sound
+		impact_sound = preload("res://audio/paper_hit.MP3")
+
+	if impact_sound:
+		var audio_player = AudioStreamPlayer2D.new()
+		audio_player.stream = impact_sound
+		audio_player.volume_db = -5
+		audio_player.pitch_scale = randf_range(0.95, 1.05)
+
+		var scene_root = get_tree().current_scene
+		var audio_parent = scene_root if scene_root else get_parent()
+		audio_parent.add_child(audio_player)
+		audio_player.global_position = world_pos
+		audio_player.play()
+
+		last_sound_time = current_time
+		active_sounds += 1
+
+		# Clean up after finished
+		audio_player.finished.connect(func():
+			active_sounds = max(active_sounds - 1, 0)
+			audio_player.queue_free()
+		)
+
+
+func _on_save_image_response(result, response_code, _headers, body):
+	if not DEBUG_DISABLED:
+		print("[CustomTarget] Save image response:", result, response_code, body.get_string_from_utf8())
+
+
+func _on_load_image_response(_result, response_code, _headers, body):
+	# Response from HttpService.load_game; expect JSON with `data` field that contains base64 image
+	if response_code != 200:
+		if not DEBUG_DISABLED:
+			print("[CustomTarget] No saved image found or load failed (code: ", response_code, ")")
+		# Restore editor default texture if available
+		if default_image_texture:
+			image_display.texture = default_image_texture
+		status_label.visible = false
+		return
+
+	var body_str = body.get_string_from_utf8()
+	var parsed = JSON.parse_string(body_str)
+	if not parsed:
+		if not DEBUG_DISABLED:
+			print("[CustomTarget] Failed to parse load response: ", body_str)
+		return
+
+	if parsed.has("data"):
+		var data = parsed["data"]
+		# If data is a non-empty string, treat it as base64 image and load it
+		if typeof(data) == TYPE_STRING and data.length() > 0:
+			# data is expected to be base64-encoded PNG bytes
+			var raw = Marshalls.base64_to_raw(data)
+			if raw and raw.size() > 0:
+				var img = Image.new()
+				var ok = img.load_png_from_buffer(raw)
+				if ok != OK:
+					# try jpg
+					ok = img.load_jpg_from_buffer(raw)
+				if ok == OK:
+					var tex = ImageTexture.create_from_image(img)
+					image_display.texture = tex
+					# Show loaded image message
+					status_label.visible = true
+					status_label.text = tr("Loaded saved image: %s (%dx%d)") % [image_transfer_state.get("image_name", "saved"), img.get_width(), img.get_height()]
+					if not DEBUG_DISABLED:
+						print("[CustomTarget] Loaded saved image from server")
+					# Ensure transfer state shows image present
+					image_transfer_state["active"] = false
+					return
+				else:
+					if not DEBUG_DISABLED:
+						print("[CustomTarget] Failed to load image buffer from saved data")
+					# Restore editor default texture when saved data cannot be used
+					if default_image_texture:
+						image_display.texture = default_image_texture
+					status_label.visible = false
+					return
+			else:
+				if not DEBUG_DISABLED:
+					print("[CustomTarget] No raw data in saved image")
+				# Restore editor default texture
+				if default_image_texture:
+					image_display.texture = default_image_texture
+				status_label.visible = false
+				return
+		else:
+			if not DEBUG_DISABLED:
+				print("[CustomTarget] Loaded data is not a string or empty: ", typeof(data))
+			# No saved image present; restore default texture
+			if default_image_texture:
+				image_display.texture = default_image_texture
+			status_label.visible = false
+			return
+	else:
+		if not DEBUG_DISABLED:
+			print("[CustomTarget] Load response has no data field: ", body_str)
+		# No saved data — ensure editor default texture is shown
+		if default_image_texture:
+			image_display.texture = default_image_texture
+		status_label.visible = false
