@@ -7,6 +7,7 @@ const DEBUG_DISABLED = true  # Set to true to disable debug prints for productio
 # Emits signals that scenes can connect to for menu control
 
 signal navigate(direction: String)
+signal navigate_claimed(owner: String, direction: String)
 signal enter_pressed
 signal back_pressed
 signal homepage_pressed
@@ -17,6 +18,17 @@ signal menu_control(directive: String)  # For compatibility with onscreen keyboa
 
 var http_service = null
 var cursor_sound: AudioStream = load("res://audio/Cursor.ogg")
+var _focus_owner: String = ""
+
+func claim_focus(_owner: String) -> void:
+	_focus_owner = _owner
+
+func release_focus(_owner: String) -> void:
+	if _focus_owner == _owner:
+		_focus_owner = ""
+
+func get_focus_owner() -> String:
+	return _focus_owner
 
 func _ready():
 	# Connect to WebSocketListener
@@ -42,7 +54,11 @@ func _on_menu_control(directive: String):
 	
 	match directive:
 		"up", "down", "left", "right":
-			navigate.emit(directive)
+			# If an owner has claimed focus, emit claimed navigate only to that owner
+			if _focus_owner != "":
+				navigate_claimed.emit(_focus_owner, directive)
+			else:
+				navigate.emit(directive)
 		"enter":
 			enter_pressed.emit()
 		"back":

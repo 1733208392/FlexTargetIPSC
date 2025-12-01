@@ -18,6 +18,10 @@ var timer_label: Label
 var display_timer: Timer
 var pause_overlay: CanvasLayer
 var remote_control: Node
+var _gameover_replay_button: Button = null
+var _gameover_back_button: Button = null
+var _gameover_buttons_connected: bool = false
+var _focus_owner_id: String = ""
 
 func _ready():
 	print("[GameMonkey] Game started in SETTINGS state")
@@ -135,7 +139,7 @@ func _on_player_hit(hit_player_id: int):
 	var winner_id = 2 if hit_player_id == 1 else 1
 	_show_game_over(winner_id)
 
-func _on_settings_applied(start_side: String, growth_speed: float, duration: float):
+func _on_settings_applied(_start_side: String, _growth_speed: float, duration: float):
 	game_duration = duration
 	print("[GameMonkey] Settings applied: duration = ", game_duration)
 
@@ -276,6 +280,122 @@ func _show_game_over(winner_id: int):
 			print("[GameMonkey] HttpService autoload not found")
 		
 		print("[GameMonkey] Game over! Winner: Player ", winner_id)
+
+		# Wire game over buttons (these are nodes inside the instantiated overlay)
+		if game_over_overlay:
+			_gameover_replay_button = game_over_overlay.get_node_or_null("Panel/HBoxContainerButtons/ReplayButton")
+			_gameover_back_button = game_over_overlay.get_node_or_null("Panel/HBoxContainerButtons/BackButton")
+			if _gameover_replay_button:
+				_gameover_replay_button.pressed.connect(_on_gameover_replay_pressed)
+				# Ensure the button can receive focus from code/remote navigation
+				_gameover_replay_button.focus_mode = Control.FOCUS_ALL
+			if _gameover_back_button:
+				_gameover_back_button.pressed.connect(_on_gameover_back_pressed)
+				_gameover_back_button.focus_mode = Control.FOCUS_ALL
+			# Default focus to Replay
+			if _gameover_replay_button:
+				_gameover_replay_button.grab_focus()
+			# Connect MenuController navigation/enter/back while overlay is active
+				var rc = remote_control if remote_control else get_node_or_null("/root/MenuController")
+				if rc and not _gameover_buttons_connected:
+					# Claim exclusive navigation focus (so other UI won't handle left/right)
+					_focus_owner_id = str(get_path())
+					if rc.has_method("claim_focus"):
+						rc.claim_focus(_focus_owner_id)
+					# Prefer the claimed navigate signal if present
+					if rc.has_signal("navigate_claimed"):
+						rc.navigate_claimed.connect(_on_gameover_remote_navigate_claimed)
+					elif rc.has_signal("navigate"):
+						rc.navigate.connect(_on_gameover_remote_navigate)
+					if rc.has_signal("enter_pressed"):
+						rc.enter_pressed.connect(_on_gameover_enter_pressed)
+					if rc.has_signal("back_pressed"):
+						rc.back_pressed.connect(_on_gameover_back_pressed)
+					_gameover_buttons_connected = true
+
+func _on_gameover_replay_pressed() -> void:
+	print("[GameMonkey] Replay pressed - restarting game")
+	# Clean up connections and overlay
+	_cleanup_gameover_controls()
+	# Reload current scene to restart
+	if get_tree():
+		var err = get_tree().reload_current_scene()
+		if err != OK:
+			print("[GameMonkey] Failed to reload scene: ", err)
+
+func _on_gameover_back_pressed() -> void:
+	print("[GameMonkey] GameOver Back pressed - returning to menu")
+	_cleanup_gameover_controls()
+	if get_tree():
+		var err = get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
+		if err != OK:
+			print("[GameMonkey] Failed to change to menu: ", err)
+
+func _on_gameover_enter_pressed() -> void:
+	# Trigger the button corresponding to focus
+	if _gameover_replay_button and _gameover_replay_button.has_focus():
+		_on_gameover_replay_pressed()
+	elif _gameover_back_button and _gameover_back_button.has_focus():
+		_on_gameover_back_pressed()
+
+func _on_gameover_remote_navigate(direction: String) -> void:
+	# Toggle focus between replay and back on left/right navigation
+	# If buttons are not present, nothing to do
+	if not _gameover_replay_button or not _gameover_back_button:
+		return
+
+	# If neither button currently has focus, assign a sensible default
+	var replay_focused = _gameover_replay_button.has_focus()
+	var back_focused = _gameover_back_button.has_focus()
+	if not replay_focused and not back_focused:
+		# No focus: choose default based on direction
+		if direction == "left":
+			_gameover_back_button.grab_focus()
+		else:
+			_gameover_replay_button.grab_focus()
+		return
+
+	# Normal toggling when one of the buttons has focus
+	if direction == "left":
+		if replay_focused:
+			_gameover_back_button.grab_focus()
+		else:
+			_gameover_replay_button.grab_focus()
+	elif direction == "right":
+		if back_focused:
+			_gameover_replay_button.grab_focus()
+		else:
+			_gameover_back_button.grab_focus()
+
+func _on_gameover_remote_navigate_claimed(_owner: String, direction: String) -> void:
+	# Only handle if the claimed owner matches us
+	if _owner != _focus_owner_id:
+		return
+
+	# Delegate to existing handler logic
+	_on_gameover_remote_navigate(direction)
+
+func _cleanup_gameover_controls() -> void:
+	# Disconnect remote signals and clear button references
+	var rc = remote_control if remote_control else get_node_or_null("/root/MenuController")
+	if rc and _gameover_buttons_connected:
+		if rc.has_signal("navigate") and rc.navigate.is_connected(_on_gameover_remote_navigate):
+			rc.navigate.disconnect(_on_gameover_remote_navigate)
+		if rc.has_signal("enter_pressed") and rc.enter_pressed.is_connected(_on_gameover_enter_pressed):
+			rc.enter_pressed.disconnect(_on_gameover_enter_pressed)
+		if rc.has_signal("back_pressed") and rc.back_pressed.is_connected(_on_gameover_back_pressed):
+			rc.back_pressed.disconnect(_on_gameover_back_pressed)
+		_gameover_buttons_connected = false
+
+	# Free overlay buttons container if it exists
+	if _gameover_replay_button and is_instance_valid(_gameover_replay_button):
+		_gameover_replay_button.queue_free()
+	if _gameover_back_button and is_instance_valid(_gameover_back_button):
+		_gameover_back_button.queue_free()
+	_gameover_replay_button = null
+	_gameover_back_button = null
+
+ 
 
 func start_countdown():
 	"""Public function to start the countdown, called from settings"""
