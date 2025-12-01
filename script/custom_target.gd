@@ -29,6 +29,39 @@ var image_transfer_state = {
 @onready var status_label = $StatusLabel
 var default_image_texture: Texture = null
 
+func restore_default_image_scaled() -> void:
+	# Restore the editor-assigned default texture, scale it by 2x and center it in the viewport
+	if not default_image_texture:
+		return
+
+	image_display.texture = default_image_texture
+	var vp_size = get_viewport_rect().size
+
+	# If this is a Control (TextureRect), use rect_scale and rect_position
+	if image_display is Control:
+		# Apply 2x scale
+		image_display.rect_scale = Vector2(2, 2)
+		# Compute texture size and center the control
+		var tex_size = Vector2()
+		if default_image_texture.has_method("get_size"):
+			tex_size = default_image_texture.get_size()
+		else:
+			# Fallback: use rect_size if available
+			tex_size = image_display.rect_size
+		var scaled_size = tex_size * image_display.rect_scale
+		image_display.rect_position = (vp_size - scaled_size) / 2.0
+		return
+
+	# If this is a Node2D (Sprite2D, TextureRect as Node2D), set scale and position
+	if image_display is Node2D:
+		image_display.scale = Vector2(2, 2)
+		# Position to center of viewport
+		image_display.global_position = vp_size / 2.0
+		return
+
+	# Fallback: just set texture
+	image_display.texture = default_image_texture
+
 func _ready():
 	# Initialize bullet hole pool for performance
 	initialize_bullet_hole_pool()
@@ -165,6 +198,28 @@ func _on_websocket_message(message: String):
 		# Handle image_transfer_complete message
 		if data.has("command") and data["command"] == "image_transfer_complete":
 			_handle_image_transfer_complete(data)
+			return
+
+		# Handle image_transfer_ready message (mobile app indicates it will start sending)
+		if data.has("command") and data["command"] == "image_transfer_ready":
+			# Send a simple ack back via HttpService.netlink_forward_data so the mobile app knows we're ready
+			var http_service = get_node_or_null("/root/HttpService")
+			if http_service:
+				var content_dict = {"ack": "image_transfer_ready"}
+				http_service.netlink_forward_data(func(result, response_code, _headers, _body):
+					if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+						if not DEBUG_DISABLED:
+							print("[CustomTarget] Sent image_transfer_ready ack successfully")
+					else:
+						if not DEBUG_DISABLED:
+							print("[CustomTarget] Failed to send image_transfer_ready ack:", result, response_code)
+				, content_dict)
+			else:
+				if not DEBUG_DISABLED:
+					print("[CustomTarget] HttpService not available; cannot send image_transfer_ready ack")
+			# Update UI to show we are ready to receive
+			status_label.visible = true
+			status_label.text = tr("Ready to receive image")
 			return
 		
 		if not DEBUG_DISABLED:
@@ -728,7 +783,7 @@ func _on_load_image_response(_result, response_code, _headers, body):
 			print("[CustomTarget] No saved image found or load failed (code: ", response_code, ")")
 		# Restore editor default texture if available
 		if default_image_texture:
-			image_display.texture = default_image_texture
+			restore_default_image_scaled()
 		status_label.visible = false
 		return
 
@@ -755,10 +810,10 @@ func _on_load_image_response(_result, response_code, _headers, body):
 					var tex = ImageTexture.create_from_image(img)
 					image_display.texture = tex
 					# Show loaded image message
-					status_label.visible = true
-					status_label.text = tr("Loaded saved image: %s (%dx%d)") % [image_transfer_state.get("image_name", "saved"), img.get_width(), img.get_height()]
-					if not DEBUG_DISABLED:
-						print("[CustomTarget] Loaded saved image from server")
+					# status_label.visible = true
+					# status_label.text = tr("Loaded saved image: %s (%dx%d)") % [image_transfer_state.get("image_name", "saved"), img.get_width(), img.get_height()]
+					# if not DEBUG_DISABLED:
+					# 	print("[CustomTarget] Loaded saved image from server")
 					# Ensure transfer state shows image present
 					image_transfer_state["active"] = false
 					return
@@ -767,7 +822,7 @@ func _on_load_image_response(_result, response_code, _headers, body):
 						print("[CustomTarget] Failed to load image buffer from saved data")
 					# Restore editor default texture when saved data cannot be used
 					if default_image_texture:
-						image_display.texture = default_image_texture
+						restore_default_image_scaled()
 					status_label.visible = false
 					return
 			else:
@@ -775,7 +830,7 @@ func _on_load_image_response(_result, response_code, _headers, body):
 					print("[CustomTarget] No raw data in saved image")
 				# Restore editor default texture
 				if default_image_texture:
-					image_display.texture = default_image_texture
+					restore_default_image_scaled()
 				status_label.visible = false
 				return
 		else:
@@ -783,7 +838,7 @@ func _on_load_image_response(_result, response_code, _headers, body):
 				print("[CustomTarget] Loaded data is not a string or empty: ", typeof(data))
 			# No saved image present; restore default texture
 			if default_image_texture:
-				image_display.texture = default_image_texture
+				restore_default_image_scaled()
 			status_label.visible = false
 			return
 	else:
@@ -791,5 +846,5 @@ func _on_load_image_response(_result, response_code, _headers, body):
 			print("[CustomTarget] Load response has no data field: ", body_str)
 		# No saved data — ensure editor default texture is shown
 		if default_image_texture:
-			image_display.texture = default_image_texture
+			restore_default_image_scaled()
 		status_label.visible = false
