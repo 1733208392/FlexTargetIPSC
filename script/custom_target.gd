@@ -29,38 +29,9 @@ var image_transfer_state = {
 @onready var status_label = $StatusLabel
 var default_image_texture: Texture = null
 
-func restore_default_image_scaled() -> void:
-	# Restore the editor-assigned default texture, scale it by 2x and center it in the viewport
-	if not default_image_texture:
-		return
-
-	image_display.texture = default_image_texture
-	var vp_size = get_viewport_rect().size
-
-	# If this is a Control (TextureRect), use rect_scale and rect_position
-	if image_display is Control:
-		# Apply 2x scale
-		image_display.rect_scale = Vector2(2, 2)
-		# Compute texture size and center the control
-		var tex_size = Vector2()
-		if default_image_texture.has_method("get_size"):
-			tex_size = default_image_texture.get_size()
-		else:
-			# Fallback: use rect_size if available
-			tex_size = image_display.rect_size
-		var scaled_size = tex_size * image_display.rect_scale
-		image_display.rect_position = (vp_size - scaled_size) / 2.0
-		return
-
-	# If this is a Node2D (Sprite2D, TextureRect as Node2D), set scale and position
-	if image_display is Node2D:
-		image_display.scale = Vector2(2, 2)
-		# Position to center of viewport
-		image_display.global_position = vp_size / 2.0
-		return
-
-	# Fallback: just set texture
-	image_display.texture = default_image_texture
+# NOTE: `restore_default_image_scaled` removed — project asset no longer needs scaling.
+# Calls previously used to scale/center the default image are now replaced with a direct
+# assignment to `image_display.texture = default_image_texture` where appropriate.
 
 func _ready():
 	# Initialize bullet hole pool for performance
@@ -783,7 +754,7 @@ func _on_load_image_response(_result, response_code, _headers, body):
 			print("[CustomTarget] No saved image found or load failed (code: ", response_code, ")")
 		# Restore editor default texture if available
 		if default_image_texture:
-			restore_default_image_scaled()
+			image_display.texture = default_image_texture
 		status_label.visible = false
 		return
 
@@ -822,7 +793,7 @@ func _on_load_image_response(_result, response_code, _headers, body):
 						print("[CustomTarget] Failed to load image buffer from saved data")
 					# Restore editor default texture when saved data cannot be used
 					if default_image_texture:
-						restore_default_image_scaled()
+						image_display.texture = default_image_texture
 					status_label.visible = false
 					return
 			else:
@@ -830,7 +801,7 @@ func _on_load_image_response(_result, response_code, _headers, body):
 					print("[CustomTarget] No raw data in saved image")
 				# Restore editor default texture
 				if default_image_texture:
-					restore_default_image_scaled()
+					image_display.texture = default_image_texture
 				status_label.visible = false
 				return
 		else:
@@ -838,7 +809,7 @@ func _on_load_image_response(_result, response_code, _headers, body):
 				print("[CustomTarget] Loaded data is not a string or empty: ", typeof(data))
 			# No saved image present; restore default texture
 			if default_image_texture:
-				restore_default_image_scaled()
+				image_display.texture = default_image_texture
 			status_label.visible = false
 			return
 	else:
@@ -846,5 +817,5 @@ func _on_load_image_response(_result, response_code, _headers, body):
 			print("[CustomTarget] Load response has no data field: ", body_str)
 		# No saved data — ensure editor default texture is shown
 		if default_image_texture:
-			restore_default_image_scaled()
+			image_display.texture = default_image_texture
 		status_label.visible = false
