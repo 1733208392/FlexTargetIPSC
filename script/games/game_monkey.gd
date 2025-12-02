@@ -214,9 +214,9 @@ func _show_game_over(winner_id: int):
 			pause_overlay.visible = false
 		
 		# Update avatar and name
-		var avatar_sprite = game_over_overlay.get_node("Panel/HBoxContainer/LeftSide/AvatarSprite")
-		var name_label = game_over_overlay.get_node("Panel/HBoxContainer/LeftSide/NameLabel")
-		var result_label = game_over_overlay.get_node("Panel/HBoxContainer/RightSide/ResultLabel")
+		var avatar_sprite = game_over_overlay.get_node("Panel/HBoxContainerAvatars/LeftSide/AvatarSprite")
+		var name_label = game_over_overlay.get_node("Panel/HBoxContainerAvatars/LeftSide/NameLabel")
+		var result_label = game_over_overlay.get_node("Panel/HBoxContainerAvatars/RightSide/ResultLabel")
 		
 		if result_label:
 			result_label.text = tr("Winner")
@@ -286,10 +286,12 @@ func _show_game_over(winner_id: int):
 			_gameover_replay_button = game_over_overlay.get_node_or_null("Panel/HBoxContainerButtons/ReplayButton")
 			_gameover_back_button = game_over_overlay.get_node_or_null("Panel/HBoxContainerButtons/BackButton")
 			if _gameover_replay_button:
+				_gameover_replay_button.text = tr("restart")
 				_gameover_replay_button.pressed.connect(_on_gameover_replay_pressed)
 				# Ensure the button can receive focus from code/remote navigation
 				_gameover_replay_button.focus_mode = Control.FOCUS_ALL
 			if _gameover_back_button:
+				_gameover_back_button.text = tr("back_button")
 				_gameover_back_button.pressed.connect(_on_gameover_back_pressed)
 				_gameover_back_button.focus_mode = Control.FOCUS_ALL
 			# Default focus to Replay

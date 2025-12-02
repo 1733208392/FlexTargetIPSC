@@ -1,8 +1,8 @@
 [gd_scene load_steps=16 format=3 uid="uid://cojbyh3nmp67k"]
 
-[ext_resource type="Texture2D" uid="uid://bpsp21h7ffk44" path="res://asset/games/jiong-idle.png" id="1_e6qxj"]
 [ext_resource type="Script" uid="uid://kx5kaily1t65" path="res://script/games/player1.gd" id="1_player1"]
 [ext_resource type="Texture2D" uid="uid://33q5l5rn52rt" path="res://asset/games/jiong-hit.png" id="2_33sqe"]
+[ext_resource type="Texture2D" uid="uid://08bp48gnsiw4" path="res://asset/jiong-idle.png" id="3_lgpjw"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_a8sum"]
 atlas = ExtResource("2_33sqe")
@@ -24,25 +24,25 @@ region = Rect2(96, 0, 32, 32)
 atlas = ExtResource("2_33sqe")
 region = Rect2(128, 0, 32, 32)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_33sqe"]
-atlas = ExtResource("1_e6qxj")
-region = Rect2(0, 0, 32, 32)
+[sub_resource type="AtlasTexture" id="AtlasTexture_cpukd"]
+atlas = ExtResource("3_lgpjw")
+region = Rect2(0, 0, 32, 40)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_afhd1"]
-atlas = ExtResource("1_e6qxj")
-region = Rect2(32, 0, 32, 32)
+[sub_resource type="AtlasTexture" id="AtlasTexture_cp8e0"]
+atlas = ExtResource("3_lgpjw")
+region = Rect2(32, 0, 32, 40)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_d3r8y"]
-atlas = ExtResource("1_e6qxj")
-region = Rect2(64, 0, 32, 32)
+[sub_resource type="AtlasTexture" id="AtlasTexture_ip8n0"]
+atlas = ExtResource("3_lgpjw")
+region = Rect2(64, 0, 32, 40)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_wauul"]
-atlas = ExtResource("1_e6qxj")
-region = Rect2(96, 0, 32, 32)
+[sub_resource type="AtlasTexture" id="AtlasTexture_65nnh"]
+atlas = ExtResource("3_lgpjw")
+region = Rect2(96, 0, 32, 40)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_sisbu"]
-atlas = ExtResource("1_e6qxj")
-region = Rect2(128, 0, 32, 32)
+[sub_resource type="AtlasTexture" id="AtlasTexture_00lvw"]
+atlas = ExtResource("3_lgpjw")
+region = Rect2(128, 0, 32, 40)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_a8sum"]
 animations = [{
@@ -68,19 +68,19 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_33sqe")
+"texture": SubResource("AtlasTexture_cpukd")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_afhd1")
+"texture": SubResource("AtlasTexture_cp8e0")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_d3r8y")
+"texture": SubResource("AtlasTexture_ip8n0")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_wauul")
+"texture": SubResource("AtlasTexture_65nnh")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_sisbu")
+"texture": SubResource("AtlasTexture_00lvw")
 }],
 "loop": true,
 "name": &"idle",
