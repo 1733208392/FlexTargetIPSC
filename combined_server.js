@@ -744,16 +744,32 @@ if (process.stdin.isTTY) {
   let directive = null;
 
   // Map keys to directives (from original WebSocket server)
-  if (keyStr === 'B' || keyStr === 'b') { // B - Send single random bullet
+  if (keyStr === 'B' || keyStr === 'b') { // B - Send volley of bullets near bottom of scene (268x476.4, bottom-left origin)
     if (connectedGodotClients.size > 0) {
-      const baseData = randomDataOptions[Math.floor(Math.random() * randomDataOptions.length)];
-      const shotData = addBulletVariance(baseData);
-      const bulletMessage = {
-        type: 'data',
-        data: [shotData]
-      };
+      // Target scene dimensions: width=268, height=476.4 (origin: bottom-left so y=0 is bottom)
+      const SCENE_W = 268;
+      const SCENE_H = 476.4;
+
+      // Volley configuration (bottom area: small y values near 0)
+      const volleyCount = 6; // number of bullets in volley
+      const minY = 0;       // bottommost
+      const maxY = 60;      // up to 60 units above bottom
+
+      const bullets = [];
+      for (let i = 0; i < volleyCount; i++) {
+        // evenly space across width with small random jitter
+        const slotCenterX = Math.round(((i + 0.5) / volleyCount) * SCENE_W);
+        const x = Math.round(slotCenterX + (Math.random() - 0.5) * 8); // small jitter for narrow scene
+        // since origin is bottom-left, pick y between minY..maxY
+        const y = Math.round(minY + Math.random() * (maxY - minY));
+
+        const baseBullet = { t: 630, x: x, y: y, a: 1069 };
+        bullets.push(addBulletVariance(baseBullet));
+      }
+
+      const bulletMessage = { type: 'data', data: bullets };
       sendToGodot(bulletMessage);
-      console.log('[CombinedServer] Manual bullet sent via keyboard');
+      console.log('[CombinedServer] Bottom-left volley sent via keyboard - bullets:', bullets.length);
     }
     return;
   } else if (keyStr === 'C' || keyStr === 'c') { // C - Send center screen bullet

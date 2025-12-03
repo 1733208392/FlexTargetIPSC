@@ -43,11 +43,11 @@ func _ready():
 			print("[DrillUI] Detected drill type - IDPA: ", is_idpa_drill, " (script: ", script_path, ")")
 		
 		# Configure progress bar based on drill type
-			if progress_bar:
-				if "idpa_mini_stage" in script_path:
-					# Reduced IDPA mini drill sequence to 4 targets -> update progress bar
-					progress_bar.total_targets = 4
-					progress_bar.segments_per_target = PackedInt32Array([3, 3, 3, 3])
+		if progress_bar:
+			if is_idpa_drill:
+				# Reduced IDPA mini drill sequence to 4 targets -> update progress bar
+				progress_bar.total_targets = 4
+				progress_bar.segments_per_target = PackedInt32Array([4, 4, 4, 3])
 			# Add other configurations if needed
 		if drills_manager.has_signal("ui_show_completion"):
 			drills_manager.ui_show_completion.connect(_on_show_completion)

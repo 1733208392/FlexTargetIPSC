@@ -4,7 +4,7 @@ extends Node2D
 const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","texas_start_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique", "custom_target"]
+var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","texas_start_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique", "custom_target"]
 var current_target_index: int = 0
 var current_target_instance = null
 
@@ -13,7 +13,7 @@ var scales = [0.5, 0.7, 1.0]
 var current_scale_index: int = 2  # Default to 1x
 
 # Targets that don't support zoom
-var zoom_excluded_targets = ["ipsc_mini_rotate", "idpa_rotate"]
+var zoom_excluded_targets = ["ipsc_mini_rotate"]
 
 # Preload the scenes for bootcamp targets
 @onready var bullseye_scene: PackedScene = preload("res://scene/targets/bullseye.tscn")	
@@ -26,7 +26,7 @@ var zoom_excluded_targets = ["ipsc_mini_rotate", "idpa_rotate"]
 
 @onready var idpa_scene: PackedScene = preload("res://scene/targets/idpa.tscn")
 @onready var idpa_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
-@onready var idpa_rotate_scene: PackedScene = preload("res://scene/idpa_mini_rotation.tscn")
+#@onready var idpa_rotate_scene: PackedScene = preload("res://scene/idpa_mini_rotation.tscn")
 @onready var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
 @onready var idpa_hard_cover_2_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_2.tscn")
 
@@ -353,12 +353,6 @@ func _on_clear_pressed():
 				print("Removed ", target_type, " for respawning")
 		# Respawn the target
 		spawn_target_by_type(target_type)
-	elif target_type == "bullseye":
-		# For bullseye, reset the target (clears bullet holes and shot tracking)
-		if current_target_instance and is_instance_valid(current_target_instance) and current_target_instance.has_method("reset_target"):
-			current_target_instance.reset_target()
-			if not DEBUG_DISABLED:
-				print("[Bootcamp] Reset bullseye target")
 	else:
 		# For other targets (with bullet holes), clear the bullet holes recursively
 		var children_to_remove = []
@@ -822,8 +816,8 @@ func spawn_target_by_type(target_type: String):
 			target_scene = idpa_scene
 		"idpa_ns":
 			target_scene = idpa_ns_scene
-		"idpa_rotate":
-			target_scene = idpa_rotate_scene
+		# "idpa_rotate":
+		# 	target_scene = idpa_rotate_scene
 		"idpa_hard_cover_1":
 			target_scene = idpa_hard_cover_1_scene
 		"idpa_hard_cover_2":

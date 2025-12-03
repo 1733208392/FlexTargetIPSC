@@ -1,22 +1,12 @@
 [gd_scene load_steps=5 format=3 uid="uid://dpr5o2u5xqn1l"]
 
 [ext_resource type="Script" uid="uid://covkwlj63fwyb" path="res://script/custom_target.gd" id="1_6q4j5"]
-[ext_resource type="Texture2D" uid="uid://b3v2l7iy471sn" path="res://FlexTargetIPSC/FlexTargetIPSC/FlexTargetIPSC/asset/custom-target-mask.png" id="2_kx8n1"]
 [ext_resource type="Texture2D" uid="uid://dwf32v4bqxdf1" path="res://asset/question-mark.png" id="3_jgh2p"]
+[ext_resource type="Texture2D" uid="uid://fs65rsq8452k" path="res://asset/custom-target-mask.png" id="4_8w5fr"]
 [ext_resource type="Theme" uid="uid://br4jdxsyx0xtu" path="res://theme/drill_data_theme.tres" id="4_jgh2p"]
 
 [node name="CustomTarget" type="Node2D"]
 script = ExtResource("1_6q4j5")
-
-[node name="StatusLabel" type="Label" parent="."]
-visible = false
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 45.0
-grow_horizontal = 2
-theme_override_font_sizes/font_size = 32
-text = "Waiting for image..."
-horizontal_alignment = 1
 
 [node name="Questionmark" type="TextureRect" parent="."]
 anchors_preset = 8
@@ -59,7 +49,7 @@ offset_right = 360.0
 offset_bottom = 640.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("2_kx8n1")
+texture = ExtResource("4_8w5fr")
 
 [node name="InstructionLabel" type="Label" parent="."]
 anchors_preset = 12
@@ -76,3 +66,16 @@ theme = ExtResource("4_jgh2p")
 text = "Please use the mobile App to send your own target image."
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="."]
+visible = false
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -149.5
+offset_right = 149.5
+offset_bottom = 45.0
+grow_horizontal = 2
+theme = ExtResource("4_jgh2p")
+theme_override_font_sizes/font_size = 32
+text = "Waiting for image..."
+horizontal_alignment = 1

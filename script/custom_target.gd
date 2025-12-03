@@ -1,5 +1,7 @@
 extends Node2D
 
+signal target_hit(zone: String, points: int, hit_position: Vector2)
+
 const DEBUG_DISABLED = false
 
 # Bullet hole system
@@ -54,7 +56,7 @@ func _ready():
 			print("[CustomTarget] WebSocketListener singleton not found!")
 	
 	# Initialize UI
-	status_label.text = tr("Waiting for image...")
+	status_label.text = tr("custom_target_status_waiting")
 	# Remember the editor-assigned/default texture so we can restore it
 	default_image_texture = image_display.texture
 	# Keep status hidden until a transfer starts
@@ -196,7 +198,7 @@ func _on_websocket_message(message: String):
 					print("[CustomTarget] HttpService not available; cannot send image_transfer_ready ack")
 			# Update UI to show we are ready to receive
 			status_label.visible = true
-			status_label.text = tr("Ready to receive image")
+			status_label.text = tr("custom_target_status_ready")
 			return
 		
 		if not DEBUG_DISABLED:
@@ -218,7 +220,7 @@ func _handle_image_transfer_start(data: Dictionary):
 	
 	# Update UI: show status when transfer starts
 	status_label.visible = true
-	status_label.text = tr("Receiving image (%d chunks)...") % image_transfer_state["total_chunks"]
+	status_label.text = tr("custom_target_status_receiving_total") % image_transfer_state["total_chunks"]
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Image transfer started: ", image_transfer_state["image_name"])
 		print("  Total chunks: ", image_transfer_state["total_chunks"])
@@ -281,7 +283,7 @@ func _handle_image_chunk(data: Dictionary):
 	
 	# Update status label while receiving
 	status_label.visible = true
-	status_label.text = tr("Receiving image (%d/%d chunks)...") % [received_count, expected_count]
+	status_label.text = tr("custom_target_status_receiving_progress") % [received_count, expected_count]
 	
 	# Check if all chunks have been received
 	if received_count == expected_count:
@@ -328,7 +330,7 @@ func _handle_image_transfer_complete(data: Dictionary):
 			print("[CustomTarget] ⚠️  Transfer complete but only received %d/%d chunks" % [received_count, expected_count])
 		# Show incomplete transfer status
 		status_label.visible = true
-		status_label.text = tr("Transfer complete: %d/%d chunks received") % [received_count, expected_count]
+		status_label.text = tr("custom_target_status_transfer_complete") % [received_count, expected_count]
 
 # Process the complete image once all chunks are received
 func _process_complete_image():
@@ -382,7 +384,7 @@ func _process_complete_image():
 					if not DEBUG_DISABLED:
 						print("[CustomTarget] Error decoding chunk %d from base64" % i)
 						status_label.visible = true
-						status_label.text = tr("Error: Failed to decode chunk %d") % i
+						status_label.text = tr("custom_target_status_error_decode_chunk") % i
 					return
 				
 				# Append to accumulated binary
@@ -396,7 +398,7 @@ func _process_complete_image():
 				if not DEBUG_DISABLED:
 					print("[CustomTarget] Error: Chunk %d is missing during reconstruction!" % i)
 					status_label.visible = true
-					status_label.text = tr("Error: Missing chunk during reconstruction")
+					status_label.text = tr("custom_target_status_error_missing_chunk")
 				return
 		
 		if not DEBUG_DISABLED:
@@ -411,7 +413,7 @@ func _process_complete_image():
 			print("[CustomTarget] Error: base64_to_raw returned null")
 			print("[CustomTarget] Base64 data sample (first 100 chars): ", base64_data.substr(0, 100))
 		status_label.visible = true
-		status_label.text = tr("Error: Failed to decode base64 (null)")
+		status_label.text = tr("custom_target_status_error_base64_null")
 		return
 	
 	if decoded_bytes.is_empty():
@@ -431,7 +433,7 @@ func _process_complete_image():
 			if not invalid_found:
 				print("[CustomTarget] Base64 string contains only valid characters")
 		status_label.visible = true
-		status_label.text = tr("Error: Failed to decode image")
+		status_label.text = tr("custom_target_status_error_decode_image")
 		return
 	
 	if not DEBUG_DISABLED:
@@ -495,7 +497,7 @@ func _process_complete_image():
 		if not DEBUG_DISABLED:
 			print("[CustomTarget] Error: Failed to load image from buffer (code: %d)" % load_result)
 		status_label.visible = true
-		status_label.text = tr("Error: Failed to load image (code: %d)") % load_result
+		status_label.text = tr("custom_target_status_error_load_code") % load_result
 		return
 	
 	if not DEBUG_DISABLED:
@@ -506,7 +508,7 @@ func _process_complete_image():
 	_set_image_texture(texture)
 	
 	# Update status (then hide — transfer complete)
-	status_label.text = tr("Image received: %s (%dx%d)") % [
+	status_label.text = tr("custom_target_status_image_received") % [
 		image_transfer_state["image_name"],
 		image.get_width(),
 		image.get_height()
@@ -691,6 +693,9 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	if image_display and image_display.get_rect().has_point(local_pos):
 		# Spawn bullet hole at local position
 		spawn_bullet_hole(local_pos)
+
+	# Emit a generic target_hit signal so bootcamp / drills can process this hit
+	emit_signal("target_hit", "hit", 0, pos)
 	
 	# Always spawn bullet impact effects (smoke, sparks, sound) at world position
 	spawn_bullet_impact_effects(pos)
