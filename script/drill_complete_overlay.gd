@@ -655,19 +655,19 @@ func _activate_focused_button():
 	if focused_control == current_restart_button:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Activating RestartButton via WebSocket")
-		#_on_area_restart_hit(null)  # Trigger restart action
+		_on_area_restart_hit(null)  # Trigger restart action
 	elif focused_control == current_replay_button and not current_replay_button.disabled:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Activating ReviewReplayButton via WebSocket")
-		#_on_area_replay_hit(null)  # Trigger replay action
+		_on_area_replay_hit(null)  # Trigger replay action
 	elif focused_control == current_replay_button and current_replay_button.disabled:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] Replay button is disabled, defaulting to restart")
-		#_on_area_restart_hit(null)  # Default to restart
+		_on_area_restart_hit(null)  # Default to restart
 	else:
 		if not DEBUG_DISABLED:
 			print("[drill_complete_overlay] No button focused, defaulting to restart")
-		#_on_area_restart_hit(null)  # Default to restart
+		_on_area_restart_hit(null)  # Default to restart
 
 func _check_and_disable_restart_button():
 	"""Check if auto restart is enabled and disable the restart button accordingly"""

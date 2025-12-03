@@ -80,19 +80,29 @@ func process_bullet_hit(pos: Vector2) -> void:
 		score = -5
 		area = "Cover"
 		is_hit = false
-	if is_instance_valid(paddle_area) and not paddle_hit:
-		var paddle_shapes = get_collision_shapes(paddle_area)
-		if is_point_in_shapes(pos, paddle_shapes):
-			score = -5
-			area = "paddle"
-			is_hit = false
-			paddle_hit = true
-			# Play metal hit sound for paddle
-			play_paddle_hit_sound(pos)
-			# Trigger paddle fall
-			play_paddle_fall()
-			# Start target animation since paddle is hit
-			play_random_animation()
+	# Paddle hit detection: use explicit CircleArea check (more robust than generic shape iteration)
+	if not paddle_hit:
+		var paddle_node = get_node_or_null("Paddle/Paddle")
+		if paddle_node:
+			var circle_area = paddle_node.get_node_or_null("CircleArea")
+			if circle_area and circle_area is CollisionShape2D:
+				var circle_shape = circle_area.shape
+				if circle_shape and circle_shape is CircleShape2D:
+					var circle_global_pos = circle_area.global_position
+					var circle_radius = circle_shape.radius
+					var distance = pos.distance_to(circle_global_pos)
+					if distance <= circle_radius:
+						score = -5
+						area = "paddle"
+						is_hit = false
+						paddle_hit = true
+						# Play metal hit sound for paddle
+						play_paddle_hit_sound(pos)
+						# Disable collision on the circle to prevent further hits
+						circle_area.disabled = true
+						# Trigger paddle fall and start target animation
+						play_paddle_fall()
+						play_random_animation()
 	
 	# If neither cover nor paddle hit, check target
 	if area == "":

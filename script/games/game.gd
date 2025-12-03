@@ -489,12 +489,26 @@ func _show_leaderboard():
 	var leaderboard = leaderboard_scene.instantiate()
 	add_child(leaderboard)
 	leaderboard.connect("leaderboard_loaded", Callable(self, "_on_leaderboard_loaded").bind(leaderboard))
+	# Connect replay action from leaderboard to default restart (reload main game scene)
+	if not leaderboard.is_connected("replay_pressed", Callable(self, "_on_leaderboard_replay_pressed")):
+		leaderboard.connect("replay_pressed", Callable(self, "_on_leaderboard_replay_pressed"))
 	leaderboard.load_leaderboard(total_score)
 
 func _on_leaderboard_loaded(is_new: bool, leaderboard: CanvasLayer):
 	"""Callback when leaderboard is loaded"""
 	if not is_new:
 		leaderboard.update_leaderboard_with_score(total_score)
+
+func _on_leaderboard_replay_pressed() -> void:
+	"""Default handler for leaderboard replay: reload the main game scene file"""
+	print("[Game] Leaderboard requested replay - restarting level in-place")
+	# Remove leaderboard overlay if present
+	var lb = get_node_or_null("Leaderboard")
+	if lb:
+		lb.queue_free()
+
+	# Call restart_level to reset game state without reloading the scene
+	restart_level()
 
 func _play_lightning_effect():
 	"""Play a lightning bolt animation across the sky"""

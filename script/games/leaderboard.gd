@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 signal leaderboard_loaded(is_new: bool)
+signal replay_pressed
 
 var http_service: Node
 var leaderboard_data: Array = []
@@ -18,6 +19,78 @@ func _ready():
 		print("[Leaderboard] Connected to MenuController back_pressed signal")
 	else:
 		print("[Leaderboard] MenuController autoload not found!")
+
+	# Set translated UI title label if present
+	var title_label = $Control/Panel/VBoxContainer/TitleLabel
+	if title_label:
+		title_label.text = tr("leaderboard")
+
+	# UI buttons
+	var back_btn = $Control/HBoxContainer/Back
+	var replay_btn = $Control/HBoxContainer/Replay
+
+	# Set translated button texts
+	if back_btn:
+		back_btn.text = tr("back_button")
+	if replay_btn:
+		replay_btn.text = tr("restart")
+
+	# Default focus: give Replay focus
+	if replay_btn:
+		replay_btn.grab_focus()
+
+	# Remote control navigation: claim focus so we receive navigate_claimed
+	remote_control = get_node_or_null("/root/MenuController")
+	if remote_control:
+		remote_control.claim_focus("leaderboard")
+		# Connect claimed navigation and enter to local handlers
+		if not remote_control.is_connected("navigate_claimed", Callable(self, "_on_navigate_claimed")):
+			remote_control.connect("navigate_claimed", Callable(self, "_on_navigate_claimed"))
+		if not remote_control.is_connected("enter_pressed", Callable(self, "_on_enter_pressed")):
+			remote_control.connect("enter_pressed", Callable(self, "_on_enter_pressed"))
+
+
+func _on_navigate_claimed(owner_name: String, direction: String) -> void:
+	if owner_name != "leaderboard":
+		return
+	# Only left/right toggle between Back and Replay
+	if direction == "left" or direction == "right":
+		var back_btn = $Control/HBoxContainer/Back
+		var replay_btn = $Control/HBoxContainer/Replay
+		if back_btn and replay_btn:
+			if back_btn.has_focus():
+				replay_btn.grab_focus()
+			else:
+				back_btn.grab_focus()
+		# Play cursor sound if available
+		var rc = get_node_or_null("/root/MenuController")
+		if rc:
+			rc.play_cursor_sound()
+
+func _on_enter_pressed() -> void:
+	var back_btn = $Control/HBoxContainer/Back
+	var replay_btn = $Control/HBoxContainer/Replay
+	if back_btn and back_btn.has_focus():
+		_return_to_menu()
+	elif replay_btn and replay_btn.has_focus():
+		# Emit a replay signal for the caller to handle restart logic
+		emit_signal("replay_pressed")
+
+func _exit_tree() -> void:
+	# Release claimed focus and disconnect signals
+	var rc = get_node_or_null("/root/MenuController")
+	if rc:
+		rc.release_focus("leaderboard")
+		var nav_callable = Callable(self, "_on_navigate_claimed")
+		var enter_callable = Callable(self, "_on_enter_pressed")
+		var back_callable = Callable(self, "_on_remote_back_pressed")
+		if rc.is_connected("navigate_claimed", nav_callable):
+			rc.disconnect("navigate_claimed", nav_callable)
+		if rc.is_connected("enter_pressed", enter_callable):
+			rc.disconnect("enter_pressed", enter_callable)
+		if rc.is_connected("back_pressed", back_callable):
+			rc.disconnect("back_pressed", back_callable)
+
 	
 func load_leaderboard(score_to_add: int = -1):
 	is_new_file = false  # Reset flag
@@ -163,7 +236,7 @@ func display_leaderboard():
 			score_labels[i].text = str(i + 1) + ". --"
 			score_labels[i].remove_theme_color_override("font_color")
 	
-	$Control/Panel/VBoxContainer/YourScoreLabel.text = "Your Score: " + str(current_score)
+	$Control/Panel/VBoxContainer/YourScoreLabel.text = tr("your_score") + str(current_score)
 
 func _on_remote_back_pressed():
 	"""Handle back/home directive from remote control to return to menu"""
