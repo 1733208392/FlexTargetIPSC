@@ -60,6 +60,9 @@ leaderboard,Leaderboard,排行榜,排行トレンド,排行榜
 no,No.,序号,序号,序號
 your_score,Your Score:,你的分数：,あなたのスコア：,你的分數：
 time,Time,时长,時間長,時長
+
+custom_target_instruction,Please use the mobile App to send your own target image.,请使用手机应用上传自定义靶图像。,モバイルアプリを使用して独自のターゲット画像を送信してください。,請使用手機應用上傳自訂靶圖像。
+
 fastest_t,Fastest,最快,一番嬉しい,最快
 hit_factor_t,HF,系数,システム数,係數
 timeout,TIMEOUT!,超时了，继续努力！,タイムアウト,超時了，繼續努力！

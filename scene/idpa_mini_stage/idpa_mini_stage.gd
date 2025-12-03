@@ -8,7 +8,7 @@ extends Control
 #@export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/targets/idpa_rotation.tscn")
 @export var idpa_mini_rotate_scene: PackedScene = preload("res://scene/idpa_mini_rotation.tscn")
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2","idpa-mini-rotate"]
+var base_target_sequence: Array[String] = ["idpa", "idpa-ns", "idpa-hard-cover-1", "idpa-hard-cover-2"]
 #var base_target_sequence: Array[String] = ["idpa-mini-rotate"]
 var target_sequence: Array[String] = []
 var current_target_index: int = 0
@@ -244,7 +244,6 @@ func initialize_target_sequence():
 	print("[INIT DEBUG] idpa_ns_scene: ", idpa_ns_scene)
 	print("[INIT DEBUG] idpa_hard_cover_1_scene: ", idpa_hard_cover_1_scene)
 	print("[INIT DEBUG] idpa_hard_cover_2_scene: ", idpa_hard_cover_2_scene)
-	print("[INIT DEBUG] idpa_mini_rotate_scene: ", idpa_mini_rotate_scene)
 	if not DEBUG_DISABLED:
 		print("=== TARGET SEQUENCE INITIALIZED ===")
 		print("Sequence: ", target_sequence)

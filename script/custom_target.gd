@@ -25,8 +25,11 @@ var image_transfer_state = {
 	"image_data": ""  # Accumulated base64 data
 }
 
-@onready var image_display = $ImageDisplay
+@onready var image_display = $Target
+@onready var question_mark = $Questionmark
+@onready var mask_node = $Mask
 @onready var status_label = $StatusLabel
+@onready var instruction_label = $InstructionLabel
 var default_image_texture: Texture = null
 
 # NOTE: `restore_default_image_scaled` removed — project asset no longer needs scaling.
@@ -56,8 +59,11 @@ func _ready():
 	default_image_texture = image_display.texture
 	# Keep status hidden until a transfer starts
 	status_label.visible = false
+	# Localize instruction label
+	if instruction_label:
+		instruction_label.text = tr("custom_target_instruction")
 	# Clear the displayed texture until we load a saved/custom image
-	image_display.texture = null
+	_set_image_texture(null)
 
 	# Try to load a previously saved image from HttpService
 	var http_service = get_node_or_null("/root/HttpService")
@@ -497,7 +503,7 @@ func _process_complete_image():
 	
 	# Convert Image to ImageTexture and display
 	var texture = ImageTexture.create_from_image(image)
-	image_display.texture = texture
+	_set_image_texture(texture)
 	
 	# Update status (then hide — transfer complete)
 	status_label.text = tr("Image received: %s (%dx%d)") % [
@@ -659,6 +665,20 @@ func get_transfer_diagnostics() -> Dictionary:
 		"all_chunks_received": image_transfer_state["chunks_received"].size() == image_transfer_state["total_chunks"] and missing_indices.is_empty()
 	}
 
+
+func _set_image_texture(tex: Texture) -> void:
+	"""Set the texture on the target display and show/hide the question mark accordingly.
+	Passing `null` will clear the texture and show the question mark.
+	"""
+	if image_display:
+		image_display.texture = tex
+	# If a texture is present, hide the question mark; otherwise show it
+	if question_mark:
+		question_mark.visible = tex == null
+	# Ensure the mask node remains visible by default
+	if mask_node:
+		mask_node.visible = true
+
 # Handle websocket bullet hit - spawn impact effects and bullet holes
 func _on_websocket_bullet_hit(pos: Vector2):
 	if not DEBUG_DISABLED:
@@ -779,7 +799,7 @@ func _on_load_image_response(_result, response_code, _headers, body):
 					ok = img.load_jpg_from_buffer(raw)
 				if ok == OK:
 					var tex = ImageTexture.create_from_image(img)
-					image_display.texture = tex
+					_set_image_texture(tex)
 					# Show loaded image message
 					# status_label.visible = true
 					# status_label.text = tr("Loaded saved image: %s (%dx%d)") % [image_transfer_state.get("image_name", "saved"), img.get_width(), img.get_height()]
@@ -793,15 +813,15 @@ func _on_load_image_response(_result, response_code, _headers, body):
 						print("[CustomTarget] Failed to load image buffer from saved data")
 					# Restore editor default texture when saved data cannot be used
 					if default_image_texture:
-						image_display.texture = default_image_texture
+						_set_image_texture(default_image_texture)
 					status_label.visible = false
 					return
 			else:
 				if not DEBUG_DISABLED:
 					print("[CustomTarget] No raw data in saved image")
 				# Restore editor default texture
-				if default_image_texture:
-					image_display.texture = default_image_texture
+					if default_image_texture:
+						_set_image_texture(default_image_texture)
 				status_label.visible = false
 				return
 		else:

@@ -746,6 +746,11 @@ func spawn_target_by_type(target_type: String):
 			canvas_layer.visible = false  # Hide shot intervals for rotation targets
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Hidden shot intervals but kept stats visible for rotation target")
+		elif target_type == "custom_target":
+			# Custom target may provide its own UI; hide shot interval overlay
+			canvas_layer.visible = false
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Hidden shot intervals for custom_target")
 		elif target_type == "ipsc_mini":
 			canvas_layer.visible = true  # Show shot intervals for IPSC mini
 			if not DEBUG_DISABLED:

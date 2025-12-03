@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://cjkeemu421bdp"]
+[gd_scene load_steps=19 format=3 uid="uid://cjkeemu421bdp"]
 
 [ext_resource type="Script" uid="uid://dthf7l17t1uuo" path="res://scene/main_menu/main_menu.gd" id="1_vny3a"]
 [ext_resource type="Texture2D" uid="uid://d3jnypy7bx42r" path="res://asset/largeCntnrs.png" id="2_1vqx8"]
@@ -29,6 +29,44 @@ font_names = PackedStringArray("SF Pro")
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_sepwh"]
 texture = ExtResource("3_rq7sb")
+
+[sub_resource type="Animation" id="Animation_rq7sb"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_1vqx8"]
+resource_name = "breath"
+length = 3.0
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1.5, 3),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(1, 1, 1, 0), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_3k2ij"]
+_data = {
+&"RESET": SubResource("Animation_rq7sb"),
+&"breath": SubResource("Animation_1vqx8")
+}
 
 [node name="main_menu" type="Control"]
 layout_mode = 3
@@ -135,6 +173,12 @@ theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
 theme_override_styles/pressed = SubResource("StyleBoxTexture_sepwh")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
 theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="VBoxContainer"]
+libraries = {
+&"": SubResource("AnimationLibrary_3k2ij")
+}
+autoplay = "breath"
 
 [node name="minimap" type="TextureRect" parent="."]
 modulate = Color(1, 1, 1, 0.533333)

@@ -381,8 +381,14 @@ func _cleanup_gameover_controls() -> void:
 	# Disconnect remote signals and clear button references
 	var rc = remote_control if remote_control else get_node_or_null("/root/MenuController")
 	if rc and _gameover_buttons_connected:
+		# Release claimed focus so other UI can receive navigation
+		if rc.has_method("release_focus"):
+			rc.release_focus(_focus_owner_id)
+		# Safely disconnect connected signals using the signal objects and Callables
 		if rc.has_signal("navigate") and rc.navigate.is_connected(_on_gameover_remote_navigate):
 			rc.navigate.disconnect(_on_gameover_remote_navigate)
+		if rc.has_signal("navigate_claimed") and rc.navigate_claimed.is_connected(_on_gameover_remote_navigate_claimed):
+			rc.navigate_claimed.disconnect(_on_gameover_remote_navigate_claimed)
 		if rc.has_signal("enter_pressed") and rc.enter_pressed.is_connected(_on_gameover_enter_pressed):
 			rc.enter_pressed.disconnect(_on_gameover_enter_pressed)
 		if rc.has_signal("back_pressed") and rc.back_pressed.is_connected(_on_gameover_back_pressed):
