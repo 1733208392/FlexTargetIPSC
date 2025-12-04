@@ -43,8 +43,8 @@ func _ready():
 		channel_dropdown.add_item(str(i), i)
 	
 	# Populate workmode dropdown with master/slave
-	workmode_dropdown.add_item("Master", 0)
-	workmode_dropdown.add_item("Slave", 1)
+	workmode_dropdown.add_item(tr("workmode_master"), 0)
+	workmode_dropdown.add_item(tr("workmode_slave"), 1)
 	
 	# Load current settings
 	load_current_settings()

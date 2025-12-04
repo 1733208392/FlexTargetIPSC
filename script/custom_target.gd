@@ -16,6 +16,11 @@ var sound_cooldown: float = 0.05
 var max_concurrent_sounds: int = 3
 var active_sounds: int = 0
 
+# Explosion effect
+const SHOTS_TO_EXPLODE = 10
+var hit_count: int = 0
+const ExplosionEffectScene = preload("res://scene/explosion_effect.tscn")
+
 # Image transfer state
 var image_transfer_state = {
 	"active": false,
@@ -693,6 +698,12 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	if image_display and image_display.get_rect().has_point(local_pos):
 		# Spawn bullet hole at local position
 		spawn_bullet_hole(local_pos)
+		
+		# Increment hit count and check for explosion
+		hit_count += 1
+		if hit_count >= SHOTS_TO_EXPLODE:
+			explode_target()
+			hit_count = 0
 
 	# Emit a generic target_hit signal so bootcamp / drills can process this hit
 	emit_signal("target_hit", "hit", 0, pos)
@@ -844,3 +855,47 @@ func _on_load_image_response(_result, response_code, _headers, body):
 		if default_image_texture:
 			image_display.texture = default_image_texture
 		status_label.visible = false
+
+func explode_target():
+	if not image_display or not image_display.texture:
+		return
+		
+	if not DEBUG_DISABLED:
+		print("[CustomTarget] Exploding target!")
+		
+	# Create explosion effect
+	if ExplosionEffectScene:
+		var explosion = ExplosionEffectScene.instantiate()
+		explosion.texture = image_display.texture
+		explosion.position = image_display.position
+		explosion.scale = image_display.scale
+		
+		add_child(explosion)
+	
+	# Hide the target
+	image_display.visible = false
+	if mask_node:
+		mask_node.visible = false
+	
+	# Hide bullet holes
+	for hole in active_bullet_holes:
+		if is_instance_valid(hole):
+			hole.visible = false
+	
+	# Restore after delay
+	get_tree().create_timer(2.5).timeout.connect(restore_target)
+
+func restore_target():
+	if not DEBUG_DISABLED:
+		print("[CustomTarget] Restoring target")
+	
+	if image_display:
+		image_display.visible = true
+	if mask_node:
+		mask_node.visible = true
+	
+	# Clear bullet holes
+	for hole in active_bullet_holes:
+		if is_instance_valid(hole):
+			hole.visible = false
+	active_bullet_holes.clear()
