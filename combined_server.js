@@ -267,7 +267,7 @@ const httpServer = http.createServer((req, res) => {
           netlinkChannel = channel;
           netlinkWorkMode = work_mode;
           netlinkDeviceName = device_name;
-          netlinkBluetoothName = device_name; // Use device_name as bluetooth_name for simulation
+          netlinkBluetoothName = bluetooth_name; // Use device_name as bluetooth_name for simulation
           
           console.log(`[HttpServer] Netlink configuration completed`);
           res.writeHead(200, { 'Content-Type': 'application/json' });
