@@ -10,6 +10,10 @@ const DEBUG_DISABLED = true  # Set to true to disable debug prints for productio
 @onready var copyright_label = $Label
 @onready var background_music = $BackgroundMusic
 
+# Preload the text wave shader
+const TextWaveShader = preload("res://scene/main_menu/text_wave.gdshader")
+var wave_material: ShaderMaterial
+
 var focused_index
 var buttons = []
 
@@ -84,6 +88,9 @@ func _ready():
 	# Play background music
 	if background_music:
 		background_music.play()
+		# Ensure looping
+		if not background_music.finished.is_connected(background_music.play):
+			background_music.finished.connect(background_music.play)
 		if not DEBUG_DISABLED:
 			print("[Menu] Playing background music")
 	
@@ -98,6 +105,12 @@ func _ready():
 		drills_button,
 		games_button,
 		option_button]
+	
+	# Initialize wave material
+	wave_material = ShaderMaterial.new()
+	wave_material.shader = TextWaveShader
+	wave_material.set_shader_parameter("jiggle", 5.0)
+	wave_material.set_shader_parameter("speed", 2.0)
 	
 	# Check return source and set focus accordingly
 	var global_data = get_node_or_null("/root/GlobalData")
@@ -126,6 +139,7 @@ func _ready():
 			print("[Menu] Returning from ", source, ", setting focus to button index ", focused_index)
 		
 	buttons[focused_index].grab_focus()
+	_update_button_shaders()
 
 	# Use get_node instead of Engine.has_singleton
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
@@ -308,6 +322,13 @@ func has_visible_power_off_dialog() -> bool:
 			return true
 	return false
 
+func _update_button_shaders():
+	for i in range(buttons.size()):
+		if i == focused_index:
+			buttons[i].material = wave_material
+		else:
+			buttons[i].material = null
+
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
 		return
@@ -325,6 +346,7 @@ func _on_menu_control(directive: String):
 				print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
 				print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
 			buttons[focused_index].grab_focus()
+			_update_button_shaders()
 			if not DEBUG_DISABLED:
 				print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
 			var menu_controller = get_node("/root/MenuController")
@@ -341,6 +363,7 @@ func _on_menu_control(directive: String):
 				print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
 				print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
 			buttons[focused_index].grab_focus()
+			_update_button_shaders()
 			if not DEBUG_DISABLED:
 				print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
 			var menu_controller = get_node("/root/MenuController")
