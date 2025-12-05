@@ -7,10 +7,8 @@ const QRCode = preload("res://script/qrcode.gd")
 # Features remote control navigation and onscreen keyboard for input
 
 @onready var status_label = $CenterContainer/VBoxContainer/StatusLabel
-@onready var channel_label = $CenterContainer/VBoxContainer/ChannelLabel
 @onready var workmode_label = $CenterContainer/VBoxContainer/WorkMode
 @onready var name_label = $CenterContainer/VBoxContainer/NameLabel
-@onready var channel_dropdown = $CenterContainer/VBoxContainer/ChannelDropdown
 @onready var workmode_dropdown = $CenterContainer/VBoxContainer/WorkModeDropdown
 @onready var name_line_edit = $CenterContainer/VBoxContainer/NameLineEdit
 @onready var qr_texture = $CenterContainer/VBoxContainer/QRCodeTexture
@@ -18,7 +16,7 @@ const QRCode = preload("res://script/qrcode.gd")
 @onready var confirm_button = $CenterContainer/VBoxContainer/HBoxContainer/ConfirmButton
 @onready var dismiss_button = $CenterContainer/VBoxContainer/HBoxContainer/DismissButton
 
-var focused_control = 0  # 0 = channel dropdown, 1 = workmode dropdown, 2 = name line edit
+var focused_control = 0  # 0 = name_line_edit, 1 = workmode dropdown, 2 = confirm_button
 var controls = []
 var dropdown_open = false
 
@@ -31,18 +29,14 @@ var is_stopping = false
 var progress_text_key = ""
 
 func _ready():
-	# Initialize controls array
-	controls = [channel_dropdown, workmode_dropdown, name_line_edit, confirm_button]
+	# Initialize controls array - order: name_line_edit (0), workmode_dropdown (1), confirm_button (2)
+	controls = [name_line_edit, workmode_dropdown, confirm_button]
 	
 	# Update UI texts with translations
 	update_ui_texts()
 	
 	# Setup timers
 	setup_timers()
-	
-	# Populate channel dropdown with values 1-10
-	for i in range(1, 11):
-		channel_dropdown.add_item(str(i), i)
 	
 	# Populate workmode dropdown with master/slave
 	workmode_dropdown.add_item(tr("workmode_master"), 0)
@@ -51,7 +45,7 @@ func _ready():
 	# Load current settings
 	load_current_settings()
 	
-	# Set initial focus
+	# Set initial focus to name_line_edit (index 0)
 	set_focused_control(0)
 	
 	# Connect to MenuController signals for remote control
@@ -82,9 +76,7 @@ func _ready():
 
 func update_ui_texts():
 	if status_label:
-		status_label.text = tr("netlink_config")
-	if channel_label:
-		channel_label.text = tr("net_config_channel")
+		update_status_label()
 	if workmode_label:
 		workmode_label.text = tr("net_config_workmode")
 	if name_label:
@@ -99,18 +91,45 @@ func update_qr_code():
 		return
 		
 	var text = ""
+	var is_started = false
+	var work_mode = ""
 	var global_data = get_node_or_null("/root/GlobalData")
-	if global_data and global_data.netlink_status and global_data.netlink_status.has("bluetooth_name"):
-		text = str(global_data.netlink_status["bluetooth_name"])
+	if global_data and global_data.netlink_status:
+		if global_data.netlink_status.has("bluetooth_name"):
+			text = str(global_data.netlink_status["bluetooth_name"])
+		if global_data.netlink_status.has("started"):
+			is_started = global_data.netlink_status["started"]
+		if global_data.netlink_status.has("work_mode"):
+			work_mode = str(global_data.netlink_status["work_mode"]).to_lower()
 	
-	if text.is_empty():
+	# Hide QR code if not started, no bluetooth_name, or work_mode is slave
+	if not is_started or text.is_empty() or work_mode == "slave":
 		qr_texture.texture = null
+		qr_texture.visible = false
 		return
 		
+	qr_texture.visible = true
 	var qr = QRCode.new()
 	var image = qr.generate_image(text, 4)
 	if image:
 		qr_texture.texture = ImageTexture.create_from_image(image)
+
+func update_status_label():
+	if not status_label:
+		return
+		
+	if is_configuring or is_stopping:
+		return
+		
+	var text = tr("netlink_config")
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.netlink_status:
+		if global_data.netlink_status.get("started", false):
+			text += " (" + tr("started") + ")"
+		else:
+			text += " (" + tr("stopped") + ")"
+	
+	status_label.text = text
 
 func setup_timers():
 	# Setup guard timer (15 seconds)
@@ -129,16 +148,11 @@ func setup_timers():
 func load_current_settings():
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data and global_data.settings_dict.size() > 0:
-		# Load channel setting (default to 1)
-		var channel = int(global_data.settings_dict.get("channel", 1))
-		if channel >= 1 and channel <= 10:
-			channel_dropdown.select(channel - 1)  # OptionButton is 0-indexed
-		
-		# Load workmode setting (default to "master")
-		var workmode_str = global_data.settings_dict.get("workmode", "master")
-		var workmode_index = 0  # Default to Master
-		if workmode_str == "slave":
-			workmode_index = 1
+		# Load workmode setting (default to "slave")
+		var workmode_str = global_data.settings_dict.get("workmode", "slave")
+		var workmode_index = 1  # Default to Slave
+		if workmode_str == "master":
+			workmode_index = 0
 		workmode_dropdown.select(workmode_index)
 		
 		# Load target name setting (default to empty)
@@ -147,10 +161,12 @@ func load_current_settings():
 		# Note: We don't update QR code here because it should only reflect the actual netlink status
 		
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Loaded settings - Channel: ", channel, ", Workmode: ", workmode_str, ", Name: ", target_name)
+			print("[NetworkingConfig] Loaded settings - Channel: 17, Workmode: ", workmode_str, ", Name: ", target_name)
 	else:
+		# Default to Slave if no settings
+		workmode_dropdown.select(1)
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] No settings loaded, using defaults")
+			print("[NetworkingConfig] No settings loaded, using defaults (Slave)")
 
 func set_focused_control(index: int):
 	if index >= 0 and index < controls.size():
@@ -159,29 +175,23 @@ func set_focused_control(index: int):
 		# Use deferred call for focus to ensure it happens after UI updates
 		controls[index].grab_focus()
 		
-		# Handle dropdown visibility
-		if focused_control == 0 or focused_control == 1:  # Channel or Workmode dropdown
-			if dropdown_open:
-				if focused_control == 0:
-					var rect = channel_dropdown.get_global_rect()
-					channel_dropdown.get_popup().popup(rect)
-				else:  # focused_control == 1
-					var rect = workmode_dropdown.get_global_rect()
-					workmode_dropdown.get_popup().popup(rect)
-			else:
-				channel_dropdown.get_popup().hide()
-				workmode_dropdown.get_popup().hide()
+	# Handle dropdown visibility and keyboard
+	if focused_control == 1:  # Workmode dropdown
+		if dropdown_open:
+			var rect = workmode_dropdown.get_global_rect()
+			workmode_dropdown.get_popup().popup(rect)
 		else:
-			channel_dropdown.get_popup().hide()
 			workmode_dropdown.get_popup().hide()
-			dropdown_open = false
-		
-		# Show keyboard if name field is focused
-		if focused_control == 2:  # Name line edit
-			# Do not show keyboard by default
-			pass
-		else:
-			hide_keyboard()
+	else:
+		workmode_dropdown.get_popup().hide()
+		dropdown_open = false
+	
+	# Show keyboard if name field is focused
+	if focused_control == 0:  # Name line edit
+		# Do not show keyboard by default
+		pass
+	else:
+		hide_keyboard()
 
 func show_keyboard_for_name_input():
 	if keyboard:
@@ -317,11 +327,7 @@ func _on_navigate(direction: String):
 	match direction:
 		"up":
 			if dropdown_open:
-				if focused_control == 0:  # Channel dropdown
-					var current_selected = channel_dropdown.selected
-					if current_selected > 0:
-						channel_dropdown.select(current_selected - 1)
-				elif focused_control == 1:  # Workmode dropdown
+				if focused_control == 1:  # Workmode dropdown
 					var current_selected = workmode_dropdown.selected
 					if current_selected > 0:
 						workmode_dropdown.select(current_selected - 1)
@@ -330,11 +336,7 @@ func _on_navigate(direction: String):
 					set_focused_control((focused_control - 1 + controls.size()) % controls.size())
 		"down":
 			if dropdown_open:
-				if focused_control == 0:  # Channel dropdown
-					var current_selected = channel_dropdown.selected
-					if current_selected < channel_dropdown.item_count - 1:
-						channel_dropdown.select(current_selected + 1)
-				elif focused_control == 1:  # Workmode dropdown
+				if focused_control == 1:  # Workmode dropdown
 					var current_selected = workmode_dropdown.selected
 					if current_selected < workmode_dropdown.item_count - 1:
 						workmode_dropdown.select(current_selected + 1)
@@ -349,13 +351,7 @@ func _on_navigate(direction: String):
 				confirm_button.grab_focus()
 			else:
 				if dropdown_open:
-					if focused_control == 0:  # Channel dropdown
-						var current_selected = channel_dropdown.selected
-						if direction == "left" and current_selected > 0:
-							channel_dropdown.select(current_selected - 1)
-						elif direction == "right" and current_selected < channel_dropdown.item_count - 1:
-							channel_dropdown.select(current_selected + 1)
-					elif focused_control == 1:  # Workmode dropdown
+					if focused_control == 1:  # Workmode dropdown
 						var current_selected = workmode_dropdown.selected
 						if direction == "left" and current_selected > 0:
 							workmode_dropdown.select(current_selected - 1)
@@ -371,16 +367,7 @@ func _on_enter_pressed():
 		return
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Enter pressed")
-	if focused_control == 0:  # Channel dropdown
-		if not dropdown_open:
-			var rect = channel_dropdown.get_global_rect()
-			channel_dropdown.get_popup().popup(rect)
-			dropdown_open = true
-		else:
-			channel_dropdown.get_popup().hide()
-			dropdown_open = false
-			set_focused_control(1)  # Move to workmode
-	elif focused_control == 1:  # Workmode dropdown
+	if focused_control == 1:  # Workmode dropdown
 		if not dropdown_open:
 			var rect = workmode_dropdown.get_global_rect()
 			workmode_dropdown.get_popup().popup(rect)
@@ -388,9 +375,9 @@ func _on_enter_pressed():
 		else:
 			workmode_dropdown.get_popup().hide()
 			dropdown_open = false
-			set_focused_control(2)  # Move to name field
-	else:  # focused_control == 2 (Name line edit) or 3 (Confirm button)
-		if focused_control == 2:
+			set_focused_control(2)  # Move to confirm button
+	else:  # focused_control == 0 (Name line edit) or 2 (Confirm button)
+		if focused_control == 0:
 			show_keyboard_for_name_input()
 		else:
 			configure_network()
@@ -409,23 +396,30 @@ func _on_netlink_status_loaded():
 			print("[NetworkingConfig] GlobalData not found in _on_netlink_status_loaded")
 		return
 	var status = global_data.netlink_status
-	# Populate channel if present and within 1-10
-	if status.has("channel"):
-		var ch = int(status["channel"])
-		if ch >= 1 and ch <= 10:
-			channel_dropdown.select(ch - 1)
-	# Populate work_mode if present
-	if status.has("work_mode"):
-		var wm = str(status["work_mode"]).to_lower()
-		if wm == "slave":
-			workmode_dropdown.select(1)
-		else:
-			workmode_dropdown.select(0)
-	# Populate device name
-	if status.has("device_name"):
-		name_line_edit.text = str(status["device_name"])
+	
+	# Check if configured
+	var wm_val = status.get("work_mode")
+	var dev_val = status.get("device_name")
+	
+	if wm_val == null and dev_val == null:
+		# Case 1: Not configured before -> Default to Slave
+		workmode_dropdown.select(1)
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Netlink not configured, defaulting to Slave")
+	else:
+		# Case 2 & 3: Configured -> Use values
+		if wm_val:
+			var wm = str(wm_val).to_lower()
+			if wm == "slave":
+				workmode_dropdown.select(1)
+			else:
+				workmode_dropdown.select(0)
+		
+		if dev_val:
+			name_line_edit.text = str(dev_val)
 	
 	update_qr_code()
+	update_status_label()
 	
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Populated netlink info from GlobalData: ", status)
@@ -438,7 +432,7 @@ func save_settings():
 		return
 	
 	# Get values from UI
-	var channel = channel_dropdown.get_selected_id()
+	var channel = 17
 	var workmode_index = workmode_dropdown.get_selected_id()
 	var workmode = "master" if workmode_index == 0 else "slave"
 	var target_name = name_line_edit.text.strip_edges()
@@ -505,7 +499,7 @@ func do_netlink_config():
 	start_guard_timer()
 	
 	# Get values from UI
-	var channel = channel_dropdown.get_selected_id()
+	var channel = 17
 	var workmode_index = workmode_dropdown.get_selected_id()
 	var workmode = "master" if workmode_index == 0 else "slave"
 	var target_name = name_line_edit.text.strip_edges()
@@ -550,7 +544,7 @@ func _on_netlink_config_callback(result, response_code, _headers, _body):
 		# Update GlobalData.netlink_status with the new configuration
 		var global_data = get_node_or_null("/root/GlobalData")
 		if global_data:
-			var channel = channel_dropdown.get_selected_id()
+			var channel = 17
 			var workmode_index = workmode_dropdown.get_selected_id()
 			var workmode = "master" if workmode_index == 0 else "slave"
 			var target_name = name_line_edit.text.strip_edges()
@@ -607,15 +601,22 @@ func _on_netlink_status_response(result, response_code, _headers, body):
 
 func _finish_configuration():
 	is_configuring = false
-	var signal_bus = get_node_or_null("/root/SignalBus")
-	if signal_bus:
+	var global_data = get_node_or_null("/root/GlobalData")
+	var netlink_started = false
+	if global_data and global_data.netlink_status.has("started"):
+		netlink_started = global_data.netlink_status["started"]
+	
+	# GlobalData will emit netlink_status_loaded signal which listeners can use
+	# No need to emit network_started here since GlobalData already tracks state
+	if not netlink_started:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Emitting network_started via SignalBus")
-		signal_bus.emit_network_started()
+			print("[NetworkingConfig] Netlink not started, configuration complete")
 	else:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] SignalBus not found, cannot emit wifi_connected signal")
-	get_tree().change_scene_to_file("res://scene/option/option.tscn")
+			print("[NetworkingConfig] Netlink started successfully, configuration complete")
+	
+	# Update status label to show final status
+	update_status_label()
 
 # Timer and animation functions
 func start_progress_animation(text_key: String):

@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://6et1tlqxfrdx"]
+[gd_scene load_steps=7 format=3 uid="uid://6et1tlqxfrdx"]
 
 [ext_resource type="Script" uid="uid://bpdye6y5c5yaw" path="res://script/networking_config.gd" id="1_networking"]
 [ext_resource type="Script" uid="uid://dxfujov7vai6f" path="res://addons/onscreenkeyboard/onscreen_keyboard.gd" id="2_keyboard"]
 [ext_resource type="Texture2D" uid="uid://vywd0k7tgm56" path="res://asset/largeCntnrs 2.png" id="2_qb65s"]
+[ext_resource type="Theme" uid="uid://br4jdxsyx0xtu" path="res://theme/drill_data_theme.tres" id="3_bv066"]
 [ext_resource type="PackedScene" uid="uid://dturr8so8g8cw" path="res://scene/custom_button.tscn" id="3_qb65s"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gax0u"]
@@ -18,7 +19,6 @@ grow_vertical = 2
 script = ExtResource("1_networking")
 
 [node name="ColorRect" type="ColorRect" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -37,6 +37,20 @@ offset_top = -1201.0
 grow_horizontal = 2
 grow_vertical = 0
 texture = ExtResource("2_qb65s")
+
+[node name="InstructionLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -89.0
+offset_bottom = -46.0
+grow_horizontal = 2
+grow_vertical = 0
+theme = ExtResource("3_bv066")
+text = "Only One Master Can Be Configurated in Your Network"
+horizontal_alignment = 1
 
 [node name="CenterContainer" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -59,23 +73,17 @@ size_flags_vertical = 3
 layout_mode = 2
 horizontal_alignment = 1
 
-[node name="Spacer4" type="Control" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 16)
+[node name="NameLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="ChannelLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="ChannelDropdown" type="OptionButton" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 32)
+[node name="NameLineEdit" type="LineEdit" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(24, 32)
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_gax0u")
-toggle_mode = false
 
-[node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer"]
+[node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
@@ -90,26 +98,12 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 theme_override_styles/hover = SubResource("StyleBoxFlat_gax0u")
 
-[node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 16)
-layout_mode = 2
-
-[node name="NameLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="NameLineEdit" type="LineEdit" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(24, 32)
-layout_mode = 2
-size_flags_vertical = 0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
-
 [node name="Spacer5" type="Control" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 16)
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 
 [node name="QRCodeTexture" type="TextureRect" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(400, 400)
+custom_minimum_size = Vector2(360, 360)
 layout_mode = 2
 size_flags_horizontal = 4
 expand_mode = 1

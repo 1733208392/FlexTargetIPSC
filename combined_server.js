@@ -43,7 +43,7 @@ let embeddedSystemState = {
 // Test scenario configuration
 // Set this to 'failure' to simulate netlink_status request failure (code: 1)
 // Set to 'success' for normal operation
-const TEST_SCENARIO_NETLINK_STATUS = 'success'; // Options: 'success' | 'failure'
+let TEST_SCENARIO_NETLINK_STATUS = 'success'; // Options: 'success' | 'failure'
 
 // Global state management for WS/BLE
 let mobileAppBLEClient = null;
@@ -304,9 +304,9 @@ const httpServer = http.createServer((req, res) => {
         data: {
           wifi_ip: netlinkWifiIp,
           wifi_status: false,
-          channel: netlinkChannel,
-          work_mode: netlinkWorkMode,
-          device_name: netlinkDeviceName,
+          channel: 0,
+          work_mode: null,
+          device_name: null,
           bluetooth_name: netlinkBluetoothName,
           started: false
         }
@@ -429,6 +429,153 @@ const httpServer = http.createServer((req, res) => {
         res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
       }
     });
+
+  } else if (pathname === '/test/config/netlink-mode' && req.method === 'POST') {
+    // Test endpoint: dynamically change netlink work mode
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const workMode = data.work_mode;
+
+        // Validate that work_mode is provided
+        if (workMode === undefined || workMode === null) {
+          console.log(`[TestEndpoint] /test/config/netlink-mode - Missing 'work_mode' parameter`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Missing 'work_mode' parameter" }));
+          return;
+        }
+
+        // Validate that work_mode is either 'master' or 'slave'
+        if (workMode !== 'master' && workMode !== 'slave') {
+          console.log(`[TestEndpoint] /test/config/netlink-mode - Invalid work_mode: ${workMode}`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "work_mode must be 'master' or 'slave'" }));
+          return;
+        }
+
+        // Update netlink work mode
+        netlinkWorkMode = workMode;
+        console.log(`[TestEndpoint] Netlink work_mode changed to: ${workMode}`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 0, msg: `Work mode set to '${workMode}'` }));
+      } catch (error) {
+        console.log(`[TestEndpoint] /test/config/netlink-mode - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
+      }
+    });
+
+  } else if (pathname === '/test/config/netlink-status-scenario' && req.method === 'POST') {
+    // Test endpoint: dynamically change test scenario for netlink status
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const scenario = data.scenario;
+
+        // Validate that scenario is provided
+        if (scenario === undefined || scenario === null) {
+          console.log(`[TestEndpoint] /test/config/netlink-status-scenario - Missing 'scenario' parameter`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Missing 'scenario' parameter" }));
+          return;
+        }
+
+        // Validate that scenario is either 'success' or 'failure'
+        if (scenario !== 'success' && scenario !== 'failure') {
+          console.log(`[TestEndpoint] /test/config/netlink-status-scenario - Invalid scenario: ${scenario}`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "scenario must be 'success' or 'failure'" }));
+          return;
+        }
+
+        // Update test scenario
+        TEST_SCENARIO_NETLINK_STATUS = scenario;
+        console.log(`[TestEndpoint] TEST_SCENARIO_NETLINK_STATUS changed to: ${scenario}`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          code: 0, 
+          msg: `Test scenario set to '${scenario}'`,
+          current_scenario: TEST_SCENARIO_NETLINK_STATUS
+        }));
+      } catch (error) {
+        console.log(`[TestEndpoint] /test/config/netlink-status-scenario - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
+      }
+    });
+
+  } else if (pathname === '/test/config/netlink-started' && req.method === 'POST') {
+    // Test endpoint: dynamically change netlink started state
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const started = data.started;
+
+        // Validate that started is provided
+        if (started === undefined || started === null) {
+          console.log(`[TestEndpoint] /test/config/netlink-started - Missing 'started' parameter`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Missing 'started' parameter" }));
+          return;
+        }
+
+        // Validate that started is a boolean
+        if (typeof started !== 'boolean') {
+          console.log(`[TestEndpoint] /test/config/netlink-started - Invalid started type: ${typeof started}`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "started must be a boolean (true or false)" }));
+          return;
+        }
+
+        // Update netlink started state
+        netlinkStarted = started;
+        console.log(`[TestEndpoint] Netlink started state changed to: ${started}`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          code: 0, 
+          msg: `Netlink started set to ${started}`,
+          current_started: netlinkStarted
+        }));
+      } catch (error) {
+        console.log(`[TestEndpoint] /test/config/netlink-started - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
+      }
+    });
+
+  } else if (pathname === '/test/query/netlink-status' && req.method === 'POST') {
+    // Test endpoint: query current netlink status
+    console.log(`[TestEndpoint] /test/query/netlink-status called`);
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      code: 0,
+      msg: "Current netlink status",
+      data: {
+        wifi_ip: netlinkWifiIp,
+        wifi_status: true,
+        channel: netlinkChannel,
+        work_mode: netlinkWorkMode,
+        device_name: netlinkDeviceName,
+        bluetooth_name: netlinkBluetoothName,
+        started: netlinkStarted
+      }
+    }));
 
   // ============================================================================
   // TEST ENDPOINTS - Simulate netlink commands for unit testing drills_network scene
