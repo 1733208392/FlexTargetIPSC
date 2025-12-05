@@ -18,6 +18,7 @@ grow_vertical = 2
 script = ExtResource("1_networking")
 
 [node name="ColorRect" type="ColorRect" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -102,6 +103,17 @@ layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
+
+[node name="Spacer5" type="Control" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="QRCodeTexture" type="TextureRect" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(400, 400)
+layout_mode = 2
+size_flags_horizontal = 4
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Spacer" type="Control" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 32)

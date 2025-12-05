@@ -1,6 +1,7 @@
 extends Control
 
 const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
+const QRCode = preload("res://script/qrcode.gd")
 
 # Networking configuration UI for setting channel and target name
 # Features remote control navigation and onscreen keyboard for input
@@ -12,6 +13,7 @@ const DEBUG_DISABLED = true  # Set to true to disable debug prints for productio
 @onready var channel_dropdown = $CenterContainer/VBoxContainer/ChannelDropdown
 @onready var workmode_dropdown = $CenterContainer/VBoxContainer/WorkModeDropdown
 @onready var name_line_edit = $CenterContainer/VBoxContainer/NameLineEdit
+@onready var qr_texture = $CenterContainer/VBoxContainer/QRCodeTexture
 @onready var keyboard = $BottomContainer/OnscreenKeyboard
 @onready var confirm_button = $CenterContainer/VBoxContainer/HBoxContainer/ConfirmButton
 @onready var dismiss_button = $CenterContainer/VBoxContainer/HBoxContainer/DismissButton
@@ -92,6 +94,24 @@ func update_ui_texts():
 	if dismiss_button:
 		dismiss_button.text = tr("dismiss")
 
+func update_qr_code():
+	if not qr_texture:
+		return
+		
+	var text = ""
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.netlink_status and global_data.netlink_status.has("bluetooth_name"):
+		text = str(global_data.netlink_status["bluetooth_name"])
+	
+	if text.is_empty():
+		qr_texture.texture = null
+		return
+		
+	var qr = QRCode.new()
+	var image = qr.generate_image(text, 4)
+	if image:
+		qr_texture.texture = ImageTexture.create_from_image(image)
+
 func setup_timers():
 	# Setup guard timer (15 seconds)
 	guard_timer = Timer.new()
@@ -124,6 +144,7 @@ func load_current_settings():
 		# Load target name setting (default to empty)
 		var target_name = global_data.settings_dict.get("target_name", "")
 		name_line_edit.text = target_name
+		# Note: We don't update QR code here because it should only reflect the actual netlink status
 		
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] Loaded settings - Channel: ", channel, ", Workmode: ", workmode_str, ", Name: ", target_name)
@@ -403,6 +424,9 @@ func _on_netlink_status_loaded():
 	# Populate device name
 	if status.has("device_name"):
 		name_line_edit.text = str(status["device_name"])
+	
+	update_qr_code()
+	
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Populated netlink info from GlobalData: ", status)
 
@@ -535,7 +559,6 @@ func _on_netlink_config_callback(result, response_code, _headers, _body):
 			global_data.netlink_status["channel"] = channel
 			global_data.netlink_status["work_mode"] = workmode
 			global_data.netlink_status["device_name"] = target_name
-			global_data.netlink_status["bluetooth_name"] = target_name
 			global_data.netlink_status["started"] = false  # Will be updated when start succeeds
 			
 			if not DEBUG_DISABLED:
@@ -553,32 +576,46 @@ func _on_netlink_config_callback(result, response_code, _headers, _body):
 func _on_netlink_start_callback(result, response_code, _headers, _body):
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Netlink start successful")
+			print("[NetworkingConfig] Netlink start successful, requesting status...")
 		
-		# Update GlobalData to mark netlink as started
-		var global_data = get_node_or_null("/root/GlobalData")
-		if global_data:
-			global_data.netlink_status["started"] = true
-			if not DEBUG_DISABLED:
-				print("[NetworkingConfig] Updated GlobalData.netlink_status.started to true")
-			# Emit the signal to notify other components
-			global_data.netlink_status_loaded.emit()
-		
-		is_configuring = false
-		var signal_bus = get_node_or_null("/root/SignalBus")
-		if signal_bus:
-			if not DEBUG_DISABLED:
-				print("[NetworkingConfig] Emitting network_started via SignalBus")
-			signal_bus.emit_network_started()
+		# Request status to get the actual bluetooth_name
+		var http_service = get_node_or_null("/root/HttpService")
+		if http_service:
+			http_service.netlink_status(_on_netlink_status_response)
 		else:
-			if not DEBUG_DISABLED:
-				print("[NetworkingConfig] SignalBus not found, cannot emit wifi_connected signal")
-		get_tree().change_scene_to_file("res://scene/option/option.tscn")
+			_finish_configuration()
 	else:
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] Netlink start failed - Result: ", result, ", Code: ", response_code)
 		set_status_failed()
 		is_configuring = false
+
+func _on_netlink_status_response(result, response_code, _headers, body):
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		var json = JSON.new()
+		var parse_result = json.parse(body.get_string_from_utf8())
+		if parse_result == OK:
+			var status = json.get_data()
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.netlink_status = status
+				global_data.netlink_status_loaded.emit()
+				if not DEBUG_DISABLED:
+					print("[NetworkingConfig] Updated GlobalData.netlink_status from response: ", status)
+	
+	_finish_configuration()
+
+func _finish_configuration():
+	is_configuring = false
+	var signal_bus = get_node_or_null("/root/SignalBus")
+	if signal_bus:
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Emitting network_started via SignalBus")
+		signal_bus.emit_network_started()
+	else:
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] SignalBus not found, cannot emit wifi_connected signal")
+	get_tree().change_scene_to_file("res://scene/option/option.tscn")
 
 # Timer and animation functions
 func start_progress_animation(text_key: String):
