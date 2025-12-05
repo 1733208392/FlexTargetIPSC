@@ -13,8 +13,8 @@ var shot_timer_delay = 0.0  # Store the shot timer delay duration
 func _ready():
 	pass
 
-func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float = 0.0, repeat: int = 0):
-	print("PERFORMANCE TRACKER NETWORK: _on_target_hit called with:", target_type, hit_position, hit_area, rotation_angle, repeat)
+func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int, target_position: Vector2):
+	print("PERFORMANCE TRACKER NETWORK: _on_target_hit called with:", target_type, hit_position, hit_area, rotation_angle, repeat, target_position)
 	var current_time_usec = Time.get_ticks_usec()  # Use microsecond precision
 	var time_diff = 0.0  # Initialize to 0
 	
@@ -60,9 +60,10 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		"time_diff": round(time_diff * 100.0) / 100.0,
 		"hit_position": {"x": round(hit_position.x * 10.0) / 10.0, "y": round(hit_position.y * 10.0) / 10.0},
 		"hit_area": hit_area,
-		"rotation_angle": rotation_angle,
+		"rotation_angle": round(rotation_angle * 100.0) / 100.0,
 		"repeat": repeat,
-		"shot_timer_delay": round(shot_timer_delay * 100.0) / 100.0
+		"shot_timer_delay": round(shot_timer_delay * 100.0) / 100.0,
+		"targetPos": {"x": round(target_position.x * 10.0) / 10.0, "y": round(target_position.y * 10.0) / 10.0}
 	}
 	
 	# Send to websocket server

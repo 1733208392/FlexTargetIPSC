@@ -6,7 +6,7 @@
 
 [sub_resource type="Animation" id="Animation_fall"]
 resource_name = "fall_down"
-length = 1.2
+length = 0.6
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
@@ -14,7 +14,7 @@ tracks/0/path = NodePath("PopperSprite:material:shader_parameter/fall_progress")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 1.2),
+"times": PackedFloat32Array(0, 0.6),
 "transitions": PackedFloat32Array(1, 2),
 "update": 0,
 "values": [0.0, 1.0]
@@ -26,7 +26,7 @@ tracks/1/path = NodePath("PopperSprite:material:shader_parameter/rotation_angle"
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0, 0.4, 0.8, 1.2),
+"times": PackedFloat32Array(0, 0.2, 0.4, 0.6),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
 "values": [0.0, -30.0, 50.0, -90.0]
@@ -38,7 +38,7 @@ tracks/2/path = NodePath(".:position")
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = {
-"times": PackedFloat32Array(0, 1.2),
+"times": PackedFloat32Array(0, 0.6),
 "transitions": PackedFloat32Array(1, 3),
 "update": 1,
 "values": [Vector2(0, 0), Vector2(0, 0)]

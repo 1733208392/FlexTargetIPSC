@@ -260,17 +260,18 @@ func reset_target():
 func reset_bullet_hole_pool():
 	"""Reset the bullet hole pool by hiding all active holes"""
 	print("[ipsc_mini_black_1] Resetting bullet hole pool")
-	
-	# Hide all active bullet holes
+
+	var valid_holes := []
+	# Hide and collect valid active bullet holes
 	for hole in active_bullet_holes:
 		if is_instance_valid(hole):
 			hole.visible = false
-	
-	# Move all active holes back to pool
-	for hole in active_bullet_holes:
-		if is_instance_valid(hole):
-			bullet_hole_pool.append(hole)
-	
+			valid_holes.append(hole)
+
+	# Return valid holes to the pool
+	for hole in valid_holes:
+		bullet_hole_pool.append(hole)
+
 	# Clear active list
 	active_bullet_holes.clear()
 	
@@ -299,19 +300,21 @@ func initialize_bullet_hole_pool():
 	
 func get_bullet_hole_from_pool() -> Node:
 	"""Get a bullet hole from the pool or create new if pool is empty"""
-	if bullet_hole_pool.size() > 0:
+	while bullet_hole_pool.size() > 0:
 		var hole = bullet_hole_pool.pop_back()
+		if not is_instance_valid(hole):
+			continue
 		active_bullet_holes.append(hole)
 		return hole
-	else:
-		# Pool exhausted, create new hole
-		if not DEBUG_DISABLE:
-			print("[ipsc_mini_black_1] Pool exhausted, creating new bullet hole")
-		var bullet_hole = BulletHoleScene.instantiate()
-		add_child(bullet_hole)
-		bullet_hole.z_index = 0
-		active_bullet_holes.append(bullet_hole)
-		return bullet_hole
+
+	# Pool empty or only invalid entries, instantiate new hole
+	if not DEBUG_DISABLE:
+		print("[ipsc_mini_black_1] Pool exhausted or invalid entries, creating new bullet hole")
+	var bullet_hole = BulletHoleScene.instantiate()
+	add_child(bullet_hole)
+	bullet_hole.z_index = 0
+	active_bullet_holes.append(bullet_hole)
+	return bullet_hole
 
 func spawn_bullet_hole(local_position: Vector2):
 	"""Spawn a bullet hole at the specified local position on this target using object pool"""
@@ -435,7 +438,7 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
 	
 	# Load the effect scenes directly
-	var bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
+	var _bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
 	var bullet_impact_scene = preload("res://scene/bullet_impact.tscn")
 	
 	# Find the scene root for effects

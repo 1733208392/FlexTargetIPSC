@@ -18,7 +18,7 @@ var shot_timer_delay = 0.0  # Store the shot timer delay duration
 func _ready():
 	pass
 
-func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float = 0.0):
+func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float = 0.0, target_position: Vector2 = Vector2.ZERO):
 	var current_time_usec = Time.get_ticks_usec()  # Use microsecond precision
 	var time_diff = 0.0  # Initialize to 0
 	
@@ -67,7 +67,8 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 		"hit_position": {"x": round(hit_position.x * 10.0) / 10.0, "y": round(hit_position.y * 10.0) / 10.0},
 		"hit_area": hit_area,
 		"score": score,
-		"rotation_angle": rotation_angle,
+		"rotation_angle": round(rotation_angle * 100.0) / 100.0,
+		"target_position": {"x": round(target_position.x * 10.0) / 10.0, "y": round(target_position.y * 10.0) / 10.0},
 		"shot_timer_delay": round(shot_timer_delay * 100.0) / 100.0
 	}
 	
@@ -90,7 +91,7 @@ func _on_drills_finished():
 	
 	var drill_summary = {
 		"total_elapsed_time": total_elapsed_time,
-		"fastest_shot_interval": fastest_value,
+		"fastest_shot_interval": snappedf(fastest_value, 0.01) if fastest_value != null else 0.0,
 		"total_shots": records.size(),
 		"timestamp": Time.get_unix_time_from_system()
 	}
@@ -112,14 +113,14 @@ func _on_drills_finished():
 	
 	var http_service = get_node("/root/HttpService")
 	if http_service:
-		# var json_string = JSON.stringify(pending_drill_data)
+		var json_string = JSON.stringify(pending_drill_data)
 		# Implement circular buffer: cycle through indices 1-20
 		var current_index = int(global_data.settings_dict.get("max_index", 0)) if global_data else 0
 		var next_index = (current_index % 20) + 1  # Circular buffer: 1-20
 		var data_id = "performance_" + str(next_index)
 		if not DEBUG_DISABLED:
 			print("[PerformanceTracker] Saving drill data to file: ", data_id, " (previous index: ", current_index, ", next index: ", next_index, ")")
-		http_service.save_game(_on_performance_saved, data_id, pending_drill_data)
+		http_service.save_game(_on_performance_saved, data_id, json_string)
 	else:
 		if not DEBUG_DISABLED:
 			print("HttpService not found")
@@ -165,6 +166,17 @@ func reset_shot_timer():
 	last_shot_time_usec = Time.get_ticks_usec()  # Use microsecond precision
 	first_shot = true  # Reset first shot flag for new drill
 
+# Reset all performance tracking data for a new drill
+func reset_all():
+	records.clear()
+	fastest_time_diff = 999.0
+	first_shot = true
+	total_elapsed_time = 0.0
+	pending_drill_data = null
+	shot_timer_delay = 0.0
+	if not DEBUG_DISABLED:
+		print("PERFORMANCE TRACKER: All data reset for new drill")
+
 # Set the total elapsed time for the drill
 func set_total_elapsed_time(time_seconds: float):
 	total_elapsed_time = time_seconds
@@ -176,6 +188,13 @@ func set_shot_timer_delay(delay: float):
 	shot_timer_delay = round(delay * 100.0) / 100.0  # Ensure 2 decimal precision
 	if not DEBUG_DISABLED:
 		print("PERFORMANCE TRACKER: Shot timer delay set to:", shot_timer_delay, "seconds")
+
+# Get the current total score from accumulated records
+func get_current_total_score() -> int:
+	var total = 0
+	for record in records:
+		total += record.get("score", 0)
+	return total
 
 func _on_settings_saved(result, response_code, headers, body):
 	if response_code == 200:

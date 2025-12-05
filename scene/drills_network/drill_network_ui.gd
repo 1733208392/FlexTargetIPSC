@@ -3,12 +3,6 @@ extends Control
 # Performance optimization
 const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
-# Theme styles for title
-@export var golden_title_style: LabelSettings = preload("res://theme/target_title_settings.tres")
-@export var tactical_title_style: LabelSettings = preload("res://theme/target_title_tactical.tres")
-@export var competitive_title_style: LabelSettings = preload("res://theme/target_title_competitive.tres")
-var current_theme_style: String = "golden"
-
 # Timeout warning state
 var timeout_warning_active: bool = false
 
@@ -35,8 +29,6 @@ func _ready():
 	# Load drill sequence setting from global settings
 	load_drill_sequence_from_global_settings()
 	
-	apply_title_theme("golden")  # Set default theme
-	
 	# Connect to the parent drills manager signals
 	var drills_manager = get_parent()
 	if drills_manager:
@@ -51,8 +43,6 @@ func _ready():
 			drills_manager.ui_fastest_time_update.connect(_on_fastest_time_update)
 		if drills_manager.has_signal("ui_score_update"):
 			drills_manager.ui_score_update.connect(_on_score_update)
-		if drills_manager.has_signal("ui_theme_change"):
-			drills_manager.ui_theme_change.connect(_on_theme_change)
 		if drills_manager.has_signal("ui_show_shot_timer"):
 			drills_manager.ui_show_shot_timer.connect(_on_show_shot_timer)
 		if drills_manager.has_signal("ui_hide_shot_timer"):
@@ -168,28 +158,6 @@ func _on_target_name_update(target_name_text: String):
 	target_name.text = target_name_text
 	if not DEBUG_DISABLED:
 		print("Updated target name to: ", target_name_text)
-
-func _on_theme_change(theme_name: String):
-	"""Apply a specific theme style to the target title"""
-	apply_title_theme(theme_name)
-
-func apply_title_theme(theme_name: String):
-	"""Apply a specific theme style to the target title"""
-	match theme_name:
-		"golden":
-			target_name.label_settings = golden_title_style
-		"tactical":
-			target_name.label_settings = tactical_title_style
-		"competitive":
-			target_name.label_settings = competitive_title_style
-		_:
-			if not DEBUG_DISABLED:
-				print("Unknown theme: ", theme_name)
-			return
-	
-	current_theme_style = theme_name
-	if not DEBUG_DISABLED:
-		print("Applied theme: ", theme_name)
 
 func _on_fastest_time_update(fastest_time: float):
 	"""Update the fastest interval label with the current fastest time"""

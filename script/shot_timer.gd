@@ -12,10 +12,11 @@ enum TimerState {
 
 # Node references
 @onready var standby_label = $CenterContainer/StandbyLabel
-@onready var audio_player = $AudioStreamPlayer
+@onready var standby_player = $StandbyPlayer
+@onready var beep_player = $BeepPlayer
 @onready var animation_player = $AnimationPlayer
 @onready var timer_delay = $TimerDelay
-@onready var instructions = $Instructions
+#@onready var instructions = $Instructions
 
 # Timer configuration
 @export var min_delay: float = 2.0  # Minimum delay before beep (seconds)
@@ -41,7 +42,7 @@ func _ready():
 	timer_delay.timeout.connect(_on_timer_timeout)
 	
 	# Hide instructions (not needed anymore)
-	instructions.visible = false
+	#instructions.visible = false
 	
 	# Don't start automatically - wait for drill UI to call start_timer_sequence()
 	current_state = TimerState.WAITING
@@ -116,7 +117,7 @@ func start_timer_sequence():
 		print("=== STARTING SHOT TIMER SEQUENCE ===")
 	
 	# Hide instructions (not needed)
-	instructions.visible = false
+	#instructions.visible = false
 	
 	# Set state to standby
 	current_state = TimerState.STANDBY
@@ -125,6 +126,9 @@ func start_timer_sequence():
 	standby_label.text = get_standby_text()
 	standby_label.label_settings.font_color = Color.YELLOW
 	standby_label.visible = true
+	
+	# Play standby sound
+	standby_player.play()
 	
 	# Start pulsing animation
 	animation_player.play("standby_pulse")
@@ -163,7 +167,7 @@ func _on_timer_timeout():
 	beep_time = Time.get_unix_time_from_system()
 	
 	# Play the shot timer beep
-	audio_player.play()
+	beep_player.play()
 	
 	# Change to ready state
 	current_state = TimerState.READY
@@ -191,7 +195,8 @@ func reset_timer():
 	# Stop all timers and animations
 	timer_delay.stop()
 	animation_player.stop()
-	audio_player.stop()
+	standby_player.stop()
+	beep_player.stop()
 	
 	# Reset state
 	current_state = TimerState.WAITING
@@ -208,7 +213,7 @@ func reset_timer():
 	standby_label.modulate = Color.WHITE
 	
 	# Hide instructions (not needed anymore)
-	instructions.visible = false
+	#instructions.visible = false
 	
 	# Don't auto-start - wait for explicit call to start_timer_sequence()
 	

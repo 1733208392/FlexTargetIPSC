@@ -79,8 +79,14 @@ func _ready():
 		status_bar.visible = true
 		print("[Option] Showed status bar: ", status_bar.name)
 	
+	# Initialize networking tab script FIRST
+	add_child(networking_tab)
+	
 	# Load saved settings from GlobalData
 	load_settings_from_global_data()
+	
+	# Update UI texts with current language
+	update_ui_texts()
 	
 	# Connect signals for language buttons
 	if chinese_button:
@@ -120,10 +126,6 @@ func _ready():
 	# Set tab_container focusable
 	if tab_container:
 		tab_container.focus_mode = Control.FOCUS_ALL
-
-	# Initialize networking tab script
-	add_child(networking_tab)
-	networking_tab._ready()
 
 	# Connect upgrade button pressed
 	if upgrade_button:
@@ -391,9 +393,9 @@ func update_ui_texts():
 	if pause_10s_check:
 		pause_10s_check.text = tr("pause_10s")
 	if sensitivity_label:
-		sensitivity_label.text = tr("sensor_sensitivity") + " [ " + str(int(sensitivity_slider.value)) + " ]"
+		sensitivity_label.text = tr("sensor_sensitivity")
 	if sfx_label:
-		sfx_label.text = tr("sound_sfx") + " [ " + str(int(sfx_volume_slider.value)) + " ]"
+		sfx_label.text = tr("sound_sfx")
 	if drill_note_label:
 		drill_note_label.text = tr("auto_restart_note")
 
@@ -875,7 +877,7 @@ func _on_sensitivity_value_changed(value: float):
 func _update_sensitivity_label():
 	"""Update the sensitivity label with the current slider value."""
 	if sensitivity_slider and sensitivity_label:
-		sensitivity_label.text = tr("sensor_sensitivity") + " [ "+ str(int(sensitivity_slider.value)) + " ]"
+		sensitivity_label.text = tr("sensor_sensitivity")
 		if not GlobalDebug.DEBUG_DISABLED:
 			print("[Option] Updated sensitivity label to: ", sensitivity_label.text)
 
@@ -967,7 +969,7 @@ func _notify_sfx_listeners(volume: int):
 func _update_sfx_label():
 	"""Update the SFX volume label with the current slider value."""
 	if sfx_volume_slider and sfx_label:
-		sfx_label.text = tr("sound_sfx") + " [ " + str(int(sfx_volume_slider.value)) + " ]"
+		sfx_label.text = tr("sound_sfx")
 		if not GlobalDebug.DEBUG_DISABLED:
 			print("[Option] Updated SFX label to: ", sfx_label.text)
 

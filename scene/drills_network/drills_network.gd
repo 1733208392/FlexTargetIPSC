@@ -10,10 +10,10 @@ var target_type_to_scene = {
 	"ipsc": "res://scene/ipsc_mini.tscn",
 	"special_1": "res://scene/ipsc_mini_black_1.tscn",
 	"special_2": "res://scene/ipsc_mini_black_2.tscn",
-	"hostage": "res://scene/hostage.tscn",
+	"hostage": "res://scene/targets/hostage.tscn",
 	"rotation": "res://scene/ipsc_mini_rotate.tscn",
-	"paddle": "res://scene/3paddles.tscn",
-	"popper": "res://scene/2poppers_simple.tscn",
+	"paddle": "res://scene/targets/3paddles.tscn",
+	"popper": "res://scene/targets/2poppers_simple.tscn",
 	"final": "res://scene/targets/final.tscn"
 }
 
@@ -43,14 +43,17 @@ var timeout_seconds: float = 40.0
 var drill_timed_out: bool = false
 
 
-var is_first: bool = false # Only First Target Has Shot Timer
-var is_last: bool = false  # Last Target shows the Final target
+var is_first: bool = false # Only first target has shot timer
+var is_last: bool = false  # Last target shows the final target
 
 # Saved parameters from BLE 'ready' until a 'start' is received
 var saved_ble_ready_content: Dictionary = {}
 
 # Current repeat tracking
 var current_repeat: int = 0
+
+# Current delay time for shot timer
+var current_delay_time: float = 0.0
 
 # Shot tracking for last target
 var shots_on_last_target: int = 0
@@ -59,7 +62,7 @@ var final_target_instance: Node = null
 
 # Performance tracking
 signal drills_finished
-signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int)
+signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int, target_position: Vector2)
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
@@ -215,7 +218,7 @@ func _check_and_process_saved_ready_state():
 			print("[DrillsNetwork] No saved ready state found in GlobalData")
 
 func _start_auto_start_fallback():
-	"""Start a fallback timer that will auto-start the drill in master mode if no 'start' command arrives"""
+	"""Start a fallback timer that will auto-start the drill in first target mode if no 'start' command arrives"""
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting auto-start fallback timer (2 seconds)")
 	
@@ -231,7 +234,7 @@ func _start_auto_start_fallback():
 		emit_signal("ui_mode_update", is_first)
 		
 		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Operating in ", "master" if is_first else "slave", " mode (based on saved isFirst: ", is_first, ")")
+			print("[DrillsNetwork] Operating in ", "first target" if is_first else "subsequent target", " mode (based on saved isFirst: ", is_first, ")")
 		
 		# Use saved timeout or default
 		if saved_ble_ready_content.has("timeout"):
@@ -254,7 +257,7 @@ func _on_netlink_status_loaded():
 	update_device_name_label()
 			
 func update_device_name_label():
-	"""Update the device name label with master/slave - device_name - bluetooth_name format"""
+	"""Update the device name label with work mode - device_name - bluetooth_name format"""
 	var device_name = "unknown_device"
 	var bluetooth_name = ""
 	var work_mode = "slave"  # Default to slave
@@ -291,6 +294,10 @@ func spawn_target():
 	target_instance = target_scene.instantiate()
 	center_container.add_child(target_instance)
 	
+	# Offset rotation target by -200, 200 from center
+	if current_target_type == "rotation":
+		target_instance.position = Vector2(-200, 200)
+	
 	# Set drill active flag to false initially
 	if target_instance.has_method("set"):
 		target_instance.set("drill_active", false)
@@ -310,7 +317,7 @@ func spawn_target():
 	# Start drill timer
 	start_drill_timer()
 	
-	# Show shot timer only in master mode
+	# Show shot timer only for first target
 	if is_first:
 		show_shot_timer()
 
@@ -380,7 +387,13 @@ func _on_final_target_hit(hit_position: Vector2):
 	# Send netlink forward data with ack:end
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
-		var content_dict = {"ack": "end"}
+		# Calculate drill duration: for single targets (is_first and is_last), include the delay time
+		var drill_duration = elapsed_seconds
+		if is_first and is_last:
+			drill_duration += current_delay_time
+		drill_duration = round(drill_duration * 100.0) / 100.0
+		
+		var content_dict = {"ack": "end", "drill_duration": drill_duration}
 		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
 			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 				if DEBUG_ENABLED:
@@ -393,7 +406,7 @@ func _on_final_target_hit(hit_position: Vector2):
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] HttpService not available; cannot send end ack")
 
-func _on_target_hit(arg1, arg2, arg3, arg4 = null):
+func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or_hit_pos = null, target_rot = null):
 	"""Handle target hit - supports different target signal signatures"""
 	# Ignore any shots after the drill has completed
 	if drill_completed:
@@ -401,7 +414,7 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 			print("[DrillsNetwork] Ignoring target hit because drill is completed")
 		return
 
-	# Ignore shots that arrive before the timeout timer actually starts (e.g. master mode before shot timer ready)
+	# Ignore shots that arrive before the timeout timer actually starts (e.g. first target before shot timer ready)
 	if timeout_timer and timeout_timer.is_stopped():
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Ignoring target hit because timeout timer has not started yet")
@@ -409,18 +422,27 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	var zone: String
 	var points: int
 	var hit_position: Vector2
+	var rotation_angle: float = 0.0
+	var target_position: Vector2 = target_instance.global_position if target_instance else Vector2.ZERO
 	
 	# Handle different target signal signatures
-	if arg4 == null:
+	if target_pos_or_hit_pos == null:
 		# ipsc_mini style: (zone, points, hit_position)
-		zone = arg1
-		points = arg2
-		hit_position = arg3
-	else:
+		zone = zone_or_id
+		points = points_or_zone
+		hit_position = hit_pos_or_points
+	elif target_rot == null:
 		# 2poppers style: (popper_id, zone, points, hit_position)
-		zone = arg2
-		points = arg3
-		hit_position = arg4
+		zone = points_or_zone
+		points = hit_pos_or_points
+		hit_position = target_pos_or_hit_pos
+	else:
+		# rotation style: (zone, points, hit_position, target_position, target_rotation)
+		zone = zone_or_id
+		points = points_or_zone
+		hit_position = hit_pos_or_points
+		target_position = target_pos_or_hit_pos  # Use the actual target position from the signal
+		rotation_angle = target_rot  # Use the actual rotation angle for rotation targets
 	
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Target hit: zone=", zone, " points=", points, " pos=", hit_position)
@@ -447,14 +469,14 @@ func _on_target_hit(arg1, arg2, arg3, arg4 = null):
 	# Emit for performance tracking
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Emitting target_hit signal to performance tracker")
-	emit_signal("target_hit", current_target_type, hit_position, zone, 0.0, current_repeat)
+	emit_signal("target_hit", current_target_type, hit_position, zone, rotation_angle, current_repeat, target_position)
 
 func start_drill_timer():
 	"""Start the drill timer"""
 	# Reset performance tracker for new drill
 	performance_tracker.reset_shot_timer()
 	
-	# Create timeout timer (will be started when shot timer is ready in master mode, immediately in slave mode)
+	# Create timeout timer (will be started when shot timer is ready for first target, immediately for subsequent targets)
 	if timeout_timer:
 		timeout_timer.queue_free()
 	timeout_timer = Timer.new()
@@ -464,18 +486,18 @@ func start_drill_timer():
 	add_child(timeout_timer)
 	
 	if not is_first:
-		# In slave mode, start timer immediately since no shot timer
+		# In subsequent target mode, start timer immediately since no shot timer
 		timeout_timer.start()
 		drill_start_time = Time.get_ticks_msec() / 1000.0
 		elapsed_seconds = 0.0
 		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Slave mode: Drill timer started immediately")
+			print("[DrillsNetwork] Subsequent target mode: Drill timer started immediately")
 		# Activate drill for target
 		if target_instance and target_instance.has_method("set"):
 			target_instance.set("drill_active", true)
 	else:
 		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Master mode: Drill timer created (waiting for shot timer ready)")
+			print("[DrillsNetwork] First target mode: Drill timer created (waiting for shot timer ready)")
 
 func _process(_delta):
 	"""Update timer"""
@@ -578,7 +600,7 @@ func _on_menu_control(directive: String):
 			volume_down()
 		"power":
 			power_off()
-		"back", "homepage":
+		"homepage", "back":
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
@@ -636,13 +658,14 @@ func _on_ble_ready_command(content: Dictionary):
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] BLE ready parameters saved: ", saved_ble_ready_content)
 
-	# Set random delay for shot timer if in master mode
+	# Set random delay for shot timer if first target
 	var delay_time: float = 0.0
 	if content.get("isFirst", false):
 		var shot_timer = get_node("DrillUI/ShotTimerOverlay")
 		if shot_timer:
 			delay_time = randf_range(2.0, 5.0)
 			delay_time = round(delay_time * 100.0) / 100.0
+			current_delay_time = delay_time  # Store for later use
 			shot_timer.set_fixed_delay(delay_time)
 			if DEBUG_ENABLED:
 				print("[DrillsNetwork] Set random delay to shot timer: ", delay_time)
@@ -682,10 +705,10 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	for k in content.keys():
 		merged[k] = content[k]
 
-	# Determine master/slave mode based on isFirst from ready command
+	# Determine isFirst from ready command
 	is_first = merged.get("isFirst", false)
 	if DEBUG_ENABLED:
-		print("[DrillsNetwork] Operating in ", "master" if is_first else "slave", " mode (based on isFirst: ", is_first, ")")
+		print("[DrillsNetwork] Operating in ", "first target" if is_first else "subsequent target", " mode (based on isFirst: ", is_first, ")")
 	
 	# Update device name label with new mode
 	update_device_name_label()

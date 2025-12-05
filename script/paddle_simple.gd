@@ -11,6 +11,9 @@ var initial_position: Vector2  # Store the paddle's starting position
 
 signal paddle_disappeared
 
+func is_paddle_fallen() -> bool:
+	return is_fallen
+
 func _ready():
 	instance_id = str(get_instance_id())  # Get unique instance ID
 	
@@ -27,6 +30,13 @@ func _ready():
 	
 	# Create unique animation with correct starting position
 	create_relative_animation()
+	
+	# Initialize shader parameters to ensure paddle is visible initially
+	if sprite and sprite.material:
+		sprite.material.set_shader_parameter("fall_progress", 0.0)
+		sprite.material.set_shader_parameter("rotation_angle", 0.0)
+		if not DEBUG_DISABLED:
+			print("[paddle_simple ", instance_id, "] Shader parameters initialized to visible state")
 
 func create_relative_animation():
 	"""Create a relative animation that starts from the paddle's actual position"""

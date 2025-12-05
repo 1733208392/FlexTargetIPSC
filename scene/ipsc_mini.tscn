@@ -1,7 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://pxoma10oooh5"]
+[gd_scene load_steps=5 format=3 uid="uid://bn4jluyldwlwl"]
 
-[ext_resource type="Texture2D" uid="uid://dve4iuyjc5x3u" path="res://asset/ipsc.png" id="1_ipsc_texture"]
-[ext_resource type="Script" uid="uid://d052u6s0ikdgy" path="res://script/ipsc_mini.gd" id="2_script"]
+[ext_resource type="Script" uid="uid://d052u6s0ikdgy" path="res://script/ipsc_mini.gd" id="1_11fyi"]
+[ext_resource type="Texture2D" uid="uid://dve4iuyjc5x3u" path="res://asset/ipsc.png" id="2_uv8qi"]
 
 [sub_resource type="Animation" id="Animation_1"]
 resource_name = "disappear"
@@ -50,10 +50,10 @@ _data = {
 [node name="IPSC" type="Area2D"]
 collision_layer = 7
 collision_mask = 0
-script = ExtResource("2_script")
+script = ExtResource("1_11fyi")
 
 [node name="TargetSprite" type="Sprite2D" parent="."]
-texture = ExtResource("1_ipsc_texture")
+texture = ExtResource("2_uv8qi")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {

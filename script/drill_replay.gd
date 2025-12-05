@@ -6,17 +6,22 @@ const DEBUG_DISABLED = true  # Set to true for verbose debugging
 var records = []
 var current_index = 0
 var current_target_type = ""
-var loaded_targets = {}
-var upper_level_scene = "res://scene/drills.tscn"  # Default upper level scene
+var loaded_targets = {} # key: target_type, value: {scene: Node, pos: Vector2, bullet_holes: Array}
+var upper_level_scene = "res://scene/ipsc_mini_stage/ipsc_mini_stage.tscn"  # Default upper level scene
 
 var target_scenes = {
 	"ipsc_mini": "res://scene/ipsc_mini.tscn",
 	"ipsc_mini_black_1": "res://scene/ipsc_mini_black_1.tscn",
 	"ipsc_mini_black_2": "res://scene/ipsc_mini_black_2.tscn",
-	"hostage": "res://scene/hostage.tscn",
+	"hostage": "res://scene/targets/hostage.tscn",
 	"ipsc_mini_rotate": "res://scene/ipsc_mini_rotate.tscn",
-	"3paddles": "res://scene/3paddles_simple.tscn",
-	"2poppers": "res://scene/2poppers_simple.tscn",
+	"3paddles": "res://scene/targets/3paddles_simple.tscn",
+	"2poppers": "res://scene/targets/2poppers_simple.tscn",
+	"idpa": "res://scene/targets/idpa.tscn",
+	"idpa-mini-rotate": "res://scene/idpa_mini_rotation.tscn",
+	"idpa-hard-cover-1": "res://scene/targets/idpa_hard_cover_1.tscn",
+	"idpa-hard-cover-2": "res://scene/targets/idpa_hard_cover_2.tscn",
+	"idpa-ns": "res://scene/targets/idpa_ns.tscn"
 	# Add more as needed
 }
 
@@ -27,7 +32,7 @@ var bullet_hole_labels = []  # Store sequence number labels for bullet holes
 
 func _ready():
 	if not DEBUG_DISABLED:
-						print("Drill Replay: Loading drill records...")
+		print("Drill Replay: Loading drill records...")
 	
 	# Load and apply current language setting from global settings
 	load_language_from_global_settings()
@@ -62,7 +67,7 @@ func _ready():
 					print("[Drill Replay] Empty records detected, loading performance file for drill ", drill_data["drill_number"])
 				load_performance_from_http(drill_data["drill_number"])
 			else:
-				# Data already contains records (legacy path or direct performance data)
+				# Data already contains records (User Select from History for Replay)
 				load_selected_drill_data(global_data.selected_drill_data)
 				# Clear the data after loading to prevent reuse
 				global_data.selected_drill_data = {}
@@ -72,7 +77,7 @@ func _ready():
 	
 	# Fallback: use latest performance data from memory
 	if not DEBUG_DISABLED:
-						print("[Drill Replay] No selected drill data found, checking in-memory latest performance")
+		print("[Drill Replay] No selected drill data found, checking in-memory latest performance")
 	load_latest_performance_from_memory()
 	# Initialize UI after fallback load
 	initialize_ui()
@@ -108,7 +113,7 @@ func load_latest_performance_from_memory():
 		print("[Drill Replay] No latest performance data in memory, nothing to display")
 
 func load_performance_from_http(drill_index: int):
-	# Load the detailed performance data from performance_[index].json file
+	# Load the detailed performance data from performance_[index].json file (or performance_idpa_ for IDPA)
 	if not DEBUG_DISABLED:
 		print("[Drill Replay] Loading performance file for drill index: ", drill_index)
 	
@@ -121,7 +126,11 @@ func load_performance_from_http(drill_index: int):
 		initialize_ui()
 		return
 	
-	var file_id = "performance_" + str(drill_index)
+	var prefix = "performance_"
+	if upper_level_scene == "res://scene/history_idpa.tscn":
+		prefix = "performance_idpa_"
+	
+	var file_id = prefix + str(drill_index)
 	if not DEBUG_DISABLED:
 		print("[Drill Replay] Loading file: ", file_id)
 	
@@ -170,6 +179,10 @@ func _on_performance_file_loaded(result, response_code, _headers, body):
 						var global_data = get_node("/root/GlobalData")
 						if global_data:
 							global_data.selected_drill_data = {}
+						
+						# Clear the is_idpa_history flag after use
+						if global_data:
+							global_data.is_idpa_history = false
 						
 						# Initialize UI after successful load
 						initialize_ui()
@@ -280,15 +293,15 @@ func load_selected_drill_data(data: Dictionary):
 	if data.has("records"):
 		records = data["records"]
 		if not DEBUG_DISABLED:
-						print("[Drill Replay] Using 'records' field from data")
+			print("[Drill Replay] Using 'records' field from data")
 	else:
 		if not DEBUG_DISABLED:
-						print("[Drill Replay] Error: No 'records' field found in data")
+			print("[Drill Replay] Error: No 'records' field found in data")
 		return
 	
 	if records.size() == 0:
 		if not DEBUG_DISABLED:
-						print("No records found in selected drill data")
+			print("No records found in selected drill data")
 		return
 	
 	# Clear any existing sequence labels
@@ -296,16 +309,8 @@ func load_selected_drill_data(data: Dictionary):
 	
 	# Check if records contain rotation angle data
 	if records.size() > 0:
-		var first_record = records[0]
-		if first_record.has("rotation_angle"):
-			if not DEBUG_DISABLED:
-						print("Rotation angle data found in records - will display target at recorded angles during replay")
-		else:
-			if not DEBUG_DISABLED:
-						print("No rotation angle data found in records")
-	
-	# Load the first record
-	load_record(current_index)
+		# Load the first record
+		load_record(current_index)
 	
 	# Enable input for this node
 	set_process_input(true)
@@ -404,42 +409,16 @@ func load_record(index):
 			if loaded_targets.has(current_target_type):
 				loaded_targets[current_target_type]["scene"].visible = false
 		current_target_type = target_type
-		if not loaded_targets.has(target_type):
-			# Load new target
-			if target_scenes.has(target_type):
-				var scene_path = target_scenes[target_type]
-				var target_scene = load(scene_path).instantiate()
-				var target_pos = Vector2(-200, 200) if target_type == "ipsc_mini_rotate" else Vector2(0, 0)
-				target_scene.position = target_pos
-				add_child(target_scene)
-				
-				# Stop the rotation animation for replay if it's a rotating target
-				if target_type == "ipsc_mini_rotate":
-					var animation_player = target_scene.get_node("AnimationPlayer")
-					if animation_player:
-						animation_player.stop()
-						if not DEBUG_DISABLED:
-							print("Drill Replay New: Stopped rotation animation for replay")
-				
-				# Disable input for target and its children
-				disable_target_input(target_scene)
-				loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
-			else:
-				if not DEBUG_DISABLED:
-						print("Unknown target type: ", target_type)
-				return
+		if not load_target_if_needed(target_type):
+			return
 		# Show current target
 		loaded_targets[target_type]["scene"].visible = true
+		# For 3paddles, reset the scene after showing it
+		if target_type == "3paddles":
+			reset_paddle_scene(loaded_targets[target_type]["scene"])
 	
-	# Apply rotation angle for the current shot if it's a rotating target
-	if target_type == "ipsc_mini_rotate":
-		var rotation_angle = record.get("rotation_angle", 0.0)
-		var target_scene = loaded_targets[target_type]["scene"]
-		var rotation_center = target_scene.get_node("RotationCenter")
-		if rotation_center:
-			rotation_center.rotation = rotation_angle
-			if not DEBUG_DISABLED:
-				print("Drill Replay: Applied rotation angle ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for current shot ", index + 1)
+	# Apply position and rotation for the current shot if it's a rotating target
+	apply_target_position_and_rotation(record, target_type, "Load", false)
 	
 	add_bullet_hole_for_record(index)
 	update_shot_list()
@@ -522,23 +501,30 @@ func add_bullet_hole_for_record(index):
 	
 	var target_data = loaded_targets[target_type]
 	
-	# Set rotation angle for rotating targets
-	if target_type == "ipsc_mini_rotate":
-		var rotation_angle = record.get("rotation_angle", 0.0)
-		var target_scene = target_data["scene"]
-		var rotation_center = target_scene.get_node("RotationCenter")
-		if rotation_center:
-			rotation_center.rotation = rotation_angle
-			if not DEBUG_DISABLED:
-						print("Drill Replay New: Set target rotation to: ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", index + 1)
+	# Set position and rotation for rotating targets
+	apply_target_position_and_rotation(record, target_type, "Bullet Hole", false)
+
+	# Determine the parent node for bullet holes
+	var parent_node = target_data["scene"]
+	if target_type == "ipsc_mini_rotate" or target_type == "idpa-mini-rotate":
+		var node_name = "IPSCMini" if target_type == "ipsc_mini_rotate" else "IDPA"
+		var target_node = target_data["scene"].get_node(node_name)
+		if target_node:
+			# Check if it's a hit or miss based on hit_area
+			var is_hit = true
+			if record.has("hit_area"):
+				var hit_area = record["hit_area"]
+				if hit_area == "miss" or hit_area == "Paddle" or hit_area == "paddle":
+					is_hit = false
+			if is_hit:
+				parent_node = target_node
 	
 	# Add bullet hole
 	var hit_pos = record["hit_position"]
-	var pos = target_data["pos"]
 	var bullet_hole = load("res://scene/bullet_hole.tscn").instantiate()
-	bullet_hole.position = Vector2(hit_pos["x"], hit_pos["y"]) - pos - Vector2(360, 720)
-	bullet_hole.z_index = 5  # Ensure it's above the target
-	target_data["scene"].add_child(bullet_hole)
+	bullet_hole.position = parent_node.to_local(Vector2(hit_pos["x"], hit_pos["y"]))
+	
+	parent_node.add_child(bullet_hole)
 	target_data["bullet_holes"].append(bullet_hole)
 	
 	# Add sequence number label on top of bullet hole
@@ -554,12 +540,11 @@ func add_bullet_hole_for_record(index):
 	seq_label.position = bullet_hole.position + Vector2(-12, -30)  # Adjusted position for larger font
 	seq_label.size = Vector2(24, 24)  # Increased size for larger text
 	seq_label.z_index = 6  # Above bullet hole
-	target_data["scene"].add_child(seq_label)
+	parent_node.add_child(seq_label)
 	
 	# Store label reference for highlighting
 	bullet_hole_labels.append({"label": seq_label, "index": index, "target_type": target_type})
 	
-
 func initialize_ui():
 	"""Initialize UI references and setup highlight system"""
 	# Get UI references
@@ -626,6 +611,76 @@ func update_bullet_hole_highlight():
 					label.add_theme_font_size_override("font_size", 24)  # Highlighted size increased
 				break
 
+func load_target_if_needed(target_type: String) -> bool:
+	if not loaded_targets.has(target_type):
+		if target_scenes.has(target_type):
+			var scene_path = target_scenes[target_type]
+			var target_scene = load(scene_path).instantiate()
+			var target_pos = Vector2(-200, 200) if target_type == "ipsc_mini_rotate" or target_type == "idpa-mini-rotate" else Vector2(0, 0)
+			target_scene.position = target_pos
+			get_node("CenterContainer").add_child(target_scene)
+			if target_type == "ipsc_mini_rotate" || target_type == "idpa-mini-rotate":
+				var animation_player = target_scene.get_node("AnimationPlayer")
+				if animation_player:
+					animation_player.stop()
+					if not DEBUG_DISABLED:
+						print("Drill Replay: Stopped rotation animation for replay")
+			disable_target_input(target_scene)
+			# Reset paddle scene for 3paddles AFTER disabling input
+			if target_type == "3paddles":
+				reset_paddle_scene(target_scene)
+			loaded_targets[target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
+		else:
+			if not DEBUG_DISABLED:
+				print("Unknown target type: ", target_type)
+			return false
+	return true
+
+func reset_paddle_scene(target_scene: Node):
+	"""Reset the 3paddles scene to ensure paddles are in initial state for replay"""
+	if not DEBUG_DISABLED:
+		print("Drill Replay: Resetting 3paddles scene")
+	
+	# Call the reset_scene method on the 3paddles target
+	if target_scene and target_scene.has_method("reset_scene"):
+		target_scene.reset_scene()
+		if not DEBUG_DISABLED:
+			print("Drill Replay: 3paddles scene reset complete")
+	else:
+		if not DEBUG_DISABLED:
+			print("Drill Replay: ERROR - 3paddles scene doesn't have reset_scene method")
+
+func apply_target_position_and_rotation(record: Dictionary, target_type: String, direction: String, same_target: bool):
+	if target_type != "ipsc_mini_rotate" and target_type != "idpa-mini-rotate":
+		return
+	
+	var target_scene = loaded_targets[target_type]["scene"]
+	var node = target_scene.get_node("IPSCMini") if target_type == "ipsc_mini_rotate" else target_scene.get_node("IDPA")
+	var paddle_node = target_scene.get_node("Paddle")
+	
+	if record.has("target_position") and record.has("rotation_angle"):
+		var pos_data = record["target_position"]
+		var rotation_data = record["rotation_angle"]
+		if node:
+			var target_pos = Vector2(pos_data["x"], pos_data["y"])
+			if target_type == "ipsc_mini_rotate":
+				node.global_position = target_pos
+			else:
+				# For IDPA, target_position is local
+				node.position = target_pos
+			node.rotation = rotation_data
+			loaded_targets[target_type]["pos"] = node.position
+		else:
+			if not DEBUG_DISABLED:
+				print("Drill Replay: target node is not found")
+			
+		if not DEBUG_DISABLED:
+			var context = direction + (", Same Target" if same_target else "")
+			print("Drill Replay (%s): Applied pos %s and rotation %s radians (%s degrees) for shot %d" % [context, loaded_targets[target_type]["pos"], rotation_data, rad_to_deg(rotation_data), current_index + 1])
+	
+	# Hide paddles during replay for rotating targets
+	if paddle_node:
+		paddle_node.visible = false
 
 func _input(event):
 	if event is InputEventKey and event.keycode == KEY_N and event.pressed:
@@ -665,50 +720,16 @@ func _input(event):
 					loaded_targets[current_target_type]["scene"].visible = false
 				current_target_type = new_target_type
 				# Load new target if not loaded
-				if not loaded_targets.has(current_target_type):
-					if target_scenes.has(current_target_type):
-						var scene_path = target_scenes[current_target_type]
-						var target_scene = load(scene_path).instantiate()
-						var target_pos = Vector2(-200, 200) if current_target_type == "ipsc_mini_rotate" else Vector2(0, 0)
-						target_scene.position = target_pos
-						add_child(target_scene)
-						if current_target_type == "ipsc_mini_rotate":
-							var animation_player = target_scene.get_node("AnimationPlayer")
-							if animation_player:
-								animation_player.stop()
-						disable_target_input(target_scene)
-						loaded_targets[current_target_type] = {"scene": target_scene, "pos": target_pos, "bullet_holes": []}
+				load_target_if_needed(current_target_type)
 				loaded_targets[current_target_type]["scene"].visible = true
 			
-			# Apply rotation angle for the current shot if it's a rotating target (for same target navigation)
-			if current_target_type == "ipsc_mini_rotate":
-				var current_record = records[current_index]
-				var rotation_angle = current_record.get("rotation_angle", 0.0)
-				var target_scene = loaded_targets[current_target_type]["scene"]
-				var rotation_center = target_scene.get_node("RotationCenter")
-				if rotation_center:
-					rotation_center.rotation = rotation_angle
-					if not DEBUG_DISABLED:
-						print("Drill Replay (Previous): Applied rotation angle ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", current_index + 1)
-			
-			update_shot_list()
-			update_progress_title()
-			update_bullet_hole_highlight()
-		else:
-			# Target type didn't change - just apply rotation for rotating targets
-			if current_target_type == "ipsc_mini_rotate":
-				var current_record = records[current_index]
-				var rotation_angle = current_record.get("rotation_angle", 0.0)
-				var target_scene = loaded_targets[current_target_type]["scene"]
-				var rotation_center = target_scene.get_node("RotationCenter")
-				if rotation_center:
-					rotation_center.rotation = rotation_angle
-					if not DEBUG_DISABLED:
-						print("Drill Replay (Previous, Same Target): Applied rotation angle ", rotation_angle, " radians (", rad_to_deg(rotation_angle), " degrees) for shot ", current_index + 1)
-			
-			update_shot_list()
-			update_progress_title()
-			update_bullet_hole_highlight()
+			# Apply position and rotation for the current shot if it's a rotating target
+			var current_record = records[current_index]
+			apply_target_position_and_rotation(current_record, current_target_type, "Previous", false)
+		
+		update_shot_list()
+		update_progress_title()
+		update_bullet_hole_highlight()
 
 func disable_target_input(node: Node):
 	"""Recursively disable input for a node and its children"""
@@ -751,7 +772,7 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-			back_to_upper_level()
+			get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
 		"homepage":
 			if not DEBUG_DISABLED:
 						print("[Drill Replay] Back to main menu")
@@ -835,32 +856,3 @@ func navigate_next():
 		event.keycode = KEY_N
 		event.pressed = true
 		_input(event)
-
-func find_latest_performance_file() -> String:
-	var dir = DirAccess.open("user://")
-	if not dir:
-		if not DEBUG_DISABLED:
-						print("Failed to open user:// directory")
-		return ""
-	
-	var files = []
-	dir.list_dir_begin()
-	var file_name = dir.get_next()
-	while file_name != "":
-		if not DEBUG_DISABLED:
-						print("Found file: ", file_name)
-		if file_name.begins_with("performance_") and file_name.ends_with(".json"):
-			files.append(file_name)
-		file_name = dir.get_next()
-	dir.list_dir_end()
-	
-	if not DEBUG_DISABLED:
-						print("Performance files found: ", files)
-	
-	if files.size() == 0:
-		return ""
-	
-	# Sort by index
-	files.sort_custom(func(a, b): return int(a.split("_")[1].split(".")[0]) > int(b.split("_")[1].split(".")[0]))
-	
-	return "user://" + files[0]

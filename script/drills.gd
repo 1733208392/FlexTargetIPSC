@@ -4,15 +4,15 @@ extends Control
 @export var ipsc_mini_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
 @export var ipsc_mini_black_1_scene: PackedScene = preload("res://scene/ipsc_mini_black_1.tscn")
 @export var ipsc_mini_black_2_scene: PackedScene = preload("res://scene/ipsc_mini_black_2.tscn")
-@export var hostage_scene: PackedScene = preload("res://scene/hostage.tscn")
-@export var two_poppers_scene: PackedScene = preload("res://scene/2poppers_simple.tscn")
-@export var three_paddles_scene: PackedScene = preload("res://scene/3paddles_simple.tscn")
+@export var hostage_scene: PackedScene = preload("res://scene/targets/hostage.tscn")
+@export var two_poppers_scene: PackedScene = preload("res://scene/targets/2poppers_simple.tscn")
+@export var three_paddles_scene: PackedScene = preload("res://scene/targets/3paddles_simple.tscn")
 @export var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 @export var footsteps_scene: PackedScene = preload("res://scene/footsteps.tscn")
 
 # Drill sequence and progress tracking
-var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
-#var base_target_sequence: Array[String] = ["2poppers","3paddles"]
+#var base_target_sequence: Array[String] = ["ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate"]
+var base_target_sequence: Array[String] = ["ipsc_mini_rotate"]
 
 var target_sequence: Array[String] = []  # This will hold the actual sequence (potentially randomized)
 var current_target_index: int = 0
@@ -56,11 +56,10 @@ signal ui_timer_update(elapsed_seconds: float)
 signal ui_target_title_update(target_index: int, total_targets: int)
 signal ui_fastest_time_update(fastest_time: float)
 signal ui_show_completion(final_time: float, fastest_time: float, final_score: int)
-signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool)
+signal ui_show_completion_with_timeout(final_time: float, fastest_time: float, final_score: int, timed_out: bool, show_hit_factor: bool)
 signal ui_hide_completion()
 signal ui_show_shot_timer()
 signal ui_hide_shot_timer()
-signal ui_theme_change(theme_name: String)
 signal ui_score_update(score: int)
 signal ui_progress_update(targets_completed: int)
 signal ui_timeout_warning(remaining_seconds: float)
@@ -96,7 +95,6 @@ func _ready():
 	
 	if not DEBUG_DISABLED:
 		print("=== STARTING DRILL ===")
-	emit_signal("ui_theme_change", "golden")  # Set default theme
 	emit_signal("ui_progress_update", 0)  # Initialize progress bar
 	
 	# Clear any existing targets in the center container
@@ -331,32 +329,6 @@ func stop_drill_timer():
 func _process(_delta):
 	"""Main process loop - UI updates are handled by drill_ui.gd"""
 	pass
-
-# func _unhandled_input(_event):
-# 	"""Handle input events for theme switching (testing purposes)"""
-# 	# Don't process input if the completion overlay is visible
-# 	var drill_ui = get_node_or_null("DrillUI")
-# 	if drill_ui:
-# 		var completion_overlay = drill_ui.get_node_or_null("drill_complete_overlay")
-# 		if completion_overlay and completion_overlay.visible:
-# 			print("=== DRILLS.GD: Completion overlay is visible, ignoring input ===")
-# 			return
-	
-# 	if _event is InputEventMouseButton and _event.pressed:
-# 		print("=== DRILLS.GD received unhandled mouse click ===")
-# 		print("Position: ", _event.global_position)
-# 		print("Button: ", _event.button_index)
-	
-# 	if _event is InputEventKey and _event.pressed:
-# 		match _event.keycode:
-# 			KEY_1:
-# 				emit_signal("ui_theme_change", "golden")
-# 			KEY_2:
-# 				emit_signal("ui_theme_change", "tactical")
-# 			KEY_3:
-# 				emit_signal("ui_theme_change", "competitive")
-# 			KEY_R:
-# 				restart_drill()
 
 func update_target_title():
 	"""Update the target title based on the current target number"""
@@ -823,7 +795,7 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 		hit_area = "Paddle"
 		if not DEBUG_DISABLED:
 			print("Target hit: ", current_target_type, " paddle: ", paddle_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
-		total_drill_score += actual_points
+		total_drill_score += int(actual_points)
 	elif current_target_type == "2poppers":
 		# 2poppers sends: popper_id, zone, points, hit_position
 		var popper_id = param1
@@ -840,16 +812,23 @@ func _on_target_hit(param1, param2 = null, param3 = null, param4 = null):
 			if not DEBUG_DISABLED:
 				print("Target hit: ", current_target_type, " popper: ", popper_id, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
 		
-		total_drill_score += actual_points
+		total_drill_score += int(actual_points)
 	else:
 		# Simple targets send: zone, points, hit_position
 		var zone = param1
 		var actual_points = param2
 		hit_position = param3
 		hit_area = zone
+		
+		# Filter out paddle hits
+		if zone == "Paddle":
+			if not DEBUG_DISABLED:
+				print("Ignoring paddle hit in simple target")
+			return
+		
 		if not DEBUG_DISABLED:
 			print("Target hit: ", current_target_type, " in zone: ", zone, " for ", actual_points, " points at ", hit_position)
-		total_drill_score += actual_points
+		total_drill_score += int(actual_points)
 	
 	if not DEBUG_DISABLED:
 		print("Total drill score: ", total_drill_score)
@@ -935,7 +914,7 @@ func complete_drill():
 	# Show the completion overlay
 	var fastest_time = performance_tracker.get_fastest_time_diff()
 	if drill_timed_out:
-		emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true)
+		emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true, false)
 	else:
 		emit_signal("ui_show_completion", elapsed_seconds, fastest_time, total_drill_score)
 	
@@ -1031,7 +1010,7 @@ func complete_drill_with_timeout():
 	
 	# Show the completion overlay with timeout indication
 	var fastest_time = performance_tracker.get_fastest_time_diff()
-	emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true)
+	emit_signal("ui_show_completion_with_timeout", elapsed_seconds, fastest_time, total_drill_score, true, false)
 	
 	# DON'T set total elapsed time in performance tracker - we're not saving timeout data
 	# performance_tracker.set_total_elapsed_time(elapsed_seconds)
@@ -1224,9 +1203,32 @@ func _on_menu_control(directive: String):
 			if not DEBUG_DISABLED:
 				print("[Drills] Power off")
 			power_off()
-		"back", "homepage":
+		"back":
 			if not DEBUG_DISABLED:
-				print("[Drills] ", directive, " - navigating to main menu")
+				print("[Drills] back - navigating to sub menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "drills"
+				if not DEBUG_DISABLED:
+					print("[Drills] Set return_source to drills")
+			
+			# Show status bar when exiting drills
+			if get_tree():
+				var status_bars = get_tree().get_nodes_in_group("status_bar")
+				for status_bar in status_bars:
+					status_bar.visible = true
+					if not DEBUG_DISABLED:
+						print("[Drills] Shown status bar: ", status_bar.name)
+			
+				get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
+		"homepage":
+			if not DEBUG_DISABLED:
+				print("[Drills] homepage - navigating to main menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()

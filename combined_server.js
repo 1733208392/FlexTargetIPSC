@@ -17,7 +17,7 @@ let netlinkStarted = true;
 let netlinkChannel = 0;
 let netlinkWorkMode = "master";
 let netlinkDeviceName = "01";
-let netlinkBluetoothName = "cjyw01-bluetooth";
+let netlinkBluetoothName = "BLE-SIM";
 let netlinkWifiIp = "192.168.1.100"; // Mock IP for simulation
 
 // BLE Configuration
@@ -82,18 +82,23 @@ const httpServer = http.createServer((req, res) => {
 
         const fileName = `${data_id}.json`;
         
-        // Debug logging for settings save
+        // Debug logging for all files
         console.log(`[HttpServer] Saving file: ${fileName}`);
         console.log(`[HttpServer] Content to save: ${content}`);
-        if (data_id === 'settings') {
-          console.log(`[HttpServer] SETTINGS UPDATE DETECTED!`);
-          try {
-            const parsedContent = JSON.parse(content);
+        
+        // Try to parse and log JSON content for debugging
+        try {
+          const parsedContent = JSON.parse(content);
+          console.log(`[HttpServer] Parsed ${data_id} content:`, parsedContent);
+          
+          // Special handling for settings file
+          if (data_id === 'settings') {
             console.log(`[HttpServer] Settings drill_sequence: ${parsedContent.drill_sequence}`);
             console.log(`[HttpServer] Settings language: ${parsedContent.language}`);
-          } catch (e) {
-            console.log(`[HttpServer] Failed to parse settings content for debugging: ${e.message}`);
           }
+        } catch (e) {
+          console.log(`[HttpServer] Failed to parse ${data_id} content as JSON for debugging: ${e.message}`);
+          console.log(`[HttpServer] Content appears to be non-JSON data`);
         }
         
         fs.writeFile(fileName, content, 'utf8', (err) => {
@@ -130,29 +135,33 @@ const httpServer = http.createServer((req, res) => {
 
         const fileName = `${data_id}.json`;
         
-        // Debug logging for settings load
+        // Debug logging for all files
         console.log(`[HttpServer] Loading file: ${fileName}`);
-        if (data_id === 'settings') {
-          console.log(`[HttpServer] SETTINGS LOAD REQUEST DETECTED!`);
-        }
         
         fs.readFile(fileName, 'utf8', (err, content) => {
           if (err) {
             console.error('Error loading file:', err);
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ code: 0, data: "{}", msg: "OK" }));
+            res.end(JSON.stringify({ code: 0, data: {}, msg: "OK" }));
           } else {
             console.log(`[HttpServer] Successfully loaded: ${fileName}`);
-            if (data_id === 'settings') {
-              console.log(`[HttpServer] Settings content loaded: ${content}`);
-              try {
-                const parsedContent = JSON.parse(content);
+            console.log(`[HttpServer] Loaded content: ${content}`);
+            
+            // Try to parse and log JSON content for debugging
+            try {
+              const parsedContent = JSON.parse(content);
+              console.log(`[HttpServer] Parsed ${data_id} content:`, parsedContent);
+              
+              // Special handling for settings file
+              if (data_id === 'settings') {
                 console.log(`[HttpServer] Loaded settings drill_sequence: ${parsedContent.drill_sequence}`);
                 console.log(`[HttpServer] Loaded settings language: ${parsedContent.language}`);
-              } catch (e) {
-                console.log(`[HttpServer] Failed to parse loaded settings for debugging: ${e.message}`);
               }
+            } catch (e) {
+              console.log(`[HttpServer] Failed to parse ${data_id} content as JSON for debugging: ${e.message}`);
+              console.log(`[HttpServer] Content appears to be non-JSON data`);
             }
+            
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ code: 0, data: content }));
           }
@@ -420,6 +429,214 @@ const httpServer = http.createServer((req, res) => {
         res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
       }
     });
+
+  // ============================================================================
+  // TEST ENDPOINTS - Simulate netlink commands for unit testing drills_network scene
+  // ============================================================================
+  // These endpoints simulate the mobile app sending BLE messages:
+  //   Body: {"action":"netlink_forward","content":{...},"dest":"A"}
+  //   Server forwards: { type: 'netlink', data: content } to Godot
+  //
+  // Usage:
+  //   curl -X POST http://localhost/test/ble/ready -H "Content-Type: application/json" \
+  //     -d '{"action":"netlink_forward","content":{"command":"ready","isFirst":false,"isLast":true,"targetType":"ipsc","timeout":30,"delay":5},"dest":"A"}'
+  //
+  //   curl -X POST http://localhost/test/ble/start -H "Content-Type: application/json" \
+  //     -d '{"action":"netlink_forward","content":{"command":"start","repeat":1},"dest":"A"}'
+  //
+  //   curl -X POST http://localhost/test/ble/end -H "Content-Type: application/json" \
+  //     -d '{"action":"netlink_forward","content":{"command":"end"},"dest":"A"}'
+  //
+  // Test Scenarios:
+  //   1. First target only:      isFirst=true,  isLast=false
+  //   2. Middle target:          isFirst=false, isLast=false
+  //   3. Last target (not first): isFirst=false, isLast=true
+  //   4. Single target:          isFirst=true,  isLast=true
+  // ============================================================================
+
+  } else if (pathname === '/test/ble/ready' && req.method === 'POST') {
+    // Simulate BLE ready command from mobile app
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const parsedData = JSON.parse(body);
+        
+        // Copy BLE forwarding logic: check for netlink_forward and content
+        if (parsedData.action === 'netlink_forward' && parsedData.content) {
+          console.log(`[TestEndpoint] Simulating BLE ready command:`, parsedData.content);
+          
+          // Send { type: 'netlink', data: content } to Godot
+          const message = {
+            type: 'netlink',
+            action:'netlink_forward',
+            dest: '01',
+            data: parsedData.content,
+          };
+          
+          // Broadcast to all connected Godot WebSocket clients
+          let sentCount = 0;
+          connectedGodotClients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(message));
+              sentCount++;
+            }
+          });
+          
+          console.log(`[TestEndpoint] Netlink ready sent to ${sentCount} Godot client(s)`);
+          
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            code: 0, 
+            msg: `BLE ready command sent to ${sentCount} client(s)`,
+            sent: message
+          }));
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Invalid message format: expected action='netlink_forward' and content" }));
+        }
+      } catch (error) {
+        console.log(`[TestEndpoint] /test/ble/ready - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
+      }
+    });
+
+  } else if (pathname === '/test/ble/start' && req.method === 'POST') {
+    // Simulate BLE start command from mobile app
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const parsedData = JSON.parse(body);
+        
+        // Copy BLE forwarding logic: check for netlink_forward and content
+        if (parsedData.action === 'netlink_forward' && parsedData.content) {
+          console.log(`[TestEndpoint] Simulating BLE start command:`, parsedData.content);
+          
+          // Send { type: 'netlink', data: content } to Godot
+          const message = {
+            type: 'netlink',
+            data: parsedData.content
+          };
+          
+          // Broadcast to all connected Godot WebSocket clients
+          let sentCount = 0;
+          connectedGodotClients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(message));
+              sentCount++;
+            }
+          });
+          
+          console.log(`[TestEndpoint] Netlink start sent to ${sentCount} Godot client(s)`);
+          
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            code: 0, 
+            msg: `BLE start command sent to ${sentCount} client(s)`,
+            sent: message
+          }));
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Invalid message format: expected action='netlink_forward' and content" }));
+        }
+      } catch (error) {
+        console.log(`[TestEndpoint] /test/ble/start - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
+      }
+    });
+
+  } else if (pathname === '/test/ble/end' && req.method === 'POST') {
+    // Simulate BLE end command from mobile app
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const parsedData = JSON.parse(body);
+        
+        // Copy BLE forwarding logic: check for netlink_forward and content
+        if (parsedData.action === 'netlink_forward' && parsedData.content) {
+          console.log(`[TestEndpoint] Simulating BLE end command:`, parsedData.content);
+          
+          // Send { type: 'netlink', data: content } to Godot
+          const message = {
+            type: 'netlink',
+            data: parsedData.content
+          };
+          
+          // Broadcast to all connected Godot WebSocket clients
+          let sentCount = 0;
+          connectedGodotClients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(message));
+              sentCount++;
+            }
+          });
+          
+          console.log(`[TestEndpoint] Netlink end sent to ${sentCount} Godot client(s)`);
+          
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            code: 0, 
+            msg: `BLE end command sent to ${sentCount} client(s)`,
+            sent: message
+          }));
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Invalid message format: expected action='netlink_forward' and content" }));
+        }
+      } catch (error) {
+        console.log(`[TestEndpoint] /test/ble/end - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
+      }
+    });
+
+  } else if (pathname === '/test/ble/shot' && req.method === 'POST') {
+    // Simulate a bullet hit for testing target interactions
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const content = body ? JSON.parse(body) : {};
+        const x = content.x !== undefined ? content.x : 960;  // Default center X
+        const y = content.y !== undefined ? content.y : 540;  // Default center Y
+        
+        console.log(`[TestEndpoint] Simulating shot at (${x}, ${y})`);
+        
+        // Create shot message matching the format expected by WebSocketListener
+        const shotMessage = {
+          type: 'shot',
+          x: x,
+          y: y
+        };
+        
+        // Broadcast to all connected Godot WebSocket clients
+        let sentCount = 0;
+        connectedGodotClients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(shotMessage));
+            sentCount++;
+          }
+        });
+        
+        console.log(`[TestEndpoint] Shot sent to ${sentCount} Godot client(s)`);
+        
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          code: 0, 
+          msg: `Shot sent to ${sentCount} client(s)`,
+          sent: shotMessage
+        }));
+      } catch (error) {
+        console.log(`[TestEndpoint] /test/ble/shot - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
+      }
+    });
+
   } else {
     let body = '';
     req.on('data', chunk => {
@@ -443,6 +660,7 @@ const randomDataOptions = [
   { t: 630, x: 100, y: 200, a: 1069 },
   { t: 630, x: 40, y: 300, a: 1069 },
   { t: 630, x: 250, y: 300, a: 1069 },
+  { t: 630, x: 250, y: 250, a: 1069 },
   { t: 630, x: 200, y: 300, a: 1069 },
   { t: 630, x: 200, y: 200, a: 1069 },
   { t: 630, x: 200, y: 100, a: 1069 },
@@ -526,16 +744,32 @@ if (process.stdin.isTTY) {
   let directive = null;
 
   // Map keys to directives (from original WebSocket server)
-  if (keyStr === 'B' || keyStr === 'b') { // B - Send single random bullet
+  if (keyStr === 'B' || keyStr === 'b') { // B - Send volley of bullets near bottom of scene (268x476.4, bottom-left origin)
     if (connectedGodotClients.size > 0) {
-      const baseData = randomDataOptions[Math.floor(Math.random() * randomDataOptions.length)];
-      const shotData = addBulletVariance(baseData);
-      const bulletMessage = {
-        type: 'data',
-        data: [shotData]
-      };
+      // Target scene dimensions: width=268, height=476.4 (origin: bottom-left so y=0 is bottom)
+      const SCENE_W = 268;
+      const SCENE_H = 476.4;
+
+      // Volley configuration (bottom area: small y values near 0)
+      const volleyCount = 6; // number of bullets in volley
+      const minY = 0;       // bottommost
+      const maxY = 60;      // up to 60 units above bottom
+
+      const bullets = [];
+      for (let i = 0; i < volleyCount; i++) {
+        // evenly space across width with small random jitter
+        const slotCenterX = Math.round(((i + 0.5) / volleyCount) * SCENE_W);
+        const x = Math.round(slotCenterX + (Math.random() - 0.5) * 8); // small jitter for narrow scene
+        // since origin is bottom-left, pick y between minY..maxY
+        const y = Math.round(minY + Math.random() * (maxY - minY));
+
+        const baseBullet = { t: 630, x: x, y: y, a: 1069 };
+        bullets.push(addBulletVariance(baseBullet));
+      }
+
+      const bulletMessage = { type: 'data', data: bullets };
       sendToGodot(bulletMessage);
-      console.log('[CombinedServer] Manual bullet sent via keyboard');
+      console.log('[CombinedServer] Bottom-left volley sent via keyboard - bullets:', bullets.length);
     }
     return;
   } else if (keyStr === 'C' || keyStr === 'c') { // C - Send center screen bullet
@@ -594,6 +828,8 @@ if (process.stdin.isTTY) {
     }
   } else if (keyStr === 'H' || keyStr === 'h') { // H - homepage
     directive = 'homepage';
+  } else if (keyStr === 'K' || keyStr === 'k') { // K - back
+    directive = 'back';
   } else if (keyStr === 'M' || keyStr === 'm') { // M - compose
     directive = 'compose';
   } else if (keyStr === 'V' || keyStr === 'v') { // V - volume_up
@@ -718,8 +954,7 @@ class WriteCharacteristic extends bleno.Characteristic {
             type: 'netlink',
             action: 'device_list',
             data: [
-              { mode: 'master', name: 'ET-01' },
-              { mode: 'slave', name: 'ET-02' }
+              { mode: 'master', name: '01' }
             ]
           };
           
@@ -805,7 +1040,7 @@ const bleService = new bleno.PrimaryService({
 let advertisingInterval = null;
 
 function startActiveAdvertising() {
-  console.log('[CombinedServer] Starting active advertising with service UUID:', SERVICE_UUID);
+  //console.log('[CombinedServer] Starting active advertising with service UUID:', SERVICE_UUID);
   
   // Start advertising with service UUID prominently featured
   bleno.startAdvertising(BLE_DEVICE_NAME, [SERVICE_UUID], (error) => {
@@ -823,7 +1058,7 @@ function startActiveAdvertising() {
   
   advertisingInterval = setInterval(() => {
     if (bleno.state === 'poweredOn') {
-      console.log('[CombinedServer] Re-advertising service UUID:', SERVICE_UUID);
+      //console.log('[CombinedServer] Re-advertising service UUID:', SERVICE_UUID);
       bleno.startAdvertising(BLE_DEVICE_NAME, [SERVICE_UUID]);
     }
   }, ADVERTISING_INTERVAL_MS);

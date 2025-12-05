@@ -690,6 +690,8 @@ func _cancel_password(clear_text: bool = true):
 		password_line.text = ""
 	if keyboard:
 		keyboard.visible = false
+	# Show the network list again
+	list_vbox.visible = true
 	if network_buttons.size() > 0:
 		network_buttons[focused_index].grab_focus()
 

@@ -1,14 +1,21 @@
-[gd_scene load_steps=16 format=3 uid="uid://cjkeemu421bdp"]
+[gd_scene load_steps=22 format=3 uid="uid://cjkeemu421bdp"]
 
 [ext_resource type="Script" uid="uid://dthf7l17t1uuo" path="res://scene/main_menu/main_menu.gd" id="1_vny3a"]
 [ext_resource type="Texture2D" uid="uid://d3jnypy7bx42r" path="res://asset/largeCntnrs.png" id="2_1vqx8"]
+[ext_resource type="Shader" uid="uid://6l8jsn5gi47q" path="res://scene/main_menu/main_menu.gdshader" id="3_3k2ij"]
 [ext_resource type="Texture2D" uid="uid://jkn5ynck2gk5" path="res://asset/start_button_back.png" id="3_rq7sb"]
 [ext_resource type="Texture2D" uid="uid://drg84u8r8rf4q" path="res://asset/start_button_back_hover.png" id="4_3k2ij"]
 [ext_resource type="Texture2D" uid="uid://ct7bcimjuqusa" path="res://asset/mini_map.png" id="5_bj3ug"]
 [ext_resource type="Texture2D" uid="uid://d34m0mqmlp1qq" path="res://asset/crosshair.png" id="6_eo5a4"]
 [ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://font/Inter/Inter-VariableFont_opsz,wght.ttf" id="7_lt21p"]
+[ext_resource type="Shader" uid="uid://bewl1vtxmkuvj" path="res://scene/main_menu/main_menu_blip_ring.gdshader" id="8_3k2ij"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="8_kvq8n"]
-[ext_resource type="AudioStream" uid="uid://i6eh50aq5t66" path="res://audio/Final Battle - For Love.ogg" id="9_audio"]
+[ext_resource type="Shader" uid="uid://bytkulv0uf318" path="res://scene/main_menu/redot.gdshader" id="10_bj3ug"]
+[ext_resource type="AudioStream" uid="uid://ci4xowhem06dc" path="res://audio/radar-beeping.mp3" id="12_bj3ug"]
+
+[sub_resource type="SystemFont" id="SystemFont_2atga"]
+font_names = PackedStringArray("SF Pro")
+subpixel_positioning = 0
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_2fwvj"]
 texture = ExtResource("3_rq7sb")
@@ -20,15 +27,31 @@ modulate_color = Color(1, 1, 1, 0.9)
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_0iwki"]
 texture = ExtResource("4_3k2ij")
 
-[sub_resource type="SystemFont" id="SystemFont_2atga"]
-font_names = PackedStringArray("SF Pro")
-subpixel_positioning = 0
-
 [sub_resource type="SystemFont" id="SystemFont_by01r"]
 font_names = PackedStringArray("SF Pro")
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_sepwh"]
 texture = ExtResource("3_rq7sb")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bj3ug"]
+shader = ExtResource("3_3k2ij")
+shader_parameter/speed = 2.0
+shader_parameter/line_color = Color(0, 1, 1, 0.85)
+shader_parameter/trail_color = Color(0, 1, 1, 0.2)
+shader_parameter/trail_length = 0.1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_eo5a4"]
+shader = ExtResource("8_3k2ij")
+shader_parameter/circle_width = 0.30000000447036
+shader_parameter/wait_time = 1.5000000223518
+shader_parameter/speed = 2.0000000298024
+shader_parameter/alpha_boost = 2.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lt21p"]
+shader = ExtResource("10_bj3ug")
+shader_parameter/cutout = 0.2
+shader_parameter/inner_fill = 0.15
+shader_parameter/blink_speed = 2.0
 
 [node name="main_menu" type="Control"]
 layout_mode = 3
@@ -70,26 +93,6 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 5
 
-[node name="ipsc" type="Button" parent="VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
-theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
-theme_override_font_sizes/font_size = 32
-theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
-theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
-theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
-
-[node name="network" type="Button" parent="VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
-theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
-theme_override_font_sizes/font_size = 32
-theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
-theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
-theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
-
 [node name="boot_camp" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -101,12 +104,31 @@ theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
 theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
 
-[node name="learder_board" type="Button" parent="VBoxContainer"]
+[node name="stage" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
 theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
-theme_override_fonts/font = SubResource("SystemFont_2atga")
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
+theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
+theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
+
+[node name="drills" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
+theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
+theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
+theme_override_styles/focus = SubResource("StyleBoxTexture_0iwki")
+
+[node name="games" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(1, 0.5411765, 0, 1)
+theme_override_colors/font_focus_color = Color(0.95, 0.95, 0.95, 1)
 theme_override_font_sizes/font_size = 32
 theme_override_styles/normal = SubResource("StyleBoxTexture_2fwvj")
 theme_override_styles/hover = SubResource("StyleBoxTexture_hxu56")
@@ -139,6 +161,46 @@ offset_bottom = 533.0
 scale = Vector2(0.7, 0.7)
 texture = ExtResource("5_bj3ug")
 
+[node name="radar" type="ColorRect" parent="minimap"]
+material = SubResource("ShaderMaterial_bj3ug")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -44.285706
+offset_top = -31.428528
+offset_right = 55.57141
+offset_bottom = 57.285706
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="blip1" type="ColorRect" parent="minimap"]
+material = SubResource("ShaderMaterial_eo5a4")
+layout_mode = 0
+offset_left = 220.0
+offset_top = -8.5714
+offset_right = 387.14282
+offset_bottom = 145.7145
+color = Color(0.90588236, 0.24313726, 0.2901961, 1)
+
+[node name="blip2" type="ColorRect" parent="minimap"]
+material = SubResource("ShaderMaterial_eo5a4")
+layout_mode = 0
+offset_left = 90.0
+offset_top = 125.71432
+offset_right = 257.14282
+offset_bottom = 280.0002
+color = Color(0.90588236, 0.24313726, 0.2901961, 1)
+
+[node name="blip3" type="ColorRect" parent="minimap"]
+material = SubResource("ShaderMaterial_eo5a4")
+layout_mode = 0
+offset_left = 211.42857
+offset_top = 191.42859
+offset_right = 378.5714
+offset_bottom = 345.71448
+color = Color(0.90588236, 0.24313726, 0.2901961, 1)
+
 [node name="Crosshair" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = -1
@@ -152,6 +214,16 @@ offset_right = -170.76
 offset_bottom = -158.0
 scale = Vector2(0.7, 0.7)
 texture = ExtResource("6_eo5a4")
+
+[node name="ColorRect" type="ColorRect" parent="Crosshair"]
+modulate = Color(1, 1, 1, 0.5647059)
+material = SubResource("ShaderMaterial_lt21p")
+layout_mode = 0
+offset_left = 172.85715
+offset_top = 121.42857
+offset_right = 224.28572
+offset_bottom = 171.42856
+color = Color(1, 0.060000002, 0.060000002, 1)
 
 [node name="Label" type="Label" parent="."]
 layout_mode = 1
@@ -183,5 +255,5 @@ grow_horizontal = 0
 grow_vertical = 0
 
 [node name="BackgroundMusic" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("9_audio")
-bus = &"Master"
+stream = ExtResource("12_bj3ug")
+autoplay = true

@@ -255,11 +255,38 @@ func _set_focus_to_top_left_key():
 		call_deferred("_set_focus_to_top_left_key")
 		return
 	
-	# Finally grab the focus
-	top_left_key.grab_focus()
-	last_focused_key = top_left_key
-	if debug_remote:
-		print("[onscreenkbd] _set_focus_to_top_left_key: successfully focused top-left key=", top_left_key.text)
+	# Finally grab the focus (deferred to ensure visual update)
+	call_deferred("_grab_focus", top_left_key)
+
+
+func _set_focus_to_key(output: String):
+	# Find and focus the key with the specified output
+	var target_key = null
+	for key in keys:
+		if key.key_data and key.key_data.get("output") == output:
+			target_key = key
+			break
+	
+	if target_key == null:
+		if debug_remote:
+			print("[onscreenkbd] _set_focus_to_key: no key found with output=", output)
+		return
+	
+	if not target_key.is_inside_tree():
+		if debug_remote:
+			print("[onscreenkbd] _set_focus_to_key: target key not in tree, deferring")
+		call_deferred("_set_focus_to_key", output)
+		return
+	
+	# Verify the layout is actually visible
+	if current_layout != null and not current_layout.visible:
+		if debug_remote:
+			print("[onscreenkbd] _set_focus_to_key: current layout not visible, deferring")
+		call_deferred("_set_focus_to_key", output)
+		return
+	
+	# Finally grab the focus (deferred to ensure visual update)
+	call_deferred("_grab_focus", target_key)
 
 
 func _animate_show_keyboard():
@@ -359,8 +386,12 @@ func _switch_layout(key_data):
 		if prev_prev_layout != null:
 			_show_layout(prev_prev_layout)
 			# Use multiple deferred calls to ensure focus is set after layout is visible
-			call_deferred("_set_focus_to_top_left_key")
-			call_deferred("_set_focus_to_top_left_key")
+			if prev_prev_layout.get_meta("layout_name") == "special-characters":
+				call_deferred("_set_focus_to_key", "1")
+				call_deferred("_set_focus_to_key", "1")
+			else:
+				call_deferred("_set_focus_to_top_left_key")
+				call_deferred("_set_focus_to_top_left_key")
 			if debug_remote:
 				print("[onscreenkbd] _switch_layout: switching to PREVIOUS-LAYOUT")
 			return
@@ -369,8 +400,12 @@ func _switch_layout(key_data):
 		if layout.get_meta("layout_name") == key_data.get("layout-name"):
 			_show_layout(layout)
 			# Use multiple deferred calls to ensure focus is set after layout is visible
-			call_deferred("_set_focus_to_top_left_key")
-			call_deferred("_set_focus_to_top_left_key")
+			if key_data.get("layout-name") == "special-characters":
+				call_deferred("_set_focus_to_key", "1")
+				call_deferred("_set_focus_to_key", "1")
+			else:
+				call_deferred("_set_focus_to_top_left_key")
+				call_deferred("_set_focus_to_top_left_key")
 			if debug_remote:
 				print("[onscreenkbd] _switch_layout: switching to layout=", key_data.get("layout-name"))
 			return
@@ -637,9 +672,11 @@ func _finalize_key_delivery(target, key_value, before_text):
 	_set_caps_lock(false)
 
 
-func _refocus_last_activated_key():
-	if last_activated_key != null and last_activated_key.is_inside_tree():
-		last_activated_key.grab_focus()
+func _grab_focus(key):
+	key.grab_focus()
+	last_focused_key = key
+	if debug_remote:
+		print("[onscreenkbd] _grab_focus: successfully focused key=", key.text)
 
 
 func _create_keyboard(layout_data):
@@ -937,11 +974,13 @@ func _simulate_enter():
 		if focus_owner != null and is_keyboard_focus_object(focus_owner):
 			last_input_focus = focus_owner
 			# When remote enter is pressed while the input field still owns focus,
-			# move focus onto the keyboard but avoid typing immediately.
-			var default_key = _get_default_key_for_activation()
-			if default_key != null:
-				default_key.grab_focus()
-				last_focused_key = default_key
+			# send the enter key to the input field.
+			var event = InputEventKey.new()
+			event.keycode = KEY_ENTER
+			event.pressed = true
+			Input.parse_input_event(event)
+			event.pressed = false
+			Input.parse_input_event(event)
 			return
 		# fall back to last known keyboard key when there is no focus owner
 		key_to_activate = _get_default_key_for_activation()

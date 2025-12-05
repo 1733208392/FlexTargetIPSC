@@ -2,6 +2,8 @@ extends Control
 
 const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
 
+@export var variant: String = "IPSC"  # Can be "IPSC" or "IDPA"
+
 @onready var start_button = $StartButton
 @onready var main_text = $CenterContainer/ContentVBox/MainText
 @onready var prev_button = $CenterContainer/ContentVBox/NavigationContainer/PrevButton
@@ -50,8 +52,16 @@ func initialize_pages_and_ui():
 	# Initialize pages with translated content
 	pages = []
 	
-	# Get translated content for each page
-	var translation_keys = ["score_rule", "panelty_rule", "timer_system", "drill_rule", "hit_factor_rule"]
+	# Get translated content for each page based on variant
+	var translation_keys = []
+	if variant.to_upper() == "IDPA":
+		translation_keys = ["idpa_score_rule", "idpa_penalty_rule", "idpa_timer_system", "idpa_drill_rule", "idpa_hit_factor_rule"]
+		if not DEBUG_DISABLED:
+			print("[Intro] Loading IDPA variant pages")
+	else:  # Default to IPSC
+		translation_keys = ["score_rule", "panelty_rule", "timer_system", "drill_rule", "hit_factor_rule"]
+		if not DEBUG_DISABLED:
+			print("[Intro] Loading IPSC variant pages")
 	
 	for key in translation_keys:
 		var translated_content = tr(key)
@@ -244,7 +254,7 @@ func _on_start_pressed():
 		if not DEBUG_DISABLED:
 			print("[Intro] HttpService singleton not found!")
 		if get_tree():
-			get_tree().change_scene_to_file("res://scene/drills.tscn")
+			_jump_to_stage_scene()
 
 func _on_start_response(_result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()
@@ -255,10 +265,35 @@ func _on_start_response(_result, response_code, _headers, body):
 		if not DEBUG_DISABLED:
 			print("[Intro] Start game success, changing scene.")
 		if get_tree():
-			get_tree().change_scene_to_file("res://scene/drills.tscn")
+			_jump_to_stage_scene()
 	else:
 		if not DEBUG_DISABLED:
 			print("[Intro] Start game failed or invalid response.")
+
+func _jump_to_stage_scene():
+	"""Jump to the appropriate stage scene based on variant"""
+	var global_data = get_node_or_null("/root/GlobalData")
+	var current_variant = variant  # Use the scene's export variant as fallback
+	
+	# Try to get variant from GlobalData first
+	if global_data:
+		current_variant = global_data.selected_variant
+	
+	if not DEBUG_DISABLED:
+		print("[Intro] Jumping to stage scene with variant: ", current_variant)
+	
+	# Jump to appropriate scene based on variant
+	if current_variant.to_upper() == "IDPA":
+		if not DEBUG_DISABLED:
+			print("[Intro] Loading IDPA mini stage scene")
+		if get_tree():
+			get_tree().change_scene_to_file("res://scene/idpa_mini_stage/idpa_mini_stage.tscn")
+	else:
+		# Default to IPSC
+		if not DEBUG_DISABLED:
+			print("[Intro] Loading IPSC mini stage scene")
+		if get_tree():
+			get_tree().change_scene_to_file("res://scene/ipsc_mini_stage/ipsc_mini_stage.tscn")
 
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
@@ -280,14 +315,36 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-		"back", "homepage":
+		"back":
 			if not DEBUG_DISABLED:
-				print("[Intro] ", directive, " - navigating to main menu")
+				print("[Intro] Back - navigating to sub menu")
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
-			if get_tree():
-				get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "history"
+				if not DEBUG_DISABLED:
+					print("[Intro] Set return_source to history")
+			
+			get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
+		"homepage":
+			if not DEBUG_DISABLED:
+				print("[Intro] Homepage - navigating to main menu")
+			var menu_controller = get_node("/root/MenuController")
+			if menu_controller:
+				menu_controller.play_cursor_sound()
+			
+			# Set return source for focus management
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.return_source = "leaderboard"
+				if not DEBUG_DISABLED:
+					print("[Intro] Set return_source to leaderboard")
+			
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
 		"volume_up":
 			if not DEBUG_DISABLED:
 				print("[Intro] Volume up")

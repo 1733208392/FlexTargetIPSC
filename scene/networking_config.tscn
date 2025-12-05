@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://6et1tlqxfrdx"]
+[gd_scene load_steps=6 format=3 uid="uid://6et1tlqxfrdx"]
 
 [ext_resource type="Script" uid="uid://bpdye6y5c5yaw" path="res://script/networking_config.gd" id="1_networking"]
 [ext_resource type="Script" uid="uid://dxfujov7vai6f" path="res://addons/onscreenkeyboard/onscreen_keyboard.gd" id="2_keyboard"]
 [ext_resource type="Texture2D" uid="uid://vywd0k7tgm56" path="res://asset/largeCntnrs 2.png" id="2_qb65s"]
+[ext_resource type="PackedScene" uid="uid://dturr8so8g8cw" path="res://scene/custom_button.tscn" id="3_qb65s"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gax0u"]
 bg_color = Color(0.996078, 0.541176, 0, 1)
@@ -69,8 +70,8 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/pressed = SubResource("StyleBoxFlat_gax0u")
 theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_gax0u")
 toggle_mode = false
 
 [node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer"]
@@ -85,8 +86,8 @@ custom_minimum_size = Vector2(24, 32)
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/hover = SubResource("StyleBoxFlat_gax0u")
 theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
+theme_override_styles/hover = SubResource("StyleBoxFlat_gax0u")
 
 [node name="Spacer3" type="Control" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 16)
@@ -106,19 +107,33 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_gax0u")
 custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ConfirmButton" parent="CenterContainer/VBoxContainer/HBoxContainer" instance=ExtResource("3_qb65s")]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Confirm"
+
+[node name="DismissButton" parent="CenterContainer/VBoxContainer/HBoxContainer" instance=ExtResource("3_qb65s")]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Dismiss"
+
 [node name="BottomContainer" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -580.0
-offset_bottom = -236.0
+offset_top = -500.0
+offset_bottom = -240.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/margin_bottom = 200
 
 [node name="OnscreenKeyboard" type="PanelContainer" parent="BottomContainer"]
+visible = false
 layout_mode = 2
 script = ExtResource("2_keyboard")
 metadata/_custom_type_script = "uid://dxfujov7vai6f"

@@ -496,9 +496,9 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	if is_disappearing:
 		return
 	
-	# Track bullet activity for animation pausing
-	bullet_activity_count += 1
-	monitor_bullet_activity()
+	# DISABLE animation pausing for rotating targets - let ipsc_mini_rotate.gd control animation
+	# bullet_activity_count += 1
+	# monitor_bullet_activity()
 	
 	# Convert world position to local coordinates (this handles rotation automatically)
 	var local_pos = to_local(world_pos)
@@ -569,13 +569,14 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
 			play_disappearing_animation()
-	# Decrease activity after a short delay (simulate bullet lifetime)
-	var tree = get_tree()
-	if tree:
-		tree.create_timer(0.2).timeout.connect(func():
-			bullet_activity_count = max(0, bullet_activity_count - 1)
-			monitor_bullet_activity()
-		)
+	# DISABLE activity decrease for rotating targets - let ipsc_mini_rotate.gd control animation
+	# # Decrease activity after a short delay (simulate bullet lifetime)
+	# var tree = get_tree()
+	# if tree:
+	# 	tree.create_timer(0.2).timeout.connect(func():
+	# 		bullet_activity_count = max(0, bullet_activity_count - 1)
+	# 		monitor_bullet_activity()
+	# 	)
 
 func monitor_bullet_activity():
 	"""Monitor bullet activity and pause/resume animation accordingly"""

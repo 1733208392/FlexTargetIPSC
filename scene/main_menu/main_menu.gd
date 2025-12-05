@@ -2,13 +2,17 @@ extends Control
 
 const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
 
-@onready var start_button = $VBoxContainer/ipsc
-@onready var network_button = $VBoxContainer/network
+@onready var stage_button = $VBoxContainer/stage
+@onready var drills_button = $VBoxContainer/drills
 @onready var bootcamp_button = $VBoxContainer/boot_camp
-@onready var leaderboard_button = $VBoxContainer/learder_board
+@onready var games_button = $VBoxContainer/games
 @onready var option_button = $VBoxContainer/option
 @onready var copyright_label = $Label
 @onready var background_music = $BackgroundMusic
+
+# Preload the text wave shader
+const TextWaveShader = preload("res://scene/main_menu/text_wave.gdshader")
+var wave_material: ShaderMaterial
 
 var focused_index
 var buttons = []
@@ -47,10 +51,10 @@ func set_locale_from_language(language: String):
 
 func update_ui_texts():
 	# Update button texts with current language
-	start_button.text = tr("ipsc")
-	network_button.text = tr("network")
+	stage_button.text = tr("stage")
+	drills_button.text = tr("drills")
 	bootcamp_button.text = tr("boot_camp")
-	leaderboard_button.text = tr("leaderboard")
+	games_button.text = tr("games")
 	option_button.text = tr("options")
 	copyright_label.text = tr("copyright")
 	
@@ -84,20 +88,29 @@ func _ready():
 	# Play background music
 	if background_music:
 		background_music.play()
+		# Ensure looping
+		if not background_music.finished.is_connected(background_music.play):
+			background_music.finished.connect(background_music.play)
 		if not DEBUG_DISABLED:
 			print("[Menu] Playing background music")
 	
-	# Initially hide the network button until network is started
-	network_button.visible = false
+	# Initially hide the drills button until network is started
+	drills_button.visible = false
 	
 	# Connect button signals
 	focused_index = 0
 	buttons = [
-		start_button,
-		network_button,
 		bootcamp_button,
-		leaderboard_button,
+		stage_button,
+		drills_button,
+		games_button,
 		option_button]
+	
+	# Initialize wave material
+	wave_material = ShaderMaterial.new()
+	wave_material.shader = TextWaveShader
+	wave_material.set_shader_parameter("jiggle", 5.0)
+	wave_material.set_shader_parameter("speed", 2.0)
 	
 	# Check return source and set focus accordingly
 	var global_data = get_node_or_null("/root/GlobalData")
@@ -106,13 +119,17 @@ func _ready():
 		# Set focus based on return source
 		match source:
 			"drills":
-				focused_index = 0  # start_button
+				focused_index = 2  # drills_button
 			"bootcamp":
-				focused_index = 2  # bootcamp_button
+				focused_index = 0  # bootcamp_button
 			"network":
-				focused_index = 1  # network_button
+				focused_index = 2  # drills_button
 			"leaderboard":
-				focused_index = 3  # leaderboard_button
+				focused_index = 1  # stage_button
+			"stage":
+				focused_index = 1  # stage_button
+			"games":
+				focused_index = 3  # games_button
 			"options":
 				focused_index = 4  # option_button
 			_:
@@ -122,12 +139,13 @@ func _ready():
 			print("[Menu] Returning from ", source, ", setting focus to button index ", focused_index)
 		
 	buttons[focused_index].grab_focus()
+	_update_button_shaders()
 
 	# Use get_node instead of Engine.has_singleton
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.menu_control.connect(_on_menu_control)
-		# Connect BLE ready command signal to jump to network scene
+		# Connect BLE ready command signal to jump to drills scene
 		if ws_listener.has_signal("ble_ready_command"):
 			ws_listener.ble_ready_command.connect(_on_ble_ready_command)
 			if not DEBUG_DISABLED:
@@ -146,55 +164,69 @@ func _ready():
 		global_data.netlink_status_loaded.connect(_on_netlink_status_loaded)
 		if not DEBUG_DISABLED:
 			print("[Menu] Connected to GlobalData.netlink_status_loaded signal")
-		# Check if network is already started
+		# Check if drills network is already started
 		_check_network_button_visibility()
 	else:
 		if not DEBUG_DISABLED:
 			print("[Menu] GlobalData not found!")
 
-	start_button.pressed.connect(on_start_pressed)
-	network_button.pressed.connect(_on_network_pressed)
+	stage_button.pressed.connect(on_stage_pressed)
+	drills_button.pressed.connect(_on_drills_pressed)
 	bootcamp_button.pressed.connect(_on_bootcamp_pressed)
-	leaderboard_button.pressed.connect(_on_leaderboard_pressed)
+	games_button.pressed.connect(_on_games_pressed)
 	option_button.pressed.connect(_on_option_pressed)
 
-func on_start_pressed():
-	# Call the HTTP service to start the game
-	var http_service = get_node("/root/HttpService")
-	if http_service:
+func on_stage_pressed():
+	# Set up sub menu configuration for Stage options
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.sub_menu_config = {
+			"title": "Stage Options",
+			"items": [
+				{
+					"text": "ipsc",
+					"action": "http_call",
+					"http_call": "start_game",
+					"success_scene": "res://scene/intro/intro.tscn",
+					"variant": "IPSC"
+				},
+				{
+					"text": "idpa",
+					"action": "http_call",
+					"http_call": "start_game",
+					"success_scene": "res://scene/intro/intro.tscn",
+					"variant": "IDPA"
+				},
+				{
+					"text": "ipsc_leaderboard",
+					"action": "load_scene",
+					"scene": "res://scene/history.tscn",
+				},
+				{
+					"text": "idpa_leaderboard",
+					"action": "load_scene",
+					"scene": "res://scene/history_idpa.tscn",
+				}
+			]
+		}
+		global_data.return_source = "stage"
 		if not DEBUG_DISABLED:
-			print("[Menu] Sending start game HTTP request...")
-		http_service.start_game(_on_start_response)
+			print("[Menu] Set sub menu config for Stage options")
+	
+	# Load the sub menu scene
+	if is_inside_tree():
+		get_tree().change_scene_to_file("res://scene/sub_menu/sub_menu.tscn")
 	else:
 		if not DEBUG_DISABLED:
-			print("[Menu] HttpService singleton not found!")
-		if is_inside_tree():
-			get_tree().change_scene_to_file("res://scene/intro.tscn")
-		else:
-			if not DEBUG_DISABLED:
-				print("[Menu] Warning: Node not in tree, cannot change scene")
+			print("[Menu] Warning: Node not in tree, cannot change scene")
 
-func _on_start_response(result, response_code, _headers, body):
-	var body_str = body.get_string_from_utf8()
+func _on_drills_pressed():
+	# Load the drills scene
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.return_source = "drills"
 	if not DEBUG_DISABLED:
-		print("[Menu] Start game HTTP response:", result, response_code, body_str)
-	var json = JSON.parse_string(body_str)
-	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
-		if not DEBUG_DISABLED:
-			print("[Menu] Start game success, changing scene.")
-		if is_inside_tree():
-			get_tree().change_scene_to_file("res://scene/intro/intro.tscn")
-		else:
-			if not DEBUG_DISABLED:
-				print("[Menu] Warning: Node not in tree, cannot change scene")
-	else:
-		if not DEBUG_DISABLED:
-			print("[Menu] Start game failed or invalid response.")
-
-func _on_network_pressed():
-	# Load the network scene
-	if not DEBUG_DISABLED:
-		print("[Menu] _on_network_pressed called, is_inside_tree: ", is_inside_tree())
+		print("[Menu] _on_drills_pressed called, is_inside_tree: ", is_inside_tree())
 	if is_inside_tree():
 		if not DEBUG_DISABLED:
 			print("[Menu] Attempting to change scene to: res://scene/drills_network/drills_network.tscn")
@@ -226,6 +258,14 @@ func _on_bootcamp_response(result, response_code, _headers, body):
 	if typeof(json) == TYPE_DICTIONARY and json.has("code") and json.code == 0:
 		if not DEBUG_DISABLED:
 			print("[Menu] Bootcamp Start game success, changing scene.")
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data:
+			global_data.return_source = "bootcamp"
+		# Stop background music before transitioning to bootcamp
+		if background_music:
+			background_music.stop()
+			if not DEBUG_DISABLED:
+				print("[Menu] Stopped background music for bootcamp transition")
 		if is_inside_tree():
 			get_tree().change_scene_to_file("res://scene/bootcamp.tscn")
 		else:
@@ -235,16 +275,22 @@ func _on_bootcamp_response(result, response_code, _headers, body):
 		if not DEBUG_DISABLED:
 			print("[Menu] Start bootcamp failed or invalid response.")
 
-func _on_leaderboard_pressed():
-	# Load the history scene
+func _on_games_pressed():
+	# Load the games scene
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.return_source = "games"
 	if is_inside_tree():
-		get_tree().change_scene_to_file("res://scene/history.tscn")
+		get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
 	else:
 		if not DEBUG_DISABLED:
 			print("[Menu] Warning: Node not in tree, cannot change scene")
 
 func _on_option_pressed():
 	# Load the options scene
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.return_source = "options"
 	if is_inside_tree():
 		get_tree().change_scene_to_file("res://scene/option/option.tscn")
 	else:
@@ -276,6 +322,13 @@ func has_visible_power_off_dialog() -> bool:
 			return true
 	return false
 
+func _update_button_shaders():
+	for i in range(buttons.size()):
+		if i == focused_index:
+			buttons[i].material = wave_material
+		else:
+			buttons[i].material = null
+
 func _on_menu_control(directive: String):
 	if has_visible_power_off_dialog():
 		return
@@ -293,6 +346,7 @@ func _on_menu_control(directive: String):
 				print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
 				print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
 			buttons[focused_index].grab_focus()
+			_update_button_shaders()
 			if not DEBUG_DISABLED:
 				print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
 			var menu_controller = get_node("/root/MenuController")
@@ -309,6 +363,7 @@ func _on_menu_control(directive: String):
 				print("[Menu] Focused index: ", focused_index, " Button: ", buttons[focused_index].name, " visible: ", buttons[focused_index].visible)
 				print("[Menu] Button has_focus before grab_focus: ", buttons[focused_index].has_focus())
 			buttons[focused_index].grab_focus()
+			_update_button_shaders()
 			if not DEBUG_DISABLED:
 				print("[Menu] Button has_focus after grab_focus: ", buttons[focused_index].has_focus())
 			var menu_controller = get_node("/root/MenuController")
@@ -360,6 +415,9 @@ func _on_ble_ready_command(content: Dictionary) -> void:
 			print("[Menu] HttpService not available; cannot send ACK")
 
 	if is_inside_tree():
+		var global_data = get_node_or_null("/root/GlobalData")
+		if global_data:
+			global_data.return_source = "drills"
 		get_tree().change_scene_to_file("res://scene/drills_network/drills_network.tscn")
 	else:
 		if not DEBUG_DISABLED:
@@ -367,8 +425,8 @@ func _on_ble_ready_command(content: Dictionary) -> void:
 
 func _on_network_started() -> void:
 	if not DEBUG_DISABLED:
-		print("[Menu] Network started, making network button visible")
-	network_button.visible = true
+		print("[Menu] Network started, making drills button visible")
+	drills_button.visible = true
 
 func _on_netlink_status_loaded() -> void:
 	if not DEBUG_DISABLED:
@@ -380,12 +438,12 @@ func _check_network_button_visibility() -> void:
 	if global_data and global_data.netlink_status.has("started"):
 		if global_data.netlink_status["started"] == true:
 			if not DEBUG_DISABLED:
-				print("[Menu] Network is started, making network button visible")
-			network_button.visible = true
+				print("[Menu] Network is started, making drills button visible")
+			drills_button.visible = true
 		else:
 			if not DEBUG_DISABLED:
-				print("[Menu] Network is not started, keeping network button hidden")
-			network_button.visible = false
+				print("[Menu] Network is not started, keeping drills button hidden")
+			drills_button.visible = false
 	else:
 		if not DEBUG_DISABLED:
 			print("[Menu] Netlink status not available or missing 'started' key")
