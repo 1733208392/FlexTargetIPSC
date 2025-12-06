@@ -57,13 +57,13 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 	var record = {
 		"command": "shot",
 		"target_type": target_type,
-		"time_diff": round(time_diff * 100.0) / 100.0,
-		"hit_position": {"x": round(hit_position.x * 10.0) / 10.0, "y": round(hit_position.y * 10.0) / 10.0},
+		"time_diff": "%.2f" % time_diff,
+		"hit_position": {"x": "%.1f" % hit_position.x, "y": "%.1f" % hit_position.y},
 		"hit_area": hit_area,
-		"rotation_angle": round(rotation_angle * 100.0) / 100.0,
+		"rotation_angle": "%.2f" % rotation_angle,
 		"repeat": repeat,
-		"shot_timer_delay": round(shot_timer_delay * 100.0) / 100.0,
-		"targetPos": {"x": round(target_position.x * 10.0) / 10.0, "y": round(target_position.y * 10.0) / 10.0}
+		"shot_timer_delay": "%.2f" % shot_timer_delay,
+		"targetPos": {"x": "%.1f" % target_position.x, "y": "%.1f" % target_position.y}
 	}
 	
 	# Send to websocket server

@@ -17,7 +17,7 @@ let netlinkStarted = true;
 let netlinkChannel = 0;
 let netlinkWorkMode = "master";
 let netlinkDeviceName = "01";
-let netlinkBluetoothName = "BLE-SIM";
+let netlinkBluetoothName = "Kai’s MacBook Pro";
 let netlinkWifiIp = "192.168.1.100"; // Mock IP for simulation
 
 // BLE Configuration
@@ -26,7 +26,7 @@ const NOTIFY_CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
 const WRITE_CHARACTERISTIC_UUID = '0000ffe2-0000-1000-8000-00805f9b34fb';
 
 // BLE Advertising Configuration
-const BLE_DEVICE_NAME = 'BLE-WS-SIM Proxy';
+const BLE_DEVICE_NAME = 'BLE-SIM';
 const ADVERTISING_INTERVAL_MS = 10000; // Re-advertise every 10 seconds
 
 // WebSocket Configuration
@@ -267,12 +267,12 @@ const httpServer = http.createServer((req, res) => {
           netlinkChannel = channel;
           netlinkWorkMode = work_mode;
           netlinkDeviceName = device_name;
-          netlinkBluetoothName = bluetooth_name; // Use device_name as bluetooth_name for simulation
+          netlinkBluetoothName = netlinkBluetoothName;
           
           console.log(`[HttpServer] Netlink configuration completed`);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ code: 0, msg: "Configuration successful" }));
-        }, 10000);
+        }, 5000);
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ code: 1, msg: "Invalid JSON" }));

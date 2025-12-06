@@ -667,3 +667,4 @@ first_shot,"First Shot:","首发:","初弾:","首發:"
 idpa_drill_history,IDPA Drill History,IDPA 训练记录,IDPA 訓練履歴,IDPA 訓練記錄
 down_points,Downpts,扣分,減点,扣分
 dismiss,Dismiss,取消,キャンセル,取消
+only_one_master_config,Only One Master Can Be Configurated in Your Network,只能配置一个主设备在您的网络中,ネットワークで設定できるマスターは1つだけです,只能配置一個主設備在您的網路中
