@@ -18,6 +18,12 @@ var bullet_hole_pool: Array[Node] = []
 var pool_size: int = 8  # Keep 8 bullet holes pre-instantiated
 var active_bullet_holes: Array[Node] = []
 
+# GPU instanced bullet hole rendering (ported from `ipsc_mini.gd`)
+var bullet_hole_multimeshes: Array = []
+var bullet_hole_textures: Array = []
+var max_instances_per_texture: int = 32
+var active_instances: Dictionary = {}
+
 # Effect throttling for performance optimization
 var last_sound_time: float = 0.0
 var last_smoke_time: float = 0.0
@@ -130,9 +136,74 @@ func reset_score():
 
 func initialize_bullet_hole_pool():
 	"""Pre-instantiate bullet holes for performance"""
+	# Initialize GPU-instanced bullet hole rendering system and keep legacy pool as fallback
+
+	# Clear any existing multimeshes
+	for mm in bullet_hole_multimeshes:
+		if is_instance_valid(mm):
+			mm.queue_free()
+	bullet_hole_multimeshes.clear()
+	bullet_hole_textures.clear()
+	active_instances.clear()
+
+	# Load bullet hole textures
+	load_bullet_hole_textures()
+
+	# Parent multimeshes to this Area2D so they follow the target
+	var parent_node = self
+	for i in range(bullet_hole_textures.size()):
+		var multimesh_instance = MultiMeshInstance2D.new()
+		parent_node.add_child(multimesh_instance)
+		multimesh_instance.z_index = 0
+
+		var multimesh = MultiMesh.new()
+		multimesh.transform_format = MultiMesh.TRANSFORM_2D
+		multimesh.instance_count = max_instances_per_texture
+		multimesh.visible_instance_count = 0
+
+		var mesh = create_bullet_hole_mesh(bullet_hole_textures[i])
+		multimesh.mesh = mesh
+		multimesh_instance.multimesh = multimesh
+
+		if mesh and mesh.material:
+			var has_material_prop := false
+			for prop in multimesh_instance.get_property_list():
+				if prop.name == "material":
+					has_material_prop = true
+					break
+			if has_material_prop:
+				multimesh_instance.material = mesh.material
+				if multimesh_instance.material is ShaderMaterial:
+					multimesh_instance.material.set_shader_parameter("texture_albedo", bullet_hole_textures[i])
+			elif mesh.material is ShaderMaterial:
+				mesh.material.set_shader_parameter("texture_albedo", bullet_hole_textures[i])
+
+		for p in multimesh_instance.get_property_list():
+			if p.name == "texture":
+				multimesh_instance.set("texture", bullet_hole_textures[i])
+				break
+
+		bullet_hole_multimeshes.append(multimesh_instance)
+		active_instances[i] = 0
+
+	# --- Keep legacy node pool initialization for fallback ---
+	if not BulletHoleScene:
+		return
+
+	# Clear existing pool
+	for hole in bullet_hole_pool:
+		if is_instance_valid(hole):
+			hole.queue_free()
+	bullet_hole_pool.clear()
+	active_bullet_holes.clear()
+
+	# Pre-instantiate bullet holes as children of Area2D root
 	for i in range(pool_size):
 		var bullet_hole = BulletHoleScene.instantiate()
-		bullet_hole.visible = false
+		add_child(bullet_hole)
+		bullet_hole.visible = false  # Hide until needed
+		# Set z-index to ensure bullet holes appear below effects
+		bullet_hole.z_index = 0
 		bullet_hole_pool.append(bullet_hole)
 
 func get_bullet_hole_from_pool() -> Node:
@@ -160,14 +231,37 @@ func return_bullet_hole_to_pool(bullet_hole: Node):
 
 func spawn_bullet_hole(local_pos: Vector2):
 	"""Spawn a bullet hole at the specified local position"""
-	var bullet_hole = get_bullet_hole_from_pool()
-	add_child(bullet_hole)
-	bullet_hole.position = local_pos
-	bullet_hole.z_index = 5  # Ensure it's above the target sprite
+	# Use GPU instanced MultiMesh if available
+	if bullet_hole_multimeshes.size() == 0:
+		var bullet_hole = get_bullet_hole_from_pool()
+		if bullet_hole:
+			add_child(bullet_hole)
+			bullet_hole.position = local_pos
+			bullet_hole.z_index = 5
+			if bullet_hole not in active_bullet_holes:
+				active_bullet_holes.append(bullet_hole)
+		return
 
-	# Track as active
-	if bullet_hole not in active_bullet_holes:
-		active_bullet_holes.append(bullet_hole)
+	if bullet_hole_textures.size() == 0:
+		return
+	var texture_index = randi() % bullet_hole_textures.size()
+	if texture_index >= bullet_hole_multimeshes.size():
+		return
+
+	var mm_inst = bullet_hole_multimeshes[texture_index]
+	var multimesh = mm_inst.multimesh
+	var current_count = active_instances.get(texture_index, 0)
+	if current_count >= max_instances_per_texture:
+		return
+
+	var transform = Transform2D()
+	var scale_factor = randf_range(0.6, 0.8)
+	transform = transform.scaled(Vector2(scale_factor, scale_factor))
+	transform.origin = local_pos
+
+	multimesh.set_instance_transform_2d(current_count, transform)
+	multimesh.visible_instance_count = current_count + 1
+	active_instances[texture_index] = current_count + 1
 
 func _on_websocket_bullet_hit(pos: Vector2):
 	# Ignore shots if drill is not active yet
@@ -255,16 +349,19 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, _is_target_hit: bool =
 	var scene_root = get_tree().current_scene
 	var effects_parent = scene_root if scene_root else get_parent()
 
-	# Throttled impact effect - ALWAYS spawn (for both hits and misses)
-	if bullet_impact_scene and (time_stamp - last_impact_time) >= impact_cooldown:
-		var impact = bullet_impact_scene.instantiate()
-		impact.global_position = world_pos
-		effects_parent.add_child(impact)
-		# Ensure impact effects appear above bullet holes
-		impact.z_index = 15
-		last_impact_time = time_stamp
 
-	# Throttled sound effect - only plays for hits since this function is only called for hits
+	# If this was a miss, spawn impact visual + sound. If it was a valid target hit,
+	# only play the sound (faster and less noisy visually).
+	if not _is_target_hit:
+		if bullet_impact_scene and (time_stamp - last_impact_time) >= impact_cooldown:
+			var impact = bullet_impact_scene.instantiate()
+			impact.global_position = world_pos
+			effects_parent.add_child(impact)
+			# Ensure impact effects appear above bullet holes
+			impact.z_index = 15
+			last_impact_time = time_stamp
+
+	# Always play throttled impact sound (for both hits and misses)
 	play_impact_sound_at_position_throttled(world_pos, time_stamp)
 
 func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: float):
@@ -292,10 +389,10 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 		audio_parent.add_child(audio_player)
 
 		# Connect finished signal to clean up and track active sounds
-		audio_player.finished.connect(func():
+		var _on_audio_finished = func():
 			audio_player.queue_free()
 			active_sounds = max(0, active_sounds - 1)
-		)
+		audio_player.finished.connect(_on_audio_finished)
 
 		audio_player.play()
 		active_sounds += 1
@@ -356,3 +453,52 @@ func resume_animation():
 	if animation_player:
 		animation_player.play()
 		animation_paused = false
+
+
+func load_bullet_hole_textures():
+	"""Load all bullet hole textures"""
+	bullet_hole_textures = [
+		load("res://asset/bullet_hole1.png"),
+		load("res://asset/bullet_hole2.png"),
+		load("res://asset/bullet_hole3.png"),
+		load("res://asset/bullet_hole4.png"),
+		load("res://asset/bullet_hole5.png"),
+		load("res://asset/bullet_hole6.png")
+	]
+
+	# Verify all textures loaded
+	for i in range(bullet_hole_textures.size()):
+		if not bullet_hole_textures[i]:
+			print("[IDPA-HARD-COVER-1] ERROR: Failed to load bullet hole texture ", i + 1)
+
+
+func create_bullet_hole_mesh(texture: Texture2D) -> QuadMesh:
+	"""Create a quad mesh for the bullet hole texture"""
+	var mesh = QuadMesh.new()
+	mesh.size = texture.get_size()
+
+	# Create shader material with texture
+	var shader_material = ShaderMaterial.new()
+	var shader = load("res://shader/bullet_hole_instanced.gdshader")
+	if shader:
+		shader_material.shader = shader
+		shader_material.set_shader_parameter("texture_albedo", texture)
+
+	mesh.material = shader_material
+	return mesh
+
+
+func clear_all_bullet_holes() -> void:
+	# Reset instanced MultiMesh counts
+	for texture_index in range(bullet_hole_multimeshes.size()):
+		var mm_inst = bullet_hole_multimeshes[texture_index]
+		if mm_inst and mm_inst.multimesh:
+			mm_inst.multimesh.visible_instance_count = 0
+			active_instances[texture_index] = 0
+
+	# Reset legacy node pool (if used anywhere)
+	for hole in bullet_hole_pool:
+		if is_instance_valid(hole):
+			hole.visible = false
+
+	active_bullet_holes.clear()

@@ -353,10 +353,26 @@ func _on_clear_pressed():
 				print("Removed ", target_type, " for respawning")
 		# Respawn the target
 		spawn_target_by_type(target_type)
-	elif target_type in ["ipsc_mini","ipsc_mini_rotate", "ipsc_mini_black_1","ipsc_mini_black_2", "hostage"]:
+	elif target_type in ["ipsc_mini","ipsc_mini_rotate", "ipsc_mini_black_1","ipsc_mini_black_2", "hostage","idpa", "idpa_ns", "idpa_hard_cover_1", "idpa_hard_cover_2"]:
 		# For bullseye, just reset the target state if needed
 		if current_target_instance and is_instance_valid(current_target_instance):
-			current_target_instance.clear_all_bullet_holes()
+			# Call clear_all_bullet_holes if available on the target itself
+			if current_target_instance.has_method("clear_all_bullet_holes"):
+				current_target_instance.clear_all_bullet_holes()
+			else:
+				# Try to find a child node that implements the method (e.g., IPSCMini child)
+				var cleared = false
+				for child in current_target_instance.get_children():
+					if child and child.has_method("clear_all_bullet_holes"):
+						child.clear_all_bullet_holes()
+						cleared = true
+						break
+				# Fallback: recursively collect and free bullet hole nodes
+				if not cleared:
+					var children_to_remove = []
+					_collect_bullet_holes(current_target_instance, children_to_remove)
+					for bullet_hole in children_to_remove:
+						bullet_hole.queue_free()
 	else:
 		# For other targets (with bullet holes), clear the bullet holes recursively
 		var children_to_remove = []
