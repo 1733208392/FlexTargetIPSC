@@ -69,9 +69,6 @@ func _ready():
 				break
 			current = current.get_parent()
 	
-	# Connect the input_event signal to detect mouse clicks
-	input_event.connect(_on_input_event)
-	
 	# Initialize bullet hole pool for performance
 	initialize_bullet_hole_pool()
 	
@@ -84,72 +81,7 @@ func _ready():
 	else:
 		if not DEBUG_DISABLED:
 			print("[hostage] WebSocketListener singleton not found!")
-	
-	# Set up collision detection for bullets
-	# NOTE: Collision detection is now obsolete due to WebSocket fast path
-	# collision_layer = 7  # Target layer
-	# collision_mask = 0   # Don't detect other targets
 
-func _input(event):
-	# Handle mouse clicks for bullet spawning
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		# Check if bullet spawning is enabled
-		var ws_listener = get_node_or_null("/root/WebSocketListener")
-		if ws_listener and not ws_listener.bullet_spawning_enabled:
-			if not DEBUG_DISABLED:
-				print("[hostage] Bullet spawning disabled during shot timer")
-			return
-			
-		var mouse_screen_pos = event.position
-		var world_pos = get_global_mouse_position()
-		if not DEBUG_DISABLED:
-			print("Mouse screen pos: ", mouse_screen_pos, " -> World pos: ", world_pos)
-		spawn_bullet_at_position(world_pos)
-
-func _on_input_event(_viewport, event, _shape_idx):
-	# Don't process input events if target is disappearing
-	if is_disappearing:
-		if not DEBUG_DISABLED:
-			print("Target is disappearing - ignoring input event")
-		return
-		
-	# Check if it's a left mouse click
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		# Prevent duplicate events in the same frame
-		var current_frame = Engine.get_process_frames()
-		if current_frame == last_click_frame:
-			return
-		last_click_frame = current_frame
-		
-		# Get the click position in local coordinates
-		var local_pos = to_local(event.global_position)
-		
-		# Check zones in priority order (highest score first)
-		if is_point_in_zone("WhiteZone", local_pos):
-			if not DEBUG_DISABLED:
-				print("WhiteZone clicked - -5 points!")
-			return
-
-		# A-Zone has highest priority (5 points)
-		if is_point_in_zone("AZone", local_pos):
-			if not DEBUG_DISABLED:
-				print("Zone A clicked - 5 points!")
-			return
-		
-		# C-Zone has medium priority (3 points)
-		if is_point_in_zone("CZone", local_pos):
-			if not DEBUG_DISABLED:
-				print("Zone C clicked - 3 points!")
-			return
-		
-		# D-Zone has lowest priority (1 point)
-		if is_point_in_zone("DZone", local_pos):
-			if not DEBUG_DISABLED:
-				print("Zone D clicked - 1 point!")
-			return
-		
-		if not DEBUG_DISABLED:
-			print("Clicked outside target zones")
 
 func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 	# Find the collision shape by name
@@ -183,73 +115,7 @@ func spawn_bullet_at_position(world_pos: Vector2):
 		if not DEBUG_DISABLED:
 			print("Bullet spawned and position set to: ", world_pos)
 
-func handle_bullet_collision(bullet_position: Vector2):
-	"""Handle collision detection when a bullet hits this target"""
-	# NOTE: This collision handling is now obsolete due to WebSocket fast path
-	# WebSocket hits use handle_websocket_bullet_hit_fast() instead
-	
-	# Don't process bullet collisions if target is disappearing
-	if is_disappearing:
-		if not DEBUG_DISABLED:
-			print("Target is disappearing - ignoring bullet collision")
-		return "ignored"
-	
-	if not DEBUG_DISABLED:
-		print("Bullet collision detected at position: ", bullet_position)
-	
-	# Convert bullet world position to local coordinates for zone checking
-	var local_pos = to_local(bullet_position)
-	
-	var zone_hit = ""
-	var points = 0
-	
-	# Check which zone was hit (highest score first)
-	if is_point_in_zone("WhiteZone", local_pos):
-		zone_hit = "WhiteZone"
-		points = -5
-		if not DEBUG_DISABLED:
-			print("COLLISION: WhiteZone hit by bullet - -5 points!")
-	elif is_point_in_zone("AZone", local_pos):
-		zone_hit = "AZone"
-		points = 5
-		if not DEBUG_DISABLED:
-			print("COLLISION: Zone A hit by bullet - 5 points!")
-	elif is_point_in_zone("CZone", local_pos):
-		zone_hit = "CZone"
-		points = 3
-		if not DEBUG_DISABLED:
-			print("COLLISION: Zone C hit by bullet - 3 points!")
-	elif is_point_in_zone("DZone", local_pos):
-		zone_hit = "DZone"
-		points = 1
-		if not DEBUG_DISABLED:
-			print("COLLISION: Zone D hit by bullet - 1 point!")
-	else:
-		zone_hit = "miss"
-		points = 0
-		if not DEBUG_DISABLED:
-			print("COLLISION: Bullet hit target but outside scoring zones")
-	
-	# Update score and emit signal
-	total_score += points
-	target_hit.emit(zone_hit, points, bullet_position)
-	if not DEBUG_DISABLED:
-		print("Total score: ", total_score)
-	
-	# Note: Bullet hole is now spawned by bullet script before this method is called
-	
-	# Increment shot count and check for disappearing animation
-	shot_count += 1
-	if not DEBUG_DISABLED:
-		print("Shot count: ", shot_count, "/", max_shots)
-	
-	# Check if we've reached the maximum shots
-	if shot_count >= max_shots:
-		if not DEBUG_DISABLED:
-			print("Maximum shots reached! Triggering disappearing animation...")
-		play_disappearing_animation()
-	
-	return zone_hit
+
 
 func spawn_bullet_hole(local_position: Vector2):
 	"""Spawn a bullet hole at the specified local position using object pool"""
