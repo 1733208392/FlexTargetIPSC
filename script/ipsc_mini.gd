@@ -13,9 +13,17 @@ var shot_count: int = 0
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
 
-# Bullet hole pool for performance optimization
+# Bullet hole system - GPU instanced rendering for performance
+var bullet_hole_multimeshes: Array[MultiMeshInstance2D] = []
+var bullet_hole_textures: Array[Texture2D] = []
+var max_instances_per_texture: int = 32  # Maximum bullet holes per texture type
+var active_instances: Dictionary = {}  # Track active instance counts per texture
+
+# Legacy pool variables (kept for compatibility but not used)
 var bullet_hole_pool: Array[Node] = []
-var pool_size: int = 8  # Keep 8 bullet holes pre-instantiated
+var available_holes: Array[Node] = []
+var pool_size: int = 8
+var max_pool_size: int = 16
 var active_bullet_holes: Array[Node] = []
 
 # Effect throttling for performance optimization
@@ -27,6 +35,9 @@ var smoke_cooldown: float = 0.08  # 80ms minimum between smoke effects
 var impact_cooldown: float = 0.06  # 60ms minimum between impact effects
 var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
+var impact_sound_res: AudioStream = null
+var sound_player_pool: Array = []
+var sound_pool_size: int = 4  # number of pooled AudioStreamPlayer2D
 
 # Performance optimization
 const DEBUG_DISABLED = true
@@ -50,55 +61,22 @@ signal target_hit(zone: String, points: int, hit_position: Vector2)
 signal target_disappeared
 
 func _ready():
-	# Connect the input_event signal to detect mouse clicks
-	input_event.connect(_on_input_event)
 	
 	# Initialize bullet hole pool for performance
 	initialize_bullet_hole_pool()
+
+	# Initialize pooled audio players to reduce sound latency
+	_init_sound_pool()
 	
 	# Connect to WebSocket bullet hit signal
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
-	# Set up collision detection for bullets
-	# NOTE: Collision detection is now obsolete due to WebSocket fast path
-	# collision_layer = 7  # Target layer
-	# collision_mask = 0   # Don't detect other targets
 
 	# If loaded by drills_network (networked drills loader), set max_shots high for testing
 	var drills_network = get_node_or_null("/root/drills_network")
 	if drills_network:
 		max_shots = 1000
-
-func _on_input_event(_viewport, event, _shape_idx):
-	# Don't process input events if target is disappearing
-	if is_disappearing:
-		return
-		
-	# Check if it's a left mouse click
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		# Prevent duplicate events in the same frame
-		var current_frame = Engine.get_process_frames()
-		if current_frame == last_click_frame:
-			return
-		last_click_frame = current_frame
-		
-		# Get the click position in local coordinates
-		var local_pos = to_local(event.global_position)
-		
-		# Check zones in priority order (highest score first)
-		# A-Zone has highest priority (5 points)
-		if is_point_in_zone("AZone", local_pos):
-			return
-		
-		# C-Zone has medium priority (3 points)
-		if is_point_in_zone("CZone", local_pos):
-			return
-		
-		# D-Zone has lowest priority (1 point)
-		if is_point_in_zone("DZone", local_pos):
-			return
-		
 
 func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 	# Find the collision shape by name
@@ -133,7 +111,6 @@ func handle_bullet_collision(bullet_position: Vector2):
 	# Don't process bullet collisions if target is disappearing
 	if is_disappearing:
 		return "ignored"
-	
 	
 	# Convert bullet world position to local coordinates for zone checking
 	var local_pos = to_local(bullet_position)
@@ -237,78 +214,144 @@ func reset_target():
 	
 
 func reset_bullet_hole_pool():
-	"""Reset the bullet hole pool by hiding all active holes"""
+	"""Reset all bullet hole instances by hiding them"""
 	
-	# Hide all active bullet holes
-	for hole in active_bullet_holes:
-		if is_instance_valid(hole):
-			hole.visible = false
-	
-	# Clear active list
-	active_bullet_holes.clear()
+	# Reset all MultiMesh visible instance counts
+	for texture_index in range(bullet_hole_multimeshes.size()):
+		var multimesh_instance = bullet_hole_multimeshes[texture_index]
+		if multimesh_instance and multimesh_instance.multimesh:
+			multimesh_instance.multimesh.visible_instance_count = 0
+		active_instances[texture_index] = 0
 	
 
 func initialize_bullet_hole_pool():
-	"""Pre-instantiate bullet holes for performance optimization"""
+	"""Initialize GPU-instanced bullet hole rendering system"""
 	
-	if not BulletHoleScene:
-		return
+	# Clear any existing multimeshes
+	for multimesh in bullet_hole_multimeshes:
+		if is_instance_valid(multimesh):
+			multimesh.queue_free()
+	bullet_hole_multimeshes.clear()
+	bullet_hole_textures.clear()
+	active_instances.clear()
 	
-	# Clear existing pool
-	for hole in bullet_hole_pool:
-		if is_instance_valid(hole):
-			hole.queue_free()
-	bullet_hole_pool.clear()
-	active_bullet_holes.clear()
+	# Load bullet hole textures
+	load_bullet_hole_textures()
 	
-	# Pre-instantiate bullet holes
-	for i in range(pool_size):
-		var bullet_hole = BulletHoleScene.instantiate()
-		add_child(bullet_hole)
-		bullet_hole.visible = false  # Hide until needed
-		# Set z-index to ensure bullet holes appear below effects
-		bullet_hole.z_index = 0
-		bullet_hole_pool.append(bullet_hole)
-	
+	# Create a MultiMesh instance for each texture
+	for i in range(bullet_hole_textures.size()):
+		var multimesh_instance = MultiMeshInstance2D.new()
+		add_child(multimesh_instance)
+		multimesh_instance.z_index = 0
+		
+		# Create and configure the MultiMesh
+		var multimesh = MultiMesh.new()
+		multimesh.transform_format = MultiMesh.TRANSFORM_2D
+		multimesh.instance_count = max_instances_per_texture
+		multimesh.visible_instance_count = 0
+		
+		# Create mesh for this texture
+		var mesh = create_bullet_hole_mesh(bullet_hole_textures[i])
+		multimesh.mesh = mesh
+		# Assign the mesh to the multimesh and ensure the instance uses the mesh material
+		multimesh_instance.multimesh = multimesh
+		# MultiMeshInstance2D may not automatically use the Mesh.material; set material_override
+		if mesh and mesh.material:
+			# Try assigning to the instance material property (some Godot versions use 'material')
+			# This avoids assigning to non-existent 'material_override'
+			# Safely check for a 'material' property before assigning
+			var has_material_prop := false
+			for prop in multimesh_instance.get_property_list():
+				if prop.name == "material":
+					has_material_prop = true
+					break
+			if has_material_prop:
+				multimesh_instance.material = mesh.material
+				# If it's a ShaderMaterial, ensure the texture uniform is set on the instance material
+				if multimesh_instance.material is ShaderMaterial:
+					multimesh_instance.material.set_shader_parameter("texture_albedo", bullet_hole_textures[i])
+				elif mesh.material is ShaderMaterial:
+					# As a fallback, ensure mesh material shader parameter is set (already done in creation)
+					mesh.material.set_shader_parameter("texture_albedo", bullet_hole_textures[i])
+			# Additionally, some engine versions expose a 'texture' property on MultiMeshInstance2D
+			# Try to set it if present so the renderer has the texture bound
+			for p in multimesh_instance.get_property_list():
+				if p.name == "texture":
+					multimesh_instance.set("texture", bullet_hole_textures[i])
+					break
+			# else: fallback to mesh.material (already set) and let engine handle it
+		bullet_hole_multimeshes.append(multimesh_instance)
+		active_instances[i] = 0  # Track active instances for this texture
 
-func get_pooled_bullet_hole() -> Node:
-	"""Get an available bullet hole from the pool, or create new if needed"""
-	# Try to find an inactive bullet hole in the pool
-	for hole in bullet_hole_pool:
-		if is_instance_valid(hole) and not hole.visible:
-			return hole
+func load_bullet_hole_textures():
+	"""Load all bullet hole textures"""
+	bullet_hole_textures = [
+		load("res://asset/bullet_hole1.png"),
+		load("res://asset/bullet_hole2.png"),
+		load("res://asset/bullet_hole3.png"),
+		load("res://asset/bullet_hole4.png"),
+		load("res://asset/bullet_hole5.png"),
+		load("res://asset/bullet_hole6.png")
+	]
 	
-	# If no available holes in pool, create a new one (fallback)
-	if BulletHoleScene:
-		var new_hole = BulletHoleScene.instantiate()
-		add_child(new_hole)
-		bullet_hole_pool.append(new_hole)  # Add to pool for future use
-		return new_hole
-	
-	return null
+	# Verify all textures loaded
+	for i in range(bullet_hole_textures.size()):
+		if not bullet_hole_textures[i]:
+			print("ERROR: Failed to load bullet hole texture ", i + 1)
 
-func return_bullet_hole_to_pool(hole: Node):
-	"""Return a bullet hole to the pool by hiding it"""
-	if is_instance_valid(hole):
-		hole.visible = false
-		# Remove from active list
-		if hole in active_bullet_holes:
-			active_bullet_holes.erase(hole)
+func create_bullet_hole_mesh(texture: Texture2D) -> QuadMesh:
+	"""Create a quad mesh for the bullet hole texture"""
+	var mesh = QuadMesh.new()
+	mesh.size = texture.get_size()
+	
+	# Create shader material with texture
+	var shader_material = ShaderMaterial.new()
+	var shader = load("res://shader/bullet_hole_instanced.gdshader")
+	if shader:
+		shader_material.shader = shader
+		shader_material.set_shader_parameter("texture_albedo", texture)
+	
+	mesh.material = shader_material
+	return mesh
 
 func spawn_bullet_hole(local_position: Vector2):
-	"""Spawn a bullet hole at the specified local position using object pool"""
+	"""Spawn a bullet hole at the specified local position using GPU instancing"""
 	
-	var bullet_hole = get_pooled_bullet_hole()
-	if bullet_hole:
-		# Configure the bullet hole
-		bullet_hole.set_hole_position(local_position)
-		bullet_hole.visible = true
-		# Ensure bullet holes appear below smoke/debris effects
-		bullet_hole.z_index = 0
-		
-		# Track as active
-		if bullet_hole not in active_bullet_holes:
-			active_bullet_holes.append(bullet_hole)
+	# Select random texture index
+	var texture_index = randi() % bullet_hole_textures.size()
+	
+	# Get the corresponding MultiMesh instance
+	if texture_index >= bullet_hole_multimeshes.size():
+		return  # Safety check
+	
+	var multimesh_instance = bullet_hole_multimeshes[texture_index]
+	var multimesh = multimesh_instance.multimesh
+	
+	# Check if we have room for another instance
+	var current_count = active_instances[texture_index]
+	if current_count >= max_instances_per_texture:
+		return  # Pool exhausted for this texture
+	
+	# Create transformation for this instance
+	var transform = Transform2D()
+	
+	# Apply random rotation
+	#var rotation = randf() * 2.0 * PI
+	#transform = transform.rotated(rotation)
+	
+	# Apply random scale
+	var scale_factor = randf_range(0.6, 0.8)
+	transform = transform.scaled(Vector2(scale_factor, scale_factor))
+	
+	# Set position
+	transform.origin = local_position
+	
+	# Set the instance transform
+	multimesh.set_instance_transform_2d(current_count, transform)
+	
+	# Update visibility count
+	multimesh.visible_instance_count = current_count + 1
+	active_instances[texture_index] = current_count + 1
 		
 func _on_websocket_bullet_hit(pos: Vector2):
 	
@@ -368,11 +411,14 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 		points = 0
 		is_target_hit = false
 	
-	# 2. CONDITIONAL: Only spawn bullet hole if target was actually hit
+	# 2. CONDITIONAL: Only spawn bullet hole and impact sound if target was actually hit
 	if is_target_hit:
 		spawn_bullet_hole(local_pos)
+		var time_stamp = Time.get_ticks_msec() / 1000.0
+		play_impact_sound_at_position_throttled(world_pos, time_stamp)
 	# 3. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
-	spawn_bullet_effects_at_position(world_pos, is_target_hit)
+	else:
+		spawn_bullet_effects_at_position(world_pos, is_target_hit)
 	
 	# 4. Update score and emit signal
 	total_score += points
@@ -380,11 +426,11 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	
 	# 5. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
-		shot_count += 1
-		
+		shot_count += 1	
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
 			play_disappearing_animation()
+
 func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = true):
 	"""Spawn bullet smoke and impact effects with throttling for performance"""
 	
@@ -413,42 +459,76 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 	# Throttled sound effect - only plays for hits since this function is only called for hits
 	play_impact_sound_at_position_throttled(world_pos, time_stamp)
 
+
+func _init_sound_pool():
+	"""Pre-create AudioStreamPlayer2D nodes to avoid allocation and node overhead on each sound."""
+	impact_sound_res = preload("res://audio/paper_hit.MP3")
+	# Clamp pool size to configured max_concurrent_sounds if present
+	if max_concurrent_sounds > 0:
+		sound_pool_size = max_concurrent_sounds
+	# Clear any existing
+	for p in sound_player_pool:
+		if is_instance_valid(p):
+			p.queue_free()
+	sound_player_pool.clear()
+
+	var scene_root = get_tree().current_scene if get_tree() else self
+	for i in range(sound_pool_size):
+		var player = AudioStreamPlayer2D.new()
+		player.stream = impact_sound_res
+		player.volume_db = -5
+		player.bus = "Master"
+		# Connect finished to a bound callback so we know which player finished
+		player.finished.connect(Callable(self, "_on_sound_finished").bind(player))
+		# Parent to scene root so global_position works
+		scene_root.add_child(player)
+		sound_player_pool.append(player)
+
+
+func _on_sound_finished(player: AudioStreamPlayer2D) -> void:
+	# Called when a pooled player finishes playing
+	if active_sounds > 0:
+		active_sounds -= 1
+
+
+func _get_free_sound_player() -> AudioStreamPlayer2D:
+	# Return a free (not playing) player or reuse the oldest one
+	for p in sound_player_pool:
+		if not p.playing:
+			return p
+
+	# None free: reuse first one (stop then return)
+	var p = sound_player_pool[0]
+	p.stop()
+	if active_sounds > 0:
+		active_sounds -= 1
+	return p
+
 func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: float):
 	"""Play steel impact sound effect with throttling and concurrent sound limiting"""
 	# Check time-based throttling
 	if (current_time - last_sound_time) < sound_cooldown:
 		return
-	
+
 	# Check concurrent sound limiting
 	if active_sounds >= max_concurrent_sounds:
+		# If no available concurrent slots, skip playing the sound
 		return
-	
-	# Load the paper impact sound for paper targets
-	var impact_sound = preload("res://audio/paper_hit.MP3")
-	
-	if impact_sound:
-		# Create AudioStreamPlayer2D for positional audio
-		var audio_player = AudioStreamPlayer2D.new()
-		audio_player.stream = impact_sound
-		audio_player.volume_db = -5  # Adjust volume as needed
-		audio_player.pitch_scale = randf_range(0.9, 1.1)  # Add slight pitch variation for realism
-		
-		# Add to scene and play
-		var scene_root = get_tree().current_scene
-		var audio_parent = scene_root if scene_root else get_parent()
-		audio_parent.add_child(audio_player)
-		audio_player.global_position = world_pos
-		audio_player.play()
-		
-		# Update throttling state
-		last_sound_time = current_time
-		active_sounds += 1
-		
-		# Clean up audio player after sound finishes and decrease active count
-		audio_player.finished.connect(func(): 
-			active_sounds -= 1
-			audio_player.queue_free()
-		)
+
+	# Use a pooled AudioStreamPlayer2D to avoid allocations
+	var player = _get_free_sound_player()
+	if not player:
+		return
+
+	player.global_position = world_pos
+	player.pitch_scale = randf_range(0.9, 1.1)
+	player.volume_db = -5
+	player.play()
+
+	# Update throttling state
+	last_sound_time = current_time
+	active_sounds += 1
+
 func play_impact_sound_at_position(world_pos: Vector2):
 	"""Play paper impact sound effect at specific position (legacy - non-throttled)"""
 	# Load the paper impact sound for paper targets
@@ -470,7 +550,6 @@ func play_impact_sound_at_position(world_pos: Vector2):
 		
 		# Clean up audio player after sound finishes
 		audio_player.finished.connect(func(): audio_player.queue_free())
-# ROTATION PERFORMANCE OPTIMIZATIONS
 
 func get_cached_rotation_angle() -> float:
 	"""Get the current rotation angle with caching for performance"""
@@ -555,8 +634,10 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if is_target_hit:
 		spawn_bullet_hole(local_pos)
-	# 4. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
-	spawn_bullet_effects_at_position(world_pos, is_target_hit)
+	
+	# 4. For performance: only spawn bullet effects for misses (skip for valid target hits)
+	if not is_target_hit:
+		spawn_bullet_effects_at_position(world_pos, is_target_hit)
 	
 	# 5. Update score and emit signal
 	total_score += points
@@ -569,14 +650,6 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
 			play_disappearing_animation()
-	# DISABLE activity decrease for rotating targets - let ipsc_mini_rotate.gd control animation
-	# # Decrease activity after a short delay (simulate bullet lifetime)
-	# var tree = get_tree()
-	# if tree:
-	# 	tree.create_timer(0.2).timeout.connect(func():
-	# 		bullet_activity_count = max(0, bullet_activity_count - 1)
-	# 		monitor_bullet_activity()
-	# 	)
 
 func monitor_bullet_activity():
 	"""Monitor bullet activity and pause/resume animation accordingly"""
@@ -613,3 +686,19 @@ func resume_rotation_animation():
 			animation_player.play()
 			animation_paused = false
 			activity_cooldown_timer = 0.0
+
+func clear_all_bullet_holes() -> void:
+	# Reset instanced MultiMesh counts
+	for texture_index in range(bullet_hole_multimeshes.size()):
+		var mm_inst = bullet_hole_multimeshes[texture_index]
+		if mm_inst and mm_inst.multimesh:
+			mm_inst.multimesh.visible_instance_count = 0
+			active_instances[texture_index] = 0
+
+	# Reset legacy node pool (if used anywhere)
+	for hole in bullet_hole_pool:
+		if is_instance_valid(hole):
+			hole.visible = false
+
+	active_bullet_holes.clear()
+	available_holes.clear()

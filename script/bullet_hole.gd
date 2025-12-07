@@ -23,25 +23,14 @@ func _ready():
 	# Set z-index to render behind other elements
 	z_index = z_index_offset
 	
-	# Randomly select a bullet hole texture
-	randomize_texture()
-	
-	# Apply random transformations
-	if random_rotation:
-		rotation_degrees = randf() * 360.0
-	
-	if random_scale:
-		var scale_factor = randf_range(scale_range.x, scale_range.y)
-		scale = Vector2(scale_factor, scale_factor)
+	# Don't load texture yet - wait until hole becomes visible
+	# This saves memory and loading time for unused holes
 	
 	if not DEBUG_DISABLED:
-		print("Bullet hole created with:")
-		print("  - Texture: ", texture.resource_path if texture else "none")
+		print("Bullet hole created (texture will be loaded when visible)")
 		print("  - Position: ", position)
-		print("  - Scale: ", scale)
 		print("  - Z-index: ", z_index)
 		print("  - Visible: ", visible)
-		print("  - Modulate: ", modulate)
 
 func randomize_texture():
 	"""Randomly select one of the bullet hole textures"""
@@ -56,5 +45,29 @@ func randomize_texture():
 func set_hole_position(pos: Vector2):
 	"""Set the local position of the bullet hole relative to parent"""
 	position = pos
+	
+	# Initialize appearance when first positioned (lazy loading)
+	if not texture:
+		initialize_appearance()
+	
 	if not DEBUG_DISABLED:
 		print("Bullet hole positioned at local: ", pos)
+
+func initialize_appearance():
+	"""Initialize the bullet hole appearance (called lazily when first used)"""
+	# Randomly select a bullet hole texture
+	randomize_texture()
+	
+	# Apply random transformations
+	if random_rotation:
+		rotation_degrees = randf() * 360.0
+	
+	if random_scale:
+		var scale_factor = randf_range(scale_range.x, scale_range.y)
+		scale = Vector2(scale_factor, scale_factor)
+	
+	if not DEBUG_DISABLED:
+		print("Bullet hole appearance initialized:")
+		print("  - Texture: ", texture.resource_path if texture else "none")
+		print("  - Scale: ", scale)
+		print("  - Rotation: ", rotation_degrees)
