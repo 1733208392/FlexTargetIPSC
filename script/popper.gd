@@ -167,25 +167,25 @@ func _on_input_event(_viewport, event, shape_idx):
 		var zone_hit = ""
 		var points = 0
 		
-			match shape_idx:
+		match shape_idx:
 			0:  # StandArea (index 0)
-					zone_hit = "StandArea"
-					points = ScoreUtils.new().get_points_for_hit_area("StandArea", 0)
+				zone_hit = "StandArea"
+				points = ScoreUtils.new().get_points_for_hit_area("StandArea", 0)
 				print("Popper stand hit! Starting fall animation...")
 				trigger_fall_animation()
 			1:  # BodyArea (index 1) - Main scoring hit
 				zone_hit = "BodyArea"
-					points = ScoreUtils.new().get_points_for_hit_area("BodyArea", 2)
+				points = ScoreUtils.new().get_points_for_hit_area("BodyArea", 2)
 				print("Popper body hit! Starting fall animation...")
 				trigger_fall_animation()
 			2:  # NeckArea (index 2) - Medium scoring hit
 				zone_hit = "NeckArea"
-					points = ScoreUtils.new().get_points_for_hit_area("NeckArea", 3)
+				points = ScoreUtils.new().get_points_for_hit_area("NeckArea", 3)
 				print("Popper neck hit! Starting fall animation...")
 				trigger_fall_animation()
 			3:  # HeadArea (index 3) - High scoring hit
 				zone_hit = "HeadArea"
-					points = ScoreUtils.new().get_points_for_hit_area("HeadArea", 5)
+				points = ScoreUtils.new().get_points_for_hit_area("HeadArea", 5)
 				print("Popper head hit! Starting fall animation...")
 				trigger_fall_animation()
 			_:
@@ -328,41 +328,37 @@ func handle_bullet_collision(bullet_position: Vector2):
 	
 	var zone_hit = ""
 	var points = 0
+	var should_fall = false
+	var score_util = ScoreUtils.new()
 	
 	# Check which collision area the bullet hit by testing point in shapes
 	# We need to check each collision shape manually since we can't get shape_idx from collision
 	if is_point_in_head_area(local_pos):
 		zone_hit = "HeadArea"
-		points = 5
-		print("COLLISION: Popper head hit by bullet - 5 points!")
-		trigger_fall_animation()
-			if is_point_in_head_area(local_pos):
-				zone_hit = "HeadArea"
-				points = ScoreUtils.new().get_points_for_hit_area("HeadArea", 5)
-				is_target_hit = true
-				should_fall = true
-				print("[popper %s] FAST: Head hit - 5 points!" % popper_id)
-			elif is_point_in_neck_area(local_pos):
-				zone_hit = "NeckArea"
-				points = ScoreUtils.new().get_points_for_hit_area("NeckArea", 3)
-				is_target_hit = true
-				should_fall = true
-				print("[popper %s] FAST: Neck hit - 3 points!" % popper_id)
-			elif is_point_in_body_area(local_pos):
-				zone_hit = "BodyArea"
-				points = ScoreUtils.new().get_points_for_hit_area("BodyArea", 2)
-				is_target_hit = true
-				should_fall = true
-				print("[popper %s] FAST: Body hit - 2 points!" % popper_id)
-			elif is_point_in_stand_area(local_pos):
-				zone_hit = "StandArea"
-				points = ScoreUtils.new().get_points_for_hit_area("StandArea", 0)
-				is_target_hit = true
-				should_fall = true
-				print("[popper %s] FAST: Stand hit - 0 points (will fall)" % popper_id)
-		print("COLLISION: Target hit! Total score: ", total_score)
+		points = score_util.get_points_for_hit_area("HeadArea", 5)
+		should_fall = true
+		print("COLLISION: Popper head hit by bullet - %d points!" % points)
+	elif is_point_in_neck_area(local_pos):
+		zone_hit = "NeckArea"
+		points = score_util.get_points_for_hit_area("NeckArea", 3)
+		should_fall = true
+		print("[popper %s] FAST: Neck hit - %d points!" % [popper_id, points])
+	elif is_point_in_body_area(local_pos):
+		zone_hit = "BodyArea"
+		points = score_util.get_points_for_hit_area("BodyArea", 2)
+		should_fall = true
+		print("[popper %s] FAST: Body hit - %d points!" % [popper_id, points])
+	elif is_point_in_stand_area(local_pos):
+		zone_hit = "StandArea"
+		points = score_util.get_points_for_hit_area("StandArea", 0)
+		should_fall = true
+		print("[popper %s] FAST: Stand hit - %d points (will fall)" % [popper_id, points])
 	else:
 		print("COLLISION: Bullet missed - no target_hit signal emitted")
+		return zone_hit
+	
+	if should_fall:
+		trigger_fall_animation()
 	
 	return zone_hit
 
@@ -435,32 +431,32 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	var points = 0
 	var is_target_hit = false
 	var should_fall = false
+	var score_util = ScoreUtils.new()
 	
-	# Check which zone was hit (highest score first)
-			if is_point_in_head_area(local_pos):
-				zone_hit = "HeadArea"
-				points = ScoreUtils.new().get_points_for_hit_area("HeadArea", 5)
-				is_target_hit = true
-				should_fall = true
-				print("[popper %s] FAST: Head hit - 5 points!" % popper_id)
-			elif is_point_in_neck_area(local_pos):
-				zone_hit = "NeckArea"
-				points = ScoreUtils.new().get_points_for_hit_area("NeckArea", 3)
-				is_target_hit = true
-				should_fall = true
-				print("[popper %s] FAST: Neck hit - 3 points!" % popper_id)
-			elif is_point_in_body_area(local_pos):
-				zone_hit = "BodyArea"
-				points = ScoreUtils.new().get_points_for_hit_area("BodyArea", 2)
-				is_target_hit = true
-				should_fall = true
-				print("[popper %s] FAST: Body hit - 2 points!" % popper_id)
-			elif is_point_in_stand_area(local_pos):
-				zone_hit = "StandArea"
-				points = ScoreUtils.new().get_points_for_hit_area("StandArea", 0)
-				is_target_hit = true
-				should_fall = true
-				print("[popper %s] FAST: Stand hit - 0 points (will fall)" % popper_id)
+	if is_point_in_head_area(local_pos):
+		zone_hit = "HeadArea"
+		points = score_util.get_points_for_hit_area("HeadArea", 5)
+		is_target_hit = true
+		should_fall = true
+		print("[popper %s] FAST: Head hit - %d points!" % [popper_id, points])
+	elif is_point_in_neck_area(local_pos):
+		zone_hit = "NeckArea"
+		points = score_util.get_points_for_hit_area("NeckArea", 3)
+		is_target_hit = true
+		should_fall = true
+		print("[popper %s] FAST: Neck hit - %d points!" % [popper_id, points])
+	elif is_point_in_body_area(local_pos):
+		zone_hit = "BodyArea"
+		points = score_util.get_points_for_hit_area("BodyArea", 2)
+		is_target_hit = true
+		should_fall = true
+		print("[popper %s] FAST: Body hit - %d points!" % [popper_id, points])
+	elif is_point_in_stand_area(local_pos):
+		zone_hit = "StandArea"
+		points = score_util.get_points_for_hit_area("StandArea", 0)
+		is_target_hit = true
+		should_fall = true
+		print("[popper %s] FAST: Stand hit - %d points (will fall)" % [popper_id, points])
 	else:
 		zone_hit = "miss"
 		points = 0
@@ -499,7 +495,7 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 	var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
 	
 	# Load the effect scenes directly
-	var bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
+	var _bullet_smoke_scene = preload("res://scene/bullet_smoke.tscn")
 	var bullet_impact_scene = preload("res://scene/bullet_impact.tscn")
 	
 	# Find the scene root for effects
