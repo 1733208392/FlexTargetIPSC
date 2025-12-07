@@ -11,6 +11,7 @@ var paddle_id: String = ""  # Unique identifier for this paddle
 
 # Bullet spawning
 const BulletScene = preload("res://scene/bullet.tscn")
+const ScoreUtils = preload("res://script/score_utils.gd")
 var debug_markers = true  # Set to false to disable debug markers
 
 # Effect throttling for performance optimization
@@ -185,20 +186,20 @@ func _on_input_event(_viewport, event, shape_idx):
 		match shape_idx:
 			0:  # CircleArea (index 0) - Main target hit
 				print("Paddle %s circle area hit! Starting fall animation..." % paddle_id)
-				var points = 5
+				var points = ScoreUtils.new().get_points_for_hit_area("CircleArea", 5)
 				total_score += points
 				target_hit.emit(paddle_id, "CircleArea", points, event.position)
 				trigger_fall_animation()
 			1:  # StandArea (index 1) 
 				print("Paddle %s stand area hit!" % paddle_id)
-				var points = 0
+				var points = ScoreUtils.new().get_points_for_hit_area("StandArea", 0)
 				total_score += points
 				target_hit.emit(paddle_id, "StandArea", points, event.position)
 				# Debug: Test shader manually
 				test_shader_effects()
 			_:
 				print("Paddle %s hit!" % paddle_id)
-				var points = 1  # Default points for general hit
+				var points = ScoreUtils.new().get_points_for_hit_area("GeneralHit", 1)  # Default points for general hit
 				total_score += points
 				target_hit.emit(paddle_id, "GeneralHit", points, event.position)
 
@@ -427,14 +428,14 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# Check which zone was hit (highest score first)
 	if is_point_in_circle_area(local_pos):
 		zone_hit = "CircleArea"
-		points = 5
+		points = ScoreUtils.new().get_points_for_hit_area("CircleArea", 5)
 		is_target_hit = true
 		should_fall = true
 		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: Circle area hit - 5 points!" % paddle_id)
 	elif is_point_in_stand_area(local_pos):
 		zone_hit = "StandArea"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("StandArea", 0)
 		is_target_hit = true
 		should_fall = false
 		if not DEBUG_DISABLED:

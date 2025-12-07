@@ -53,6 +53,7 @@ var animation_paused: bool = false
 
 # Scoring system
 var total_score: int = 0
+const ScoreUtils = preload("res://script/score_utils.gd")
 signal target_hit(zone: String, points: int, hit_position: Vector2, target_position: Vector2, target_rotation: float)
 
 func _ready():
@@ -140,30 +141,29 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	var zone_hit = ""
 	var points = 0
 	var is_target_hit = false
-	
+
 	if barrel_wall_hit:
 		# Barrel wall hit - count as miss
 		zone_hit = "barrel_miss"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("miss", 0)
 		is_target_hit = false
 	else:
 		# Check target zones (highest score first)
 		if is_point_in_zone(ipsc_mini, "AZone", local_pos):
 			zone_hit = "AZone"
-			points = 5
 			is_target_hit = true
 		elif is_point_in_zone(ipsc_mini, "CZone", local_pos):
 			zone_hit = "CZone"
-			points = 3
 			is_target_hit = true
 		elif is_point_in_zone(ipsc_mini, "DZone", local_pos):
 			zone_hit = "DZone"
-			points = 1
 			is_target_hit = true
 		else:
 			zone_hit = "miss"
-			points = 0
 			is_target_hit = false
+
+		# Lookup points from settings (or fallback)
+		points = ScoreUtils.new().get_points_for_hit_area(zone_hit, 0)
 	
 	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if not DEBUG_DISABLE: print("[ipsc_mini_rotate] zone_hit: %s, is_target_hit: %s, local_pos: %s" % [zone_hit, is_target_hit, local_pos])

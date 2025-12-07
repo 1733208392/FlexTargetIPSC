@@ -8,6 +8,7 @@ var is_disappearing: bool = false
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
+const ScoreUtils = preload("res://script/score_utils.gd")
 
 # Scoring system
 var total_score: int = 0
@@ -100,11 +101,11 @@ func handle_bullet_collision(bullet_position: Vector2):
 	# Check if hit is in the target zone (ipsc_white only has D-Zone)
 	if is_point_in_zone("DZone", local_pos):
 		zone_hit = "DZone"
-		points = 1
+		points = ScoreUtils.new().get_points_for_hit_area("DZone", 1)
 		print("COLLISION: IPSC White target hit - 1 point!")
 	else:
 		zone_hit = "miss"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("miss", 0)
 		print("COLLISION: Bullet hit target but outside scoring zone")
 	
 	# Update score and emit signal

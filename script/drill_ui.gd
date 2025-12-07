@@ -175,23 +175,19 @@ func _on_show_completion(final_time: float, fastest_time: float, final_score: in
 		print("drill_complete_overlay node: ", drill_complete_overlay)
 		print("drill_complete_overlay visible before: ", drill_complete_overlay.visible)
 	
-	# Get the actual total score from the performance tracker to ensure consistency
-	var actual_total_score = 0
+	# Prefer the final score passed by the drills manager (stage).
+	# Fall back to the performance tracker only if the final_score is 0 or unavailable.
+	var actual_total_score = final_score
 	var drills_manager = get_parent()
-	if drills_manager and drills_manager.has_method("get_performance_tracker"):
+	if (actual_total_score == 0) and drills_manager and drills_manager.has_method("get_performance_tracker"):
 		var tracker = drills_manager.get_performance_tracker()
 		if tracker and tracker.has_method("get_current_total_score"):
 			actual_total_score = tracker.get_current_total_score()
 			if not DEBUG_DISABLED:
-				print("Using actual total score from performance tracker: ", actual_total_score)
+				print("Fell back to performance tracker total score: ", actual_total_score)
 		else:
-			actual_total_score = final_score
 			if not DEBUG_DISABLED:
 				print("Performance tracker not available, using final_score: ", final_score)
-	else:
-		actual_total_score = final_score
-		if not DEBUG_DISABLED:
-			print("Drills manager not available, using final_score: ", final_score)
 	
 	# Calculate hit factor using the consistent total score
 	var hit_factor = 0.0
@@ -263,23 +259,19 @@ func _on_show_completion_with_timeout(final_time: float, fastest_time: float, fi
 	if not DEBUG_DISABLED:
 		print("Showing completion overlay with timeout")
 	
-	# Get the actual total score from the performance tracker to ensure consistency
-	var actual_total_score = 0
+	# Prefer the final score passed by the drills manager (stage).
+	# Fall back to the performance tracker only if the final_score is 0 or unavailable.
+	var actual_total_score = final_score
 	var drills_manager = get_parent()
-	if drills_manager and drills_manager.has_method("get_performance_tracker"):
+	if (actual_total_score == 0) and drills_manager and drills_manager.has_method("get_performance_tracker"):
 		var tracker = drills_manager.get_performance_tracker()
 		if tracker and tracker.has_method("get_current_total_score"):
 			actual_total_score = tracker.get_current_total_score()
 			if not DEBUG_DISABLED:
-				print("Using actual total score from performance tracker: ", actual_total_score)
+				print("Fell back to performance tracker total score: ", actual_total_score)
 		else:
-			actual_total_score = final_score
 			if not DEBUG_DISABLED:
 				print("Performance tracker not available, using final_score: ", final_score)
-	else:
-		actual_total_score = final_score
-		if not DEBUG_DISABLED:
-			print("Drills manager not available, using final_score: ", final_score)
 	
 	# Calculate hit factor using the consistent total score
 	var hit_factor = 0.0

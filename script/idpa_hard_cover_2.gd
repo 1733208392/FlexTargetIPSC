@@ -12,6 +12,7 @@ var shot_count: int = 0
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
+const ScoreUtils = preload("res://script/score_utils.gd")
 
 # Bullet hole pool for performance optimization
 var bullet_hole_pool: Array[Node] = []
@@ -294,28 +295,28 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# Check if hard cover was hit first
 	if is_point_in_zone("hard-cover", local_pos):
 		zone_hit = "hard-cover"
-		points = 0  # No score for hard cover
+		points = ScoreUtils.new().get_points_for_hit_area("hard-cover", 0)  # No score for hard cover
 		is_target_hit = true
 	# Check which zone was hit (highest score first)
 	elif is_point_in_zone("head-0", local_pos):
 		zone_hit = "head-0"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("head-0", 0)
 		is_target_hit = true
 	elif is_point_in_zone("heart-0", local_pos):
 		zone_hit = "heart-0"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("heart-0", 0)
 		is_target_hit = true
 	elif is_point_in_zone("body-1", local_pos):
 		zone_hit = "body-1"
-		points = -1
+		points = ScoreUtils.new().get_points_for_hit_area("body-1", -1)
 		is_target_hit = true
 	elif is_point_in_zone("other-3", local_pos):
 		zone_hit = "other-3"
-		points = -3
+		points = ScoreUtils.new().get_points_for_hit_area("other-3", -3)
 		is_target_hit = true
 	else:
 		zone_hit = "miss"
-		points = -5
+		points = ScoreUtils.new().get_points_for_hit_area("miss", -5)
 		is_target_hit = false
 
 	# 2. CONDITIONAL: Only spawn bullet hole if target was actually hit (not hard cover or miss)

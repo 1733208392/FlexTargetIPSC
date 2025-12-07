@@ -17,6 +17,8 @@ var bullet_hole_pool: Array[Node] = []
 var pool_size: int = 8  # Keep 8 bullet holes pre-instantiated
 var active_bullet_holes: Array[Node] = []
 
+const ScoreUtils = preload("res://script/score_utils.gd")
+
 # Shot tracking for disappearing animation - only valid target hits count
 var shot_count: int = 0
 @export var max_shots: int = 2  # Exported so scenes can override in the editor; default 2
@@ -77,7 +79,7 @@ func process_bullet_hit(pos: Vector2) -> void:
 	# Check cover area first (highest priority)
 	var cover_shapes = get_collision_shapes(cover_area)
 	if is_point_in_shapes(pos, cover_shapes):
-		score = -5
+		score = ScoreUtils.new().get_points_for_hit_area("hard-cover", -5)
 		area = "Cover"
 		is_hit = false
 	# Paddle hit detection: use explicit CircleArea check (more robust than generic shape iteration)
@@ -92,7 +94,7 @@ func process_bullet_hit(pos: Vector2) -> void:
 					var circle_radius = circle_shape.radius
 					var distance = pos.distance_to(circle_global_pos)
 					if distance <= circle_radius:
-						score = -5
+						score = ScoreUtils.new().get_points_for_hit_area("paddle", -5)
 						area = "paddle"
 						is_hit = false
 						paddle_hit = true
@@ -113,19 +115,19 @@ func process_bullet_hit(pos: Vector2) -> void:
 			is_hit = true
 			var shape_name = hit_shape.name
 			if shape_name.begins_with("head") or shape_name.begins_with("heart"):
-				score = 0
-				area = "head_heart"
+					score = ScoreUtils.new().get_points_for_hit_area("head-0", 0)
+					area = "head_heart"
 			elif shape_name.begins_with("body"):
-				score = -1
-				area = "body"
+					score = ScoreUtils.new().get_points_for_hit_area("body-1", -1)
+					area = "body"
 			elif shape_name.begins_with("other"):
-				score = -3
-				area = "other"
+					score = ScoreUtils.new().get_points_for_hit_area("other-3", -3)
+					area = "other"
 			else:
-				score = -5
-				area = "miss"
+					score = ScoreUtils.new().get_points_for_hit_area("miss", -5)
+					area = "miss"
 		else:
-			score = -5
+			score = ScoreUtils.new().get_points_for_hit_area("miss", -5)
 			area = "miss"
 			is_hit = false  # Miss still counts as hitting the target area
 	

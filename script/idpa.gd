@@ -51,6 +51,7 @@ var animation_paused: bool = false
 # Scoring system
 var total_score: int = 0
 @export var drill_active: bool = false  # Flag to ignore shots before drill starts
+const ScoreUtils = preload("res://script/score_utils.gd")
 signal target_hit(zone: String, points: int, hit_position: Vector2)
 signal target_disappeared
 
@@ -386,27 +387,25 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	var is_target_hit = false
 
 	# Check which zone was hit (highest score first)
-	# TODO: Update zone names and scoring for IPDA
+	# Use ScoreUtils to resolve points from configuration (fallback preserved)
 	if is_point_in_zone("head-0", local_pos):
 		zone_hit = "head-0"
-		points = 0
 		is_target_hit = true
 	elif is_point_in_zone("heart-0", local_pos):
 		zone_hit = "heart-0"
-		points = 0
 		is_target_hit = true
 	elif is_point_in_zone("body-1", local_pos):
 		zone_hit = "body-1"
-		points = -1
 		is_target_hit = true
 	elif is_point_in_zone("other-3", local_pos):
 		zone_hit = "other-3"
-		points = -3
 		is_target_hit = true
 	else:
 		zone_hit = "miss"
-		points = -5
 		is_target_hit = false
+
+	# Lookup points using the centralized utility
+	points = ScoreUtils.new().get_points_for_hit_area(zone_hit, 0)
 
 	# 2. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if is_target_hit:
@@ -560,23 +559,23 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	# TODO: Update zone names and scoring for IPDA
 	if is_point_in_zone("head-0", local_pos):
 		zone_hit = "head-0"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("head-0", 0)
 		is_target_hit = true
 	elif is_point_in_zone("heart-0", local_pos):
 		zone_hit = "heart-0"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("heart-0", 0)
 		is_target_hit = true
 	elif is_point_in_zone("body-1", local_pos):
 		zone_hit = "body-1"
-		points = -1
+		points = ScoreUtils.new().get_points_for_hit_area("body-1", -1)
 		is_target_hit = true
 	elif is_point_in_zone("other-3", local_pos):
 		zone_hit = "other-3"
-		points = -3
+		points = ScoreUtils.new().get_points_for_hit_area("other-3", -3)
 		is_target_hit = true
 	else:
 		zone_hit = "miss"
-		points = -5
+		points = ScoreUtils.new().get_points_for_hit_area("miss", -5)
 		is_target_hit = false
 
 	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit

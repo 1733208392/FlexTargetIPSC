@@ -14,6 +14,7 @@ var shot_count: int = 0
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
+const ScoreUtils = preload("res://script/score_utils.gd")
 
 # Bullet hole pool for performance optimization
 var bullet_hole_pool: Array[Node] = []
@@ -160,27 +161,27 @@ func handle_bullet_collision(bullet_position: Vector2) -> String:
 	# Check which zone was hit (highest score first)
 	if is_point_in_zone("AZone", local_pos):
 		zone_hit = "AZone"
-		points = 5
+		points = ScoreUtils.new().get_points_for_hit_area("AZone", 5)
 		if not DEBUG_DISABLE: print("COLLISION: Zone A hit by bullet - 5 points!")
 	elif is_point_in_zone("CZone", local_pos):
 		zone_hit = "CZone"
-		points = 3
+		points = ScoreUtils.new().get_points_for_hit_area("CZone", 3)
 		if not DEBUG_DISABLE: print("COLLISION: Zone C hit by bullet - 3 points!")
 	elif is_point_in_zone("DZone", local_pos):
 		zone_hit = "DZone"
-		points = 1
+		points = ScoreUtils.new().get_points_for_hit_area("DZone", 1)
 		if not DEBUG_DISABLE: print("COLLISION: Zone D hit by bullet - 1 point!")
 	elif is_point_in_zone("BlackZoneLeft", local_pos):
 		zone_hit = "BlackZoneLeft"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("BlackZoneLeft", 0)
 		if not DEBUG_DISABLE: print("COLLISION: Black Zone Left hit by bullet - 0 points!")
 	elif is_point_in_zone("BlackZoneRight", local_pos):
 		zone_hit = "BlackZoneRight"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("BlackZoneRight", 0)
 		if not DEBUG_DISABLE: print("COLLISION: Black Zone Right hit by bullet - 0 points!")
 	else:
 		zone_hit = "miss"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("miss", 0)
 		if not DEBUG_DISABLE: print("COLLISION: Bullet hit target but outside scoring zones")
 	
 	# Update score and emit signal

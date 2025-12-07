@@ -14,6 +14,7 @@ var shot_count: int = 0
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
+const ScoreUtils = preload("res://script/score_utils.gd")
 
 # Bullet hole pool for performance optimization
 var bullet_hole_pool: Array[Node] = []
@@ -427,31 +428,31 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# Check which zone was hit (highest score first, including WhiteZone penalty)
 	if is_point_in_zone("WhiteZone", local_pos):
 		zone_hit = "WhiteZone"
-		points = -5
+		points = ScoreUtils.new().get_points_for_hit_area("WhiteZone", -5)
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[hostage] FAST: WhiteZone hit - -5 points!")
 	elif is_point_in_zone("AZone", local_pos):
 		zone_hit = "AZone"
-		points = 5
+		points = ScoreUtils.new().get_points_for_hit_area("AZone", 5)
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[hostage] FAST: Zone A hit - 5 points!")
 	elif is_point_in_zone("CZone", local_pos):
 		zone_hit = "CZone"
-		points = 3
+		points = ScoreUtils.new().get_points_for_hit_area("CZone", 3)
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[hostage] FAST: Zone C hit - 3 points!")
 	elif is_point_in_zone("DZone", local_pos):
 		zone_hit = "DZone"
-		points = 1
+		points = ScoreUtils.new().get_points_for_hit_area("DZone", 1)
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[hostage] FAST: Zone D hit - 1 point!")
 	else:
 		zone_hit = "miss"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("miss", 0)
 		is_target_hit = false
 		if not DEBUG_DISABLED:
 			print("[hostage] FAST: Bullet missed target - no bullet hole")

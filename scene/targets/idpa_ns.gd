@@ -12,6 +12,7 @@ var shot_count: int = 0
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
+const ScoreUtils = preload("res://script/score_utils.gd")
 
 # Bullet hole pool for performance optimization
 var bullet_hole_pool: Array[Node] = []
@@ -434,42 +435,42 @@ func handle_websocket_bullet_hit_ns(world_pos: Vector2):
 	# Check if point is in ns-5 collision area (highest priority - IDPA-NS specific zone)
 	if is_point_in_zone("ns-5", local_pos):
 		zone_hit = "ns-5"
-		points = -5
+		points = ScoreUtils.new().get_points_for_hit_area("ns-5", -5)
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[IDPA-NS] Hit detected in ns-5 zone at local_pos:", local_pos)
 	# Head zone (0 points in IDPA-NS scoring)
 	elif is_point_in_zone("head-0", local_pos):
 		zone_hit = "head-0"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("head-0", 0)
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[IDPA-NS] Hit detected in head-0 zone at local_pos:", local_pos)
 	# Heart zone (0 points in IDPA-NS scoring)
 	elif is_point_in_zone("heart-0", local_pos):
 		zone_hit = "heart-0"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("heart-0", 0)
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[IDPA-NS] Hit detected in heart-0 zone at local_pos:", local_pos)
 	# Body zone (-1 point in IDPA-NS scoring)
 	elif is_point_in_zone("body-1", local_pos):
 		zone_hit = "body-1"
-		points = -1
+		points = ScoreUtils.new().get_points_for_hit_area("body-1", -1)
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[IDPA-NS] Hit detected in body-1 zone at local_pos:", local_pos)
 	# Other zone (-3 points in IDPA-NS scoring)
 	elif is_point_in_zone("other-3", local_pos):
 		zone_hit = "other-3"
-		points = -3
+		points = ScoreUtils.new().get_points_for_hit_area("other-3", -3)
 		is_target_hit = true
 		if not DEBUG_DISABLED:
 			print("[IDPA-NS] Hit detected in other-3 zone at local_pos:", local_pos)
 	else:
 		# Miss
 		zone_hit = "miss"
-		points = -5
+		points = ScoreUtils.new().get_points_for_hit_area("miss", -5)
 		is_target_hit = false
 		if not DEBUG_DISABLED:
 			print("[IDPA-NS] Miss detected at local_pos:", local_pos)

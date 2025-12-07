@@ -12,6 +12,7 @@ var shot_count: int = 0
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
 const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
+const ScoreUtils = preload("res://script/score_utils.gd")
 
 # Bullet hole system - GPU instanced rendering for performance
 var bullet_hole_multimeshes: Array[MultiMeshInstance2D] = []
@@ -396,19 +397,19 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# Check which zone was hit (highest score first)
 	if is_point_in_zone("AZone", local_pos):
 		zone_hit = "AZone"
-		points = 5
+		points = ScoreUtils.new().get_points_for_hit_area("AZone", 5)
 		is_target_hit = true
 	elif is_point_in_zone("CZone", local_pos):
 		zone_hit = "CZone"
-		points = 3
+		points = ScoreUtils.new().get_points_for_hit_area("CZone", 3)
 		is_target_hit = true
 	elif is_point_in_zone("DZone", local_pos):
 		zone_hit = "DZone"
-		points = 1
+		points = ScoreUtils.new().get_points_for_hit_area("DZone", 1)
 		is_target_hit = true
 	else:
 		zone_hit = "miss"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("miss", 0)
 		is_target_hit = false
 	
 	# 2. CONDITIONAL: Only spawn bullet hole and impact sound if target was actually hit
@@ -610,25 +611,25 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	if barrel_wall_hit:
 		# Barrel wall hit - count as miss
 		zone_hit = "barrel_miss"
-		points = 0
+		points = ScoreUtils.new().get_points_for_hit_area("barrel_miss", 0)
 		is_target_hit = false
 	else:
 		# Check target zones (highest score first)
 		if is_point_in_zone("AZone", local_pos):
 			zone_hit = "AZone"
-			points = 5
+			points = ScoreUtils.new().get_points_for_hit_area("AZone", 5)
 			is_target_hit = true
 		elif is_point_in_zone("CZone", local_pos):
 			zone_hit = "CZone"
-			points = 3
+			points = ScoreUtils.new().get_points_for_hit_area("CZone", 3)
 			is_target_hit = true
 		elif is_point_in_zone("DZone", local_pos):
 			zone_hit = "DZone"
-			points = 1
+			points = ScoreUtils.new().get_points_for_hit_area("DZone", 1)
 			is_target_hit = true
 		else:
 			zone_hit = "miss"
-			points = 0
+			points = ScoreUtils.new().get_points_for_hit_area("miss", 0)
 			is_target_hit = false
 	
 	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
