@@ -353,7 +353,7 @@ func _on_clear_pressed():
 				print("Removed ", target_type, " for respawning")
 		# Respawn the target
 		spawn_target_by_type(target_type)
-	elif target_type == "ipsc_mini":
+	elif target_type in ["ipsc_mini","ipsc_mini_rotate", "ipsc_mini_black_1","ipsc_mini_black_2", "hostage"]:
 		# For bullseye, just reset the target state if needed
 		if current_target_instance and is_instance_valid(current_target_instance):
 			current_target_instance.clear_all_bullet_holes()

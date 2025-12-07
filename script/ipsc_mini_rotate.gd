@@ -24,6 +24,11 @@ var bullet_hole_pool: Array[Node] = []
 var pool_size: int = 8  # Keep 8 bullet holes pre-instantiated
 var active_bullet_holes: Array[Node] = []
 
+# GPU instanced bullet hole rendering (ported from `ipsc_mini.gd`)
+var bullet_hole_multimeshes: Array = []
+var bullet_hole_textures: Array = []
+var max_instances_per_texture: int = 32  # Maximum bullet holes per texture type
+var active_instances: Dictionary = {}
 # Effect throttling for performance optimization
 var last_sound_time: float = 0.0
 var last_smoke_time: float = 0.0
@@ -164,8 +169,11 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	if not DEBUG_DISABLE: print("[ipsc_mini_rotate] zone_hit: %s, is_target_hit: %s, local_pos: %s" % [zone_hit, is_target_hit, local_pos])
 	if is_target_hit:
 		spawn_bullet_hole(ipsc_mini, local_pos)
+		play_impact_sound_at_position_throttled(world_pos, Time.get_ticks_msec() / 1000.0)
+	
 	# 4. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
-	spawn_bullet_effects_at_position(world_pos, is_target_hit)
+	else:
+		spawn_bullet_effects_at_position(world_pos, is_target_hit)
 	
 	# 5. Update score and emit signal
 	total_score += points
@@ -240,41 +248,44 @@ func is_point_in_zone(target_node: Node, zone_name: String, point: Vector2) -> b
 func spawn_bullet_hole(target_node: Node, local_position: Vector2):
 	"""Spawn a bullet hole at the specified local position using object pool"""
 	if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Spawning bullet hole at local pos: %s" % local_position)
-	var bullet_hole = get_pooled_bullet_hole()
-	if bullet_hole:
-		# Add to target so it rotates/moves with it
-		target_node.add_child(bullet_hole)
-		bullet_hole.position = local_position
-		# Desired draw order: target < bullet hole < barrel wall.
-		# Ensure barrel wall sits highest; adjust if scene was misconfigured.
-		var target_z = 0
-		if target_node is CanvasItem:
-			target_z = target_node.z_index
-		var hole_z = target_z + 1
-		var barrel_wall := get_node_or_null("BarrelWall")
-		if barrel_wall and barrel_wall is CanvasItem:
-			var barrel_z = barrel_wall.z_index
-			# Raise barrel above target if necessary.
-			if barrel_z <= target_z:
-				barrel_z = target_z + 2
-				barrel_wall.z_index = barrel_z
-			# Keep barrel above planned hole.
-			if barrel_z <= hole_z:
-				barrel_z = hole_z + 1
-				barrel_wall.z_index = barrel_z
-			# Place hole directly beneath barrel while above target.
-			hole_z = max(target_z + 1, barrel_wall.z_index - 1)
-		bullet_hole.z_index = hole_z
-		# Persist offset (bullet_hole has exported var z_index_offset)
-		bullet_hole.z_index_offset = hole_z
-		bullet_hole.visible = true
-		if not DEBUG_DISABLE:
-			print("[ipsc_mini_rotate] Bullet hole positioned z_index=", hole_z, " target_z=", target_z, " barrel_z=", (barrel_wall.z_index if barrel_wall and barrel_wall is CanvasItem else "N/A"))
-		# Track active
-		if bullet_hole not in active_bullet_holes:
-			active_bullet_holes.append(bullet_hole)
-	else:
-		if not DEBUG_DISABLE: print("[ipsc_mini_rotate] No bullet hole available from pool")
+
+	# Use GPU instanced MultiMesh if available (ported from ipsc_mini.gd)
+	if bullet_hole_multimeshes.size() == 0:
+		# Fallback to legacy node pool if instancing hasn't been initialized
+		var bullet_hole = get_pooled_bullet_hole()
+		if bullet_hole:
+			target_node.add_child(bullet_hole)
+			bullet_hole.position = local_position
+			bullet_hole.visible = true
+			if bullet_hole not in active_bullet_holes:
+				active_bullet_holes.append(bullet_hole)
+		else:
+			if not DEBUG_DISABLE: print("[ipsc_mini_rotate] No bullet hole available from pool (fallback)")
+		return
+
+	# Randomly choose a texture/index
+	if bullet_hole_textures.size() == 0:
+		return
+	var texture_index = randi() % bullet_hole_textures.size()
+	if texture_index >= bullet_hole_multimeshes.size():
+		return
+
+	var mm_inst = bullet_hole_multimeshes[texture_index]
+	var multimesh = mm_inst.multimesh
+	var current_count = active_instances.get(texture_index, 0)
+	if current_count >= max_instances_per_texture:
+		# Pool exhausted for this texture
+		return
+
+	# Build instance transform in the local space of the target (multimesh is child of target)
+	var transform = Transform2D()
+	var scale_factor = randf_range(0.6, 0.8)
+	transform = transform.scaled(Vector2(scale_factor, scale_factor))
+	transform.origin = local_position
+
+	multimesh.set_instance_transform_2d(current_count, transform)
+	multimesh.visible_instance_count = current_count + 1
+	active_instances[texture_index] = current_count + 1
 
 func spawn_bullet_effects_at_position(world_pos: Vector2, _is_target_hit: bool = true):
 	"""Spawn bullet smoke and impact effects with throttling for performance"""
@@ -454,11 +465,18 @@ func get_total_score() -> int:
 
 func reset_bullet_hole_pool():
 	"""Reset the bullet hole pool by hiding all active holes"""
-	# Hide all active bullet holes
+	# Reset GPU-instanced MultiMesh visible instance counts
+	for texture_index in range(bullet_hole_multimeshes.size()):
+		var mm_inst = bullet_hole_multimeshes[texture_index]
+		if mm_inst and mm_inst.multimesh:
+			mm_inst.multimesh.visible_instance_count = 0
+			active_instances[texture_index] = 0
+
+	# Fallback: hide any legacy node-pool bullet holes
 	for hole in active_bullet_holes:
 		if is_instance_valid(hole):
 			hole.visible = false
-	
+
 	# Clear active list
 	active_bullet_holes.clear()
 
@@ -475,49 +493,138 @@ func _reset_local_paddle():
 		return
 
 func initialize_bullet_hole_pool():
-	"""Pre-instantiate bullet holes for performance optimization"""
-	if not BulletHoleScene:
-		return
-	
-	# Clear existing pool
-	for hole in bullet_hole_pool:
-		if is_instance_valid(hole):
-			hole.queue_free()
-	bullet_hole_pool.clear()
-	active_bullet_holes.clear()
-	
-	# Pre-instantiate bullet holes
-	for i in range(pool_size):
-		var bullet_hole = BulletHoleScene.instantiate()
-		# Don't add to scene yet - will be added when spawned
-		bullet_hole.visible = false  # Hide until needed
-		# Z-index is set manually in the editor
-		bullet_hole_pool.append(bullet_hole)
+	"""Initialize GPU-instanced bullet hole rendering system (ported from ipsc_mini.gd).
+	Creates a MultiMeshInstance2D for each bullet hole texture and parents them to the
+	`IPSCMini` child so they rotate/move with the target.
+	"""
+
+	# Clear any existing multimeshes
+	for multimesh in bullet_hole_multimeshes:
+		if is_instance_valid(multimesh):
+			multimesh.queue_free()
+	bullet_hole_multimeshes.clear()
+	bullet_hole_textures.clear()
+	active_instances.clear()
+
+	# Load bullet hole textures
+	load_bullet_hole_textures()
+
+	# Determine parent for multimesh instances (prefer IPSCMini child so holes rotate with it)
+	var parent_node = get_node_or_null("IPSCMini")
+	if not parent_node:
+		parent_node = self
+
+	# Create a MultiMesh instance for each texture
+	for i in range(bullet_hole_textures.size()):
+		var multimesh_instance = MultiMeshInstance2D.new()
+		parent_node.add_child(multimesh_instance)
+		multimesh_instance.z_index = 0
+
+		# Create and configure the MultiMesh
+		var multimesh = MultiMesh.new()
+		multimesh.transform_format = MultiMesh.TRANSFORM_2D
+		multimesh.instance_count = max_instances_per_texture
+		multimesh.visible_instance_count = 0
+
+		# Create mesh for this texture
+		var mesh = create_bullet_hole_mesh(bullet_hole_textures[i])
+		multimesh.mesh = mesh
+		multimesh_instance.multimesh = multimesh
+
+		# Try to attach material/texture to the instance if supported
+		if mesh and mesh.material:
+			var has_material_prop := false
+			for prop in multimesh_instance.get_property_list():
+				if prop.name == "material":
+					has_material_prop = true
+					break
+			if has_material_prop:
+				multimesh_instance.material = mesh.material
+				if multimesh_instance.material is ShaderMaterial:
+					multimesh_instance.material.set_shader_parameter("texture_albedo", bullet_hole_textures[i])
+			elif mesh.material is ShaderMaterial:
+				mesh.material.set_shader_parameter("texture_albedo", bullet_hole_textures[i])
+
+		# Additional attempt to set a 'texture' property if present
+		for p in multimesh_instance.get_property_list():
+			if p.name == "texture":
+				multimesh_instance.set("texture", bullet_hole_textures[i])
+				break
+
+		bullet_hole_multimeshes.append(multimesh_instance)
+		active_instances[i] = 0  # Track active instances for this texture
+
+	# Keep legacy node pool arrays intact for fallback
 
 func get_pooled_bullet_hole() -> Node:
-	"""Get an available bullet hole from the pool, or create new if needed"""
-	# Try to find an inactive bullet hole in the pool
+	"""Minimal fallback: return an inactive pooled node or instantiate a new one."""
 	for hole in bullet_hole_pool:
 		if is_instance_valid(hole) and not hole.visible:
 			return hole
-	
-	# If no available holes in pool, create a new one (fallback)
+
 	if BulletHoleScene:
 		var new_hole = BulletHoleScene.instantiate()
-		bullet_hole_pool.append(new_hole)  # Add to pool for future use
+		bullet_hole_pool.append(new_hole)
 		return new_hole
-	
+
 	return null
 
+
 func return_bullet_hole_to_pool(hole: Node):
-	"""Return a bullet hole to the pool by hiding it"""
 	if is_instance_valid(hole):
 		hole.visible = false
-		# Remove from active list
 		if hole in active_bullet_holes:
 			active_bullet_holes.erase(hole)
+
+func load_bullet_hole_textures():
+	"""Load all bullet hole textures"""
+	bullet_hole_textures = [
+		load("res://asset/bullet_hole1.png"),
+		load("res://asset/bullet_hole2.png"),
+		load("res://asset/bullet_hole3.png"),
+		load("res://asset/bullet_hole4.png"),
+		load("res://asset/bullet_hole5.png"),
+		load("res://asset/bullet_hole6.png")
+	]
+
+	# Verify all textures loaded
+	for i in range(bullet_hole_textures.size()):
+		if not bullet_hole_textures[i]:
+			print("ERROR: Failed to load bullet hole texture ", i + 1)
+
+
+func create_bullet_hole_mesh(texture: Texture2D) -> QuadMesh:
+	"""Create a quad mesh for the bullet hole texture"""
+	var mesh = QuadMesh.new()
+	mesh.size = texture.get_size()
+
+	# Create shader material with texture
+	var shader_material = ShaderMaterial.new()
+	var shader = load("res://shader/bullet_hole_instanced.gdshader")
+	if shader:
+		shader_material.shader = shader
+		shader_material.set_shader_parameter("texture_albedo", texture)
+
+	mesh.material = shader_material
+	return mesh
 
 func setup_z_index_layering():
 	"""Set up proper z-index layering for visual elements"""
 	# Z-index values are now set manually in the editor
 	pass
+
+
+func clear_all_bullet_holes() -> void:
+	# Reset instanced MultiMesh counts
+	for texture_index in range(bullet_hole_multimeshes.size()):
+		var mm_inst = bullet_hole_multimeshes[texture_index]
+		if mm_inst and mm_inst.multimesh:
+			mm_inst.multimesh.visible_instance_count = 0
+			active_instances[texture_index] = 0
+
+	# Reset legacy node pool (if used anywhere)
+	for hole in bullet_hole_pool:
+		if is_instance_valid(hole):
+			hole.visible = false
+
+	active_bullet_holes.clear()
