@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://cgosfq33rfilf"]
+[gd_scene load_steps=13 format=3 uid="uid://cgosfq33rfilf"]
 
 [ext_resource type="Script" uid="uid://csw1htde5tl1j" path="res://script/games/menu.gd" id="1_8nwqc"]
 [ext_resource type="Texture2D" uid="uid://du28da4oqj01r" path="res://asset/games/menu-back.png" id="2_3y2rt"]
@@ -10,6 +10,8 @@
 [ext_resource type="Texture2D" uid="uid://ujfohlxdg05a" path="res://asset/games/fruit-menu-image-selected.png" id="7_t0a87"]
 [ext_resource type="Texture2D" uid="uid://dlcxoq4rafrg3" path="res://asset/games/wack-a-mole/GUI/mole-menu-button.png" id="9_qo0fc"]
 [ext_resource type="Texture2D" uid="uid://d0tr064yt51b1" path="res://asset/games/wack-a-mole/GUI/mole-menu-button-selected.png" id="10_k48pe"]
+[ext_resource type="Texture2D" uid="uid://dacvtupxiuwjb" path="res://asset/tictactoe_icon.png" id="11_lira2"]
+[ext_resource type="Texture2D" uid="uid://c6q41kb2x6fwy" path="res://asset/tictactoe_icon_selected.png" id="12_2klep"]
 
 [node name="Menu" type="Node2D"]
 script = ExtResource("1_8nwqc")
@@ -104,6 +106,25 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("6_t0a87")
 theme_override_font_sizes/font_size = 40
 text = "Mole Attack"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="Panel/VBoxContainer2"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="tictactoe" type="TextureButton" parent="Panel/VBoxContainer2/HBoxContainer4"]
+layout_mode = 2
+texture_normal = ExtResource("11_lira2")
+texture_pressed = ExtResource("12_2klep")
+texture_hover = ExtResource("12_2klep")
+texture_focused = ExtResource("12_2klep")
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer2/HBoxContainer4"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_t0a87")
+theme_override_font_sizes/font_size = 40
+text = "Tic Tac Toe"
 horizontal_alignment = 1
 vertical_alignment = 1
 
