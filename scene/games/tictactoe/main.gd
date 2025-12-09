@@ -66,6 +66,13 @@ func _ready():
 		if is_instance_valid(b) and b.has_signal("pressed"):
 			b.pressed.connect(Callable(self, "_on_difficulty_button_pressed_focus").bind(i))
 
+	# Notify HttpService that this mini-game has started (mirrors the main game implementation)
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service and http_service.has_method("start_game"):
+		http_service.start_game(func(result, response_code, _headers, _body):
+			print("[TicTacToe] Game started - Result: ", result, ", Response Code: ", response_code)
+		)
+
 func _on_cell_updated(_cell):
 	if is_game_end:
 		return
@@ -210,41 +217,57 @@ func _difficulty_index_from_string(d: String) -> int:
 			return 3
 	return 2
 
+func _apply_saved_difficulty(entry: Dictionary) -> bool:
+	if typeof(entry) != TYPE_DICTIONARY:
+		return false
+	if not entry.has("ai_difficulty"):
+		return false
+	ai_difficulty = str(entry["ai_difficulty"])
+	_focus_index = _difficulty_index_from_string(ai_difficulty)
+	print("[TicTacToe] Restored difficulty from GlobalData: %s (focus index %d)" % [ai_difficulty, _focus_index])
+	call_deferred("_apply_focus")
+	return true
+
 func _save_difficulty_setting() -> void:
-	# Prefer using the HttpService autoload to persist into settings.json
-	var http = get_node_or_null("/root/HttpService")
-	if http and http.has_method("save_game"):
-		# Build settings dict; send it to save_game asynchronously
-		var settings = {"tictactoe": {"ai_difficulty": ai_difficulty}}
-		http.save_game(Callable(self, "_on_http_save_game_result"), "settings", settings)
+	var global_data = get_node_or_null("/root/GlobalData")
+	if not global_data:
+		print("[TicTacToe] Warning: GlobalData not available, cannot save difficulty")
 		return
 
-	# Fallback: save to a local ConfigFile
-	var cf = ConfigFile.new()
-	cf.load("user://tictactoe.cfg")
-	cf.set_value("tictactoe", "ai_difficulty", ai_difficulty)
-	var err = cf.save("user://tictactoe.cfg")
-	if err != OK:
-		print("[TicTacToe] Warning: failed to save difficulty setting to ConfigFile, err= %d" % err)
+	var tictactoe_entry = {}
+	if global_data.settings_dict.has("tictactoe"):
+		var existing = global_data.settings_dict.get("tictactoe")
+		if typeof(existing) == TYPE_DICTIONARY:
+			tictactoe_entry = existing.duplicate(true)
+
+	tictactoe_entry["ai_difficulty"] = ai_difficulty
+	global_data.settings_dict["tictactoe"] = tictactoe_entry
+
+	var http = get_node_or_null("/root/HttpService")
+	if http and http.has_method("save_game"):
+		var settings_snapshot = global_data.settings_dict.duplicate(true)
+		var content = JSON.stringify(settings_snapshot)
+		http.save_game(Callable(self, "_on_http_save_game_result"), "settings", content)
+	else:
+		print("[TicTacToe] Warning: HttpService.save_game not available, difficulty persisted only in GlobalData")
 
 func _load_difficulty_setting() -> void:
-	# Prefer HttpService.load_game to read settings.json
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.settings_dict.has("tictactoe"):
+		var entry = global_data.settings_dict.get("tictactoe")
+		if _apply_saved_difficulty(entry):
+			return
+
+	# Prefer HttpService.load_game to read settings.json when GlobalData entry is missing
 	var http = get_node_or_null("/root/HttpService")
 	if http and http.has_method("load_game"):
 		http.load_game(Callable(self, "_on_http_load_game_result"), "settings")
 		# Async; callback will call _apply_focus when loaded (or on failure)
 		return
-	
-	# Fallback: try local ConfigFile synchronously
-	var cf = ConfigFile.new()
-	if cf.load("user://tictactoe.cfg") == OK:
-		var d = cf.get_value("tictactoe", "ai_difficulty", null)
-		if d != null:
-			ai_difficulty = str(d)
-			_focus_index = _difficulty_index_from_string(ai_difficulty)
-			print("[TicTacToe] Loaded persisted difficulty from ConfigFile: %s (focus index %d)" % [ai_difficulty, _focus_index])
-		call_deferred("_apply_focus")
-		return
+
+	# Nothing else available, fall back to defaults
+	_focus_index = 0
+	call_deferred("_apply_focus")
 
 func _on_http_load_game_result(result, response_code, _headers, body) -> void:
 	# Callback for HttpService.load_game
@@ -280,6 +303,9 @@ func _on_http_load_game_result(result, response_code, _headers, body) -> void:
 			ai_difficulty = str(t["ai_difficulty"])
 			_focus_index = _difficulty_index_from_string(ai_difficulty)
 			print("[TicTacToe] Loaded persisted difficulty from HttpService: %s (focus index %d)" % [ai_difficulty, _focus_index])
+			var global_data = get_node_or_null("/root/GlobalData")
+			if global_data:
+				global_data.settings_dict["tictactoe"] = t
 			# Now that we have loaded the persisted setting, apply focus to that button
 			call_deferred("_apply_focus")
 			return
@@ -311,6 +337,12 @@ func _on_menu_navigate(direction: String) -> void:
 	var menu_controller = get_node_or_null("/root/MenuController")
 	if menu_controller and menu_controller.has_method("play_cursor_sound"):
 		menu_controller.play_cursor_sound()
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Allow keyboard Enter to trigger the remote Enter behavior
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
+			_on_menu_enter()
 
 func _on_menu_back_pressed() -> void:
 	print("[TicTacToe] Remote back/home pressed, returning to menu")

@@ -1,7 +1,7 @@
 extends Control
 
 const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
-const QRCode = preload("res://script/qrcode.gd")
+const QR_CODE_GENERATOR = preload("res://script/qrcode.gd")
 
 # Networking configuration UI for setting channel and target name
 # Features remote control navigation and onscreen keyboard for input
@@ -60,6 +60,18 @@ func _ready():
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] MenuController singleton not found!")
 
+	# Connect button signals to track focused_control when clicked
+	if confirm_button:
+		confirm_button.pressed.connect(Callable(self, "_on_confirm_button_pressed"))
+		confirm_button.focus_entered.connect(Callable(self, "_on_confirm_button_focused"))
+	if dismiss_button:
+		dismiss_button.pressed.connect(Callable(self, "_on_dismiss_button_pressed"))
+		dismiss_button.focus_entered.connect(Callable(self, "_on_dismiss_button_focused"))
+	if name_line_edit:
+		name_line_edit.focus_entered.connect(Callable(self, "_on_name_line_edit_focused"))
+	if workmode_dropdown:
+		workmode_dropdown.focus_entered.connect(Callable(self, "_on_workmode_dropdown_focused"))
+
 	# Connect to GlobalData netlink status signal to populate fields when available
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
@@ -109,7 +121,7 @@ func update_qr_code():
 		return
 		
 	qr_texture.visible = true
-	var qr = QRCode.new()
+	var qr = QR_CODE_GENERATOR.new()
 	var image = qr.generate_image(text, 4)
 	if image:
 		qr_texture.texture = ImageTexture.create_from_image(image)
@@ -467,110 +479,107 @@ func configure_network():
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] Configuration or stopping already in progress, ignoring request")
 		return
-		
-	var http_service = get_node_or_null("/root/HttpService")
-	if not http_service:
+	
+	var global_data = get_node_or_null("/root/GlobalData")
+	if not global_data:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] HttpService not found, cannot configure network")
+			print("[NetworkingConfig] GlobalData not found, cannot check for changes")
 		return
 	
-	# Check if netlink is currently started
-	var global_data = get_node_or_null("/root/GlobalData")
-	var netlink_started = false
-	if global_data and global_data.netlink_status.has("started"):
-		netlink_started = global_data.netlink_status["started"]
+	# Get current values from UI
+	var workmode_index = workmode_dropdown.get_selected_id()
+	var ui_workmode = "master" if workmode_index == 0 else "slave"
+	var ui_target_name = name_line_edit.text.strip_edges()
 	
-	if netlink_started:
-		# Need to stop netlink first
+	# Get current values from netlink_status
+	var current_workmode = global_data.netlink_status.get("work_mode", "slave")
+	var current_target_name = global_data.netlink_status.get("device_name", "")
+	
+	# Check if there are any changes
+	if ui_workmode == current_workmode and ui_target_name == current_target_name:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Netlink is started, stopping first...")
-		is_stopping = true
-		start_progress_animation("stopping_netlink")
-		start_guard_timer()
-		http_service.netlink_stop(_on_netlink_stop_callback)
-	else:
-		# Proceed directly to configuration
-		do_netlink_config()
-
-func do_netlink_config():
-	# Start configuration process
+			print("[NetworkingConfig] No changes detected (workmode: ", ui_workmode, ", name: ", ui_target_name, "), skipping configuration")
+		return
+	
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Changes detected!")
+		print("[NetworkingConfig]   Workmode: ", current_workmode, " -> ", ui_workmode)
+		print("[NetworkingConfig]   Target name: ", current_target_name, " -> ", ui_target_name)
+	
+	# Start the configuration sequence
 	is_configuring = true
 	start_progress_animation("netlink_config_progress")
 	start_guard_timer()
 	
-	# Get values from UI
+	var http_service = get_node_or_null("/root/HttpService")
+	if not http_service:
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] HttpService not found, cannot configure network")
+		is_configuring = false
+		return
+	
+	# Check if netlink is currently started
+	var netlink_started = global_data.netlink_status.has("started") and global_data.netlink_status["started"]
+	
+	if netlink_started:
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Netlink is started, will stop first in sequence...")
+		# Call netlink_stop without callback - will proceed to config in do_netlink_config_sequence
+		http_service.netlink_stop(func(_result, _response_code, _headers, _body): pass)
+		# Give the stop call a moment, then proceed to config
+		await get_tree().create_timer(0.5).timeout
+		do_netlink_config_sequence()
+	else:
+		# Proceed directly to configuration
+		do_netlink_config_sequence()
+
+func do_netlink_config():
+	# This method is kept for backward compatibility but not used in the new flow
+	# The new flow uses do_netlink_config_sequence() instead
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] do_netlink_config called - this is legacy, use do_netlink_config_sequence instead")
+
+func do_netlink_config_sequence():
+	# Call netlink_config without processing its callback
 	var channel = 17
 	var workmode_index = workmode_dropdown.get_selected_id()
 	var workmode = "master" if workmode_index == 0 else "slave"
 	var target_name = name_line_edit.text.strip_edges()
 	
 	if not DEBUG_DISABLED:
-		print("[NetworkingConfig] Configuring network with channel: ", channel, ", workmode: ", workmode, ", target_name: ", target_name)
+		print("[NetworkingConfig] Calling netlink_config in sequence (channel: ", channel, ", workmode: ", workmode, ", name: ", target_name, ")")
 	
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
-		http_service.netlink_config(_on_netlink_config_callback, channel, target_name, workmode)
-
-func _on_netlink_stop_callback(result, response_code, _headers, _body):
-	stop_timers()
-	
-	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Netlink stop successful, proceeding to config...")
-		
-		# Update GlobalData to mark netlink as stopped
-		var global_data = get_node_or_null("/root/GlobalData")
-		if global_data:
-			global_data.netlink_status["started"] = false
-			if not DEBUG_DISABLED:
-				print("[NetworkingConfig] Updated GlobalData.netlink_status.started to false")
-		
-		is_stopping = false
-		# Now proceed to configuration
-		do_netlink_config()
+		# Call netlink_config with a dummy callback (no processing)
+		http_service.netlink_config(func(_result, _response_code, _headers, _body): pass, channel, target_name, workmode)
+		# Give the config call a moment to execute, then call netlink_start
+		await get_tree().create_timer(0.5).timeout
+		do_netlink_start()
 	else:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Netlink stop failed - Result: ", result, ", Code: ", response_code)
-		set_status_stop_failed()
-		is_stopping = false
+			print("[NetworkingConfig] HttpService not found in do_netlink_config_sequence")
+		_finish_configuration()
 
-func _on_netlink_config_callback(result, response_code, _headers, _body):
-	stop_timers()
+func do_netlink_start():
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Calling netlink_start in sequence")
 	
-	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
-		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Netlink config successful, updating GlobalData and starting netlink...")
-		
-		# Update GlobalData.netlink_status with the new configuration
-		var global_data = get_node_or_null("/root/GlobalData")
-		if global_data:
-			var channel = 17
-			var workmode_index = workmode_dropdown.get_selected_id()
-			var workmode = "master" if workmode_index == 0 else "slave"
-			var target_name = name_line_edit.text.strip_edges()
-			
-			# Update netlink_status with new configuration
-			global_data.netlink_status["channel"] = channel
-			global_data.netlink_status["work_mode"] = workmode
-			global_data.netlink_status["device_name"] = target_name
-			global_data.netlink_status["started"] = false  # Will be updated when start succeeds
-			
-			if not DEBUG_DISABLED:
-				print("[NetworkingConfig] Updated GlobalData.netlink_status: ", global_data.netlink_status)
-		
-		var http_service = get_node_or_null("/root/HttpService")
-		if http_service:
-			http_service.netlink_start(_on_netlink_start_callback)
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		http_service.netlink_start(_on_netlink_start_callback)
 	else:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Netlink config failed - Result: ", result, ", Code: ", response_code)
-		set_status_failed()
-		is_configuring = false
+			print("[NetworkingConfig] HttpService not found in do_netlink_start")
+		_finish_configuration()
 
 func _on_netlink_start_callback(result, response_code, _headers, _body):
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Netlink start successful, requesting status...")
+			print("[NetworkingConfig] Netlink start successful, waiting 3s for network configuration to complete...")
+		
+		# Wait 3 seconds for the network configuration to complete
+		await get_tree().create_timer(3.0).timeout
 		
 		# Request status to get the actual bluetooth_name
 		var http_service = get_node_or_null("/root/HttpService")
@@ -585,11 +594,13 @@ func _on_netlink_start_callback(result, response_code, _headers, _body):
 		is_configuring = false
 
 func _on_netlink_status_response(result, response_code, _headers, body):
+	stop_timers()
+	
 	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 		var json = JSON.new()
 		var parse_result = json.parse(body.get_string_from_utf8())
 		if parse_result == OK:
-			var status = json.get_data()
+			var status = json.get_data()["data"]
 			var global_data = get_node_or_null("/root/GlobalData")
 			if global_data:
 				global_data.netlink_status = status
@@ -660,6 +671,44 @@ func set_status_timeout():
 func _on_name_text_submitted(_new_text: String):
 	hide_keyboard()
 	name_line_edit.call_deferred("grab_focus")
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
+			_on_enter_pressed()
+
+# Focus and button press handlers to sync focused_control with UI interaction
+func _on_name_line_edit_focused() -> void:
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Name LineEdit focused via mouse click")
+	set_focused_control(0)
+
+func _on_workmode_dropdown_focused() -> void:
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] WorkMode dropdown focused via mouse click")
+	set_focused_control(1)
+
+func _on_confirm_button_focused() -> void:
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Confirm button focused via mouse click")
+	set_focused_control(2)
+
+func _on_confirm_button_pressed() -> void:
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Confirm button pressed via mouse click")
+	focused_control = 2
+	configure_network()
+
+func _on_dismiss_button_focused() -> void:
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Dismiss button focused via mouse click")
+	# For dismiss button, we just set focus without changing focused_control tracking
+	# since it has its own back behavior
+
+func _on_dismiss_button_pressed() -> void:
+	if not DEBUG_DISABLED:
+		print("[NetworkingConfig] Dismiss button pressed via mouse click")
+	_on_back_pressed()
 
 func set_status_stop_failed():
 	stop_timers()

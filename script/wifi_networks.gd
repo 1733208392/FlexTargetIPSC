@@ -236,34 +236,60 @@ func _build_list():
 	if scroll_container:
 		scroll_container.scroll_vertical = 0
 
+	# Get the currently connected SSID from GlobalData if available
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.netlink_status and global_data.netlink_status.has("wifi_ssid"):
+		connected_network = global_data.netlink_status.get("wifi_ssid", "")
+		print("[WiFi Networks] Currently connected SSID: ", connected_network)
+
 	# Create button for each network
 	for net_name in networks:
 		var button = Button.new()
 		button.text = net_name
 		button.icon = WIFI_ICON_NETWORK
-		# button.icon = WIFI_CONNECTED_ICON if net_name == connected_network else WIFI_ICON
 		button.focus_mode = Control.FOCUS_ALL
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.theme = WIFI_BUTTON_THEME
+		
+		# Highlight if this is the connected network
+		if net_name == connected_network:
+			button.icon = WIFI_CONNECTED_ICON
+			button.modulate = Color.from_string("#90EE90", Color.WHITE)  # Light green highlight
+			print("[WiFi Networks] Highlighting connected network: ", net_name)
+		
 		button.connect("pressed", Callable(self, "_on_network_selected").bind(net_name))
 		list_vbox.add_child(button)
 		network_buttons.append(button)
 
-	# Set initial focus
+	# Set initial focus to the connected network if available, otherwise first button
 	if network_buttons.size() > 0:
+		if connected_network != "":
+			# Find and focus the connected network button
+			for i in range(network_buttons.size()):
+				if network_buttons[i].text == connected_network:
+					focused_index = i
+					network_buttons[focused_index].grab_focus()
+					print("[WiFi Networks] Focused connected network: ", connected_network)
+					_scroll_to_focused_button()
+					return
+		
+		# Fallback to first button if no connected network found
 		focused_index = 0
 		network_buttons[focused_index].grab_focus()
 
 func _set_connected_network(ssid: String):
 	"""
-	Update UI to show connected network
+	Update UI to show connected network with highlight
 	"""
 	connected_network = ssid
 	for button in network_buttons:
 		if button and button.text == connected_network:
 			button.icon = WIFI_CONNECTED_ICON
+			button.modulate = Color.from_string("#90EE90", Color.WHITE)  # Light green highlight
+			print("[WiFi Networks] Highlighted connected network: ", ssid)
 		else:
-			button.icon = WIFI_ICON
+			button.icon = WIFI_ICON_NETWORK
+			button.modulate = Color.WHITE  # Reset to normal
 
 # =============================================================================
 # PASSWORD INPUT AND KEYBOARD HANDLING
@@ -274,6 +300,16 @@ func _on_network_selected(network_name):
 	Handle network selection - show password input overlay
 	"""
 	selected_network = network_name
+
+	# Check if the selected network is already connected
+	if network_name == connected_network:
+		print("[WiFi Networks] Already connected to: ", network_name)
+		status_container.visible = true
+		status_label.text = tr("already_connected").replace("{wifi_name}", network_name) if tr("already_connected") != "already_connected" else "Already connected to " + network_name
+		# Hide the message after 2 seconds
+		await get_tree().create_timer(2.0).timeout
+		status_container.visible = false
+		return
 
 	# Hide the list
 	list_vbox.visible = false

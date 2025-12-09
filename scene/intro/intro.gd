@@ -52,9 +52,17 @@ func initialize_pages_and_ui():
 	# Initialize pages with translated content
 	pages = []
 	
+	# Get the variant from GlobalData first, fall back to export variant
+	var current_variant = variant
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data and global_data.has_meta("selected_variant"):
+		current_variant = global_data.selected_variant
+	elif global_data:
+		current_variant = global_data.selected_variant
+	
 	# Get translated content for each page based on variant
 	var translation_keys = []
-	if variant.to_upper() == "IDPA":
+	if current_variant.to_upper() == "IDPA":
 		translation_keys = ["idpa_score_rule", "idpa_penalty_rule", "idpa_timer_system", "idpa_drill_rule", "idpa_hit_factor_rule"]
 		if not DEBUG_DISABLED:
 			print("[Intro] Loading IDPA variant pages")

@@ -626,6 +626,7 @@ stopping_netlink_failed,Stopping Netlink Failed,停止网络连接失败,ネッ�
 wifi_scan_timeout,WIFI Scan Timeout,WIFI扫描超时,WIFIスキャンタイムアウト,WIFI掃描超時
 wifi_scan_failed,WIFI Scan Failed,WIFI扫描失败,WIFIスキャン失敗,WIFI掃描失敗
 wifi_configure,WIFI Configure,WIFI配置,WIFI設定,WIFI配置
+already_connected,Already connected to {wifi_name},已连接到 {wifi_name},既に {wifi_name} に接続中,已連接到 {wifi_name}
 network_configure,Netlink Configure,网络配置,ネットワーク設定,網路配置
 start_netlink,Start Netlink,启动网联,ネットリンク開始,啟動網聯
 netlink_status,Netlink Status,网联状态,ネットリンクステータス,網聯狀態

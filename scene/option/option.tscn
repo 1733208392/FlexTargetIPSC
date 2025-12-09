@@ -158,10 +158,12 @@ size_flags_horizontal = 0
 color = Color(1, 0.541176, 0, 1)
 
 [node name="Row3" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
+visible = false
 layout_mode = 2
 alignment = 1
 
 [node name="Title3" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3"]
+visible = false
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_horizontal = 0
@@ -169,6 +171,7 @@ theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
 
 [node name="Content3" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3"]
+visible = false
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
@@ -177,6 +180,7 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_a5ubv")
 text = "Channel-11"
 
 [node name="Content3BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row3"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 0
 color = Color(1, 0.541176, 0, 1)

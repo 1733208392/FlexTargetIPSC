@@ -1,6 +1,7 @@
 extends Control
 
 const DEBUG_ENABLED = true  # Set to false for production release
+const QR_CODE_GENERATOR = preload("res://script/qrcode.gd")
 
 # Single target for network drills
 @export var target_scene: PackedScene = preload("res://scene/ipsc_mini.tscn")
@@ -22,6 +23,7 @@ var target_type_to_scene = {
 @onready var drill_timer = $DrillUI/DrillTimer
 @onready var network_complete_overlay = $DrillNetworkCompleteOverlay
 @onready var device_name_label = $DeviceNameLabel
+@onready var qr_texture_rect = $QRCodeTextureRect
 
 # Global data reference
 var global_data: Node = null
@@ -258,20 +260,12 @@ func _on_netlink_status_loaded():
 			
 func update_device_name_label():
 	"""Update the device name label with work mode - device_name - bluetooth_name format"""
-	var device_name = "unknown_device"
-	var bluetooth_name = ""
-	var work_mode = "slave"  # Default to slave
-	
-	if global_data and global_data.netlink_status.has("device_name"):
-		device_name = global_data.netlink_status["device_name"]
-	
-	if global_data and global_data.netlink_status.has("bluetooth_name"):
-		bluetooth_name = global_data.netlink_status["bluetooth_name"]
-	
-	if global_data and global_data.netlink_status.has("work_mode"):
-		work_mode = str(global_data.netlink_status["work_mode"]).to_lower()
-	
-	var is_master = (work_mode == "master")
+	var info = _get_netlink_identity()
+	var device_name = info["device_name"]
+	var bluetooth_name = info["bluetooth_name"]
+	var work_mode = info["work_mode"]
+	var normalized_work_mode = str(work_mode).to_lower()
+	var is_master = (normalized_work_mode == "master")
 	var mode = tr("work_mode_master") if is_master else tr("work_mode_slave")
 	if is_master:
 		# Master mode: show bluetooth_name
@@ -279,7 +273,70 @@ func update_device_name_label():
 	else:
 		# Slave mode: don't show bluetooth_name
 		device_name_label.text = mode + " - " + device_name
+
+	# Update the QR code for master devices
+	update_master_qr_code(bluetooth_name, work_mode)
 			
+
+func update_master_qr_code(ble_name: String, work_mode: String):
+	"""Draw QR code for the master device name when available"""
+	if not qr_texture_rect:
+		return
+
+	var normalized_mode = str(work_mode).to_lower()
+	if normalized_mode != "master" or ble_name.strip_edges().is_empty():
+		_hide_master_qr()
+		return
+
+	if _is_any_target_visible():
+		_hide_master_qr()
+		return
+
+	var qr = QR_CODE_GENERATOR.new()
+	var image = qr.generate_image(ble_name, 4)
+	if image:
+		qr_texture_rect.texture = ImageTexture.create_from_image(image)
+		qr_texture_rect.visible = true
+	else:
+		_hide_master_qr()
+
+func _hide_master_qr():
+	if not qr_texture_rect:
+		return
+	qr_texture_rect.texture = null
+	qr_texture_rect.visible = false
+
+func _is_any_target_visible() -> bool:
+	return target_instance != null or final_target_instance != null
+
+func _get_netlink_identity() -> Dictionary:
+	var identity = {
+		"device_name": "unknown_device",
+		"work_mode": "slave",
+		"bluetooth_name": ""
+	}
+	var status = null
+	if global_data and global_data.netlink_status:
+		status = global_data.netlink_status
+	elif has_node("/root/GlobalData"):
+		var fallback_data = get_node("/root/GlobalData")
+		if fallback_data.netlink_status:
+			status = fallback_data.netlink_status
+	
+	if status:
+		if status.has("device_name"):
+			identity["device_name"] = str(status["device_name"])
+		if status.has("work_mode"):
+			identity["work_mode"] = str(status["work_mode"])
+		if status.has("bluetooth_name"):
+			identity["bluetooth_name"] = str(status["bluetooth_name"])
+
+	return identity
+
+func _refresh_master_qr_code():
+	var info = _get_netlink_identity()
+	update_master_qr_code(info["device_name"], info["work_mode"])
+	
 func spawn_target():
 	"""Spawn the single target"""
 	if DEBUG_ENABLED:
@@ -320,6 +377,9 @@ func spawn_target():
 	# Show shot timer only for first target
 	if is_first:
 		show_shot_timer()
+
+	# Hide QR code now that the drill has started
+	_refresh_master_qr_code()
 
 func start_drill():
 	"""Start the drill after delay"""
@@ -365,6 +425,9 @@ func spawn_final_target():
 	else:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] ERROR: Could not load final target scene")
+
+	# Hide QR whenever targets are visible
+	_refresh_master_qr_code()
 
 func _on_final_target_hit(hit_position: Vector2):
 	"""Handle final target hit - send end acknowledgement"""
@@ -578,6 +641,9 @@ func reset_drill_state():
 	
 	# Reset UI timer
 	emit_signal("ui_timer_update", 0.0)
+
+	# Refresh QR code now that no targets are visible
+	_refresh_master_qr_code()
 
 func show_shot_timer():
 	"""Show the shot timer"""
