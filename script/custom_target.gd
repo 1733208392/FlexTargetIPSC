@@ -682,9 +682,9 @@ func _set_image_texture(tex: Texture) -> void:
 	# If a texture is present, hide the question mark; otherwise show it
 	if question_mark:
 		question_mark.visible = tex == null
-	# Ensure the mask node remains visible by default
+	# Hide the mask when a texture is set, show it when cleared
 	if mask_node:
-		mask_node.visible = true
+		mask_node.visible = tex == null
 
 # Handle websocket bullet hit - spawn impact effects and bullet holes
 func _on_websocket_bullet_hit(pos: Vector2):
@@ -874,8 +874,7 @@ func explode_target():
 	
 	# Hide the target
 	image_display.visible = false
-	if mask_node:
-		mask_node.visible = false
+	# Mask visibility is handled in _set_image_texture(); avoid redundant changes here
 	
 	# Hide bullet holes
 	for hole in active_bullet_holes:

@@ -22,10 +22,20 @@ var active_sounds: int = 0
 # Performance optimization
 const DEBUG_DISABLED = true  # Set to true for verbose debugging
 
+# GPU instanced bullet hole rendering (optional - faster at scale)
+var bullet_hole_multimeshes: Array = []
+var bullet_hole_textures: Array = []
+var max_instances_per_texture: int = 32
+var active_instances: Dictionary = {}
+
+# Reusable Transform2D to avoid allocating a new Transform each shot
+var _reusable_transform: Transform2D = Transform2D()
+
 # Time tracking for shots
 var shot_timestamps: Array[float] = []
 var drill_active: bool = false  # Flag to ignore shots before drill starts
 signal shot_time_diff(time_diff: float, hit_position: Vector2)
+
 
 func _ready():
 	# Initialize bullet hole pool for performance
@@ -103,17 +113,59 @@ func reset_bullet_hole_pool():
 
 func initialize_bullet_hole_pool():
 	"""Pre-instantiate bullet holes for performance optimization"""
-	
+
+	# Load bullet hole textures for instancing
+	load_bullet_hole_textures()
+
+	# Create a MultiMeshInstance2D for each texture so we can render many holes cheaply
+	for i in range(bullet_hole_textures.size()):
+		var multimesh_instance = MultiMeshInstance2D.new()
+		add_child(multimesh_instance)
+		multimesh_instance.z_index = 0
+
+		var multimesh = MultiMesh.new()
+		multimesh.transform_format = MultiMesh.TRANSFORM_2D
+		multimesh.instance_count = max_instances_per_texture
+		multimesh.visible_instance_count = 0
+
+		var mesh = create_bullet_hole_mesh(bullet_hole_textures[i])
+		multimesh.mesh = mesh
+		multimesh_instance.multimesh = multimesh
+
+		# Try to propagate material/texture to the instance for compatibility across engine versions
+		if mesh and mesh.material:
+			var has_material_prop := false
+			for prop in multimesh_instance.get_property_list():
+				if prop.name == "material":
+					has_material_prop = true
+					break
+			if has_material_prop:
+				multimesh_instance.material = mesh.material
+				if multimesh_instance.material is ShaderMaterial:
+					multimesh_instance.material.set_shader_parameter("texture_albedo", bullet_hole_textures[i])
+			elif mesh.material is ShaderMaterial:
+				mesh.material.set_shader_parameter("texture_albedo", bullet_hole_textures[i])
+
+		# Some engine versions expose a `texture` property on MultiMeshInstance2D
+		for p in multimesh_instance.get_property_list():
+			if p.name == "texture":
+				multimesh_instance.set("texture", bullet_hole_textures[i])
+				break
+
+		bullet_hole_multimeshes.append(multimesh_instance)
+		active_instances[i] = 0
+
+	# --- Keep legacy node pool initialization for fallback ---
 	if not BulletHoleScene:
 		return
-	
+
 	# Clear existing pool
 	for hole in bullet_hole_pool:
 		if is_instance_valid(hole):
 			hole.queue_free()
 	bullet_hole_pool.clear()
 	active_bullet_holes.clear()
-	
+
 	# Pre-instantiate bullet holes
 	for i in range(pool_size):
 		var bullet_hole = BulletHoleScene.instantiate()
@@ -150,7 +202,33 @@ func return_bullet_hole_to_pool(hole: Node):
 
 func spawn_bullet_hole(local_position: Vector2):
 	"""Spawn a bullet hole at the specified local position using object pool"""
-	
+
+	# Prefer GPU-instanced MultiMesh if available
+	if bullet_hole_multimeshes.size() > 0 and bullet_hole_textures.size() > 0:
+		var texture_index = randi() % bullet_hole_textures.size()
+		if texture_index >= bullet_hole_multimeshes.size():
+			return
+
+		var mm_inst = bullet_hole_multimeshes[texture_index]
+		var multimesh = mm_inst.multimesh
+		var current_count = active_instances.get(texture_index, 0)
+		if current_count >= max_instances_per_texture:
+			return
+
+		# Reuse preallocated transform to avoid allocations
+		var t = _reusable_transform
+		var scale_factor = randf_range(0.6, 0.8)
+		# Uniform scale (no rotation)
+		t.x = Vector2(scale_factor, 0.0)
+		t.y = Vector2(0.0, scale_factor)
+		t.origin = local_position
+
+		multimesh.set_instance_transform_2d(current_count, t)
+		multimesh.visible_instance_count = current_count + 1
+		active_instances[texture_index] = current_count + 1
+		return
+
+	# Fallback to node pool
 	var bullet_hole = get_pooled_bullet_hole()
 	if bullet_hole:
 		# Configure the bullet hole
@@ -310,4 +388,35 @@ func play_impact_sound_at_position(world_pos: Vector2):
 		
 		# Clean up audio player after sound finishes
 		audio_player.finished.connect(func(): audio_player.queue_free())
+
+# Helper functions for MultiMesh instancing
+func load_bullet_hole_textures():
+	"""Load all bullet hole textures"""
+	bullet_hole_textures = [
+		load("res://asset/bullet_hole1.png"),
+		load("res://asset/bullet_hole2.png"),
+		load("res://asset/bullet_hole3.png"),
+		load("res://asset/bullet_hole4.png"),
+		load("res://asset/bullet_hole5.png"),
+		load("res://asset/bullet_hole6.png")
+	]
+
+	# Verify all textures loaded
+	for i in range(bullet_hole_textures.size()):
+		if not bullet_hole_textures[i]:
+			print("ERROR: Failed to load bullet hole texture ", i + 1)
+
+func create_bullet_hole_mesh(texture: Texture2D) -> QuadMesh:
+	"""Create a quad mesh for the bullet hole texture"""
+	var mesh = QuadMesh.new()
+	mesh.size = texture.get_size()
+
+	var shader_material = ShaderMaterial.new()
+	var shader = load("res://shader/bullet_hole_instanced.gdshader")
+	if shader:
+		shader_material.shader = shader
+		shader_material.set_shader_parameter("texture_albedo", texture)
+
+	mesh.material = shader_material
+	return mesh
 # ROTATION PERFORMANCE OPTIMIZATIONS

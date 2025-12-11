@@ -2,10 +2,10 @@ extends Node
 
 # Add this script as an autoload (singleton) in Project Settings > Autoload
 
-const DEBUG_DISABLED = true
+const DEBUG_DISABLED = false
 
-var base_url: String = "http://127.0.0.1"
-#var base_url: String = "http://192.168.50.34"
+#var base_url: String = "http://127.0.0.1"
+var base_url: String = "http://192.168.0.109"
 
 var sb = null  # Signal bus reference
 
@@ -365,3 +365,158 @@ func embedded_set_threshold(callback: Callable, value: int):
 	)
 	var json_data = JSON.stringify(data)
 	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)
+
+func _send_image_chunks(base64_data: String, chunk_size: int, delay_ms: float, current_chunk: int, total_chunks: int, completion_callback: Callable):
+	"""
+	Recursively send image chunks with delay between each packet.
+	"""
+	
+	# Base case: all chunks sent
+	if current_chunk >= total_chunks:
+		if not DEBUG_DISABLED:
+			print("[HttpService] All ", total_chunks, " chunks sent successfully")
+		
+		# Send transfer complete signal
+		var complete_data = {
+			"command": "image_transfer_complete",
+			"status": "success",
+			"chunks_sent": total_chunks
+		}
+		
+		netlink_forward_data(func(result, response_code, _headers, _body):
+			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+				if not DEBUG_DISABLED:
+					print("[HttpService] Transfer complete signal sent successfully")
+			else:
+				if not DEBUG_DISABLED:
+					print("[HttpService] Failed to send transfer complete signal")
+			
+			# Call completion callback
+			if completion_callback and completion_callback.is_valid():
+				completion_callback.call(true, "Image transfer complete")
+		, complete_data)
+		return
+	
+	# Extract chunk data
+	var chunk_start = current_chunk * chunk_size
+	var chunk_end = min(chunk_start + chunk_size, base64_data.length())
+	var chunk_data = base64_data.substr(chunk_start, chunk_end - chunk_start)
+	
+	if not DEBUG_DISABLED:
+		print("[HttpService] Preparing chunk %d/%d (size: %d bytes)" % [current_chunk, total_chunks, chunk_data.length()])
+	
+	# Send this chunk
+	var chunk_dict = {
+		"command": "image_chunk",
+		"chunk_index": current_chunk,
+		"data": chunk_data
+	}
+	
+	netlink_forward_data(func(result, response_code, _headers, _body):
+		if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+			if not DEBUG_DISABLED:
+				print("[HttpService] Failed to send chunk %d, result: %d, code: %d" % [current_chunk, result, response_code])
+			if completion_callback and completion_callback.is_valid():
+				completion_callback.call(false, "Failed to send chunk " + str(current_chunk))
+			return
+		
+		
+		if not DEBUG_DISABLED:
+			print("[HttpService] Chunk %d/%d sent successfully" % [current_chunk + 1, total_chunks])
+		
+		# Schedule next chunk after delay
+		var timer = get_tree().create_timer(delay_ms / 1000.0)
+		timer.timeout.connect(func():
+			_send_image_chunks(base64_data, chunk_size, delay_ms, current_chunk + 1, total_chunks, completion_callback)
+		)
+	, chunk_dict)
+
+func send_captured_image(image: Image, chunk_size_bytes: int = 1024, packet_delay_ms: float = 50.0, completion_callback: Callable = Callable()):
+	"""
+	Send a captured image (from screenshot_manager or any source) to the mobile app.
+	Converts the Image to PNG bytes and sends via netlink_forward_data interface.
+	
+	Args:
+		image: The Image object to send
+		image_name: Name for the image (default: "captured_screenshot.png")
+		chunk_size_bytes: Size of each packet in bytes (default: 1024 for BLE)
+		packet_delay_ms: Delay between packets in milliseconds (default: 50)
+		completion_callback: Optional callable to invoke when transfer is complete
+	
+	Example:
+		var http_service = get_node("/root/HttpService")
+		var screenshot_manager = get_node("CaptureManager")
+		var captured_image = # ... get image from screenshot_manager
+		http_service.send_captured_image(
+			captured_image,
+			"splat_demo_screenshot.png",
+			1024,
+			50.0,
+			Callable(self, "_on_image_sent")
+		)
+	"""
+	
+	if not image:
+		if not DEBUG_DISABLED:
+			print("[HttpService] Error: Image is null")
+		if completion_callback and completion_callback.is_valid():
+			completion_callback.call(false, "Image is null")
+		return
+	
+	if image.is_empty():
+		if not DEBUG_DISABLED:
+			print("[HttpService] Error: Image is empty")
+		if completion_callback and completion_callback.is_valid():
+			completion_callback.call(false, "Image is empty")
+		return
+	
+	# Convert Image to JPG bytes (compressed for smaller file size over BLE)
+	var jpg_bytes = image.save_jpg_to_buffer()
+	if jpg_bytes == null or jpg_bytes.is_empty():
+		if not DEBUG_DISABLED:
+			print("[HttpService] Error: Failed to convert image to JPG")
+		if completion_callback and completion_callback.is_valid():
+			completion_callback.call(false, "Failed to convert image to JPG")
+		return
+	
+	# Convert to base64
+	var base64_data = Marshalls.raw_to_base64(jpg_bytes)
+	if not base64_data or base64_data.is_empty():
+		if not DEBUG_DISABLED:
+			print("[HttpService] Error: Failed to encode image to base64")
+		if completion_callback and completion_callback.is_valid():
+			completion_callback.call(false, "Failed to encode image to base64")
+		return
+	
+	# Calculate chunk parameters
+	var total_chunks = ceili(float(base64_data.length()) / float(chunk_size_bytes))
+	
+	if not DEBUG_DISABLED:
+		print("[HttpService] Compressed size: ", jpg_bytes.size(), " bytes")
+		print("[HttpService] Base64 size: ", base64_data.length(), " bytes")
+		print("[HttpService] Image dimensions: ", image.get_width(), "x", image.get_height())
+		print("[HttpService] Chunk size: ", chunk_size_bytes, " bytes")
+		print("[HttpService] Total chunks: ", total_chunks)
+	
+	# Send transfer start signal
+	var start_data = {
+		"command": "image_transfer_start",
+		"total_chunks": total_chunks,
+		"chunk_size": chunk_size_bytes,
+		"total_size": jpg_bytes.size()
+	}
+	
+	netlink_forward_data(func(result, response_code, _headers, _body):
+		if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+			if not DEBUG_DISABLED:
+				print("[HttpService] Failed to send image_transfer_start, result: ", result, " code: ", response_code)
+			if completion_callback and completion_callback.is_valid():
+				completion_callback.call(false, "Failed to send transfer start")
+			return
+		
+		if not DEBUG_DISABLED:
+			print("[HttpService] Transfer start signal sent successfully for captured image")
+		
+		# Start sending chunks with delay
+		_send_image_chunks(base64_data, chunk_size_bytes, packet_delay_ms, 0, total_chunks, completion_callback)
+	, start_data)

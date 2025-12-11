@@ -36,6 +36,9 @@ var active_sounds: int = 0
 # Performance optimization
 const DEBUG_DISABLED = true
 
+# Reusable Transform2D to avoid allocating a new Transform each shot
+var _reusable_transform: Transform2D = Transform2D()
+
 # Performance optimization for rotating targets
 var rotation_cache_angle: float = 0.0
 var rotation_cache_time: float = 0.0
@@ -337,13 +340,15 @@ func spawn_bullet_hole(local_position: Vector2):
 		# Pool exhausted for this texture
 		return
 
-	# Build instance transform in the local space of the target (multimesh is child of target)
-	var transform = Transform2D()
+	# Reuse a preallocated Transform2D to avoid per-shot allocations and improve speed.
+	var t = _reusable_transform
 	var scale_factor = randf_range(0.6, 0.8)
-	transform = transform.scaled(Vector2(scale_factor, scale_factor))
-	transform.origin = local_position
+	# Set axes for uniform scale (no rotation)
+	t.x = Vector2(scale_factor, 0.0)
+	t.y = Vector2(0.0, scale_factor)
+	t.origin = local_position
 
-	multimesh.set_instance_transform_2d(current_count, transform)
+	multimesh.set_instance_transform_2d(current_count, t)
 	multimesh.visible_instance_count = current_count + 1
 	active_instances[texture_index] = current_count + 1
 

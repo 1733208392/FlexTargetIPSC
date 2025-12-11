@@ -48,6 +48,9 @@ var rotation_cache_angle: float = 0.0
 var rotation_cache_time: float = 0.0
 var rotation_cache_duration: float = 0.1  # Cache rotation for 100ms
 
+# Reusable Transform2D to avoid allocating a new Transform each shot
+var _reusable_transform: Transform2D = Transform2D()
+
 # Bullet activity monitoring for animation pausing
 var bullet_activity_count: int = 0
 var activity_threshold: int = 3  # Pause rotation if 3+ bullets in flight
@@ -333,22 +336,17 @@ func spawn_bullet_hole(local_position: Vector2):
 	if current_count >= max_instances_per_texture:
 		return  # Pool exhausted for this texture
 	
-	# Create transformation for this instance
-	var transform = Transform2D()
-	
-	# Apply random rotation
-	#var rotation = randf() * 2.0 * PI
-	#transform = transform.rotated(rotation)
-	
-	# Apply random scale
+	# Reuse a preallocated Transform2D to avoid per-shot allocations and improve speed.
+	# We keep no rotation here (rotation code was commented-out) and apply a uniform scale.
+	var t = _reusable_transform
 	var scale_factor = randf_range(0.6, 0.8)
-	transform = transform.scaled(Vector2(scale_factor, scale_factor))
-	
-	# Set position
-	transform.origin = local_position
-	
-	# Set the instance transform
-	multimesh.set_instance_transform_2d(current_count, transform)
+	# Set axes for uniform scale (no rotation)
+	t.x = Vector2(scale_factor, 0.0)
+	t.y = Vector2(0.0, scale_factor)
+	t.origin = local_position
+
+	# Set the instance transform (the MultiMesh copies the transform internally)
+	multimesh.set_instance_transform_2d(current_count, t)
 	
 	# Update visibility count
 	multimesh.visible_instance_count = current_count + 1

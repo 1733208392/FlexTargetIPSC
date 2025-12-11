@@ -6,6 +6,7 @@ var last_click_frame = -1
 var is_disappearing: bool = false
 
 # Shot tracking for disappearing animation
+# (kept single declaration above)
 var shot_count: int = 0
 @export var max_shots: int = 2  # Exported to allow editor override; default 2
 
@@ -37,6 +38,9 @@ var active_sounds: int = 0
 
 # Performance optimization
 const DEBUG_DISABLED = false  # Set to true for verbose debugging
+
+# Reusable Transform2D to avoid allocating a new Transform each shot
+var _reusable_transform: Transform2D = Transform2D()
 
 # Scoring system
 var total_score: int = 0
@@ -437,12 +441,15 @@ func spawn_bullet_hole(local_position: Vector2):
 		if current_count >= max_instances_per_texture:
 			return
 
-		var transform = Transform2D()
+		# Reuse a preallocated Transform2D to avoid per-shot allocations and improve speed.
+		var t = _reusable_transform
 		var scale_factor = randf_range(0.6, 0.8)
-		transform = transform.scaled(Vector2(scale_factor, scale_factor))
-		transform.origin = local_position
+		# Set axes for uniform scale (no rotation)
+		t.x = Vector2(scale_factor, 0.0)
+		t.y = Vector2(0.0, scale_factor)
+		t.origin = local_position
 
-		multimesh.set_instance_transform_2d(current_count, transform)
+		multimesh.set_instance_transform_2d(current_count, t)
 		multimesh.visible_instance_count = current_count + 1
 		active_instances[texture_index] = current_count + 1
 
