@@ -35,7 +35,7 @@ var impact_cooldown: float = 0.06  # 60ms minimum between impact effects
 # Audio system for impact sounds
 var last_sound_time: float = 0.0
 var sound_cooldown: float = 0.05  # 50ms minimum between sounds
-var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
+var max_concurrent_sounds: int = 1  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 func _ready() -> void:
@@ -317,7 +317,7 @@ func play_impact_sound_at_position(world_pos: Vector2):
 		return  # Skip this sound effect
 	
 	# Load the impact sound
-	var impact_sound = preload("res://audio/paper_hit.mp3")
+	var impact_sound = preload("res://audio/paper_hit.ogg")
 	if impact_sound:
 		active_sounds += 1
 		last_sound_time = time_stamp

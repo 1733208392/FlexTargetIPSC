@@ -8,7 +8,7 @@ var original_x
 # Audio system for impact sounds
 var last_sound_time: float = 0.0
 var sound_cooldown: float = 0.05  # 50ms minimum between sounds
-var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
+var max_concurrent_sounds: int = 1  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 # Animation state

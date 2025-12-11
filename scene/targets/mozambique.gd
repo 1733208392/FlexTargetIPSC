@@ -22,7 +22,7 @@ var last_impact_time: float = 0.0
 var sound_cooldown: float = 0.05
 var smoke_cooldown: float = 0.08
 var impact_cooldown: float = 0.06
-var max_concurrent_sounds: int = 3
+var max_concurrent_sounds: int = 1
 var active_sounds: int = 0
 
 # Scoring system

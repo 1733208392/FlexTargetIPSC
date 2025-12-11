@@ -37,7 +37,7 @@ var last_impact_time: float = 0.0
 var sound_cooldown: float = 0.05  # 50ms minimum between sounds
 var smoke_cooldown: float = 0.08  # 80ms minimum between smoke effects
 var impact_cooldown: float = 0.06  # 60ms minimum between impact effects
-var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
+var max_concurrent_sounds: int = 1  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 # Scoring system
@@ -553,7 +553,7 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 		return
 	
 	# Load the paper impact sound for paper targets
-	var impact_sound = preload("res://audio/paper_hit.MP3")
+	var impact_sound = preload("res://audio/paper_hit.ogg")
 	
 	if impact_sound:
 		# Create AudioStreamPlayer2D for positional audio
@@ -589,7 +589,7 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 func play_impact_sound_at_position(world_pos: Vector2):
 	"""Play paper impact sound effect at specific position (legacy - non-throttled)"""
 	# Load the paper impact sound for paper targets
-	var impact_sound = preload("res://audio/paper_hit.MP3")
+	var impact_sound = preload("res://audio/paper_hit.ogg")
 	
 	if impact_sound:
 		# Create AudioStreamPlayer2D for positional audio

@@ -20,7 +20,7 @@ var last_impact_time: float = 0.0
 var sound_cooldown: float = 0.05  # 50ms minimum between sounds
 var smoke_cooldown: float = 0.08  # 80ms minimum between smoke effects
 var impact_cooldown: float = 0.06  # 60ms minimum between impact effects
-var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
+var max_concurrent_sounds: int = 1  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 
 # Scoring system

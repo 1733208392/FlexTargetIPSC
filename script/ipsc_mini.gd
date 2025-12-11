@@ -34,7 +34,7 @@ var last_impact_time: float = 0.0
 var sound_cooldown: float = 0.05  # 50ms minimum between sounds
 var smoke_cooldown: float = 0.08  # 80ms minimum between smoke effects
 var impact_cooldown: float = 0.06  # 60ms minimum between impact effects
-var max_concurrent_sounds: int = 3  # Maximum number of concurrent sound effects
+var max_concurrent_sounds: int = 1  # Maximum number of concurrent sound effects
 var active_sounds: int = 0
 var impact_sound_res: AudioStream = null
 var sound_player_pool: Array = []
@@ -461,7 +461,7 @@ func spawn_bullet_effects_at_position(world_pos: Vector2, is_target_hit: bool = 
 
 func _init_sound_pool():
 	"""Pre-create AudioStreamPlayer2D nodes to avoid allocation and node overhead on each sound."""
-	impact_sound_res = preload("res://audio/paper_hit.MP3")
+	impact_sound_res = preload("res://audio/paper_hit.ogg")
 	# Clamp pool size to configured max_concurrent_sounds if present
 	if max_concurrent_sounds > 0:
 		sound_pool_size = max_concurrent_sounds
@@ -483,11 +483,19 @@ func _init_sound_pool():
 		scene_root.add_child(player)
 		sound_player_pool.append(player)
 
+	# Pre-warm decoders: play and stop quietly so decoder is ready on first real play
+	for p in sound_player_pool:
+		var prev_vol = p.volume_db
+		p.volume_db = -80
+		p.play()
+		p.stop()
+		p.volume_db = prev_vol
 
-func _on_sound_finished(player: AudioStreamPlayer2D) -> void:
+
+func _on_sound_finished(_player: AudioStreamPlayer2D) -> void:
 	# Called when a pooled player finishes playing
-	if active_sounds > 0:
-		active_sounds -= 1
+	# Keep active_sounds in sync with actual players as a fallback
+	active_sounds = _count_playing_sounds()
 
 
 func _get_free_sound_player() -> AudioStreamPlayer2D:
@@ -496,22 +504,31 @@ func _get_free_sound_player() -> AudioStreamPlayer2D:
 		if not p.playing:
 			return p
 
-	# None free: reuse first one (stop then return)
+	# None free: reuse first one (stop then return). Stopping ensures the stream restarts immediately.
 	var p = sound_player_pool[0]
-	p.stop()
-	if active_sounds > 0:
-		active_sounds -= 1
+	if p.playing:
+		p.stop()
 	return p
+
+
+func _count_playing_sounds() -> int:
+	# Count how many pooled players are currently playing
+	var cnt: int = 0
+	for p in sound_player_pool:
+		if is_instance_valid(p) and p.playing:
+			cnt += 1
+	return cnt
 
 func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: float):
 	"""Play steel impact sound effect with throttling and concurrent sound limiting"""
-	# Check time-based throttling
+	# Time-based throttling
 	if (current_time - last_sound_time) < sound_cooldown:
 		return
 
-	# Check concurrent sound limiting
-	if active_sounds >= max_concurrent_sounds:
-		# If no available concurrent slots, skip playing the sound
+	# Compute current active playing count from the pool (more robust than relying on signals)
+	var playing_count = _count_playing_sounds()
+	if playing_count >= max_concurrent_sounds:
+		# No available concurrent slot
 		return
 
 	# Use a pooled AudioStreamPlayer2D to avoid allocations
@@ -526,12 +543,13 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 
 	# Update throttling state
 	last_sound_time = current_time
-	active_sounds += 1
+	# Keep active_sounds as a convenience cache in sync
+	active_sounds = _count_playing_sounds()
 
 func play_impact_sound_at_position(world_pos: Vector2):
 	"""Play paper impact sound effect at specific position (legacy - non-throttled)"""
 	# Load the paper impact sound for paper targets
-	var impact_sound = preload("res://audio/paper_hit.MP3")
+	var impact_sound = preload("res://audio/paper_hit.ogg")
 	
 	if impact_sound:
 		# Create AudioStreamPlayer2D for positional audio

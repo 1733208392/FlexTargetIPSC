@@ -13,7 +13,7 @@ var active_bullet_holes: Array[Node] = []
 # Sound throttling for impact SFX (copied from ipsc_mini)
 var last_sound_time: float = 0.0
 var sound_cooldown: float = 0.05
-var max_concurrent_sounds: int = 3
+var max_concurrent_sounds: int = 1
 var active_sounds: int = 0
 
 # Explosion effect
@@ -754,7 +754,7 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 	var impact_sound = preload("res://audio/bullet-hit-metal.mp3")
 	if not impact_sound:
 		# Fallback to generic bullet or paper sound
-		impact_sound = preload("res://audio/paper_hit.MP3")
+		impact_sound = preload("res://audio/paper_hit.ogg")
 
 	if impact_sound:
 		var audio_player = AudioStreamPlayer2D.new()
