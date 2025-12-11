@@ -674,3 +674,9 @@ idpa_drill_history,IDPA Drill History,IDPA 训练记录,IDPA 訓練履歴,IDPA �
 down_points,Downpts,扣分,減点,扣分
 dismiss,Dismiss,取消,キャンセル,取消
 only_one_master_config,Only One Master Can Be Configurated in Your Network,只能配置一个主设备在您的网络中,ネットワークで設定できるマスターは1つだけです,只能配置一個主設備在您的網路中
+level_cleared,Cleared!,通关！,クリア！,通關！
+level_failed,Failed!,失败！,失敗！,失敗！
+level_label,Level,关卡,レベル,關卡
+coin_label,Coin,金币,コイン,金幣
+bonus_label,Bonus,奖励,ボーナス,獎勵
+replay_button,Replay,重玩,リプレイ,重玩

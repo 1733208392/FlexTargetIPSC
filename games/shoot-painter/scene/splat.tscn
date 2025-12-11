@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://bofhp3yw3sbeo"]
 
-[ext_resource type="Shader" uid="uid://clsjg4n1imejk" path="res://shader/splat.gdshader" id="1"]
+[ext_resource type="Shader" uid="uid://clsjg4n1imejk" path="res://games/shoot-painter/shader/splat.gdshader" id="1"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3rjm1"]
 shader = ExtResource("1")

@@ -200,6 +200,22 @@ func return_bullet_hole_to_pool(hole: Node):
 		if hole in active_bullet_holes:
 			active_bullet_holes.erase(hole)
 
+func clear_all_bullet_holes() -> void:
+	"""Clear all bullet holes (both MultiMesh and legacy node pool)"""
+	# Reset instanced MultiMesh counts
+	for texture_index in range(bullet_hole_multimeshes.size()):
+		var mm_inst = bullet_hole_multimeshes[texture_index]
+		if mm_inst and mm_inst.multimesh:
+			mm_inst.multimesh.visible_instance_count = 0
+			active_instances[texture_index] = 0
+
+	# Reset legacy node pool (if used anywhere)
+	for hole in bullet_hole_pool:
+		if is_instance_valid(hole):
+			hole.visible = false
+
+	active_bullet_holes.clear()
+
 func spawn_bullet_hole(local_position: Vector2):
 	"""Spawn a bullet hole at the specified local position using object pool"""
 

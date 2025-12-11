@@ -4,21 +4,27 @@ signal target_hit(zone: String, points: int, hit_position: Vector2)
 
 const DEBUG_DISABLED = false
 
-# Bullet hole system
-const BulletHoleScene = preload("res://scene/bullet_hole.tscn")
-var bullet_hole_pool: Array[Node] = []
-var pool_size: int = 8  # Keep 8 bullet holes pre-instantiated
-var active_bullet_holes: Array[Node] = []
+# Bullet hole system (GPU-instanced only)
+
+# GPU instanced bullet hole rendering (optional - faster at scale)
+var bullet_hole_multimeshes: Array = []
+var bullet_hole_textures: Array = []
+var max_instances_per_texture: int = 32
+var active_instances: Dictionary = {}
+
+# Reusable Transform2D to avoid allocating a new Transform each shot
+var _reusable_transform: Transform2D = Transform2D()
 
 # Sound throttling for impact SFX (copied from ipsc_mini)
 var last_sound_time: float = 0.0
 var sound_cooldown: float = 0.05
-var max_concurrent_sounds: int = 1
+var max_concurrent_sounds: int = 2
 var active_sounds: int = 0
 
 # Explosion effect
 const SHOTS_TO_EXPLODE = 10
 var hit_count: int = 0
+var is_restoring: bool = false
 const ExplosionEffectScene = preload("res://scene/explosion_effect.tscn")
 
 # Image transfer state
@@ -71,7 +77,7 @@ func _ready():
 		instruction_label.text = tr("custom_target_instruction")
 	# Clear the displayed texture until we load a saved/custom image
 	_set_image_texture(null)
-
+	
 	# Try to load a previously saved image from HttpService
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
@@ -82,66 +88,124 @@ func _ready():
 func initialize_bullet_hole_pool():
 	"""Pre-instantiate bullet holes for performance optimization"""
 	
-	if not BulletHoleScene:
-		if not DEBUG_DISABLED:
-			print("[CustomTarget] Warning: BulletHoleScene not found")
-		return
-	
-	# Clear existing pool
-	for hole in bullet_hole_pool:
-		if is_instance_valid(hole):
-			hole.queue_free()
-	bullet_hole_pool.clear()
-	active_bullet_holes.clear()
-	
-	# Pre-instantiate bullet holes
-	for i in range(pool_size):
-		var bullet_hole = BulletHoleScene.instantiate()
-		add_child(bullet_hole)
-		bullet_hole.visible = false  # Hide until needed
-		bullet_hole.z_index = 1  # Ensure bullet holes appear above image
-		bullet_hole_pool.append(bullet_hole)
+	# --- Initialize GPU instanced MultiMesh system (preferred) ---
+	load_bullet_hole_textures()
 
-func get_pooled_bullet_hole() -> Node:
-	"""Get an available bullet hole from the pool, or create new if needed"""
-	# Try to find an inactive bullet hole in the pool
-	for hole in bullet_hole_pool:
-		if is_instance_valid(hole) and not hole.visible:
-			return hole
-	
-	# If no available holes in pool, create a new one (fallback)
-	if BulletHoleScene:
-		var new_hole = BulletHoleScene.instantiate()
-		add_child(new_hole)
-		bullet_hole_pool.append(new_hole)  # Add to pool for future use
-		return new_hole
-	
-	return null
+	# Clear any existing multimeshes
+	for mm in bullet_hole_multimeshes:
+		if is_instance_valid(mm):
+			mm.queue_free()
+	bullet_hole_multimeshes.clear()
+	active_instances.clear()
 
-func return_bullet_hole_to_pool(hole: Node):
-	"""Return a bullet hole to the pool by hiding it"""
-	if is_instance_valid(hole):
-		hole.visible = false
-		# Remove from active list
-		if hole in active_bullet_holes:
-			active_bullet_holes.erase(hole)
+	# Create a MultiMeshInstance2D for each texture so we can render many holes cheaply
+	for i in range(bullet_hole_textures.size()):
+		var multimesh_instance = MultiMeshInstance2D.new()
+		add_child(multimesh_instance)
+		multimesh_instance.z_index = 1
+
+		var multimesh = MultiMesh.new()
+		multimesh.transform_format = MultiMesh.TRANSFORM_2D
+		multimesh.instance_count = max_instances_per_texture
+		multimesh.visible_instance_count = 0
+
+		var mesh = create_bullet_hole_mesh(bullet_hole_textures[i])
+		multimesh.mesh = mesh
+		multimesh_instance.multimesh = multimesh
+
+		# Try to propagate material/texture to the instance for compatibility across engine versions
+		if mesh and mesh.material:
+			for prop in multimesh_instance.get_property_list():
+				if prop.name == "material":
+					multimesh_instance.material = mesh.material
+					if multimesh_instance.material is ShaderMaterial:
+						multimesh_instance.material.set_shader_parameter("texture_albedo", bullet_hole_textures[i])
+					break
+
+		# Some engine versions expose a `texture` property on MultiMeshInstance2D
+		for p in multimesh_instance.get_property_list():
+			if p.name == "texture":
+				multimesh_instance.set("texture", bullet_hole_textures[i])
+				break
+
+		bullet_hole_multimeshes.append(multimesh_instance)
+		active_instances[i] = 0
+
+	# (Legacy node pool removed) — MultiMesh is the only bullet hole system now
+
+
+func load_bullet_hole_textures():
+	"""Load bullet hole textures used for MultiMesh instancing"""
+	bullet_hole_textures = [
+		load("res://asset/bullet_hole1.png"),
+		load("res://asset/bullet_hole2.png"),
+		load("res://asset/bullet_hole3.png"),
+		load("res://asset/bullet_hole4.png"),
+		load("res://asset/bullet_hole5.png"),
+		load("res://asset/bullet_hole6.png")
+	]
+
+	# Verify all textures loaded (silently fail if missing)
+	for i in range(bullet_hole_textures.size()):
+		if not bullet_hole_textures[i] and not DEBUG_DISABLED:
+			print("[CustomTarget] Warning: Failed to load bullet hole texture ", i + 1)
+
+
+func create_bullet_hole_mesh(texture: Texture2D) -> QuadMesh:
+	"""Create a QuadMesh with a shader material for the provided texture"""
+	var mesh = QuadMesh.new()
+	mesh.size = texture.get_size()
+
+	var shader_material = ShaderMaterial.new()
+	var shader = load("res://shader/bullet_hole_instanced.gdshader")
+	if shader:
+		shader_material.shader = shader
+		shader_material.set_shader_parameter("texture_albedo", texture)
+
+	mesh.material = shader_material
+	return mesh
+
+
+func clear_all_bullet_holes() -> void:
+	# Reset instanced MultiMesh counts
+	for texture_index in range(bullet_hole_multimeshes.size()):
+		var mm_inst = bullet_hole_multimeshes[texture_index]
+		if mm_inst and mm_inst.multimesh:
+			mm_inst.multimesh.visible_instance_count = 0
+			active_instances[texture_index] = 0
+	hit_count = 0
+
+# Legacy node-pool removed; MultiMesh instancing is the only bullet hole system now.
 
 func spawn_bullet_hole(local_position: Vector2):
 	"""Spawn a bullet hole at the specified local position using object pool"""
-	
-	var bullet_hole = get_pooled_bullet_hole()
-	if bullet_hole:
-		# Configure the bullet hole
-		bullet_hole.set_hole_position(local_position)
-		bullet_hole.visible = true
-		bullet_hole.z_index = 1
-		
-		# Track as active
-		if bullet_hole not in active_bullet_holes:
-			active_bullet_holes.append(bullet_hole)
-		
+	# Use GPU-instanced MultiMesh; if not available, silently ignore (no legacy nodes)
+	if bullet_hole_multimeshes.size() == 0 or bullet_hole_textures.size() == 0:
 		if not DEBUG_DISABLED:
-			print("[CustomTarget] Spawned bullet hole at local position: ", local_position)
+			print("[CustomTarget] No MultiMesh bullet hole instances available; skipping spawn")
+		return
+
+	var texture_index = randi() % bullet_hole_textures.size()
+	if texture_index >= bullet_hole_multimeshes.size():
+		return
+
+	var mm_inst = bullet_hole_multimeshes[texture_index]
+	var multimesh = mm_inst.multimesh
+	var current_count = active_instances.get(texture_index, 0)
+	if current_count >= max_instances_per_texture:
+		return
+
+	# Reuse preallocated transform to avoid allocations
+	var t = _reusable_transform
+	var scale_factor = randf_range(0.6, 0.8)
+	# Uniform scale (no rotation)
+	t.x = Vector2(scale_factor, 0.0)
+	t.y = Vector2(0.0, scale_factor)
+	t.origin = local_position
+
+	multimesh.set_instance_transform_2d(current_count, t)
+	multimesh.visible_instance_count = current_count + 1
+	active_instances[texture_index] = current_count + 1
 
 # Handle incoming WebSocket messages
 func _on_websocket_message(message: String):
@@ -226,6 +290,7 @@ func _handle_image_transfer_start(data: Dictionary):
 	# Update UI: show status when transfer starts
 	status_label.visible = true
 	status_label.text = tr("custom_target_status_receiving_total") % image_transfer_state["total_chunks"]
+	
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Image transfer started: ", image_transfer_state["image_name"])
 		print("  Total chunks: ", image_transfer_state["total_chunks"])
@@ -508,6 +573,11 @@ func _process_complete_image():
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Image loaded successfully: %dx%d" % [image.get_width(), image.get_height()])
 	
+	# Show loading overlay via parent bootcamp
+	var bootcamp = get_parent()
+	if bootcamp and bootcamp.has_method("show_loading_overlay"):
+		bootcamp.show_loading_overlay()
+	
 	# Convert Image to ImageTexture and display
 	var texture = ImageTexture.create_from_image(image)
 	_set_image_texture(texture)
@@ -691,11 +761,25 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Bullet hit received at position: ", pos)
 	
+	# Block hits during restoration delay
+	if is_restoring:
+		if not DEBUG_DISABLED:
+			print("[CustomTarget] Hit blocked during restoration")
+		return
+	
+	# Block hits during loading period (check parent bootcamp's is_loading flag)
+	var bootcamp = get_parent()
+	if bootcamp and "is_loading" in bootcamp and bootcamp.is_loading:
+		if not DEBUG_DISABLED:
+			print("[CustomTarget] Hit blocked during loading period")
+		return
+	
 	# Convert world position to local coordinates (relative to this target)
 	var local_pos = to_local(pos)
 	
-	# Check if the hit is within the target bounds
-	if image_display and image_display.get_rect().has_point(local_pos):
+	# Check if the hit is within the target bounds AND a valid texture is loaded
+	# Don't spawn holes or count hits when image is loading or after explosion (no texture)
+	if image_display and image_display.texture and image_display.get_rect().has_point(local_pos):
 		# Spawn bullet hole at local position
 		spawn_bullet_hole(local_pos)
 		
@@ -704,6 +788,7 @@ func _on_websocket_bullet_hit(pos: Vector2):
 		if hit_count >= SHOTS_TO_EXPLODE:
 			explode_target()
 			hit_count = 0
+			return
 
 	# Emit a generic target_hit signal so bootcamp / drills can process this hit
 	emit_signal("target_hit", "hit", 0, pos)
@@ -751,10 +836,7 @@ func play_impact_sound_at_position_throttled(world_pos: Vector2, current_time: f
 		return
 
 	# Prefer metal impact sound if available
-	var impact_sound = preload("res://audio/bullet-hit-metal.mp3")
-	if not impact_sound:
-		# Fallback to generic bullet or paper sound
-		impact_sound = preload("res://audio/paper_hit.ogg")
+	var impact_sound = preload("res://audio/paper_hit.ogg")
 
 	if impact_sound:
 		var audio_player = AudioStreamPlayer2D.new()
@@ -814,6 +896,11 @@ func _on_load_image_response(_result, response_code, _headers, body):
 					# try jpg
 					ok = img.load_jpg_from_buffer(raw)
 				if ok == OK:
+					# Show loading overlay via parent bootcamp
+					var bootcamp = get_parent()
+					if bootcamp and bootcamp.has_method("show_loading_overlay"):
+						bootcamp.show_loading_overlay()
+					
 					var tex = ImageTexture.create_from_image(img)
 					_set_image_texture(tex)
 					# Show loaded image message
@@ -862,7 +949,7 @@ func explode_target():
 		
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Exploding target!")
-		
+
 	# Create explosion effect
 	if ExplosionEffectScene:
 		var explosion = ExplosionEffectScene.instantiate()
@@ -876,25 +963,38 @@ func explode_target():
 	image_display.visible = false
 	# Mask visibility is handled in _set_image_texture(); avoid redundant changes here
 	
-	# Hide bullet holes
-	for hole in active_bullet_holes:
-		if is_instance_valid(hole):
-			hole.visible = false
+	# Also clear any GPU-instanced MultiMesh bullet holes and pooled nodes
+	# This ensures all visual bullet holes are removed when the image shatters
+	clear_all_bullet_holes()
 	
-	# Restore after delay
-	get_tree().create_timer(2.5).timeout.connect(restore_target)
+	# Restore after delay (block hits during this period)
+	is_restoring = true
+	get_tree().create_timer(1.0).timeout.connect(restore_target)
 
 func restore_target():
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Restoring target")
 	
+	# Clear restoration flag to allow hits again
+	is_restoring = false
+	
+	# Show loading overlay via parent bootcamp if texture exists
+	if image_display and image_display.texture:
+		var bootcamp = get_parent()
+		if bootcamp and bootcamp.has_method("show_loading_overlay"):
+			bootcamp.show_loading_overlay()
+	
 	if image_display:
 		image_display.visible = true
-	if mask_node:
-		mask_node.visible = true
+		# Ensure mask visibility matches whether a texture is set (avoid forcing mask to show)
+		_set_image_texture(image_display.texture)
 	
 	# Clear bullet holes
-	for hole in active_bullet_holes:
-		if is_instance_valid(hole):
-			hole.visible = false
-	active_bullet_holes.clear()
+	# (legacy pooled nodes removed) — clear instanced counts below
+
+	# Reset instanced MultiMesh visible instance counts if present
+	for texture_index in range(bullet_hole_multimeshes.size()):
+		var mm_inst = bullet_hole_multimeshes[texture_index]
+		if mm_inst and mm_inst.multimesh:
+			mm_inst.multimesh.visible_instance_count = 0
+			active_instances[texture_index] = 0

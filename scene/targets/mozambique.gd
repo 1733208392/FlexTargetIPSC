@@ -324,17 +324,17 @@ func _show_stats_overlay():
 			result_label.text = tr("SUCCESS")
 		
 		if duration_label:
-			duration_label.text = tr("Duration") + ": %.2f s" % drill_duration
+			duration_label.text = tr("duration") + ": %.2f s" % drill_duration
 		
 		if first_shot_label:
 			var first_shot_delay = first_shot_time - drill_start_time
-			first_shot_label.text = tr("First Shot") + ": %.2f s" % first_shot_delay
+			first_shot_label.text = tr("first_shot") + ": %.2f s" % first_shot_delay
 		
 		if fastest_shot_label:
 			if fastest_shot_interval < 999.0:
-				fastest_shot_label.text = tr("Fastest Shot") + ": %.2f s" % fastest_shot_interval
+				fastest_shot_label.text = tr("fastest_shot") + ": %.2f s" % fastest_shot_interval
 			else:
-				fastest_shot_label.text = tr("Fastest Shot") + ": N/A"
+				fastest_shot_label.text = tr("fastest_shot") + ": N/A"
 	else:
 		# Show failure - no detailed stats
 		var result_label = drill_complete_overlay.get_node_or_null("VBoxContainer/MarginContainer/VBoxContainer/ResultLabel")

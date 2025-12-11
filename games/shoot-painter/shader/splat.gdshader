@@ -1,4 +1,3 @@
-
 shader_type canvas_item;
 
 uniform sampler2D noise_tex : hint_default_white;

@@ -1,0 +1,116 @@
+[gd_scene load_steps=5 format=3 uid="uid://dby28s2it8dj7"]
+
+[ext_resource type="Texture2D" uid="uid://dixwhgg0qg6ud" path="res://asset/games/Background_1.png" id="1_r5kur"]
+[ext_resource type="Script" uid="uid://clfkslwk142a8" path="res://games/shoot-painter/script/stem_manager.gd" id="2_omiao"]
+[ext_resource type="Script" uid="uid://iur200exsdc7" path="res://script/screenshot_manager.gd" id="2_r5kur"]
+[ext_resource type="Script" uid="uid://wrjfqv7g68uk" path="res://games/shoot-painter/script/splat_spawner.gd" id="3_yd2mb"]
+
+[node name="SplatDemo" type="Node2D"]
+
+[node name="TextureRect" type="TextureRect" parent="."]
+modulate = Color(1, 1, 1, 0.49019608)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 720.0
+offset_bottom = 1280.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_r5kur")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="StemManager" type="Node2D" parent="CanvasLayer"]
+script = ExtResource("2_omiao")
+
+[node name="Spawner" type="Node2D" parent="CanvasLayer"]
+script = ExtResource("3_yd2mb")
+prompt_stem_manager_node = NodePath("../StemManager")
+debug_draw = true
+prompt_clear_area_node = NodePath("../../ClearArea")
+
+[node name="CaptureManager" type="Node2D" parent="."]
+script = ExtResource("2_r5kur")
+
+[node name="Overlay" type="CanvasLayer" parent="CaptureManager"]
+layer = 20
+
+[node name="Shutter" type="ColorRect" parent="CaptureManager/Overlay"]
+visible = false
+custom_minimum_size = Vector2(720, 1280)
+color = Color(18.892157, 18.892157, 18.892157, 1)
+
+[node name="Thumbnail" type="TextureRect" parent="CaptureManager/Overlay"]
+visible = false
+custom_minimum_size = Vector2(200, 200)
+offset_left = 254.0
+offset_top = 239.0
+offset_right = 454.0
+offset_bottom = 439.0
+expand_mode = 1
+stretch_mode = 2
+
+[node name="UI" type="Control" parent="CaptureManager/Overlay"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="CaptureButton" type="Button" parent="CaptureManager/Overlay/UI"]
+layout_mode = 0
+offset_left = 321.0
+offset_top = 503.0
+offset_right = 391.0
+offset_bottom = 534.0
+text = "Capture"
+
+[node name="Snapshot" type="ColorRect" parent="."]
+z_index = 5
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 360.0
+offset_top = 1130.0
+offset_right = 720.0
+offset_bottom = 1280.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 0, 0, 0.439216)
+
+[node name="Label" type="Label" parent="Snapshot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 48
+text = "Capure"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ClearArea" type="ColorRect" parent="."]
+z_index = 5
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 1130.0
+offset_right = 360.0
+offset_bottom = 1280.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 0, 0, 0.439216)
+
+[node name="Label" type="Label" parent="ClearArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 32.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 48
+text = "Restart"
+horizontal_alignment = 1
+vertical_alignment = 1

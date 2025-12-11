@@ -3,9 +3,13 @@ extends CanvasLayer
 var back_button: Button
 var next_button: Button
 var replay_button: Button
+@onready var level_label = $Control/VBoxContainer/HeaderCircle/CircleContent/LevelLabel
 @onready var level_number = $Control/VBoxContainer/HeaderCircle/CircleContent/LevelNumber
+@onready var score_label = $Control/VBoxContainer/Content/PanelContent/ScoreContainer/ScoreLabel
 @onready var score_value = $Control/VBoxContainer/Content/PanelContent/ScoreContainer/ScoreValue
+@onready var coin_label = $Control/VBoxContainer/Content/PanelContent/CoinContainer/CoinLabel
 @onready var coin_value = $Control/VBoxContainer/Content/PanelContent/CoinContainer/CoinValue
+@onready var bonus_label = $Control/VBoxContainer/Content/PanelContent/BonusContainer/BonusLabel
 @onready var star1 = $Control/VBoxContainer/HeaderCircle/StarsContainer/Star1
 @onready var star2 = $Control/VBoxContainer/HeaderCircle/StarsContainer/Star2
 @onready var star3 = $Control/VBoxContainer/HeaderCircle/StarsContainer/Star3
@@ -79,6 +83,22 @@ func _ready():
 	if coin_particles:
 		coin_particles.emitting = true
 	
+	# Translate static labels
+	if level_label:
+		level_label.text = tr("level_label")
+	if score_label:
+		score_label.text = tr("score")
+	if coin_label:
+		coin_label.text = tr("coin_label")
+	if bonus_label:
+		bonus_label.text = tr("bonus_label")
+	if back_button:
+		back_button.text = tr("back_button")
+	if next_button:
+		next_button.text = tr("next")
+	if replay_button:
+		replay_button.text = tr("replay_button")
+	
 	print("[MoleLevelComplete] Scene ready")
 
 func show_level_complete(level: int, score: int, coins: int = 0, bonus: int = 0, stars: int = 3, passed: bool = true):
@@ -104,7 +124,7 @@ func show_level_complete(level: int, score: int, coins: int = 0, bonus: int = 0,
 	
 	# Update cleared label and buttons based on pass/fail
 	if level_passed:
-		cleared_label.text = "Cleared!"
+		cleared_label.text = tr("level_cleared")
 		next_button.visible = true
 		replay_button.visible = false
 		next_button.grab_focus()
@@ -116,7 +136,7 @@ func show_level_complete(level: int, score: int, coins: int = 0, bonus: int = 0,
 		if audio_player:
 			audio_player.play()
 	else:
-		cleared_label.text = "Failed!"
+		cleared_label.text = tr("level_failed")
 		next_button.visible = false
 		replay_button.visible = true
 		replay_button.grab_focus()
