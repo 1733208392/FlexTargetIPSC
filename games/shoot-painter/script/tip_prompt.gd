@@ -1,9 +1,9 @@
 extends Node2D
 
-@export var radius: float = 30.0
+@export var radius: float = 40.0
 @export var pulse_speed: float = 3.0
-@export var highlight_color: Color = Color(1.0, 0.8, 0.2, 1.0)
-@export var fade_color: Color = Color(1.0, 0.6, 0.1, 0.4)
+@export var highlight_color: Color = Color(0.941, 0.2196, 0.4118, 1.0)
+@export var fade_color: Color = Color(0.984, 0.721, 0.774, 0.45)
 
 var time: float = 0.0
 

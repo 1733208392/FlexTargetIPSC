@@ -20,6 +20,7 @@ signal restart_requested
 @export var prompt_stem_manager_node: NodePath = NodePath("")
 @export var snapshot_node: NodePath = NodePath("")
 @export var capture_manager_node: NodePath = NodePath("CaptureManager")
+@export var capture_area_node: NodePath = NodePath("../../CaptureManager/Overlay/UI/CpatureArea")
 
 var rng := RandomNumberGenerator.new()
 var pool: Array = []
@@ -45,15 +46,38 @@ func _ready():
 	if debug_draw:
 		set_process(true)
 
+	# Listen for bullet hits coming from the WebSocket listener (for remote firing)
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener:
+		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
+		ws_listener.menu_control.connect(_on_menu_control)
+		if debug_draw:
+			print("[SplatSpawner] Connected to WebSocketListener bullet_hit signal")
+
 func _input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		# spawn_splat will check prompt gating if enabled
 		spawn_splat(event.position, randf_range(min_splat_radius, 96.0), Color.from_hsv(rng.randf(), 0.8, 0.9))
 
+func _on_websocket_bullet_hit(global_pos: Vector2) -> void:
+	if not is_inside_tree():
+		return
+	# Use the existing spawn logic (which already respects snapshot/clear areas)
+	# if _handle_capture_area_hit(global_pos):
+	# 	return
+	spawn_splat(global_pos, randf_range(min_splat_radius, 96.0), Color.from_hsv(rng.randf(), 0.8, 0.9))
+
 func _process(_delta: float) -> void:
 	if debug_draw:
 		queue_redraw()
 
+func _on_menu_control(directive: String) -> void:
+	if directive == "homepage":
+		if is_inside_tree():
+			get_tree().change_scene_to_file("res://scene/main_menu/main_menu.tscn")
+	elif directive == "back":
+		if is_inside_tree():
+			get_tree().change_scene_to_file("res://scene/games/menu/menu.tscn")
 
 func _is_in_prompt(global_pos: Vector2) -> bool:
 
@@ -203,6 +227,27 @@ func spawn_splat(global_pos: Vector2, radius := 64.0, color := Color(1, 0.2, 0.2
 		else:
 			add_child(inst)
 	inst.position = global_pos
+
+func _handle_capture_area_hit(global_pos: Vector2) -> bool:
+	# Mirror prompt_clear_area_node treatment: skip when the path is empty.
+	if capture_area_node == NodePath(""):
+		return false
+	var capture_area = get_node_or_null(capture_area_node)
+	if not capture_area or not capture_area.has_method("get_global_rect"):
+		return false
+	if not capture_area.get_global_rect().has_point(global_pos):
+		return false
+	var cap_node: Node = null
+	if capture_manager_node != NodePath(""):
+		cap_node = get_node_or_null(capture_manager_node)
+	if not cap_node:
+		cap_node = get_node_or_null("CaptureManager")
+	if cap_node:
+		if cap_node.has_method("_on_capture_pressed"):
+			cap_node._on_capture_pressed()
+		elif cap_node.has_method("capture_canvas"):
+			cap_node.capture_canvas()
+	return true
 
 func _draw() -> void:
 	if not debug_draw:

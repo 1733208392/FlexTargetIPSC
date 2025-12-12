@@ -6,20 +6,37 @@ extends Node2D
 
 @onready var shutter: ColorRect = $Overlay/Shutter
 @onready var thumbnail: TextureRect = $Overlay/Thumbnail
-@onready var capture_button: Button = $Overlay/UI/CaptureButton
+@onready var capture_area: ColorRect = $Overlay/UI/CpatureArea
+@onready var restart_label: Label = $Overlay/UI/ClearArea/Label
 
-# Last captured image for sending to mobile app
+# Last captured image and encoded bytes for sending to mobile app
 var last_captured_image: Image = null
+var last_captured_jpg_bytes: PackedByteArray = PackedByteArray()
 
 func _ready() -> void:
 	shutter.visible = false
 	thumbnail.visible = false
-	capture_button.pressed.connect(Callable(self, "_on_capture_pressed"))
+	set_process_input(true)
+	restart_label.text = tr("restart")
 
 func _on_capture_pressed() -> void:
 	await capture_canvas()
 	# Automatically send to mobile app after capture completes
 	send_captured_to_mobile_app(Callable(self, "_on_capture_sent_to_mobile"))
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			_try_capture_at(event.position)
+		return
+	if event is InputEventScreenTouch and event.pressed:
+		_try_capture_at(event.position)
+		return
+
+func _try_capture_at(global_point: Vector2) -> void:
+	if capture_area.get_global_rect().has_point(global_point):
+		_on_capture_pressed()
+		get_tree().set_input_as_handled()
 
 func capture_canvas() -> void:
 	_flash_shutter()
@@ -44,6 +61,13 @@ func capture_canvas() -> void:
 	
 	# Store the captured image for later sending
 	last_captured_image = img
+	# Encode once to JPEG with compression (0.75 quality) for smaller file size
+	var jpg_bytes = img.save_jpg_to_buffer(0.75)
+	if jpg_bytes and not jpg_bytes.is_empty():
+		last_captured_jpg_bytes = jpg_bytes
+	else:
+		push_error("screenshot_manager: Failed to encode captured image to JPEG")
+		last_captured_jpg_bytes = PackedByteArray()
 	
 	var tex = ImageTexture.create_from_image(img)
 	_animate_thumbnail(tex)
@@ -97,11 +121,11 @@ func send_captured_to_mobile_app(completion_callback: Callable = Callable()) -> 
 			completion_callback.call(false, "HttpService not available")
 		return
 	
-	# Send the captured image with BLE-optimized settings (JPG compression)
-	http_service.send_captured_image(
-		last_captured_image,
+	# Send the captured JPEG bytes (already encoded and ready for chunking)
+	http_service.send_captured_image_bytes(
+		last_captured_jpg_bytes,
 		100,    # BLE-optimized chunk size (1 KB)
-		50.0,   # BLE-optimized delay (50 ms)
+		100.0,   # BLE-optimized delay (100 ms)
 		completion_callback
 	)
 

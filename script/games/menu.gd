@@ -9,10 +9,12 @@ var button_fruitcatcher: TextureButton
 var button_monkeyduel: TextureButton
 var button_mole_attack: TextureButton
 var button_tictactoe: TextureButton
+var button_painter: TextureButton
 var fruitcatcher_label: Label
 var monkeyduel_label: Label
 var mole_attack_label: Label
 var tictactoe_label: Label
+var painter_label: Label
 
 func _ready():
 	# Hide global status bar when entering games
@@ -26,21 +28,24 @@ func _ready():
 	button_monkeyduel = get_node("Panel/VBoxContainer2/HBoxContainer2/2Players")
 	button_mole_attack = get_node("Panel/VBoxContainer2/HBoxContainer3/wackamole")
 	button_tictactoe = get_node("Panel/VBoxContainer2/HBoxContainer4/tictactoe")
+	button_painter  = get_node("Panel/VBoxContainer2/HBoxContainer5/painter")
 
 	# Get game name labels
 	fruitcatcher_label = get_node("Panel/VBoxContainer2/HBoxContainer/Label")
 	monkeyduel_label = get_node("Panel/VBoxContainer2/HBoxContainer2/Label")
 	mole_attack_label = get_node("Panel/VBoxContainer2/HBoxContainer3/Label")
 	tictactoe_label = get_node("Panel/VBoxContainer2/HBoxContainer4/Label")
+	painter_label = get_node("Panel/VBoxContainer2/HBoxContainer5/Label")
 	
 	# Populate menu options arrays
-	main_menu_options = [button_fruitcatcher, button_monkeyduel, button_mole_attack, button_tictactoe]
+	main_menu_options = [button_fruitcatcher, button_monkeyduel, button_mole_attack, button_tictactoe, button_painter]
 
 	# Connect button signals
 	button_fruitcatcher.pressed.connect(_on_fruitcatcher_pressed)
 	button_monkeyduel.pressed.connect(_on_monkeyduel_pressed)
 	button_mole_attack.pressed.connect(_on_mole_attack_pressed)
 	button_tictactoe.pressed.connect(_on_tictactoe_pressed)
+	button_painter.pressed.connect(_on_painter_pressed)
 
 	# Connect to remote control directives
 	var remote_control = get_node_or_null("/root/MenuController")
@@ -61,6 +66,8 @@ func _ready():
 		mole_attack_label.text = tr("mole_attack")
 	if tictactoe_label:
 		tictactoe_label.text = tr("tictactoe")
+	if painter_label:
+		painter_label.text = tr("shoot_painter")
 
 	# Load last pressed selection from GlobalData if available, otherwise default to first button
 	var global_data = get_node_or_null("/root/GlobalData")
@@ -127,6 +134,8 @@ func _on_remote_enter():
 		_on_mole_attack_pressed()
 	elif selected_option == 3:
 		_on_tictactoe_pressed()
+	elif selected_option == 4:
+		_on_painter_pressed()
 
 func _on_remote_back_pressed():
 	"""Handle back press from remote control to return to main menu"""
@@ -174,3 +183,10 @@ func _on_tictactoe_pressed():
 	selected_option = 3
 	_save_last_selection()
 	get_tree().change_scene_to_file("res://scene/games/tictactoe/main.tscn")
+
+func _on_painter_pressed():
+	"""Handle painter button press"""
+	print("[Menu] Painter selected")
+	selected_option = 4
+	_save_last_selection()
+	get_tree().change_scene_to_file("res://games/shoot-painter/scene/painter.tscn")

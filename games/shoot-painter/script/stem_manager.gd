@@ -3,7 +3,7 @@ extends Node2D
 @export var stem_count: int = 12
 @export var ground_y: float = 1080.0
 @export var min_stem_height: float = 200.0
-@export var max_stem_height: float = 600.0
+@export var max_stem_height: float = 900.0
 @export var growth_speed: float = 70.0
 @export var prompt_offset: float = 32.0
 @export var horizontal_padding: float = 70.0
@@ -16,6 +16,8 @@ var stems: Array = []
 var rng := RandomNumberGenerator.new()
 var tip_prompt_script := preload("res://games/shoot-painter/script/tip_prompt.gd")
 var stem_gradient: Gradient
+@export var cartoon_splat_stream: AudioStream = preload("res://audio/cartoon-splat.mp3")
+var cartoon_splat_player: AudioStreamPlayer
 
 func _ready() -> void:
 	rng.randomize()
@@ -23,6 +25,7 @@ func _ready() -> void:
 	for i in range(stem_count):
 		_spawn_stem(i)
 	set_process(true)
+	_setup_cartoon_splat_player()
 
 func _process(delta: float) -> void:
 	for data in stems:
@@ -103,5 +106,21 @@ func consume_tip_at_position(global_pos: Vector2, radius: float) -> bool:
 				data.state = "used"
 				if data.prompt and is_instance_valid(data.prompt):
 					data.prompt.visible = false
+					_play_cartoon_splat()
 				return true
 	return false
+
+func _setup_cartoon_splat_player() -> void:
+	if not cartoon_splat_stream:
+		return
+	cartoon_splat_player = AudioStreamPlayer.new()
+	cartoon_splat_player.stream = cartoon_splat_stream
+	cartoon_splat_player.autoplay = false
+	cartoon_splat_player.bus = "SFX"
+	add_child(cartoon_splat_player)
+
+func _play_cartoon_splat() -> void:
+	if not cartoon_splat_player:
+		return
+	cartoon_splat_player.stop()
+	cartoon_splat_player.play()

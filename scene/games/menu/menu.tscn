@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://cgosfq33rfilf"]
+[gd_scene load_steps=15 format=3 uid="uid://cgosfq33rfilf"]
 
 [ext_resource type="Script" uid="uid://csw1htde5tl1j" path="res://script/games/menu.gd" id="1_8nwqc"]
 [ext_resource type="Texture2D" uid="uid://du28da4oqj01r" path="res://asset/games/menu-back.png" id="2_3y2rt"]
@@ -12,6 +12,8 @@
 [ext_resource type="Texture2D" uid="uid://d0tr064yt51b1" path="res://asset/games/wack-a-mole/GUI/mole-menu-button-selected.png" id="10_k48pe"]
 [ext_resource type="Texture2D" uid="uid://dacvtupxiuwjb" path="res://asset/tictactoe_icon.png" id="11_lira2"]
 [ext_resource type="Texture2D" uid="uid://c6q41kb2x6fwy" path="res://asset/tictactoe_icon_selected.png" id="12_2klep"]
+[ext_resource type="Texture2D" uid="uid://ckjwcfgcss367" path="res://asset/games/painter-menu-image.png" id="13_68t83"]
+[ext_resource type="Texture2D" uid="uid://mmbajunv7sm2" path="res://asset/games/painter-menu-image-selected.png" id="14_mb7bb"]
 
 [node name="Menu" type="Node2D"]
 script = ExtResource("1_8nwqc")
@@ -45,10 +47,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -279.5
-offset_top = -446.0
-offset_right = 279.5
-offset_bottom = 196.0
+offset_left = -286.0
+offset_top = -541.0
+offset_right = 286.0
+offset_bottom = 541.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
@@ -125,6 +127,25 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("6_t0a87")
 theme_override_font_sizes/font_size = 40
 text = "Tic Tac Toe"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer5" type="HBoxContainer" parent="Panel/VBoxContainer2"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="painter" type="TextureButton" parent="Panel/VBoxContainer2/HBoxContainer5"]
+layout_mode = 2
+texture_normal = ExtResource("13_68t83")
+texture_pressed = ExtResource("14_mb7bb")
+texture_hover = ExtResource("14_mb7bb")
+texture_focused = ExtResource("14_mb7bb")
+
+[node name="Label" type="Label" parent="Panel/VBoxContainer2/HBoxContainer5"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_t0a87")
+theme_override_font_sizes/font_size = 40
+text = "Shoot painter"
 horizontal_alignment = 1
 vertical_alignment = 1
 

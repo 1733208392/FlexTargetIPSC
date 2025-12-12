@@ -1,17 +1,16 @@
-[gd_scene load_steps=7 format=3 uid="uid://dmciy24fnm8cw"]
+[gd_scene load_steps=6 format=3 uid="uid://dmciy24fnm8cw"]
 
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="1_volumn"]
 [ext_resource type="Texture2D" uid="uid://gpyjow0hb5mh" path="res://asset/drills_back.jpg" id="2_6mmk4"]
 [ext_resource type="Script" uid="uid://du7pnc5woi148" path="res://script/bootcamp.gd" id="2_bootcamp"]
 [ext_resource type="PackedScene" uid="uid://dturr8so8g8cw" path="res://scene/custom_button.tscn" id="4_e58o0"]
 [ext_resource type="Theme" uid="uid://br4jdxsyx0xtu" path="res://theme/drill_data_theme.tres" id="5_drill_theme"]
-[ext_resource type="AudioStream" uid="uid://i6eh50aq5t66" path="res://audio/Final Battle - For Love.ogg" id="6_audio"]
 
 [node name="Node2D" type="Node2D"]
 script = ExtResource("2_bootcamp")
 
 [node name="Background" type="TextureRect" parent="."]
-offset_left = -3.05176e-05
+z_index = -1
 offset_right = 720.0
 offset_bottom = 1280.0
 texture = ExtResource("2_6mmk4")
@@ -280,6 +279,3 @@ size_flags_horizontal = 0
 size_flags_vertical = 4
 value = 100.0
 show_percentage = false
-
-[node name="BackgroundMusic" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("6_audio")

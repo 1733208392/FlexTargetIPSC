@@ -42,8 +42,10 @@ var zoom_excluded_targets = ["ipsc_mini_rotate"]
 @onready var canvas_layer_stats = $CanvasLayerStats
 @onready var shot_labels = []
 @onready var clear_button = $CanvasLayer/Control/BottomContainer/CustomButton
-@onready var background_music = $BackgroundMusic
 @onready var clear_area = $ClearArea
+@onready var background_node = $Background
+
+const BACKGROUND_TEXTURE: Texture2D = preload("res://asset/drills_back.jpg")
 
 # Scale indicator
 @onready var scale_label = $ScaleIndicatorLayer/Control/ScaleIndicator/ScaleLabel
@@ -126,9 +128,12 @@ func _ready():
 	
 	# Update UI texts with translations
 	update_ui_texts()
-	
+
 	# Update scale indicator
 	update_scale_indicator()
+
+	# Ensure the background texture is preloaded and not processing
+	_prepare_background()
 	
 	# Set clear button as default focus
 	clear_button.grab_focus()
@@ -143,27 +148,27 @@ func _ready():
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] WebSocketListener singleton not found!")
 	
-	# Load SFX volume from GlobalData and apply it
-	var global_data_for_sfx = get_node_or_null("/root/GlobalData")
-	if global_data_for_sfx and global_data_for_sfx.settings_dict.has("sfx_volume"):
-		var sfx_volume = global_data_for_sfx.settings_dict.get("sfx_volume", 5)
-		_apply_sfx_volume(sfx_volume)
-		if not DEBUG_DISABLED:
-			print("[Bootcamp] Loaded SFX volume from GlobalData: ", sfx_volume)
-	else:
-		# Default to volume level 5 if not set
-		_apply_sfx_volume(5)
-		if not DEBUG_DISABLED:
-			print("[Bootcamp] Using default SFX volume: 5")
-	
 	# Enable bullet spawning for bootcamp scene
 	if ws_listener:
 		ws_listener.set_bullet_spawning_enabled(true)
 		if not DEBUG_DISABLED:
 			print("[Bootcamp] Enabled bullet spawning for bootcamp scene")
-	
+
 	# Send HTTP request to start the game and wait for response
 	start_bootcamp_drill()
+
+func _prepare_background() -> void:
+	if not background_node:
+		return
+	if background_node is TextureRect:
+		background_node.texture = BACKGROUND_TEXTURE
+	elif background_node is Sprite2D:
+		background_node.texture = BACKGROUND_TEXTURE
+	background_node.set_process(false)
+	background_node.set_physics_process(false)
+	background_node.set_process_input(false)
+	background_node.set_process_unhandled_input(false)
+	background_node.set_process_unhandled_key_input(false)
 
 func start_bootcamp_drill():
 	"""Send HTTP start game request and wait for OK response before starting drill"""
@@ -959,34 +964,6 @@ func _reset_all_paddles(node: Node) -> int:
 	for child in node.get_children():
 		count += _reset_all_paddles(child)
 	return count
-
-func _on_sfx_volume_changed(volume: int):
-	"""Handle SFX volume changes from Option scene.
-	Volume ranges from 0 to 10, where 0 stops audio and 10 is max volume."""
-	if not DEBUG_DISABLED:
-		print("[Bootcamp] SFX volume changed to: ", volume)
-	_apply_sfx_volume(volume)
-
-func _apply_sfx_volume(volume: int):
-	"""Apply SFX volume level to audio.
-	Volume ranges from 0 to 10, where 0 stops audio and 10 is max volume."""
-	# Convert volume (0-10) to Godot's decibel scale
-	# 0 = silence (mute), 10 = full volume (0dB)
-	# We use approximately -40dB for silence and 0dB for maximum
-	if volume <= 0:
-		# Stop all SFX
-		if background_music:
-			background_music.volume_db = -80  # Effectively mute
-		if not DEBUG_DISABLED:
-			print("[Bootcamp] Muted audio (volume=", volume, ")")
-	else:
-		# Map 1-10 to -40dB to 0dB
-		# volume 1 = -40dB, volume 10 = 0dB
-		var db = -40.0 + ((volume - 1) * (40.0 / 9.0))
-		if background_music:
-			background_music.volume_db = db
-		if not DEBUG_DISABLED:
-			print("[Bootcamp] Set audio volume_db to ", db, " (volume level: ", volume, ")")
 
 func update_statistics_display():
 	"""Update the statistics labels with current session data"""
