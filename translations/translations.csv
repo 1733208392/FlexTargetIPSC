@@ -640,6 +640,7 @@ netlink_status_updating,Netlink Status Being Updated,网联状态正在更新,�
 started,Started,已启动,已開始,已啟動
 stopped,Stopped,已停止,已停止,已停止
 auto_restart,Auto Restart,自动重启,自動再起動,自動重新啟動
+ending_target,Ending Target,结束靶,エンディングターゲット,結束靶
 pause_5s,Pause 5s,暂停5秒,5秒一時停止,暫停5秒
 pause_10s,Pause 10s,暂停10秒,10秒一時停止,暫停10秒
 auto_restart_note,NOTE: This setting only applies to the Single Target IPSC Drill.,注意：以上设置仅适用于单靶IPSC训练。,注意：この設定はシングルターゲットIPSCドリルのみに適用されます。,注意：此設定僅適用於單靶IPSC訓練。

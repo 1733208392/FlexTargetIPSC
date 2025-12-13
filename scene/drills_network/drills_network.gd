@@ -32,7 +32,6 @@ var global_data: Node = null
 var target_instance: Node = null
 var total_score: int = 0
 var drill_completed: bool = false
-var shot_timer_visible: bool = false
 var current_target_type: String = "ipsc_mini"  # Default fallback
 
 # Elapsed time tracking
@@ -45,7 +44,7 @@ var timeout_seconds: float = 40.0
 var drill_timed_out: bool = false
 
 
-var is_first: bool = false # Only first target has shot timer
+var is_first: bool = false # First target in the sequence
 var is_last: bool = false  # Last target shows the final target
 
 # Saved parameters from BLE 'ready' until a 'start' is received
@@ -53,9 +52,6 @@ var saved_ble_ready_content: Dictionary = {}
 
 # Current repeat tracking
 var current_repeat: int = 0
-
-# Current delay time for shot timer
-var current_delay_time: float = 0.0
 
 # Shot tracking for last target
 var shots_on_last_target: int = 0
@@ -70,8 +66,6 @@ signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, 
 signal ui_timer_update(elapsed_seconds: float)
 signal ui_timer_stopped(final_time: float)
 signal ui_target_name_update(target_name: String)
-signal ui_show_shot_timer()
-signal ui_hide_shot_timer()
 signal ui_mode_update(is_first: bool)
 
 @onready var performance_tracker = preload("res://script/performance_tracker_network.gd").new()
@@ -96,13 +90,6 @@ func _ready():
 	# Connect to GlobalData netlink_status_loaded signal
 	if global_data:
 		global_data.netlink_status_loaded.connect(_on_netlink_status_loaded)
-	
-	# Connect to shot timer ready signal
-	var shot_timer = get_node("DrillUI/ShotTimerOverlay")
-	if shot_timer and shot_timer.has_signal("timer_ready"):
-		shot_timer.timer_ready.connect(_on_shot_timer_ready)
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Connected to shot timer ready signal")
 	
 	# Enable bullet spawning for network drills scene
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
@@ -248,8 +235,6 @@ func _start_auto_start_fallback():
 			print("[DrillsNetwork] Auto-starting drill with timeout: ", timeout_seconds)
 		
 		start_drill()
-		if is_first:
-			shot_timer_visible = true
 	else:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Auto-start fallback cancelled - drill already started or will be started by BLE command")
@@ -373,10 +358,6 @@ func spawn_target():
 	
 	# Start drill timer
 	start_drill_timer()
-	
-	# Show shot timer only for first target
-	if is_first:
-		show_shot_timer()
 
 	# Hide QR code now that the drill has started
 	_refresh_master_qr_code()
@@ -450,10 +431,7 @@ func _on_final_target_hit(hit_position: Vector2):
 	# Send netlink forward data with ack:end
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
-		# Calculate drill duration: for single targets (is_first and is_last), include the delay time
 		var drill_duration = elapsed_seconds
-		if is_first and is_last:
-			drill_duration += current_delay_time
 		drill_duration = round(drill_duration * 100.0) / 100.0
 		
 		var content_dict = {"ack": "end", "drill_duration": drill_duration}
@@ -507,27 +485,37 @@ func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or
 		target_position = target_pos_or_hit_pos  # Use the actual target position from the signal
 		rotation_angle = target_rot  # Use the actual rotation angle for rotation targets
 	
-	if DEBUG_ENABLED:
-		print("[DrillsNetwork] Target hit: zone=", zone, " points=", points, " pos=", hit_position)
-	
-	# Hide shot timer on first shot
-	if shot_timer_visible:
-		hide_shot_timer()
-		shot_timer_visible = false
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Target hit: zone=", zone, " points=", points, " pos=", hit_position)
 	
 	total_score += points
-	
 	# Track shots on the last target to trigger final spawn
 	if is_last and not final_target_spawned:
 		shots_on_last_target += 1
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Last target hit! Shot count: ", shots_on_last_target, "/2")
 		
-		# Spawn final target after 2 shots on last target
-		if shots_on_last_target >= 2:
+		# Check if ending target is enabled in settings
+		var has_ending_target = false
+		if global_data and global_data.settings_dict.has("has_ending_target"):
+			has_ending_target = global_data.settings_dict.get("has_ending_target", false)
 			if DEBUG_ENABLED:
-				print("[DrillsNetwork] Spawning final target after 2 shots on last target")
-			spawn_final_target()
+				print("[DrillsNetwork] has_ending_target setting: ", has_ending_target)
+		else:
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] has_ending_target setting not found in GlobalData, using default: false")
+		
+		# Spawn final target after 2 shots on last target only if ending target is enabled
+		if shots_on_last_target >= 2:
+			if has_ending_target:
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Spawning final target after 2 shots on last target")
+				spawn_final_target()
+			else:
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Ending target disabled in settings, waiting for mobile app to end the drill")
+				# Mark final_target_spawned to prevent re-entry, but don't complete the drill yet
+				final_target_spawned = true
 	
 	# Emit for performance tracking
 	if DEBUG_ENABLED:
@@ -539,7 +527,7 @@ func start_drill_timer():
 	# Reset performance tracker for new drill
 	performance_tracker.reset_shot_timer()
 	
-	# Create timeout timer (will be started when shot timer is ready for first target, immediately for subsequent targets)
+	# Create timeout timer
 	if timeout_timer:
 		timeout_timer.queue_free()
 	timeout_timer = Timer.new()
@@ -548,19 +536,16 @@ func start_drill_timer():
 	timeout_timer.timeout.connect(_on_timeout)
 	add_child(timeout_timer)
 	
-	if not is_first:
-		# In subsequent target mode, start timer immediately since no shot timer
-		timeout_timer.start()
-		drill_start_time = Time.get_ticks_msec() / 1000.0
-		elapsed_seconds = 0.0
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Subsequent target mode: Drill timer started immediately")
-		# Activate drill for target
-		if target_instance and target_instance.has_method("set"):
-			target_instance.set("drill_active", true)
-	else:
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] First target mode: Drill timer created (waiting for shot timer ready)")
+	# Start timer immediately for all targets
+	timeout_timer.start()
+	drill_start_time = Time.get_ticks_msec() / 1000.0
+	elapsed_seconds = 0.0
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Drill timer started immediately")
+	
+	# Activate drill for target
+	if target_instance and target_instance.has_method("set"):
+		target_instance.set("drill_active", true)
 
 func _process(_delta):
 	"""Update timer"""
@@ -595,9 +580,6 @@ func complete_drill():
 	if timeout_timer:
 		timeout_timer.stop()
 	
-	# Hide shot timer
-	hide_shot_timer()
-	
 	# Show completion
 	network_complete_overlay.show_completion(current_repeat)
 	
@@ -613,7 +595,6 @@ func reset_drill_state():
 	drill_timed_out = false
 	elapsed_seconds = 0.0
 	drill_start_time = 0.0
-	shot_timer_visible = false
 	shots_on_last_target = 0
 	final_target_spawned = false
 	
@@ -644,14 +625,6 @@ func reset_drill_state():
 
 	# Refresh QR code now that no targets are visible
 	_refresh_master_qr_code()
-
-func show_shot_timer():
-	"""Show the shot timer"""
-	emit_signal("ui_show_shot_timer")
-
-func hide_shot_timer():
-	"""Hide the shot timer"""
-	emit_signal("ui_hide_shot_timer")
 
 func _on_menu_control(directive: String):
 	"""Handle websocket menu control"""
@@ -724,25 +697,11 @@ func _on_ble_ready_command(content: Dictionary):
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] BLE ready parameters saved: ", saved_ble_ready_content)
 
-	# Set random delay for shot timer if first target
-	var delay_time: float = 0.0
-	if content.get("isFirst", false):
-		var shot_timer = get_node("DrillUI/ShotTimerOverlay")
-		if shot_timer:
-			delay_time = randf_range(2.0, 5.0)
-			delay_time = round(delay_time * 100.0) / 100.0
-			current_delay_time = delay_time  # Store for later use
-			shot_timer.set_fixed_delay(delay_time)
-			if DEBUG_ENABLED:
-				print("[DrillsNetwork] Set random delay to shot timer: ", delay_time)
-
 	# Acknowledge the ready command back to sender by forwarding a netlink message
 	# Format: {"type":"netlink","action":"forward","device":"A","content":"ready"}
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
 		var content_dict = {"ack":"ready"}
-		if delay_time > 0.0:
-			content_dict["delay_time"] = delay_time
 		http_service.netlink_forward_data(func(result, response_code, _headers, _body):
 			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 				if DEBUG_ENABLED:
@@ -838,8 +797,6 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting drill immediately")
 	start_drill()
-	if is_first:
-		shot_timer_visible = true
 
 func _on_ble_end_command(content: Dictionary) -> void:
 	"""Handle BLE end command: complete the drill"""
@@ -848,20 +805,3 @@ func _on_ble_end_command(content: Dictionary) -> void:
 	
 	# Complete the drill
 	complete_drill()
-
-func _on_shot_timer_ready(delay: float):
-	"""Handle shot timer ready - start the drill timeout timer and begin elapsed time tracking"""
-	if DEBUG_ENABLED:
-		print("[DrillsNetwork] Shot timer ready - starting drill timeout timer and elapsed time tracking. Delay: ", delay, " seconds")
-	
-	# Pass the delay to performance tracker
-	performance_tracker.set_shot_timer_delay(delay)
-	
-	if timeout_timer and not drill_completed:
-		timeout_timer.start()
-		# Start tracking elapsed time
-		drill_start_time = Time.get_ticks_msec() / 1000.0
-		elapsed_seconds = 0.0
-		# Activate drill for target
-		if target_instance and target_instance.has_method("set"):
-			target_instance.set("drill_active", true)

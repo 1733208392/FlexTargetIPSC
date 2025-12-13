@@ -10,6 +10,9 @@ static var current_drill_sequence = "Fixed"
 static var auto_restart_enabled = false
 static var auto_restart_pause_time = 5  # Changed to store the selected time (5 or 10)
 
+# Global variable for ending target setting
+static var has_ending_target = false
+
 # SFX volume setting (0-10 scale, default 5)
 static var sfx_volume = 5
 
@@ -45,6 +48,7 @@ signal sfx_volume_changed(volume: int)
 @onready var random_sequence_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/RandomSequenceButton"
 
 # References to auto restart controls
+@onready var ending_target_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/EndingTargetButton"
 @onready var auto_restart_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/AutoRestartButton"
 @onready var pause_5s_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/AutoRestartPauseContainer/Pause5sButton"
 @onready var pause_10s_check = $"VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer/AutoRestartPauseContainer/Pause10sButton"
@@ -103,6 +107,8 @@ func _ready():
 		random_sequence_check.toggled.connect(_on_drill_sequence_toggled)
 	
 	# Connect signals for auto restart controls
+	if ending_target_check:
+		ending_target_check.toggled.connect(_on_ending_target_toggled)
 	if auto_restart_check:
 		auto_restart_check.toggled.connect(_on_auto_restart_toggled)
 	if pause_5s_check:
@@ -229,6 +235,23 @@ func _on_drill_sequence_toggled(button_pressed: bool):
 	
 	save_settings()
 
+func _on_ending_target_toggled(button_pressed: bool):
+	if not GlobalDebug.DEBUG_DISABLED:
+		print("[Option] Ending target toggled to: ", button_pressed)
+	has_ending_target = button_pressed
+	
+	# Update GlobalData immediately to ensure consistency
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		global_data.settings_dict["has_ending_target"] = has_ending_target
+		if not GlobalDebug.DEBUG_DISABLED:
+			print("[Option] Immediately updated GlobalData.settings_dict[has_ending_target] to: ", has_ending_target)
+	else:
+		if not GlobalDebug.DEBUG_DISABLED:
+			print("[Option] Warning: GlobalData not found, cannot update settings_dict")
+	
+	save_settings()
+
 func _on_auto_restart_toggled(button_pressed: bool):
 	if not GlobalDebug.DEBUG_DISABLED:
 		print("[Option] Auto restart toggled to: ", button_pressed)
@@ -317,6 +340,11 @@ func set_drill_button_pressed():
 	if random_sequence_check:
 		random_sequence_check.button_pressed = (current_drill_sequence == "Random")
 
+func set_ending_target_button_pressed():
+	# Set CheckButton state for ending target
+	if ending_target_check:
+		ending_target_check.button_pressed = has_ending_target
+
 func set_auto_restart_button_pressed():
 	# Set CheckButton state for auto restart
 	if auto_restart_check:
@@ -361,8 +389,8 @@ func set_focus_based_on_tab():
 		1:
 			set_focus_to_current_language()
 		2:
-			if random_sequence_check:
-				random_sequence_check.grab_focus()
+			if ending_target_check:
+				ending_target_check.grab_focus()
 			else:
 				tab_container.grab_focus()
 		_:
@@ -386,6 +414,8 @@ func update_ui_texts():
 	networking_tab.update_ui_texts()
 	
 	# Drills tab labels
+	if ending_target_check:
+		ending_target_check.text = tr("ending_target")
 	if auto_restart_check:
 		auto_restart_check.text = tr("auto_restart")
 	if pause_5s_check:
@@ -458,6 +488,16 @@ func load_settings_from_global_data():
 			print("[Option] No drill_sequence setting, using default Fixed")
 		current_drill_sequence = "Fixed"
 	
+	# Load ending target setting
+	if global_data and global_data.settings_dict.has("has_ending_target"):
+		has_ending_target = global_data.settings_dict.get("has_ending_target", false)
+		if not GlobalDebug.DEBUG_DISABLED:
+			print("[Option] Loaded has_ending_target from GlobalData: ", has_ending_target)
+	else:
+		if not GlobalDebug.DEBUG_DISABLED:
+			print("[Option] No has_ending_target setting, using default false")
+		has_ending_target = false
+	
 	# Load auto restart settings
 	if global_data and global_data.settings_dict.has("auto_restart"):
 		auto_restart_enabled = global_data.settings_dict.get("auto_restart", false)
@@ -490,6 +530,7 @@ func load_settings_from_global_data():
 	# Update UI to reflect the loaded settings
 	set_language_button_pressed()
 	set_drill_button_pressed()
+	set_ending_target_button_pressed()
 	set_auto_restart_button_pressed()
 	update_ui_texts()
 	
@@ -509,6 +550,10 @@ static func get_current_language() -> String:
 # Function to get current drill sequence (can be called from other scripts)
 static func get_current_drill_sequence() -> String:
 	return current_drill_sequence
+
+# Function to get ending target setting (can be called from other scripts)
+static func get_has_ending_target() -> bool:
+	return has_ending_target
 
 # Functions to get current auto restart settings (can be called from other scripts)
 static func get_auto_restart_enabled() -> bool:
@@ -655,6 +700,8 @@ func navigate_buttons(direction: String):
 func navigate_drill_buttons(direction: String):
 	# With multiple drill buttons, we need to handle navigation between them
 	var drill_buttons = []
+	if ending_target_check:
+		drill_buttons.append(ending_target_check)
 	if random_sequence_check:
 		drill_buttons.append(random_sequence_check)
 	if auto_restart_check:
@@ -737,6 +784,14 @@ func press_focused_button():
 		# This will trigger the toggled signal which calls _on_drill_sequence_toggled
 		if not GlobalDebug.DEBUG_DISABLED:
 			print("[Option] Toggled drill CheckButton to: ", random_sequence_check.button_pressed)
+	
+	# Handle ending target CheckButton
+	if ending_target_check and ending_target_check.has_focus():
+		# Toggle the CheckButton
+		ending_target_check.button_pressed = !ending_target_check.button_pressed
+		# This will trigger the toggled signal which calls _on_ending_target_toggled
+		if not GlobalDebug.DEBUG_DISABLED:
+			print("[Option] Toggled ending target CheckButton to: ", ending_target_check.button_pressed)
 	
 	# Handle auto restart CheckButton
 	if auto_restart_check and auto_restart_check.has_focus():

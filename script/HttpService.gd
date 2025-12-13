@@ -4,8 +4,8 @@ extends Node
 
 const DEBUG_DISABLED = true
 
-#var base_url: String = "http://127.0.0.1"
-var base_url: String = "http://192.168.0.109"
+var base_url: String = "http://127.0.0.1"
+#var base_url: String = "http://192.168.0.110"
 
 var sb = null  # Signal bus reference
 
