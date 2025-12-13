@@ -41,6 +41,11 @@ next,Next,下页,ページ,下頁
 start,Start,启动,启アニメーション,啟動
 difficulty_level,Difficulty Level,难度等级,難易度レベル,難度等級
 duration,Duration,时长,期間,時長
+difficulty_easy,Easy,简单,イージー,簡單
+difficulty_medium,Medium,中等,ミディアム,中等
+difficulty_hard,Hard,困难,ハード,困難
+play_mode_ai,AI,AI,AI,AI
+play_mode_human,Human,人类,人間,人類
 Easy,Easy,简单,イージー,簡單
 Medium,Medium,中等,ミディアム,中等
 Hard,Hard,困难,ハード,困難

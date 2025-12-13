@@ -3,21 +3,35 @@ extends Control
 const Cell = preload("res://scene/games/tictactoe/cell.tscn")
 
 @export_enum("Human", "AI") var play_with : String = "AI"
-@export_enum("Easy", "Medium", "Hard", "Impossible") var ai_difficulty : String = "Hard"
+@export_enum("Easy", "Medium", "Hard") var ai_difficulty : String = "Hard"
 
 var cells : Array = []
 var turn : int = 0
 
 var is_game_end : bool = false
+@onready var btn_ai = $PlayModeContainer/AI
+@onready var btn_human = $PlayModeContainer/Human
+@onready var difficulty_row = $HBoxContainerDifficultLevel
 
 # Difficulty buttons for remote focus navigation
 @onready var btn_easy = $HBoxContainerDifficultLevel/Easy
 @onready var btn_medium = $HBoxContainerDifficultLevel/Medium
 @onready var btn_hard = $HBoxContainerDifficultLevel/Hard
-@onready var btn_impossible = $HBoxContainerDifficultLevel/Impossible
 var _difficulty_buttons: Array = []
-var _focus_index: int = 0  # 0 = Easy, 1 = Medium, 2 = Hard, 3 = Impossible
-const _difficulty_label_keys: Array = ["Easy", "Medium", "Hard", "Impossible"]
+var _focus_index: int = 0  # 0 = Easy, 1 = Medium, 2 = Hard
+var _difficulty_modes: Array = ["Easy", "Medium", "Hard"]
+const _difficulty_label_keys: Array = ["difficulty_easy", "difficulty_medium", "difficulty_hard"]
+const _play_mode_label_keys: Dictionary = {
+	"AI": "play_mode_ai",
+	"Human": "play_mode_human"
+}
+const FOCUS_SECTION_PLAY_MODE: int = 0
+const FOCUS_SECTION_DIFFICULTY: int = 1
+var _focus_section: int = FOCUS_SECTION_PLAY_MODE
+var _play_mode_buttons: Array = []
+var _play_mode_focus_index: int = 0  # 0 = AI, 1 = Human
+var _suppress_play_mode_toggled: bool = false
+
 
 func _ready():
 	for cell_count in range(9):
@@ -26,6 +40,11 @@ func _ready():
 		$Cells.add_child(cell)
 		cells.append(cell)
 		cell.cell_updated.connect(_on_cell_updated)
+	_setup_play_mode_buttons()
+	_difficulty_buttons = [btn_easy, btn_medium, btn_hard]
+	_focus_index = 0
+	_set_difficulty_button_states()
+	_apply_play_mode(play_with)
 
 	# Connect to WebSocket bullet hits if available so physical shots can update the board
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
@@ -38,14 +57,12 @@ func _ready():
 	else:
 		print("[TicTacToe] No WebSocketListener singleton found - live shots disabled")
 
-	# Prepare difficulty button array and default focus (Easy)
-	_difficulty_buttons = [btn_easy, btn_medium, btn_hard, btn_impossible]
-	_focus_index = 0
 	# Load persisted difficulty (if any). If HttpService is present this is async
 	# and the load callback will call _apply_focus; otherwise the sync fallback
 	# will call _apply_focus immediately.
 	_load_difficulty_setting()
 	_translate_difficulty_buttons()
+	_translate_play_mode_buttons()
 	_translate_restart_button()
 
 	# Connect to MenuController navigate for remote left/right directives
@@ -72,6 +89,54 @@ func _ready():
 		http_service.start_game(func(result, response_code, _headers, _body):
 			print("[TicTacToe] Game started - Result: ", result, ", Response Code: ", response_code)
 		)
+
+func _setup_play_mode_buttons() -> void:
+	_play_mode_buttons.clear()
+	if is_instance_valid(btn_ai):
+		_play_mode_buttons.append(btn_ai)
+		btn_ai.toggled.connect(Callable(self, "_on_play_mode_button_toggled").bind("AI"))
+	if is_instance_valid(btn_human):
+		_play_mode_buttons.append(btn_human)
+		btn_human.toggled.connect(Callable(self, "_on_play_mode_button_toggled").bind("Human"))
+
+func _update_difficulty_controls() -> void:
+	var ai_active = play_with == "AI"
+	for btn in _difficulty_buttons:
+		if is_instance_valid(btn):
+			btn.disabled = not ai_active
+
+func _update_difficulty_visibility_by_focus() -> void:
+	if not is_instance_valid(difficulty_row):
+		return
+	var should_show = play_with == "AI" and (_focus_section == FOCUS_SECTION_DIFFICULTY or (_focus_section == FOCUS_SECTION_PLAY_MODE and _play_mode_focus_index == 0))
+	difficulty_row.visible = should_show
+
+func _apply_play_mode(mode: String) -> void:
+	if mode != "AI" and mode != "Human":
+		return
+	play_with = mode
+	_play_mode_focus_index = _play_mode_index_for_mode(mode)
+	_update_difficulty_controls()
+	_apply_play_mode_toggles(mode)
+	_focus_section = FOCUS_SECTION_PLAY_MODE
+	_update_difficulty_visibility_by_focus()
+	call_deferred("_apply_focus")
+
+func _on_play_mode_button_toggled(is_pressed: bool, mode: String) -> void:
+	if _suppress_play_mode_toggled or not is_pressed:
+		return
+	_apply_play_mode(mode)
+
+func _apply_play_mode_toggles(mode: String) -> void:
+	_suppress_play_mode_toggled = true
+	if is_instance_valid(btn_ai):
+		btn_ai.set_pressed(mode == "AI")
+	if is_instance_valid(btn_human):
+		btn_human.set_pressed(mode == "Human")
+	_suppress_play_mode_toggled = false
+
+func _play_mode_index_for_mode(mode: String) -> int:
+	return 0 if mode == "AI" else 1
 
 func _on_cell_updated(_cell):
 	if is_game_end:
@@ -161,35 +226,74 @@ func _translate_difficulty_buttons() -> void:
 		if btn and btn is Button and i < _difficulty_label_keys.size():
 			btn.text = tr(_difficulty_label_keys[i])
 
+func _set_difficulty_button_states() -> void:
+	for i in range(_difficulty_buttons.size()):
+		var btn = _difficulty_buttons[i]
+		if btn and btn is Button:
+			btn.set_pressed(i == _focus_index)
+
+func _translate_play_mode_buttons() -> void:
+	if is_instance_valid(btn_ai):
+		btn_ai.text = tr(_play_mode_label_keys.get("AI", "AI"))
+	if is_instance_valid(btn_human):
+		btn_human.text = tr(_play_mode_label_keys.get("Human", "Human"))
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED:
+		_translate_difficulty_buttons()
+		_translate_play_mode_buttons()
+
 func _translate_restart_button() -> void:
 	var restart_btn = get_node_or_null("RestartButton")
 	if restart_btn and restart_btn is Button:
 		restart_btn.text = tr("restart")
 
 func _apply_focus() -> void:
-	# Safely grab focus on the default difficulty button
-	if _difficulty_buttons.size() == 0:
+	if _focus_section == FOCUS_SECTION_DIFFICULTY and play_with == "AI" and _difficulty_buttons.size() > 0:
+		_focus_index = clamp(_focus_index, 0, _difficulty_buttons.size() - 1)
+		var difficulty_btn = _difficulty_buttons[_focus_index]
+		if is_instance_valid(difficulty_btn) and difficulty_btn.has_method("grab_focus"):
+			difficulty_btn.grab_focus()
+			print("[TicTacToe] Difficulty focus set to index %d" % _focus_index)
+			_update_difficulty_visibility_by_focus()
 		return
-	var btn = _difficulty_buttons[_focus_index]
-	if is_instance_valid(btn) and btn.has_method("grab_focus"):
-		btn.grab_focus()
-		print("[TicTacToe] Difficulty focus set to index %d" % _focus_index)
+
+	# Fallback focus stays on the play mode buttons
+	_focus_section = FOCUS_SECTION_PLAY_MODE
+	if _play_mode_buttons.size() == 0:
+		return
+	_play_mode_focus_index = clamp(_play_mode_focus_index, 0, _play_mode_buttons.size() - 1)
+	var play_mode_btn = _play_mode_buttons[_play_mode_focus_index]
+	if is_instance_valid(play_mode_btn) and play_mode_btn.has_method("grab_focus"):
+		play_mode_btn.grab_focus()
+		print("[TicTacToe] Play mode button focused")
+	_update_difficulty_visibility_by_focus()
 
 func _on_difficulty_button_pressed_focus(index: int) -> void:
-	# Local mouse/touch press should set focus to the button index
+	# Local mouse/touch press should set focus to the button index row
+	_focus_section = FOCUS_SECTION_DIFFICULTY
 	_focus_index = index
+	_set_difficulty_button_states()
 	_apply_focus()
 	print("[TicTacToe] Difficulty button focused by local press, index= %d" % index)
 
 func _on_menu_enter() -> void:
-	# Remote Enter pressed: apply difficulty corresponding to focused button
+	if _focus_section == FOCUS_SECTION_PLAY_MODE:
+		var mode = "AI" if _play_mode_focus_index == 0 else "Human"
+		_apply_play_mode(mode)
+		return
+	_apply_selected_difficulty()
+
+func _apply_selected_difficulty() -> void:
+	if _difficulty_buttons.size() == 0:
+		return
 	var focus_owner = get_viewport().gui_get_focus_owner()
 	var index = _focus_index
 	for i in range(_difficulty_buttons.size()):
 		if is_instance_valid(_difficulty_buttons[i]) and _difficulty_buttons[i] == focus_owner:
 			index = i
 			break
-	# Apply the difficulty and persist
+	index = clamp(index, 0, _difficulty_buttons.size() - 1)
 	match index:
 		0:
 			ai_difficulty = "Easy"
@@ -197,12 +301,10 @@ func _on_menu_enter() -> void:
 			ai_difficulty = "Medium"
 		2:
 			ai_difficulty = "Hard"
-		3:
-			ai_difficulty = "Impossible"
 	print("[TicTacToe] Remote Enter applied difficulty: %s (index %d)" % [ai_difficulty, index])
-	# Persist selection
+	_focus_index = index
+	_set_difficulty_button_states()
 	_save_difficulty_setting()
-	# Restart the game so new difficulty takes effect
 	_on_restart_button_pressed()
 
 func _difficulty_index_from_string(d: String) -> int:
@@ -213,8 +315,6 @@ func _difficulty_index_from_string(d: String) -> int:
 			return 1
 		"Hard":
 			return 2
-		"Impossible":
-			return 3
 	return 2
 
 func _apply_saved_difficulty(entry: Dictionary) -> bool:
@@ -224,6 +324,7 @@ func _apply_saved_difficulty(entry: Dictionary) -> bool:
 		return false
 	ai_difficulty = str(entry["ai_difficulty"])
 	_focus_index = _difficulty_index_from_string(ai_difficulty)
+	_set_difficulty_button_states()
 	print("[TicTacToe] Restored difficulty from GlobalData: %s (focus index %d)" % [ai_difficulty, _focus_index])
 	call_deferred("_apply_focus")
 	return true
@@ -321,19 +422,38 @@ func _on_http_save_game_result(result, response_code, _headers, _body) -> void:
 		print("[TicTacToe] Difficulty persisted to HttpService settings")
 
 func _on_menu_navigate(direction: String) -> void:
-	# Handle left/right navigation to change difficulty focus
-	if direction != "left" and direction != "right":
+	match direction:
+		"up":
+			if _focus_section == FOCUS_SECTION_DIFFICULTY:
+				_focus_section = FOCUS_SECTION_PLAY_MODE
+				_apply_focus()
+		"down":
+			if _focus_section == FOCUS_SECTION_PLAY_MODE and play_with == "AI" and difficulty_row.visible:
+				_focus_section = FOCUS_SECTION_DIFFICULTY
+				_apply_focus()
+		"left", "right":
+			if _focus_section == FOCUS_SECTION_PLAY_MODE:
+				_navigate_play_mode(direction)
+			elif _focus_section == FOCUS_SECTION_DIFFICULTY:
+				_navigate_difficulty(direction)
+
+func _navigate_play_mode(direction: String) -> void:
+	if _play_mode_buttons.size() == 0:
 		return
+	var step = -1 if direction == "left" else 1
+	_play_mode_focus_index = (_play_mode_focus_index + step + _play_mode_buttons.size()) % _play_mode_buttons.size()
+	_apply_focus()
+	_play_cursor_sound()
+
+func _navigate_difficulty(direction: String) -> void:
 	if _difficulty_buttons.size() == 0:
 		return
-	# Update focus index
-	if direction == "left":
-		_focus_index = (_focus_index - 1) % _difficulty_buttons.size()
-	else:
-		_focus_index = (_focus_index + 1) % _difficulty_buttons.size()
-	# Apply focus to the new button
+	var step = -1 if direction == "left" else 1
+	_focus_index = (_focus_index + step + _difficulty_buttons.size()) % _difficulty_buttons.size()
 	_apply_focus()
-	# Optionally play cursor sound via MenuController
+	_play_cursor_sound()
+
+func _play_cursor_sound() -> void:
 	var menu_controller = get_node_or_null("/root/MenuController")
 	if menu_controller and menu_controller.has_method("play_cursor_sound"):
 		menu_controller.play_cursor_sound()
@@ -501,7 +621,5 @@ func choose_ai_move() -> int:
 			# Mostly optimal, small chance to pick a suboptimal move
 			if randi() % 100 < 10:
 				return moves[randi() % moves.size()]
-			return find_best_move()
-		"Impossible":
 			return find_best_move()
 	return find_best_move()

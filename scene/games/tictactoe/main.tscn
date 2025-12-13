@@ -4,6 +4,7 @@
 [ext_resource type="Shader" uid="uid://bwnehm6a5m4xv" path="res://scene/games/tictactoe/background.gdshader" id="2_jufxn"]
 [ext_resource type="PackedScene" uid="uid://dturr8so8g8cw" path="res://scene/custom_button.tscn" id="2_jxke1"]
 [ext_resource type="LabelSettings" uid="uid://cuf6m18dwphgd" path="res://theme/target_title_ipsc.tres" id="3_5vywm"]
+[ext_resource type="ButtonGroup" uid="uid://cktuxsvgfnylf" path="res://scene/games/tictactoe/play_mode.tres" id="5_l67ou"]
 [ext_resource type="Theme" uid="uid://csj6q8ijf8ex" path="res://theme/wifi_button_theme.tres" id="5_r3u8x"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_r3u8x"]
@@ -22,8 +23,6 @@ shader_parameter/bigStarAmount = 0.02
 [sub_resource type="ButtonGroup" id="ButtonGroup_l67ou"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_pv8f7"]
-
-[sub_resource type="ButtonGroup" id="ButtonGroup_asqip"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ocfh0"]
 bg_color = Color(0.458824, 0, 0, 1)
@@ -89,11 +88,36 @@ toggle_mode = true
 button_group = SubResource("ButtonGroup_pv8f7")
 text = "Hard"
 
-[node name="Impossible" parent="HBoxContainerDifficultLevel" instance=ExtResource("2_jxke1")]
+[node name="PlayModeContainer" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(520, 40)
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -212.0
+offset_bottom = -176.0
+grow_horizontal = 2
+grow_vertical = 0
+alignment = 1
+
+[node name="PlayModeLabel" type="Label" parent="PlayModeContainer"]
+visible = false
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Mode"
+
+[node name="AI" parent="PlayModeContainer" instance=ExtResource("2_jxke1")]
 layout_mode = 2
 toggle_mode = true
-button_group = SubResource("ButtonGroup_asqip")
-text = "Impossible"
+button_group = ExtResource("5_l67ou")
+text = "AI"
+
+[node name="Human" parent="PlayModeContainer" instance=ExtResource("2_jxke1")]
+layout_mode = 2
+toggle_mode = true
+button_group = ExtResource("5_l67ou")
+text = "Human"
 
 [node name="Cells" type="GridContainer" parent="."]
 layout_mode = 1
