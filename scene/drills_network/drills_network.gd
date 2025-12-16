@@ -549,8 +549,6 @@ func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or
 
 func start_drill_timer():
 	"""Start the drill timer"""
-	# Reset performance tracker for new drill
-	performance_tracker.reset_shot_timer()
 	
 	# Create timeout timer
 	if timeout_timer:
@@ -641,9 +639,6 @@ func reset_drill_state():
 	
 	# Hide completion overlay
 	network_complete_overlay.hide_completion()
-	
-	# Reset performance tracker
-	performance_tracker.reset_shot_timer()
 	
 	# Reset UI timer
 	emit_signal("ui_timer_update", 0.0)
