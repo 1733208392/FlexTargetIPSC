@@ -7,9 +7,7 @@ var _reusable_transform: Transform2D = Transform2D()
 
 signal target_disappeared
 
-var drill_active: bool = false:
-	set(value):
-		drill_active = value
+var drill_active: bool = false
 
 # Animation state tracking
 var is_disappearing: bool = false
@@ -112,6 +110,12 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2, t: int = 0) -> voi
 	# Don't process if target is disappearing
 	if is_disappearing:
 		return
+
+	# Don't process if drill is not active (deactivated by drills_network)
+	if not drill_active:
+		if not DEBUG_DISABLE:
+			print("[ipsc_mini_rotate] Ignoring bullet hit because drill_active is false")
+		return
 	
 	# Get the IPSCMini child node
 	var ipsc_mini = get_node_or_null("IPSCMini")
@@ -178,20 +182,28 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2, t: int = 0) -> voi
 	else:
 		spawn_bullet_effects_at_position(world_pos, is_target_hit)
 	
-	# 5. Update score and emit signal
-	total_score += points
-	target_hit.emit(zone_hit, points, world_pos, ipsc_mini.global_position, ipsc_mini.global_rotation, t)
-	
-	# 6. Increment shot count and check for disappearing animation (only for valid target hits)
-	if is_target_hit:
-		shot_count += 1
+	# 5. Update score and emit signal for actual target hits or misses (but not paddle hits)
+	var should_emit = is_target_hit or zone_hit == "miss" or zone_hit == "barrel_miss"
+	if should_emit:
+		if is_target_hit:
+			total_score += points
+		target_hit.emit(zone_hit, points, world_pos, ipsc_mini.global_position, ipsc_mini.global_rotation, t)
 		
-		# Check if we've reached the maximum valid target hits
-		if shot_count >= max_shots:
-			play_disappearing_animation()
+		# 6. Increment shot count and check for disappearing animation (only for valid target hits)
+		if is_target_hit:
+			shot_count += 1
+			
+			# Check if we've reached the maximum valid target hits
+			if shot_count >= max_shots:
+				play_disappearing_animation()
 
 func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	"""Handle websocket bullet hit - check if it hits the paddle or target"""
+	# Ignore hits when target is deactivated by drills_network
+	if not drill_active:
+		if not DEBUG_DISABLE:
+			print("[ipsc_mini_rotate] _on_websocket_bullet_hit ignored because drill_active is false")
+		return
 	# First check if it hits the paddle
 	var paddle = get_node_or_null("Paddle/Paddle")
 	if paddle:
