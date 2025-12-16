@@ -484,22 +484,25 @@ func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Simple target hit - zone: ", zone, ", points: ", points)
 			
-	elif target_pos_or_hit_pos != null and target_rot != null:
+	elif target_rot is float:
 		# Rotation target style: (zone, points, hit_position, target_position, target_rotation, t)
+		# Distinguished by target_rot being a float (rotation angle)
 		zone = zone_or_id as String
 		points = int(points_or_zone)
 		hit_position = hit_pos_or_points as Vector2
 		target_position = target_pos_or_hit_pos as Vector2
-		rotation_angle = float(target_rot)
+		rotation_angle = target_rot
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Rotation target hit - zone: ", zone, ", points: ", points, ", rotation: ", rotation_angle)
 			
-	elif target_pos_or_hit_pos != null and target_rot == null:
+	elif target_pos_or_hit_pos is Vector2 and target_rot is int:
 		# Container target style: (id, zone, points, hit_position, t)
+		# Distinguished by target_rot being an int (the t value in 5th position)
 		# First parameter is the container ID (paddle_id or popper_id), extract zone and points
 		zone = points_or_zone as String
 		points = int(hit_pos_or_points)
 		hit_position = target_pos_or_hit_pos as Vector2
+		t = int(target_rot)
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Container target hit - zone: ", zone, ", points: ", points)
 	else:
