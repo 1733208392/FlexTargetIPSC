@@ -69,15 +69,29 @@ func _ready():
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
-	# Set up collision detection for bullets
-	# NOTE: Collision detection is now obsolete due to WebSocket fast path
-	# collision_layer = 7  # Target layer
-	# collision_mask = 0   # Don't detect other targets
 
-	# If loaded by drills_network (networked drills loader), set max_shots high for testing
-	var drills_network = get_node_or_null("/root/drills_network")
-	if drills_network:
-		max_shots = 1000
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0) -> void:
+	# Ignore shots if drill is not active yet
+	if not drill_active:
+		return
+
+	# Check if bullet spawning is enabled
+	var ws_listener = get_node_or_null("/root/WebSocketListener")
+	if ws_listener and not ws_listener.bullet_spawning_enabled:
+		return
+
+	# Check if this target is part of a rotating scene (ipda_rotate)
+	# Use optimized rotation-aware processing instead of bullet spawning
+	var parent_node = get_parent()
+	while parent_node:
+		if parent_node.name.contains("IPDARotate") or parent_node.name.contains("RotationCenter"):
+			# Use optimized direct hit processing for rotating targets
+			handle_websocket_bullet_hit_rotating(pos)
+			return
+		parent_node = parent_node.get_parent()
+
+	# FAST PATH: Direct bullet hole spawning for WebSocket hits (non-rotating targets only)
+	handle_websocket_bullet_hit_fast(pos)
 
 func _input(event: InputEvent):
 	"""Handle mouse clicks to simulate websocket bullet hits for testing"""
@@ -351,30 +365,6 @@ func spawn_bullet_hole(local_position: Vector2):
 	multimesh.set_instance_transform_2d(current_count, t)
 	multimesh.visible_instance_count = current_count + 1
 	active_instances[texture_index] = current_count + 1
-
-func _on_websocket_bullet_hit(pos: Vector2):
-
-	# Ignore shots if drill is not active yet
-	if not drill_active:
-		return
-
-	# Check if bullet spawning is enabled
-	var ws_listener = get_node_or_null("/root/WebSocketListener")
-	if ws_listener and not ws_listener.bullet_spawning_enabled:
-		return
-
-	# Check if this target is part of a rotating scene (ipda_rotate)
-	# Use optimized rotation-aware processing instead of bullet spawning
-	var parent_node = get_parent()
-	while parent_node:
-		if parent_node.name.contains("IPDARotate") or parent_node.name.contains("RotationCenter"):
-			# Use optimized direct hit processing for rotating targets
-			handle_websocket_bullet_hit_rotating(pos)
-			return
-		parent_node = parent_node.get_parent()
-
-	# FAST PATH: Direct bullet hole spawning for WebSocket hits (non-rotating targets only)
-	handle_websocket_bullet_hit_fast(pos)
 
 func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""

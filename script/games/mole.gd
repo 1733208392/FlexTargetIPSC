@@ -37,7 +37,7 @@ func simulate_hit() -> void:
 func is_in() -> bool:
 	return state == State.IN
 
-func _on_bullet_hit(hit_pos: Vector2) -> void:
+func _on_bullet_hit(hit_pos: Vector2, a: int = 0, t: int = 0) -> void:
 	"""Handle bullet hit from WebSocket"""
 	# Convert hit_pos to local coordinates of the mole
 	var local_hit_pos = to_local(hit_pos)

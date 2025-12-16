@@ -22,7 +22,7 @@ func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> voi
 		var hit_pos = get_global_mouse_position()
 		_on_bullet_hit(hit_pos)
 
-func _on_bullet_hit(hit_pos: Vector2) -> void:
+func _on_bullet_hit(hit_pos: Vector2, a: int = 0, t: int = 0) -> void:
 	"""Handle bullet hit from WebSocket"""
 	if not coin_visible:
 		return

@@ -271,7 +271,7 @@ func _handle_mouse_click(_event):
 		print("[drill_complete_overlay] Spawning bullet at: ", world_pos)
 	spawn_bullet_at_position(world_pos)
 
-func _on_websocket_bullet_hit(hit_position: Vector2):
+func _on_websocket_bullet_hit(hit_position: Vector2, a: int = 0, t: int = 0):
 	"""Handle bullet hit from WebSocket data"""
 	# Only process websocket bullets when this overlay is visible
 	if not visible:

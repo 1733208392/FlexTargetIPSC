@@ -33,7 +33,7 @@ func _on_sprite_input_event(_viewport, event, _shape_idx):
 		print("[TestDuelingTree] Mouse click simulated bullet hit at: %s" % mouse_pos)
 		_on_websocket_bullet_hit(mouse_pos)
 
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	"""Handle websocket bullet hit"""
 	print("[TestDuelingTree] WebSocket bullet hit at: %s" % pos)
 	

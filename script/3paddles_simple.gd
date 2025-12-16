@@ -141,7 +141,7 @@ func connect_paddle_signals():
 		if DEBUG_DISABLED:
 			print("3PADDLES_SIMPLE ERROR: paddle3_simple is null!")
 
-func _on_websocket_bullet_hit(world_pos: Vector2):
+func _on_websocket_bullet_hit(world_pos: Vector2, a: int = 0, t: int = 0):
 	"""Handle bullet hits from WebSocket - check which area was hit"""
 	
 	# Ignore shots if drill is not active yet

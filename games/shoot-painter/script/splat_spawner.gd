@@ -59,7 +59,7 @@ func _input(event):
 		# spawn_splat will check prompt gating if enabled
 		spawn_splat(event.position, randf_range(min_splat_radius, 96.0), Color.from_hsv(rng.randf(), 0.8, 0.9))
 
-func _on_websocket_bullet_hit(global_pos: Vector2) -> void:
+func _on_websocket_bullet_hit(global_pos: Vector2, a: int = 0, t: int = 0) -> void:
 	if not is_inside_tree():
 		return
 	# Use the existing spawn logic (which already respects snapshot/clear areas)

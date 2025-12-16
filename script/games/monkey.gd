@@ -150,7 +150,7 @@ func _input(event):
 			print("Mouse clicked at: ", click_pos, " - Simulating bullet_hit")
 			_on_bullet_hit(click_pos)
 
-func _on_bullet_hit(pos: Vector2):
+func _on_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	# Only accept bullet hits when game is fully RUNNING (countdown complete)
 	if not game_parent:
 		return

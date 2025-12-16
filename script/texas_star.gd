@@ -158,15 +158,15 @@ func _input(event):
 		var global_pos = get_global_mouse_position()
 		websocket_bullet_hit(global_pos)
 
-func websocket_bullet_hit(world_pos: Vector2) -> void:
+func websocket_bullet_hit(world_pos: Vector2, a: int = 0, t: int = 0) -> void:
 	# spawn impact visual at world_pos
 	var impact = null
 	if BulletImpactScene:
 		impact = BulletImpactScene.instantiate()
 		# Attach to current scene for proper coordinates
-		var t = get_tree()
-		if t and t.current_scene:
-			t.current_scene.add_child(impact)
+		var tree = get_tree()
+		if tree and tree.current_scene:
+			tree.current_scene.add_child(impact)
 		else:
 			add_child(impact)
 		impact.global_position = world_pos

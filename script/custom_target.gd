@@ -757,7 +757,7 @@ func _set_image_texture(tex: Texture) -> void:
 		mask_node.visible = tex == null
 
 # Handle websocket bullet hit - spawn impact effects and bullet holes
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0) -> void:
 	if not DEBUG_DISABLED:
 		print("[CustomTarget] Bullet hit received at position: ", pos)
 	

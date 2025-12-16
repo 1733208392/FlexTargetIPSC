@@ -439,7 +439,7 @@ func _on_shot_timer_ready(delay: float):
 	if not DEBUG_DISABLED:
 		print("[Mozambique] Drill activated!")
 
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	"""Handle WebSocket bullet hit signals"""
 	if not DEBUG_DISABLED:
 		print("[Mozambique] _on_websocket_bullet_hit called at: ", pos, " drill_active: ", drill_active, " in_progress: ", drill_in_progress)

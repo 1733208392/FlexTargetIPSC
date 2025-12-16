@@ -155,7 +155,7 @@ func _on_cell_updated(_cell):
 		if idx >= 0 and cells[idx].cell_value == "":
 			cells[idx].draw_cell()
 
-func _on_websocket_bullet_hit(pos: Vector2) -> void:
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0) -> void:
 	"""Handle incoming bullet hit positions and map them to a tic-tac-toe cell.
 	Attempts to match the incoming global/screen `pos` to each cell's global rect
 	and triggers the cell update if an empty cell was hit.

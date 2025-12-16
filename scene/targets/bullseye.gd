@@ -257,7 +257,7 @@ func spawn_bullet_hole(local_position: Vector2):
 		if bullet_hole not in active_bullet_holes:
 			active_bullet_holes.append(bullet_hole)
 		
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	if not DEBUG_DISABLED:
 		print("[Bullseye] _on_websocket_bullet_hit called with pos: ", pos)
 	

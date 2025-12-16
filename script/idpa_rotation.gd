@@ -68,7 +68,7 @@ func _input(event: InputEvent) -> void:
 func simulate_bullet_hit(pos: Vector2) -> void:
 	process_bullet_hit(pos)
 
-func _on_websocket_bullet_hit(pos: Vector2) -> void:
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0) -> void:
 	process_bullet_hit(pos)
 
 func process_bullet_hit(pos: Vector2) -> void:

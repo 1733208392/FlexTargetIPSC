@@ -270,7 +270,7 @@ func spawn_bullet_hole(local_pos: Vector2):
 	multimesh.visible_instance_count = current_count + 1
 	active_instances[texture_index] = current_count + 1
 
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	# Ignore shots if drill is not active yet
 	if not drill_active:
 		return
