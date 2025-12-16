@@ -43,7 +43,7 @@ var active_sounds: int = 0
 # Scoring system
 var total_score: int = 0
 var drill_active: bool = false  # Flag to ignore shots before drill starts
-signal target_hit(zone: String, points: int, hit_position: Vector2)
+signal target_hit(zone: String, points: int, hit_position: Vector2, t: int)
 signal target_disappeared
 
 func _ready():
@@ -189,7 +189,7 @@ func handle_bullet_collision(bullet_position: Vector2) -> String:
 	
 	# Update score and emit signal
 	total_score += points
-	target_hit.emit(zone_hit, points, bullet_position)
+	target_hit.emit(zone_hit, points, bullet_position, 0)
 	print("Total score: ", total_score)
 	
 	# Note: Bullet hole is now spawned by bullet script before this method is called
@@ -417,7 +417,7 @@ func spawn_bullet_hole(local_position: Vector2):
 	else:
 		print("[ipsc_mini_black_1] ERROR: Failed to get bullet hole from pool or set_hole_position method not found!")
 
-func _on_websocket_bullet_hit(world_pos: Vector2):
+func _on_websocket_bullet_hit(world_pos: Vector2, a: int = 0, t: int = 0):
 	"""Handle bullet hit from WebSocket"""
 	
 	# Ignore shots if drill is not active yet
@@ -426,9 +426,9 @@ func _on_websocket_bullet_hit(world_pos: Vector2):
 			print("[ipsc_mini_black_1] Ignoring shot because drill is not active yet")
 		return
 	
-	handle_websocket_bullet_hit_fast(world_pos)
+	handle_websocket_bullet_hit_fast(world_pos, t)
 
-func handle_websocket_bullet_hit_fast(world_pos: Vector2):
+func handle_websocket_bullet_hit_fast(world_pos: Vector2, t: int = 0):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
 	if not DEBUG_DISABLE:
 		print("[ipsc_mini_black_1] FAST PATH: Processing WebSocket bullet hit at: ", world_pos)
@@ -497,7 +497,7 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	
 	# 4. Update score and emit signal
 	total_score += points
-	target_hit.emit(zone_hit, points, world_pos)
+	target_hit.emit(zone_hit, points, world_pos, t)
 	if not DEBUG_DISABLE:
 		print("[ipsc_mini_black_1] FAST: Total score: ", total_score)
 	

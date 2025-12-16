@@ -6,7 +6,7 @@ extends Node2D
 # 3. Minimal essential logging only for errors
 # =======================================
 
-signal target_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2)
+signal target_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2, t: int)
 signal target_disappeared(paddle_id: String)
 
 # Performance optimizations
@@ -33,7 +33,7 @@ func connect_paddle_signals():
 		else:
 			print("Child ", child.name, " doesn't have expected signals")  # Keep this as it indicates a setup error
 
-func _on_paddle_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2):
+func _on_paddle_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2, t: int = 0):
 	"""Handle when a paddle is hit - optimized for performance"""
 	if not DEBUG_DISABLED:
 		print("=== PADDLE HIT IN 3PADDLES ===")
@@ -45,8 +45,8 @@ func _on_paddle_hit(paddle_id: String, zone: String, points: int, hit_position: 
 		if not DEBUG_DISABLED:
 			print("Marked paddle ", paddle_id, " as hit (total hit: ", paddles_hit.size(), ")")
 	
-	# Emit the signal up to the drills manager
-	target_hit.emit(paddle_id, zone, points, hit_position)
+	# Emit the signal up to the drills manager, passing through the t value
+	target_hit.emit(paddle_id, zone, points, hit_position, t)
 
 func _on_paddle_disappeared(paddle_id: String):
 	"""Handle when a paddle disappears - optimized for performance"""

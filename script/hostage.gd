@@ -43,7 +43,7 @@ var active_sounds: int = 0
 # Scoring system
 var total_score: int = 0
 var drill_active: bool = false  # Flag to ignore shots before drill starts
-signal target_hit(zone: String, points: int, hit_position: Vector2)
+signal target_hit(zone: String, points: int, hit_position: Vector2, t: int)
 signal target_disappeared
 
 # Reference to drills manager
@@ -76,7 +76,7 @@ func _ready():
 	# Initialize bullet hole pool for performance
 	initialize_bullet_hole_pool()
 	
-		# Connect to WebSocket bullet hit signal
+	# Connect to WebSocket bullet hit signal
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener:
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
@@ -390,7 +390,7 @@ func return_bullet_hole_to_pool(hole: Node):
 		if not DEBUG_DISABLED:
 			print("[hostage] Bullet hole returned to pool, active holes: ", active_bullet_holes.size())
 
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	# Ignore shots if drill is not active yet
 	if not drill_active:
 		if not DEBUG_DISABLED:
@@ -408,9 +408,9 @@ func _on_websocket_bullet_hit(pos: Vector2):
 		print("[hostage] Received bullet hit at position: ", pos)
 	
 	# FAST PATH: Direct bullet hole spawning for WebSocket hits
-	handle_websocket_bullet_hit_fast(pos)
+	handle_websocket_bullet_hit_fast(pos, t)
 
-func handle_websocket_bullet_hit_fast(world_pos: Vector2):
+func handle_websocket_bullet_hit_fast(world_pos: Vector2, t: int = 0):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
 	if not DEBUG_DISABLED:
 		print("[hostage] FAST PATH: Processing WebSocket bullet hit at: ", world_pos)
@@ -479,7 +479,7 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	
 	# 4. Update score and emit signal
 	total_score += points
-	target_hit.emit(zone_hit, points, world_pos)
+	target_hit.emit(zone_hit, points, world_pos, t)
 	if not DEBUG_DISABLED:
 		print("[hostage] FAST: Total score: ", total_score)
 	

@@ -25,7 +25,7 @@ var active_sounds: int = 0
 
 # Scoring system
 var total_score: int = 0
-signal target_hit(zone: String, points: int, hit_position: Vector2)
+signal target_hit(zone: String, points: int, hit_position: Vector2, t: int)
 signal target_disappeared
 
 func _ready():
@@ -401,7 +401,7 @@ func reset_score():
 	total_score = 0
 	print("Score reset to 0")
 
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	# Check if bullet spawning is enabled
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener and not ws_listener.bullet_spawning_enabled:
@@ -411,9 +411,9 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	print("[popper %s] Received bullet hit at position: %s" % [popper_id, pos])
 	
 	# FAST PATH: Direct processing for WebSocket hits
-	handle_websocket_bullet_hit_fast(pos)
+	handle_websocket_bullet_hit_fast(pos, t)
 
-func handle_websocket_bullet_hit_fast(world_pos: Vector2):
+func handle_websocket_bullet_hit_fast(world_pos: Vector2, t: int = 0):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
 	print("[popper %s] FAST PATH: Processing WebSocket bullet hit at: %s" % [popper_id, world_pos])
 	
@@ -476,7 +476,7 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# 4. Update score and emit signal ONLY for actual hits
 	if is_target_hit:
 		total_score += points
-		target_hit.emit(zone_hit, points, world_pos)
+		target_hit.emit(zone_hit, points, world_pos, t)
 		print("[popper %s] FAST: Target hit! Total score: %d" % [popper_id, total_score])
 	else:
 		print("[popper %s] FAST: Bullet missed - no target_hit signal emitted" % popper_id)

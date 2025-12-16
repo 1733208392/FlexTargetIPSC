@@ -29,7 +29,7 @@ const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Scoring system
 var total_score: int = 0
-signal target_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2)
+signal target_hit(paddle_id: String, zone: String, points: int, hit_position: Vector2, t: int)
 signal target_disappeared(paddle_id: String)
 
 func _ready():
@@ -390,7 +390,7 @@ func reset_paddle():
 	
 	print("Paddle %s reset" % paddle_id)
 
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	# Check if bullet spawning is enabled
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener and not ws_listener.bullet_spawning_enabled:
@@ -401,9 +401,9 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	
 	# FAST PATH: Direct processing for WebSocket hits
 	
-	handle_websocket_bullet_hit_fast(pos)
+	handle_websocket_bullet_hit_fast(pos, t)
 
-func handle_websocket_bullet_hit_fast(world_pos: Vector2):
+func handle_websocket_bullet_hit_fast(world_pos: Vector2, t: int = 0):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
 	if not DEBUG_DISABLED:
 		print("[paddle %s] FAST PATH: Processing WebSocket bullet hit at: %s" % [paddle_id, world_pos])
@@ -462,7 +462,7 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	# 4. Update score and emit signal only for target hits
 	if is_target_hit:
 		total_score += points
-		target_hit.emit(paddle_id, zone_hit, points, world_pos)
+		target_hit.emit(paddle_id, zone_hit, points, world_pos, t)
 		if not DEBUG_DISABLED:
 			print("[paddle %s] FAST: Emitted target_hit: zone=%s, points=%d, total_score=%d" % [paddle_id, zone_hit, points, total_score])
 	

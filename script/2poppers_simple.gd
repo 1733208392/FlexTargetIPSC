@@ -1,7 +1,7 @@
 extends Node2D
 
 # Signals for score and performance tracking  
-signal target_hit(popper_id: String, zone: String, points: int, hit_position: Vector2)
+signal target_hit(popper_id: String, zone: String, points: int, hit_position: Vector2, t: int)
 signal target_disappeared(popper_id: String)
 
 # WebSocket connection
@@ -79,7 +79,7 @@ func connect_popper_signals():
 	if popper2_simple:
 		popper2_simple.popper_disappeared.connect(func(): _on_popper_disappeared("Popper2"))
 
-func _on_websocket_bullet_hit(world_pos: Vector2):
+func _on_websocket_bullet_hit(world_pos: Vector2, a: int = 0, t: int = 0):
 	"""Handle bullet hits from WebSocket - check which area was hit"""
 	
 	# Ignore shots if drill is not active yet
@@ -112,19 +112,19 @@ func _on_websocket_bullet_hit(world_pos: Vector2):
 			var dist2 = world_pos.distance_to(popper2_simple.global_position)
 			
 			if dist1 <= dist2:
-				trigger_popper1_hit(world_pos)
+				trigger_popper1_hit(world_pos, t)
 			else:
-				trigger_popper2_hit(world_pos)
+				trigger_popper2_hit(world_pos, t)
 		else:
 			pass
 	elif should_hit_popper1:
-		trigger_popper1_hit(world_pos)
+		trigger_popper1_hit(world_pos, t)
 	elif should_hit_popper2:
-		trigger_popper2_hit(world_pos)
+		trigger_popper2_hit(world_pos, t)
 	else:
 		# Emit miss signal if no popper was hit and not already fallen
 		if not (popper1_hit and popper2_hit):
-			target_hit.emit("miss", "Miss", 0, world_pos)  # 0 points for miss (performance tracker will score from settings)
+			target_hit.emit("miss", "Miss", 0, world_pos, t)  # 0 points for miss (performance tracker will score from settings)
 
 func is_point_in_area(world_pos: Vector2, area: Area2D) -> bool:
 	"""Check if a world position is inside an Area2D"""
@@ -149,7 +149,7 @@ func is_point_in_area(world_pos: Vector2, area: Area2D) -> bool:
 	
 	return false
 
-func trigger_popper1_hit(hit_position: Vector2):
+func trigger_popper1_hit(hit_position: Vector2, t: int = 0):
 	"""Trigger Popper1 animation and scoring"""
 	if popper1_hit:
 		return  # Already hit
@@ -160,10 +160,10 @@ func trigger_popper1_hit(hit_position: Vector2):
 	if popper1_simple and popper1_simple.has_method("trigger_fall_animation"):
 		popper1_simple.trigger_fall_animation()
 	
-	# Emit scoring signal
-	target_hit.emit("Popper1", "PopperZone", POPPER_POINTS, hit_position)
+	# Emit scoring signal with t parameter
+	target_hit.emit("Popper1", "PopperZone", POPPER_POINTS, hit_position, t)
 
-func trigger_popper2_hit(hit_position: Vector2):
+func trigger_popper2_hit(hit_position: Vector2, t: int = 0):
 	"""Trigger Popper2 animation and scoring"""
 	if popper2_hit:
 		return  # Already hit
@@ -174,8 +174,8 @@ func trigger_popper2_hit(hit_position: Vector2):
 	if popper2_simple and popper2_simple.has_method("trigger_fall_animation"):
 		popper2_simple.trigger_fall_animation()
 	
-	# Emit scoring signal
-	target_hit.emit("Popper2", "PopperZone", POPPER_POINTS, hit_position)
+	# Emit scoring signal with t parameter
+	target_hit.emit("Popper2", "PopperZone", POPPER_POINTS, hit_position, t)
 
 func _on_popper_disappeared(popper_id: String):
 	"""Handle when a popper disappears after animation"""

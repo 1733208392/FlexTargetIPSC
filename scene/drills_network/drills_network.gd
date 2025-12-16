@@ -60,7 +60,7 @@ var final_target_instance: Node = null
 
 # Performance tracking
 signal drills_finished
-signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int, target_position: Vector2)
+signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int, target_position: Vector2, t: int)
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
@@ -447,46 +447,71 @@ func _on_final_target_hit(hit_position: Vector2):
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] HttpService not available; cannot send end ack")
 
-func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or_hit_pos = null, target_rot = null):
-	"""Handle target hit - supports different target signal signatures"""
+func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or_hit_pos = null, target_rot = null, t: int = 0):
+	"""Handle target hit - supports different target signal signatures.
+	
+	Target signal signatures:
+	- Simple targets (ipsc_mini, black variants, hostage, popper): (zone, points, hit_position, t)
+	- Container targets (paddle, 2poppers_simple): (id, zone, points, hit_position, t)
+	- Rotation target (ipsc_mini_rotate): (zone, points, hit_position, target_position, target_rotation, t)
+	"""
 	# Ignore any shots after the drill has completed
 	if drill_completed:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Ignoring target hit because drill is completed")
 		return
 
-	# Ignore shots that arrive before the timeout timer actually starts (e.g. first target before shot timer ready)
+	# Ignore shots that arrive before the timeout timer actually starts
 	if timeout_timer and timeout_timer.is_stopped():
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] Ignoring target hit because timeout timer has not started yet")
 		return
+	
 	var zone: String
 	var points: int
 	var hit_position: Vector2
 	var rotation_angle: float = 0.0
 	var target_position: Vector2 = target_instance.global_position if target_instance else Vector2.ZERO
 	
-	# Handle different target signal signatures
-	if target_pos_or_hit_pos == null:
-		# ipsc_mini style: (zone, points, hit_position)
-		zone = zone_or_id
-		points = points_or_zone
-		hit_position = hit_pos_or_points
-	elif target_rot == null:
-		# 2poppers style: (popper_id, zone, points, hit_position)
-		zone = points_or_zone
-		points = hit_pos_or_points
-		hit_position = target_pos_or_hit_pos
-	else:
-		# rotation style: (zone, points, hit_position, target_position, target_rotation)
-		zone = zone_or_id
-		points = points_or_zone
-		hit_position = hit_pos_or_points
-		target_position = target_pos_or_hit_pos  # Use the actual target position from the signal
-		rotation_angle = target_rot  # Use the actual rotation angle for rotation targets
-	
+	# Determine target type and extract parameters accordingly
+	if target_pos_or_hit_pos is int:
+		# Simple target style: (zone, points, hit_position, t)
+		# The t value came as 4th parameter because signals pass all params in order
+		zone = zone_or_id as String
+		points = int(points_or_zone)
+		hit_position = hit_pos_or_points as Vector2
+		t = int(target_pos_or_hit_pos)
 		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Target hit: zone=", zone, " points=", points, " pos=", hit_position)
+			print("[DrillsNetwork] Simple target hit - zone: ", zone, ", points: ", points)
+			
+	elif target_pos_or_hit_pos != null and target_rot != null:
+		# Rotation target style: (zone, points, hit_position, target_position, target_rotation, t)
+		zone = zone_or_id as String
+		points = int(points_or_zone)
+		hit_position = hit_pos_or_points as Vector2
+		target_position = target_pos_or_hit_pos as Vector2
+		rotation_angle = float(target_rot)
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Rotation target hit - zone: ", zone, ", points: ", points, ", rotation: ", rotation_angle)
+			
+	elif target_pos_or_hit_pos != null and target_rot == null:
+		# Container target style: (id, zone, points, hit_position, t)
+		# First parameter is the container ID (paddle_id or popper_id), extract zone and points
+		zone = points_or_zone as String
+		points = int(hit_pos_or_points)
+		hit_position = target_pos_or_hit_pos as Vector2
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Container target hit - zone: ", zone, ", points: ", points)
+	else:
+		# Fallback to simple target style
+		zone = zone_or_id as String
+		points = int(points_or_zone)
+		hit_position = hit_pos_or_points as Vector2
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Unknown target style (fallback) - zone: ", zone, ", points: ", points)
+	
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Target hit processed: zone=", zone, ", points=", points, ", hit_pos=", hit_position, ", t=", t)
 	
 	total_score += points
 	# Track shots on the last target to trigger final spawn
@@ -519,8 +544,8 @@ func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or
 	
 	# Emit for performance tracking
 	if DEBUG_ENABLED:
-		print("[DrillsNetwork] Emitting target_hit signal to performance tracker")
-	emit_signal("target_hit", current_target_type, hit_position, zone, rotation_angle, current_repeat, target_position)
+		print("[DrillsNetwork] Emitting target_hit signal to performance tracker with t=", t)
+	emit_signal("target_hit", current_target_type, hit_position, zone, rotation_angle, current_repeat, target_position, t)
 
 func start_drill_timer():
 	"""Start the drill timer"""

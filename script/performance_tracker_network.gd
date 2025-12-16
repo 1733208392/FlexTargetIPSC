@@ -3,6 +3,9 @@ extends Node
 # Performance optimization
 const DEBUG_DISABLED = true  # Set to false for production release
 
+# Target types with variable position/rotation (only these targets include rot and tgt_pos fields)
+const VARIABLE_POSITION_TARGETS = ["rotation"]
+
 # Performance tracking variables
 var last_shot_time_usec = 0  # Changed to microseconds for better precision
 var fastest_time_diff = 999.0  # Initialize with a large value
@@ -13,8 +16,8 @@ var shot_timer_delay = 0.0  # Store the shot timer delay duration
 func _ready():
 	pass
 
-func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int, target_position: Vector2):
-	print("PERFORMANCE TRACKER NETWORK: _on_target_hit called with:", target_type, hit_position, hit_area, rotation_angle, repeat, target_position)
+func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int, target_position: Vector2, t: int = 0):
+	print("PERFORMANCE TRACKER NETWORK: _on_target_hit called with:", target_type, hit_position, hit_area, rotation_angle, repeat, target_position, "t=", t)
 	var current_time_usec = Time.get_ticks_usec()  # Use microsecond precision
 	var time_diff = 0.0  # Initialize to 0
 	
@@ -54,17 +57,24 @@ func _on_target_hit(target_type: String, hit_position: Vector2, hit_area: String
 	# Update last shot time for next calculation
 	last_shot_time_usec = current_time_usec
 	
+	# Build record with abbreviated keys and conditional fields
+	# Abbreviations: cmd=command, tt=target_type, t=sensor_time_seconds, hp=hit_position, 
+	#                ha=hit_area, rot=rotation_angle, std=shot_timer_delay, 
+	#                tgt_pos=targetPos, rep=repeat
 	var record = {
-		"command": "shot",
-		"target_type": target_type,
-		"time_diff": "%.2f" % time_diff,
-		"hit_position": {"x": "%.1f" % hit_position.x, "y": "%.1f" % hit_position.y},
-		"hit_area": hit_area,
-		"rotation_angle": "%.2f" % rotation_angle,
-		"repeat": repeat,
-		"shot_timer_delay": "%.2f" % shot_timer_delay,
-		"targetPos": {"x": "%.1f" % target_position.x, "y": "%.1f" % target_position.y}
+		"cmd": "shot",
+		"tt": target_type,
+		"td": round((t / 1000.0) * 100.0) / 100.0,  # Convert sensor time from milliseconds to seconds, rounded to 2 decimals
+		"hp": {"x": "%.1f" % hit_position.x, "y": "%.1f" % hit_position.y},
+		"ha": hit_area,
+		"rep": repeat,
+		"std": "%.2f" % shot_timer_delay
 	}
+	
+	# Only include rotation and target position for variable-position targets (e.g., rotation targets)
+	if target_type in VARIABLE_POSITION_TARGETS:
+		record["rot"] = "%.2f" % rotation_angle
+		record["tgt_pos"] = {"x": "%.1f" % target_position.x, "y": "%.1f" % target_position.y}
 	
 	# Send to websocket server
 	_send_to_app(record)

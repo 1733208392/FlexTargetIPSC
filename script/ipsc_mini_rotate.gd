@@ -57,7 +57,7 @@ var animation_paused: bool = false
 # Scoring system
 var total_score: int = 0
 const ScoreUtils = preload("res://script/score_utils.gd")
-signal target_hit(zone: String, points: int, hit_position: Vector2, target_position: Vector2, target_rotation: float)
+signal target_hit(zone: String, points: int, hit_position: Vector2, target_position: Vector2, target_rotation: float, t: int)
 
 func _ready():
 	# Initialize drill_active to false by default
@@ -106,7 +106,7 @@ func _play_random_animations_continuous(animation_player: AnimationPlayer):
 			if not DEBUG_DISABLE: print("[ipsc_mini_rotate] Playing animation: %s" % anim)
 			await animation_player.animation_finished
 
-func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
+func handle_websocket_bullet_hit_rotating(world_pos: Vector2, t: int = 0) -> void:
 	"""Optimized hit processing for rotating targets without bullet spawning"""
 	
 	# Don't process if target is disappearing
@@ -180,7 +180,7 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	
 	# 5. Update score and emit signal
 	total_score += points
-	target_hit.emit(zone_hit, points, world_pos, ipsc_mini.global_position, ipsc_mini.global_rotation)
+	target_hit.emit(zone_hit, points, world_pos, ipsc_mini.global_position, ipsc_mini.global_rotation, t)
 	
 	# 6. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
@@ -190,7 +190,7 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 		if shot_count >= max_shots:
 			play_disappearing_animation()
 
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	"""Handle websocket bullet hit - check if it hits the paddle or target"""
 	# First check if it hits the paddle
 	var paddle = get_node_or_null("Paddle/Paddle")
@@ -234,7 +234,7 @@ func _on_websocket_bullet_hit(pos: Vector2):
 					return  # Paddle hit, don't process target hit
 	
 	# If not paddle hit, process as target hit
-	handle_websocket_bullet_hit_rotating(pos)
+	handle_websocket_bullet_hit_rotating(pos, t)
 
 func is_point_in_zone(target_node: Node, zone_name: String, point: Vector2) -> bool:
 	"""Check if a point is within a specific zone of the target node"""

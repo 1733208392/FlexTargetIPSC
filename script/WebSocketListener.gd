@@ -1,11 +1,11 @@
 extends Node
 
 const DEBUG_DISABLED = true
-const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
-#const WEBSOCKET_URL = "ws://192.168.0.110/websocket"
+#const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
+const WEBSOCKET_URL = "ws://192.168.0.110/websocket"
 
 signal data_received(data)
-signal bullet_hit(pos: Vector2)
+signal bullet_hit(pos: Vector2, a: int, t: int)
 signal menu_control(directive: String)
 signal ble_ready_command(content: Dictionary)
 signal ble_start_command(content: Dictionary)
@@ -180,6 +180,8 @@ func _process_websocket_json(json_string):
 		for entry in parsed["data"]:
 			var x = entry.get("x", null)
 			var y = entry.get("y", null)
+			var a = entry.get("a", null)
+			var t = entry.get("t", null)
 			if x != null and y != null:
 				# Apply additional shot spacing to prevent burst processing
 				var current_shot_time = Time.get_ticks_msec() / 1000.0
@@ -204,7 +206,10 @@ func _process_websocket_json(json_string):
 				if bullet_spawning_enabled:
 					# Emit immediately when enabled
 					if not DEBUG_DISABLED: print("[WebSocket] Raw position: Vector2(", x, ", ", y, ") -> Transformed: ", transformed_pos)
-					bullet_hit.emit(transformed_pos)
+					# Emit bullet_hit signal with additional data (a and t)
+					if a != null and t != null:
+						bullet_hit.emit(transformed_pos, a, t)
+						# bullet_hit.emit(transformed_pos)						
 				else:
 					# When disabled, don't add to pending queue - just ignore
 					pass

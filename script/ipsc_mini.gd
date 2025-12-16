@@ -61,7 +61,7 @@ var animation_paused: bool = false
 # Scoring system
 var total_score: int = 0
 var drill_active: bool = false  # Flag to ignore shots before drill starts
-signal target_hit(zone: String, points: int, hit_position: Vector2)
+signal target_hit(zone: String, points: int, hit_position: Vector2, t: int)
 signal target_disappeared
 
 func _ready():
@@ -106,51 +106,6 @@ func spawn_bullet_at_position(world_pos: Vector2):
 		
 		# Use the new set_spawn_position method to ensure proper positioning
 		bullet.set_spawn_position(world_pos)
-
-func handle_bullet_collision(bullet_position: Vector2):
-	"""Handle collision detection when a bullet hits this target"""
-	# NOTE: This collision handling is now obsolete due to WebSocket fast path
-	# WebSocket hits use handle_websocket_bullet_hit_fast() instead
-	
-	# Don't process bullet collisions if target is disappearing
-	if is_disappearing:
-		return "ignored"
-	
-	# Convert bullet world position to local coordinates for zone checking
-	var local_pos = to_local(bullet_position)
-	
-	var zone_hit = ""
-	var points = 0
-	
-	# Check which zone was hit (highest score first)
-	if is_point_in_zone("AZone", local_pos):
-		zone_hit = "AZone"
-		points = 5
-	elif is_point_in_zone("CZone", local_pos):
-		zone_hit = "CZone"
-		points = 3
-	elif is_point_in_zone("DZone", local_pos):
-		zone_hit = "DZone"
-		points = 1
-	else:
-		zone_hit = "miss"
-		points = 0
-	
-	# Update score and emit signal
-	total_score += points
-	target_hit.emit(zone_hit, points, bullet_position)
-	
-	# Note: Bullet hole is now spawned by bullet script before this method is called
-	
-	# Increment shot count and check for disappearing animation (only for valid target hits)
-	var is_target_hit = zone_hit != "miss" and zone_hit != "barrel_miss" and points > 0
-	if is_target_hit:
-		shot_count += 1
-		
-		# Check if we've reached the maximum shots
-		if shot_count >= max_shots:
-			play_disappearing_animation()
-	return zone_hit
 
 func get_total_score() -> int:
 	"""Get the current total score for this target"""
@@ -352,7 +307,7 @@ func spawn_bullet_hole(local_position: Vector2):
 	multimesh.visible_instance_count = current_count + 1
 	active_instances[texture_index] = current_count + 1
 		
-func _on_websocket_bullet_hit(pos: Vector2):
+func _on_websocket_bullet_hit(pos: Vector2, a: int = 0, t: int = 0):
 	
 	# Ignore shots if drill is not active yet
 	if not drill_active:
@@ -369,15 +324,15 @@ func _on_websocket_bullet_hit(pos: Vector2):
 	while parent_node:
 		if parent_node.name.contains("IPSCMiniRotate") or parent_node.name.contains("RotationCenter"):
 			# Use optimized direct hit processing for rotating targets
-			handle_websocket_bullet_hit_rotating(pos)
+			handle_websocket_bullet_hit_rotating(pos, t)
 			return
 		parent_node = parent_node.get_parent()
 	
-	
 	# FAST PATH: Direct bullet hole spawning for WebSocket hits (non-rotating targets only)
-	handle_websocket_bullet_hit_fast(pos)
+	handle_websocket_bullet_hit_fast(pos, t)
 
-func handle_websocket_bullet_hit_fast(world_pos: Vector2):
+# FAST PATH: Direct bullet hole spawning for WebSocket hits (non-rotating targets only)
+func handle_websocket_bullet_hit_fast(world_pos: Vector2, t: int = 0):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
 	
 	# Don't process if target is disappearing
@@ -421,7 +376,7 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 	
 	# 4. Update score and emit signal
 	total_score += points
-	target_hit.emit(zone_hit, points, world_pos)
+	target_hit.emit(zone_hit, points, world_pos, t)
 	
 	# 5. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
@@ -585,7 +540,7 @@ func get_cached_rotation_angle() -> float:
 	
 	return 0.0
 
-func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
+func handle_websocket_bullet_hit_rotating(world_pos: Vector2, t: int = 0) -> void:
 	"""Optimized hit processing for rotating targets without bullet spawning"""
 	
 	# Don't process if target is disappearing
@@ -658,7 +613,7 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	
 	# 5. Update score and emit signal
 	total_score += points
-	target_hit.emit(zone_hit, points, world_pos)
+	target_hit.emit(zone_hit, points, world_pos, t)
 	
 	# 6. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:

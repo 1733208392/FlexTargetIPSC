@@ -783,6 +783,128 @@ const httpServer = http.createServer((req, res) => {
         res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
       }
     });
+  } else if (pathname === '/test/multi-target/acks' && req.method === 'POST') {
+    // ============================================================================
+    // TEST ENDPOINT: Multi-Target Acks Only (8 targets)
+    // ============================================================================
+    // Sends acknowledgments only to 8 targets (1 master + 7 slaves)
+    //
+    // Usage:
+    //   curl -X POST http://localhost/test/multi-target/acks
+    //
+    // This endpoint:
+    // - Sends ack:ready for each of 8 targets at staggered intervals
+    // ============================================================================
+    
+    console.log(`[TestEndpoint] Multi-Target Acks: Received request`);
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      code: 0, 
+      msg: 'Sending acks to 8 targets'
+    }));
+    
+    // Send ack:ready for each target
+    for (let i = 1; i <= 8; i++) {
+      (function(index) {
+        const targetName = String(index).padStart(2, '0');
+        
+        // Send ack:ready at staggered intervals
+        setTimeout(() => {
+          const ackMessage = {
+            action: 'forward',
+            type: 'netlink',
+            device: targetName,
+            content: {
+              ack: 'ready'
+            }
+          };
+          
+          forwardToMobileApp(ackMessage);
+          console.log(`[TestEndpoint] Multi-Target Acks: Sent ack:ready for target ${targetName}`);
+        }, index * 500);
+      })(i);
+    }
+
+  } else if (pathname === '/test/multi-target/shots' && req.method === 'POST') {
+    // ============================================================================
+    // TEST ENDPOINT: Multi-Target Shots Only (8 targets)
+    // ============================================================================
+    // Sends shot data only to 8 targets (1 master + 7 slaves)
+    //
+    // Usage:
+    //   curl -X POST http://localhost/test/multi-target/shots
+    //
+    // This endpoint:
+    // - Sends 2 shots (AZone + BZone) for each of 8 targets at staggered intervals
+    // ============================================================================
+    
+    console.log(`[TestEndpoint] Multi-Target Shots: Received request`);
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      code: 0, 
+      msg: 'Sending shots to 8 targets'
+    }));
+    
+    // Send shots for each target
+    for (let i = 1; i <= 8; i++) {
+      (function(index) {
+        const targetName = String(index).padStart(2, '0');
+        
+        // Send first shot with delay
+        setTimeout(() => {
+          const shotData1 = {
+            cmd: 'shot',
+            ha: 'AZone',
+            hp: {
+              x: '360.0',
+              y: '452.5'
+            },
+            rep: 1,
+            std: '0.00',
+            tt: 'ipsc',
+            td: '0.18'
+          };
+          
+          const shot1Message = {
+            device: targetName,
+            action: 'forward',
+            type: 'netlink',
+            content: shotData1
+          };
+          
+          forwardToMobileApp(shot1Message);
+          console.log(`[TestEndpoint] Multi-Target Shots: Sent shot 1 (AZone) for target ${targetName}`);
+        }, (index * 1000) + 200);
+        
+        // Send second shot with even longer delay
+        setTimeout(() => {
+          const shotData2 = {
+            cmd: 'shot',
+            ha: 'AZone',
+            hp: {
+              x: '375.0',
+              y: '465.0'
+            },
+            rep: 1,
+            std: '0.00',
+            tt: 'ipsc',
+            td: '0.25'
+          };
+          
+          const shot2Message = {
+            device: targetName,
+            action: 'forward',
+            type: 'netlink',
+            content: shotData2
+          };
+          
+          forwardToMobileApp(shot2Message);
+          console.log(`[TestEndpoint] Multi-Target Shots: Sent shot 2 (BZone) for target ${targetName}`);
+        }, (index * 1000) + 300);
+      })(i);
+    }
 
   } else {
     let body = '';
@@ -1101,14 +1223,21 @@ class WriteCharacteristic extends bleno.Characteristic {
             type: 'netlink',
             action: 'device_list',
             data: [
-              { mode: 'master', name: '01' }
+              { mode: 'master', name: '01' },
+              { mode: 'slave', name: '02' },
+              { mode: 'slave', name: '03' },
+              { mode: 'slave', name: '04' },
+              { mode: 'slave', name: '05' },
+              { mode: 'slave', name: '06' },
+              { mode: 'slave', name: '07' },
+              { mode: 'slave', name: '08' }
             ]
           };
           
           // Send response back to Mobile App
           if (this.notifyCharacteristic) {
             this.notifyCharacteristic.sendToMobileApp(response);
-            console.log('[CombinedServer] Sent device_list response to Mobile App');
+            console.log('[CombinedServer] Sent device_list response to Mobile App with 8 devices');
           } else {
             console.log('[CombinedServer] Cannot send device_list response: notify characteristic not available');
           }
@@ -1307,3 +1436,17 @@ console.log('[CombinedServer]   V - Volume up command');
 console.log('[CombinedServer]   D - Volume down command');
 console.log('[CombinedServer]   P - Power command');
 console.log('[CombinedServer]   Ctrl+C - Exit');
+console.log('[CombinedServer] ');
+console.log('[CombinedServer] Test Endpoints:');
+console.log('[CombinedServer]   /test/multi-target/start - Multi-target simulation (8 targets)');
+console.log('[CombinedServer]     Usage: POST with {"action":"netlink_forward","content":{"command":"ready"},"dest":"A"}');
+console.log('[CombinedServer]     - Sends device_list with 8 targets (01 master, 02-08 slaves)');
+console.log('[CombinedServer]     - Sends ack:ready for each target');
+console.log('[CombinedServer]     - Sends 2 shots data for each target');
+console.log('[CombinedServer]     - Responds ack:end when receives end command');
+console.log('[CombinedServer]   /test/multi-target/acks - Send acks only to 8 targets');
+console.log('[CombinedServer]     Usage: POST (no body required)');
+console.log('[CombinedServer]     - Sends ack:ready for each of 8 targets');
+console.log('[CombinedServer]   /test/multi-target/shots - Send shots only to 8 targets');
+console.log('[CombinedServer]     Usage: POST (no body required)');
+console.log('[CombinedServer]     - Sends 2 shots (AZone + BZone) for each of 8 targets');
