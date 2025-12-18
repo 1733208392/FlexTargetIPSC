@@ -2,7 +2,7 @@ extends Node
 
 const DEBUG_DISABLED = true
 #const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
-const WEBSOCKET_URL = "ws://192.168.0.110/websocket"
+const WEBSOCKET_URL = "ws://192.168.0.115/websocket"
 
 signal data_received(data)
 signal bullet_hit(pos: Vector2, a: int, t: int)
@@ -28,6 +28,10 @@ var minimum_shot_spacing: float = 0.015  # 15ms minimum between individual shots
 
 # Queue management for clearing pending signals
 var pending_bullet_hits: Array[Vector2] = []  # Track pending bullet hit signals
+
+# Directive throttling to prevent duplicates from long press or hardware congestion
+var directive_cooldown: float = 0.1  # 100ms cooldown between identical directives
+var last_directive_times: Dictionary = {}
 
 func _ready():
 	socket = WebSocketPeer.new()
@@ -164,9 +168,22 @@ func _process_websocket_json(json_string):
 	# print("[WebSocket] Parsed data: ", parsed)
 	# Handle control directive
 	if parsed and parsed.has("type") and parsed["type"] == "control" and parsed.has("directive"):
+		var directive = parsed["directive"]
+		var current_time = Time.get_ticks_msec() / 1000.0
+		
+		# Throttle duplicate directives to prevent issues from long press or hardware congestion
+		if last_directive_times.has(directive):
+			var time_diff = current_time - last_directive_times[directive]
+			if time_diff < directive_cooldown:
+				if not DEBUG_DISABLED:
+					print("[WebSocket] Throttling duplicate directive: ", directive, " (", time_diff, "s since last)")
+				return
+		
+		last_directive_times[directive] = current_time
+		
 		if not DEBUG_DISABLED:
-			print("[WebSocket] Emitting menu_control with directive: ", parsed["directive"])
-		menu_control.emit(parsed["directive"])
+			print("[WebSocket] Emitting menu_control with directive: ", directive)
+		menu_control.emit(directive)
 		return
 	
 	# Handle BLE forwarded commands

@@ -13,12 +13,12 @@ const QR_CODE_GENERATOR = preload("res://script/qrcode.gd")
 @onready var name_line_edit = $CenterContainer/VBoxContainer/NameLineEdit
 @onready var qr_texture = $CenterContainer/VBoxContainer/QRCodeTexture
 @onready var keyboard = $BottomContainer/OnscreenKeyboard
-@onready var confirm_button = $CenterContainer/VBoxContainer/HBoxContainer/ConfirmButton
-@onready var dismiss_button = $CenterContainer/VBoxContainer/HBoxContainer/DismissButton
 
-var focused_control = 0  # 0 = name_line_edit, 1 = workmode dropdown, 2 = confirm_button
+var focused_control = 0  # 0 = workmode dropdown, 1 = name_line_edit
 var controls = []
 var dropdown_open = false
+var is_loading = false  # Flag to prevent configure on initial load
+var dropdown_initial_selected = -1  # Track initial selection when dropdown opens
 
 # Status handling variables
 var guard_timer: Timer
@@ -29,8 +29,8 @@ var is_stopping = false
 var progress_text_key = ""
 
 func _ready():
-	# Initialize controls array - order: name_line_edit (0), workmode_dropdown (1), confirm_button (2)
-	controls = [name_line_edit, workmode_dropdown, confirm_button]
+	# Initialize controls array - order: workmode_dropdown (0), name_line_edit (1)
+	controls = [workmode_dropdown, name_line_edit]
 	
 	# Update UI texts with translations
 	update_ui_texts()
@@ -45,9 +45,6 @@ func _ready():
 	# Load current settings
 	load_current_settings()
 	
-	# Set initial focus to name_line_edit (index 0)
-	set_focused_control(0)
-	
 	# Connect to MenuController signals for remote control
 	var menu_controller = get_node_or_null("/root/MenuController")
 	if menu_controller:
@@ -59,18 +56,6 @@ func _ready():
 	else:
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] MenuController singleton not found!")
-
-	# Connect button signals to track focused_control when clicked
-	if confirm_button:
-		confirm_button.pressed.connect(Callable(self, "_on_confirm_button_pressed"))
-		confirm_button.focus_entered.connect(Callable(self, "_on_confirm_button_focused"))
-	if dismiss_button:
-		dismiss_button.pressed.connect(Callable(self, "_on_dismiss_button_pressed"))
-		dismiss_button.focus_entered.connect(Callable(self, "_on_dismiss_button_focused"))
-	if name_line_edit:
-		name_line_edit.focus_entered.connect(Callable(self, "_on_name_line_edit_focused"))
-	if workmode_dropdown:
-		workmode_dropdown.focus_entered.connect(Callable(self, "_on_workmode_dropdown_focused"))
 
 	# Connect to GlobalData netlink status signal to populate fields when available
 	var global_data = get_node_or_null("/root/GlobalData")
@@ -86,6 +71,14 @@ func _ready():
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] GlobalData singleton not found; will not auto-populate netlink info")
 
+	# Connect keyboard signal
+	if keyboard:
+		_attach_keyboard_handlers(keyboard)
+		if not DEBUG_DISABLED:
+			print("[NetworkingConfig] Attached keyboard handlers")
+	
+	workmode_dropdown.grab_focus()
+
 func update_ui_texts():
 	if status_label:
 		update_status_label()
@@ -93,10 +86,6 @@ func update_ui_texts():
 		workmode_label.text = tr("net_config_workmode")
 	if name_label:
 		name_label.text = tr("net_config_target_name")
-	if confirm_button:
-		confirm_button.text = tr("net_config_done")
-	if dismiss_button:
-		dismiss_button.text = tr("dismiss")
 
 func update_qr_code():
 	if not qr_texture:
@@ -158,6 +147,7 @@ func setup_timers():
 	add_child(animation_timer)
 
 func load_current_settings():
+	is_loading = true
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data and global_data.settings_dict.size() > 0:
 		# Load workmode setting (default to "slave")
@@ -179,98 +169,38 @@ func load_current_settings():
 		workmode_dropdown.select(1)
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] No settings loaded, using defaults (Slave)")
-
-func set_focused_control(index: int):
-	if index >= 0 and index < controls.size():
-		focused_control = index
-		
-		# Use deferred call for focus to ensure it happens after UI updates
-		controls[index].grab_focus()
-		
-	# Handle dropdown visibility and keyboard
-	if focused_control == 1:  # Workmode dropdown
-		if dropdown_open:
-			var rect = workmode_dropdown.get_global_rect()
-			workmode_dropdown.get_popup().popup(rect)
-		else:
-			workmode_dropdown.get_popup().hide()
-	else:
-		workmode_dropdown.get_popup().hide()
-		dropdown_open = false
-	
-	# Show keyboard if name field is focused
-	if focused_control == 0:  # Name line edit
-		# Do not show keyboard by default
-		pass
-	else:
-		hide_keyboard()
+	is_loading = false
 
 func show_keyboard_for_name_input():
-	if keyboard:
-		keyboard.visible = true
-		
-		# Show keyboard
-		if keyboard.has_method("_show_keyboard"):
-			keyboard._show_keyboard()
+	if keyboard and keyboard.has_method("_show_keyboard"):
+		keyboard._show_keyboard()
 		
 		# Focus the 'q' key on the keyboard
 		call_deferred("_focus_q_key")
 		
-		# Connect keyboard button handlers
-		_attach_keyboard_handlers()
-		
-		# Connect text_submitted to hide keyboard
-		if not name_line_edit.text_submitted.is_connected(_on_name_text_submitted):
-			name_line_edit.text_submitted.connect(_on_name_text_submitted)
+		# # Connect text_submitted to hide keyboard
+		# if not name_line_edit.text_submitted.is_connected(_on_name_text_submitted):
+		# 	name_line_edit.text_submitted.connect(_on_name_text_submitted)
 		
 		if not DEBUG_DISABLED:
 			print("[NetworkingConfig] Keyboard shown for name input")
 
-func _attach_keyboard_handlers(node = null):
-	"""
-	Recursively attach handlers to keyboard buttons
-	"""
-	if not keyboard:
-		return
 
+func _attach_keyboard_handlers(node: Node = null):
+	"""
+	Recursively attach released signal handlers to all keyboard buttons
+	"""
 	if node == null:
 		node = keyboard
 
 	# Connect released signals for keyboard buttons
 	for child in node.get_children():
 		if child.has_signal("released"):
-			# Check if this is the hide keyboard button and disable it
-			var is_hide_button = false
-			if child.name.to_lower().contains("hide") or (child.has_method("get_text") and child.get_text().to_lower().contains("hide")):
-				is_hide_button = true
-			elif child.has_meta("key_type") and str(child.get_meta("key_type")).to_lower().contains("hide"):
-				is_hide_button = true
-			
-			if is_hide_button:
-				child.disabled = true
-				if not DEBUG_DISABLED:
-					print("[NetworkingConfig] Disabled hide keyboard button: ", child.name)
-			else:
-				var callback = Callable(self, "_on_keyboard_key_released")
-				if not child.is_connected("released", callback):
-					child.connect("released", callback)
+			var callback = Callable(self, "_on_keyboard_key_released")
+			if not child.is_connected("released", callback):
+				child.connect("released", callback)
 		# Recurse into containers
 		_attach_keyboard_handlers(child)
-
-func _ensure_name_focus():
-	"""
-	Ensure name_line_edit maintains focus after keyboard is shown
-	"""
-	if name_line_edit:
-		name_line_edit.grab_focus()
-		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Name LineEdit focus ensured")
-		
-		# Set last_input_focus as backup if keyboard supports it
-		if keyboard and "last_input_focus" in keyboard:
-			keyboard.last_input_focus = name_line_edit
-			if not DEBUG_DISABLED:
-				print("[NetworkingConfig] Manually set keyboard last_input_focus to name LineEdit")
 
 func _focus_q_key():
 	"""
@@ -303,8 +233,7 @@ func _find_key_by_text(node, text: String):
 	return null
 
 func hide_keyboard():
-	if keyboard:
-		keyboard.visible = false
+	keyboard._hide_keyboard()
 
 func _on_keyboard_key_released(key_data):
 	if not key_data or typeof(key_data) != TYPE_DICTIONARY:
@@ -325,79 +254,73 @@ func _on_keyboard_key_released(key_data):
 	# Handle special keys that need custom behavior
 	if is_enter:
 		if not DEBUG_DISABLED:
-			print("[NetworkingConfig] Keyboard enter pressed, hiding keyboard")
+			print("[NetworkingConfig] Keyboard enter pressed, hiding keyboard and configuring network")
 		hide_keyboard()
-		name_line_edit.call_deferred("grab_focus")
+		configure_network()
 		return
 	
 	# For all other keys (including backspace), let the keyboard addon handle input automatically
 	# The addon sends InputEventKey to the focused LineEdit, so no manual text manipulation needed
 
 func _on_navigate(direction: String):
+	if is_configuring or keyboard.visible:
+		return  # Ignore navigation during configuration or when keyboard is visible
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Navigation: ", direction)
 	match direction:
 		"up":
 			if dropdown_open:
-				if focused_control == 1:  # Workmode dropdown
+				if focused_control == 0:  # Workmode dropdown
 					var current_selected = workmode_dropdown.selected
 					if current_selected > 0:
 						workmode_dropdown.select(current_selected - 1)
 			else:
-				if not keyboard.visible:
-					set_focused_control((focused_control - 1 + controls.size()) % controls.size())
+				focused_control = (focused_control - 1 + 2) % 2
+				controls[focused_control].grab_focus()
 		"down":
 			if dropdown_open:
-				if focused_control == 1:  # Workmode dropdown
+				if focused_control == 0:  # Workmode dropdown
 					var current_selected = workmode_dropdown.selected
 					if current_selected < workmode_dropdown.item_count - 1:
 						workmode_dropdown.select(current_selected + 1)
 			else:
-				if not keyboard.visible:
-					set_focused_control((focused_control + 1) % controls.size())
+				focused_control = (focused_control + 1) % 2
+				controls[focused_control].grab_focus()
 		"left", "right":
-			var current = get_viewport().gui_get_focus_owner()
-			if current == confirm_button:
-				dismiss_button.grab_focus()
-			elif current == dismiss_button:
-				confirm_button.grab_focus()
-			else:
-				if dropdown_open:
-					if focused_control == 1:  # Workmode dropdown
-						var current_selected = workmode_dropdown.selected
-						if direction == "left" and current_selected > 0:
-							workmode_dropdown.select(current_selected - 1)
-						elif direction == "right" and current_selected < workmode_dropdown.item_count - 1:
-							workmode_dropdown.select(current_selected + 1)
+			if dropdown_open and focused_control == 0:  # Workmode dropdown
+				var current_selected = workmode_dropdown.selected
+				if direction == "left" and current_selected > 0:
+					workmode_dropdown.select(current_selected - 1)
+				elif direction == "right" and current_selected < workmode_dropdown.item_count - 1:
+					workmode_dropdown.select(current_selected + 1)
 
 func _on_enter_pressed():
-	if keyboard.visible:
-		return
-	var current = get_viewport().gui_get_focus_owner()
-	if current == dismiss_button:
-		_on_back_pressed()
-		return
+	if is_configuring or keyboard.visible:
+		return  # Ignore enter during configuration or when keyboard is visible
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Enter pressed")
-	if focused_control == 1:  # Workmode dropdown
+	if focused_control == 0:  # Workmode dropdown
 		if not dropdown_open:
+			dropdown_initial_selected = workmode_dropdown.selected
 			var rect = workmode_dropdown.get_global_rect()
 			workmode_dropdown.get_popup().popup(rect)
 			dropdown_open = true
 		else:
 			workmode_dropdown.get_popup().hide()
 			dropdown_open = false
-			set_focused_control(2)  # Move to confirm button
-	else:  # focused_control == 0 (Name line edit) or 2 (Confirm button)
-		if focused_control == 0:
-			show_keyboard_for_name_input()
-		else:
-			configure_network()
+			# Check if selection changed
+			if workmode_dropdown.selected != dropdown_initial_selected:
+				configure_network()
+	elif focused_control == 1:  # Name line edit
+		show_keyboard_for_name_input()
 
 func _on_back_pressed():
+	if is_configuring:
+		return  # Ignore back during configuration
 	if not DEBUG_DISABLED:
 		print("[NetworkingConfig] Back pressed - navigating to main menu")
-	get_tree().change_scene_to_file("res://scene/option/option.tscn")
+	if get_tree():
+		get_tree().change_scene_to_file("res://scene/option/option.tscn")
 
 func _on_netlink_status_loaded():
 	if not DEBUG_DISABLED:
@@ -413,6 +336,7 @@ func _on_netlink_status_loaded():
 	var wm_val = status.get("work_mode")
 	var dev_val = status.get("device_name")
 	
+	is_loading = true
 	if wm_val == null and dev_val == null:
 		# Case 1: Not configured before -> Default to Slave
 		workmode_dropdown.select(1)
@@ -429,6 +353,7 @@ func _on_netlink_status_loaded():
 		
 		if dev_val:
 			name_line_edit.text = str(dev_val)
+	is_loading = false
 	
 	update_qr_code()
 	update_status_label()
@@ -493,7 +418,7 @@ func configure_network():
 	
 	# Get current values from netlink_status
 	var current_workmode = global_data.netlink_status.get("work_mode", "slave")
-	var current_target_name = global_data.netlink_status.get("device_name", "")
+	var current_target_name = str(global_data.netlink_status.get("device_name", "")).strip_edges()
 	
 	# Check if there are any changes
 	if ui_workmode == current_workmode and ui_target_name == current_target_name:
@@ -527,7 +452,8 @@ func configure_network():
 		# Call netlink_stop without callback - will proceed to config in do_netlink_config_sequence
 		http_service.netlink_stop(func(_result, _response_code, _headers, _body): pass)
 		# Give the stop call a moment, then proceed to config
-		await get_tree().create_timer(0.5).timeout
+		if get_tree():
+			await get_tree().create_timer(0.5).timeout
 		do_netlink_config_sequence()
 	else:
 		# Proceed directly to configuration
@@ -554,7 +480,8 @@ func do_netlink_config_sequence():
 		# Call netlink_config with a dummy callback (no processing)
 		http_service.netlink_config(func(_result, _response_code, _headers, _body): pass, channel, target_name, workmode)
 		# Give the config call a moment to execute, then call netlink_start
-		await get_tree().create_timer(0.5).timeout
+		if get_tree():
+			await get_tree().create_timer(0.5).timeout
 		do_netlink_start()
 	else:
 		if not DEBUG_DISABLED:
@@ -579,7 +506,8 @@ func _on_netlink_start_callback(result, response_code, _headers, _body):
 			print("[NetworkingConfig] Netlink start successful, waiting 3s for network configuration to complete...")
 		
 		# Wait 3 seconds for the network configuration to complete
-		await get_tree().create_timer(3.0).timeout
+		if get_tree():
+			await get_tree().create_timer(3.0).timeout
 		
 		# Request status to get the actual bluetooth_name
 		var http_service = get_node_or_null("/root/HttpService")
@@ -667,48 +595,6 @@ func set_status_failed():
 
 func set_status_timeout():
 	status_label.text = tr("netlink_config_timeout")
-
-func _on_name_text_submitted(_new_text: String):
-	hide_keyboard()
-	name_line_edit.call_deferred("grab_focus")
-
-func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
-			_on_enter_pressed()
-
-# Focus and button press handlers to sync focused_control with UI interaction
-func _on_name_line_edit_focused() -> void:
-	if not DEBUG_DISABLED:
-		print("[NetworkingConfig] Name LineEdit focused via mouse click")
-	set_focused_control(0)
-
-func _on_workmode_dropdown_focused() -> void:
-	if not DEBUG_DISABLED:
-		print("[NetworkingConfig] WorkMode dropdown focused via mouse click")
-	set_focused_control(1)
-
-func _on_confirm_button_focused() -> void:
-	if not DEBUG_DISABLED:
-		print("[NetworkingConfig] Confirm button focused via mouse click")
-	set_focused_control(2)
-
-func _on_confirm_button_pressed() -> void:
-	if not DEBUG_DISABLED:
-		print("[NetworkingConfig] Confirm button pressed via mouse click")
-	focused_control = 2
-	configure_network()
-
-func _on_dismiss_button_focused() -> void:
-	if not DEBUG_DISABLED:
-		print("[NetworkingConfig] Dismiss button focused via mouse click")
-	# For dismiss button, we just set focus without changing focused_control tracking
-	# since it has its own back behavior
-
-func _on_dismiss_button_pressed() -> void:
-	if not DEBUG_DISABLED:
-		print("[NetworkingConfig] Dismiss button pressed via mouse click")
-	_on_back_pressed()
 
 func set_status_stop_failed():
 	stop_timers()

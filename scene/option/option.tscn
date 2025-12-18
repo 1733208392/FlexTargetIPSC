@@ -90,10 +90,9 @@ theme_override_fonts/font = ExtResource("3_a5ubv")
 theme_override_font_sizes/font_size = 32
 theme_override_styles/tab_unselected = SubResource("StyleBox_tab_unselected")
 theme_override_styles/tab_selected = SubResource("StyleBox_tab_selected")
-current_tab = 2
+current_tab = 0
 
 [node name="Networking" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
-visible = false
 layout_mode = 2
 metadata/_tab_index = 0
 
@@ -128,7 +127,6 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBoxFlat_o2t7p")
-text = "MockBluetooth-01"
 
 [node name="Content1BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row1"]
 layout_mode = 2
@@ -151,7 +149,6 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBoxFlat_pm2y3")
-text = "Device-Alpha"
 
 [node name="Content2BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row2"]
 layout_mode = 2
@@ -203,7 +200,6 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBoxFlat_1n7n1")
-text = "192.168.1.100"
 
 [node name="Content4BG" type="ColorRect" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo/Row4"]
 layout_mode = 2
@@ -227,7 +223,6 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBoxFlat_ur50w")
-text = "Client"
 
 [node name="Row6" type="HBoxContainer" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
 layout_mode = 2
@@ -246,7 +241,6 @@ layout_mode = 2
 theme_override_fonts/font = ExtResource("4_1n7n1")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBoxFlat_ur50w")
-text = "Yes"
 
 [node name="Control" type="Control" parent="VBoxContainer/MarginContainer/tab_container/Networking/MarginContainer/NetworkContainer/NetworkInfo"]
 custom_minimum_size = Vector2(0, 50)
@@ -347,6 +341,7 @@ button_group = SubResource("ButtonGroup_language")
 text = "English"
 
 [node name="Drills" type="VBoxContainer" parent="VBoxContainer/MarginContainer/tab_container"]
+visible = false
 layout_mode = 2
 metadata/_tab_index = 2
 

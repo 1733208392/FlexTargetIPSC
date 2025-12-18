@@ -28,6 +28,10 @@ func _ready() -> void:
 		if not signal_bus.network_started.is_connected(_on_network_started):
 			signal_bus.network_started.connect(_on_network_started)
 			# print("StatusBar: Connected to SignalBus network_started signal")
+		
+		if not signal_bus.network_stopped.is_connected(_on_network_stopped):
+			signal_bus.network_stopped.connect(_on_network_stopped)
+			# print("StatusBar: Connected to SignalBus network_stopped signal")
 	
 	# Update size after frame
 	call_deferred("_update_size")
@@ -62,6 +66,9 @@ func _exit_tree() -> void:
 
 	if signal_bus and signal_bus.network_started.is_connected(_on_network_started):
 		signal_bus.network_started.disconnect(_on_network_started)
+	
+	if signal_bus and signal_bus.network_stopped.is_connected(_on_network_stopped):
+		signal_bus.network_stopped.disconnect(_on_network_stopped)
 
 	# Disconnect GlobalData signal
 	var global_data = get_node_or_null("/root/GlobalData")
@@ -90,6 +97,10 @@ func _set_wifi_connected(connected: bool) -> void:
 func _on_network_started() -> void:
 	# print("StatusBar: Received network started signal")
 	_set_network_started(true)
+
+func _on_network_stopped() -> void:
+	# print("StatusBar: Received network stopped signal")
+	_set_network_started(false)
 
 func _set_network_started(connected: bool) -> void:
 	# print("StatusBar: _set_network_started called, connected=", connected)

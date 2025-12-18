@@ -144,6 +144,15 @@ func _populate_networking_fields(data: Dictionary):
 			content6_label.text = tr("stopped")
 		is_netlink_started = started
 		_update_start_button_text(started)
+		# Emit signal_bus.network_started if started
+		if started:
+			var signal_bus = get_node_or_null("/root/SignalBus")
+			if signal_bus and signal_bus.has_signal("network_started"):
+				signal_bus.network_started.emit()
+		else:
+			var signal_bus = get_node_or_null("/root/SignalBus")
+			if signal_bus and signal_bus.has_signal("network_stopped"):
+				signal_bus.network_stopped.emit()
 
 func _update_start_button_text(started: bool):
 	"""Update the start/stop button text based on netlink status"""
@@ -206,13 +215,14 @@ func _on_netlink_status_response(result, response_code, _headers, body):
 				# Enable start netlink button if config is valid
 				_check_and_enable_start_button(parsed_data)
 				
-				# Update GlobalData
-				var global_data = get_node_or_null("/root/GlobalData")
-				if global_data:
-					global_data.netlink_status["started"] = true
-					# Emit the signal to notify other components
-					if global_data.has_method("netlink_status_loaded"):
-						global_data.netlink_status_loaded.emit()
+				# If status shows netlink is started, update GlobalData
+				if parsed_data.get("started", false):
+					var global_data = get_node_or_null("/root/GlobalData")
+					if global_data:
+						global_data.netlink_status["started"] = true
+						# Emit the signal to notify other components
+						if global_data.has_method("netlink_status_loaded"):
+							global_data.netlink_status_loaded.emit()
 			else:
 				if not GlobalDebug.DEBUG_DISABLED:
 					print("[NetworkingTab] Failed to parse netlink_status data - parsed_data: ", parsed_data, " type: ", typeof(parsed_data))
@@ -278,6 +288,13 @@ func set_focus_to_first_button():
 		networking_buttons[0].grab_focus()
 		if not GlobalDebug.DEBUG_DISABLED:
 			print("[NetworkingTab] Focus set to first networking button")
+
+func set_focus_to_network_button():
+	"""Set focus to network button (second button)"""
+	if networking_buttons.size() > 1 and networking_buttons[1]:
+		networking_buttons[1].grab_focus()
+		if not GlobalDebug.DEBUG_DISABLED:
+			print("[NetworkingTab] Focus set to network button")
 
 func _on_wifi_pressed():
 	"""Handle WiFi button pressed"""

@@ -21,7 +21,8 @@ const WIFI_BUTTON_THEME = preload("res://theme/wifi_button_theme.tres")
 
 @onready var status_container = $Frame/StatusContainer
 @onready var status_label = $Frame/StatusContainer/StatusLabel
-@onready var retry_button = $Frame/StatusContainer/RetryButton
+@onready var retry_button = $Frame/StatusContainer/HBoxContainer/RetryButton
+@onready var disconnect_button = $Frame/StatusContainer/HBoxContainer/disconnectButton
 
 @onready var scroll_container = $Frame/ScrollContainer
 @onready var list_vbox = $Frame/ScrollContainer/NetworksVBox
@@ -63,6 +64,9 @@ func _ready():
 	# Hide all overlays initially
 	overlay.visible = false
 	status_container.visible = false
+	
+	# Hide disconnect button initially
+	disconnect_button.visible = false
 
 	# Start network scanning
 	_scan_networks()
@@ -72,6 +76,9 @@ func _ready():
 
 	# Connect retry button
 	retry_button.pressed.connect(_on_retry_button_pressed)
+	
+	# Connect disconnect button
+	disconnect_button.pressed.connect(_on_disconnect_button_pressed)
 
 func _connect_menu_controller_signals():
 	"""
@@ -156,6 +163,24 @@ func _on_retry_button_pressed():
 	"""
 	print("[WiFi Networks] Retry button pressed")
 	_scan_networks()
+
+func _on_disconnect_button_pressed():
+	"""
+	Handle disconnect button pressed - disconnect from current WiFi network
+	"""
+	print("[WiFi Networks] Disconnect button pressed")
+	
+	# For now, just hide the disconnect button and reset connected state
+	disconnect_button.visible = false
+	connected_network = ""
+	
+	# Reset all network button highlights
+	for button in network_buttons:
+		if button:
+			button.icon = WIFI_ICON_NETWORK
+			button.modulate = Color.WHITE
+	
+	# TODO: Implement actual WiFi disconnect via HttpService if available
 
 func _on_wifi_scan_completed(result, response_code, _headers, body):
 	"""
@@ -290,6 +315,9 @@ func _set_connected_network(ssid: String):
 		else:
 			button.icon = WIFI_ICON_NETWORK
 			button.modulate = Color.WHITE  # Reset to normal
+	
+	# Show disconnect button if connected
+	disconnect_button.visible = (ssid != "")
 
 # =============================================================================
 # PASSWORD INPUT AND KEYBOARD HANDLING
@@ -306,6 +334,7 @@ func _on_network_selected(network_name):
 		print("[WiFi Networks] Already connected to: ", network_name)
 		status_container.visible = true
 		status_label.text = tr("already_connected").replace("{wifi_name}", network_name) if tr("already_connected") != "already_connected" else "Already connected to " + network_name
+		
 		# Hide the message after 2 seconds
 		await get_tree().create_timer(2.0).timeout
 		status_container.visible = false
