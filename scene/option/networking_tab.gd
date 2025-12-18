@@ -26,6 +26,7 @@ var title6_label = null
 var current_netlink_config = null
 var is_configuring_netlink = false
 var is_stopping_netlink = false
+var is_netlink_started = false
 
 # Status label and update timers
 var statusLabel = null
@@ -141,6 +142,16 @@ func _populate_networking_fields(data: Dictionary):
 			content6_label.text = tr("started")
 		else:
 			content6_label.text = tr("stopped")
+		is_netlink_started = started
+		_update_start_button_text(started)
+
+func _update_start_button_text(started: bool):
+	"""Update the start/stop button text based on netlink status"""
+	if start_netlink_button:
+		if started:
+			start_netlink_button.text = tr("stop_netlink")
+		else:
+			start_netlink_button.text = tr("start_netlink")
 
 func _request_netlink_status():
 	"""Request netlink status from HTTP service"""
@@ -194,6 +205,14 @@ func _on_netlink_status_response(result, response_code, _headers, body):
 				current_netlink_config = parsed_data
 				# Enable start netlink button if config is valid
 				_check_and_enable_start_button(parsed_data)
+				
+				# Update GlobalData
+				var global_data = get_node_or_null("/root/GlobalData")
+				if global_data:
+					global_data.netlink_status["started"] = true
+					# Emit the signal to notify other components
+					if global_data.has_method("netlink_status_loaded"):
+						global_data.netlink_status_loaded.emit()
 			else:
 				if not GlobalDebug.DEBUG_DISABLED:
 					print("[NetworkingTab] Failed to parse netlink_status data - parsed_data: ", parsed_data, " type: ", typeof(parsed_data))
@@ -299,7 +318,7 @@ func _check_and_enable_start_button(config: Dictionary):
 			print("[NetworkingTab] StartNetlinkButton disabled - invalid config")
 
 func _on_start_netlink_pressed():
-	"""Handle Start Netlink button pressed - configure and start network"""
+	"""Handle Start/Stop Netlink button pressed"""
 	# Start status update animation
 	if statusLabel:
 		statusLabel.text = updating_text
@@ -313,29 +332,24 @@ func _on_start_netlink_pressed():
 	
 	if not current_netlink_config or is_configuring_netlink or is_stopping_netlink:
 		if not GlobalDebug.DEBUG_DISABLED:
-			print("[NetworkingTab] Cannot start netlink - no config or operation in progress")
+			print("[NetworkingTab] Cannot toggle netlink - no config or operation in progress")
 		return
 	
 	var http_service = get_node_or_null("/root/HttpService")
 	if not http_service:
 		if not GlobalDebug.DEBUG_DISABLED:
-			print("[NetworkingTab] HttpService not found, cannot start netlink")
+			print("[NetworkingTab] HttpService not found, cannot toggle netlink")
 		return
 	
-	# Check if netlink is currently started
-	var global_data = get_node_or_null("/root/GlobalData")
-	var netlink_started = false
-	if global_data and global_data.netlink_status.has("started"):
-		netlink_started = global_data.netlink_status["started"]
-	
-	if netlink_started:
-		# Need to stop netlink first
+	if is_netlink_started:
+		# Stop netlink
 		if not GlobalDebug.DEBUG_DISABLED:
-			print("[NetworkingTab] Netlink is started, stopping first...")
-		is_stopping_netlink = true
-		http_service.netlink_stop(Callable(self, "_on_netlink_stop_for_start_callback"))
+			print("[NetworkingTab] Stopping netlink...")
+		http_service.netlink_stop(Callable(self, "_on_netlink_stop_callback"))
 	else:
-		# Proceed directly to starting
+		# Start netlink
+		if not GlobalDebug.DEBUG_DISABLED:
+			print("[NetworkingTab] Starting netlink...")
 		_do_netlink_start()
 
 func _do_netlink_start():
@@ -346,6 +360,20 @@ func _do_netlink_start():
 	var http_service = get_node_or_null("/root/HttpService")
 	if http_service:
 		http_service.netlink_start(Callable(self, "_on_netlink_start_callback"))
+
+func _on_netlink_stop_callback(result, response_code, _headers, _body):
+	"""Handle netlink stop response for toggle"""
+	is_stopping_netlink = false
+	
+	if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
+		if not GlobalDebug.DEBUG_DISABLED:
+			print("[NetworkingTab] Netlink stop successful")
+		
+		# Re-request netlink status to update the UI
+		_request_netlink_status()
+	else:
+		if not GlobalDebug.DEBUG_DISABLED:
+			print("[NetworkingTab] Netlink stop failed - Result: ", result, ", Code: ", response_code)
 
 func _on_netlink_stop_for_start_callback(result, response_code, _headers, _body):
 	"""Handle netlink stop response when stopping before starting"""
@@ -374,14 +402,6 @@ func _on_netlink_start_callback(result, response_code, _headers, _body):
 		if not GlobalDebug.DEBUG_DISABLED:
 			print("[NetworkingTab] Netlink start successful")
 		
-		# Update GlobalData to mark netlink as started
-		var global_data = get_node_or_null("/root/GlobalData")
-		if global_data:
-			global_data.netlink_status["started"] = true
-			# Emit the signal to notify other components
-			if global_data.has_method("netlink_status_loaded"):
-				global_data.netlink_status_loaded.emit()
-		
 		# Re-request netlink status to update the UI
 		_request_netlink_status()
 	else:
@@ -408,7 +428,7 @@ func update_ui_texts():
 	if network_button:
 		network_button.text = tr("network_configure")
 	if start_netlink_button:
-		start_netlink_button.text = tr("start_netlink")
+		_update_start_button_text(is_netlink_started)
 
 	# Update updating text with current translation
 	updating_text = tr("netlink_status_updating")

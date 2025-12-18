@@ -404,7 +404,7 @@ theme_override_font_sizes/font_size = 24
 
 [node name="SensitivityHSlider" type="HSlider" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]
 layout_mode = 2
-max_value = 1500.0
+max_value = 1470.0
 value = 1000.0
 
 [node name="SFX" type="Label" parent="VBoxContainer/MarginContainer/tab_container/Drills/MarginContainer/DrillContainer"]

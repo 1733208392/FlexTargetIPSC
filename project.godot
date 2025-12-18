@@ -29,7 +29,6 @@ SignalBus="*res://script/signal_bus.gd"
 WebSocketListener="*res://script/WebSocketListener.gd"
 HttpService="*res://script/HttpService.gd"
 MenuController="*res://script/MenuController.gd"
-OnboardDebugSingleton="*res://script/onboard_debug_singleton.gd"
 GlobalDebug="*res://script/GlobalDebug.gd"
 StatusBar="*res://scene/StatusBar.tscn"
 

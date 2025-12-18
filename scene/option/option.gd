@@ -19,12 +19,14 @@ static var sfx_volume = 5
 # Sensor threshold tracking
 var initial_threshold = 0
 var current_threshold = 0
+var initial_slider_value = 0
 var threshold_changed = false
 
-# Constants for sensitivity slider and threshold transformation
+# Constants for sensitivity slider and threshold transformation, 
+# The safe range for threshold is (760 - 1460)
 const SLIDER_MIN = 0
-const SLIDER_MAX = 800
-const THRESHOLD_MAX = 1500
+const SLIDER_MAX = 700
+const THRESHOLD_MAX = 1460
 
 # Debug flag for controlling print statements
 # Uses the centralized GlobalDebug system
@@ -614,6 +616,7 @@ func _on_menu_control(directive: String):
 			var menu_controller = get_node("/root/MenuController")
 			if menu_controller:
 				menu_controller.play_cursor_sound()
+			_save_threshold_if_changed()
 		"back", "homepage":
 			if not GlobalDebug.DEBUG_DISABLED:
 				print("[Option] ", directive, " - navigating to main menu")
@@ -904,14 +907,15 @@ func _on_embedded_status_response(_result, _response_code, _headers, body):
 	var response = JSON.parse_string(body_str)
 	if response and response.has("code") and response.code == 0 and response.has("data"):
 		var threshold = response.data.threshold
-		# Round to nearest 100
-		threshold = round(threshold / 100.0) * 100
+		# Round to nearest 10
+		threshold = round(threshold / 10.0) * 10
 		initial_threshold = threshold
 		current_threshold = threshold
 		threshold_changed = false
 		
 		# Calculate slider value: THRESHOLD_MAX - threshold, clamped to SLIDER_MIN-SLIDER_MAX
 		var slider_value = clamp(THRESHOLD_MAX - threshold, SLIDER_MIN, SLIDER_MAX)
+		initial_slider_value = slider_value
 		if sensitivity_slider:
 			sensitivity_slider.value = slider_value
 			_update_sensitivity_label()
@@ -923,18 +927,14 @@ func _on_embedded_status_response(_result, _response_code, _headers, body):
 
 func _on_sensitivity_value_changed(value: float):
 	"""Called when the sensitivity slider value changes."""
-	current_threshold = round((THRESHOLD_MAX - int(value)) / 100.0) * 100
-	threshold_changed = (current_threshold != initial_threshold)
+	current_threshold = round((THRESHOLD_MAX - int(value)) / 10.0) * 10
+	threshold_changed = (value != initial_slider_value)
 	_update_sensitivity_label()
-	if not GlobalDebug.DEBUG_DISABLED:
-		print("[Option] Sensitivity value changed to: ", value, ", threshold: ", current_threshold, ", changed: ", threshold_changed)
 
 func _update_sensitivity_label():
 	"""Update the sensitivity label with the current slider value."""
 	if sensitivity_slider and sensitivity_label:
 		sensitivity_label.text = tr("sensor_sensitivity")
-		if not GlobalDebug.DEBUG_DISABLED:
-			print("[Option] Updated sensitivity label to: ", sensitivity_label.text)
 
 func adjust_sensitivity_slider(direction: String):
 	"""Adjust the sensitivity slider with left/right directives."""
@@ -959,7 +959,7 @@ func adjust_sensitivity_slider(direction: String):
 
 func _save_threshold_if_changed():
 	"""Save threshold to embedded system if it has changed."""
-	if threshold_changed and current_threshold != initial_threshold:
+	if threshold_changed:
 		var http_service = get_node_or_null("/root/HttpService")
 		if http_service:
 			if not GlobalDebug.DEBUG_DISABLED:

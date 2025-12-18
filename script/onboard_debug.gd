@@ -101,6 +101,16 @@ func _append_row(_priority: int, content: String, sender: String) -> void:
 		selected_index = 0
 		_update_selection_visuals()
 
+	# Limit to 50 rows max - remove oldest rows if exceeded
+	var max_rows = 50
+	while list_vbox.get_child_count() > max_rows:
+		var oldest = list_vbox.get_child(0)
+		list_vbox.remove_child(oldest)
+		oldest.queue_free()
+		# Adjust selected_index if we removed the selected row or earlier rows
+		if selected_index > 0:
+			selected_index -= 1
+
 	# Auto-scroll to bottom
 	call_deferred("_scroll_to_bottom")
 

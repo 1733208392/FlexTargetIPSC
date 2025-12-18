@@ -1,10 +1,10 @@
 [gd_scene load_steps=12 format=3 uid="uid://6nm0fwntnbky"]
 
 [ext_resource type="Script" uid="uid://d0k8vvwawfi16" path="res://script/ipsc_mini_rotate.gd" id="1_6qps3"]
-[ext_resource type="PackedScene" uid="uid://pxoma10oooh5" path="res://scene/ipsc_mini_small_png.tscn" id="1_ipsc_mini"]
+[ext_resource type="PackedScene" uid="uid://chw03q503u688" path="res://scene/ipsc_mini_small_png.tscn" id="1_ipsc_mini"]
 [ext_resource type="Texture2D" uid="uid://d0m34j6rbnble" path="res://asset/logo-barrel.png" id="2_fco47"]
 [ext_resource type="PackedScene" uid="uid://hi8aom0rumjj" path="res://scene/paddle.tscn" id="4_5wbws"]
-[ext_resource type="Script" uid="uid://dukv4x4iox6xu" path="res://script/paddle_ipsc_rotation.gd" id="5_504v5"]
+[ext_resource type="Script" path="res://script/paddle_ipsc_rotation.gd" id="5_504v5"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_6qps3"]
 size = Vector2(398.18182, 639.0908)
@@ -118,8 +118,7 @@ collision_layer = 8
 collision_mask = 0
 
 [node name="Sprite2D" type="Sprite2D" parent="BarrelWall"]
-position = Vector2(-0.9999995, 38)
-scale = Vector2(1.0190476, 1)
+position = Vector2(0, 30)
 texture = ExtResource("2_fco47")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BarrelWall"]
