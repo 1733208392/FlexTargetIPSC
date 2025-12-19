@@ -30,7 +30,7 @@ func _input(event: InputEvent) -> void:
 			_try_capture_at(event.position)
 		return
 	if event is InputEventScreenTouch and event.pressed:
-		_try_capture_at(event.position)
+		#_try_capture_at(event.position)
 		return
 
 func _try_capture_at(global_point: Vector2) -> void:

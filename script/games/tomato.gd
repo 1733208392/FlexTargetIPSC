@@ -30,7 +30,7 @@ func truck_hit():
 	# Disappear immediately without playing animation
 	queue_free()
 
-func _on_bullet_hit(hit_pos: Vector2):
+func _on_bullet_hit(hit_pos: Vector2, a: int = 0, t: int = 0):
 	"""Handle bullet hit from WebSocket"""
 	# Spawn bullet impact at hit position
 	var impact = bullet_impact_scene.instantiate()

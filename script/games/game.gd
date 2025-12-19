@@ -154,7 +154,7 @@ func _input(event):
 		var click_pos = event.position
 		# Emit bullet_hit signal to all fruits
 		if WebSocketListener:
-			WebSocketListener.bullet_hit.emit(click_pos)
+			WebSocketListener.bullet_hit.emit(click_pos, 0, 0)
 		print("Mouse click at: ", click_pos)
 	
 	# Handle keyboard input for pause/resume and back

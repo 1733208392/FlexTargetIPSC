@@ -97,7 +97,7 @@ func _destroy_all_floating_fruits():
 	
 	print("Bomb explosion destroyed ", fruits_destroyed, " floating fruits")
 
-func _on_bullet_hit(hit_position: Vector2):
+func _on_bullet_hit(hit_position: Vector2, a: int = 0, t: int = 0):
 	"""Check if bomb was hit by bullet"""
 	if is_hit:
 		return
