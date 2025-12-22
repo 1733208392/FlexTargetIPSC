@@ -1,6 +1,6 @@
 extends Control
 
-const DEBUG_ENABLED = true  # Set to false for production release
+const DEBUG_ENABLED = false  # Set to false for production release
 const QR_CODE_GENERATOR = preload("res://script/qrcode.gd")
 
 # Single target for network drills
@@ -716,6 +716,13 @@ func _on_ble_ready_command(content: Dictionary):
 	# Update current_target_type for informational purposes but do not instantiate or start anything
 	if saved_ble_ready_content.has("targetType"):
 		current_target_type = saved_ble_ready_content["targetType"]
+		if target_type_to_scene.has(current_target_type):
+			target_scene = load(target_type_to_scene[current_target_type])
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Loaded target scene for type '", current_target_type, "' to: ", target_type_to_scene[current_target_type])
+		else:
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Unknown targetType: ", current_target_type, ", using default")
 
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] BLE ready parameters saved: ", saved_ble_ready_content)
@@ -729,6 +736,9 @@ func _on_ble_ready_command(content: Dictionary):
 			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 				if DEBUG_ENABLED:
 					print("[DrillsNetwork] Sent ready ack successfully")
+				# Spawn the target after acknowledging ready
+				if target_instance == null:
+					spawn_target()
 			else:
 				if DEBUG_ENABLED:
 					print("[DrillsNetwork] Failed to send ready ack: ", result, response_code)
@@ -816,10 +826,10 @@ func _on_ble_start_command(content: Dictionary) -> void:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] HttpService not available; cannot call start_game")
 	
-	# Start the drill immediately
+	# Start the drill timer immediately (target already spawned on ready)
 	if DEBUG_ENABLED:
-		print("[DrillsNetwork] Starting drill immediately")
-	start_drill()
+		print("[DrillsNetwork] Starting drill timer immediately")
+	start_drill_timer()
 
 func _on_ble_end_command(content: Dictionary) -> void:
 	"""Handle BLE end command: complete the drill"""

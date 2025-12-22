@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://chw03q503u688"]
+[gd_scene load_steps=5 format=3 uid="uid://274aohavhyha"]
 
 [ext_resource type="Script" uid="uid://d052u6s0ikdgy" path="res://script/ipsc_mini.gd" id="1_2rqen"]
 [ext_resource type="Texture2D" uid="uid://e00wmjg7x5yd" path="res://asset/ipsc-medium.png" id="2_g3v27"]

@@ -61,10 +61,10 @@ libraries = {
 }
 
 [node name="AZone" type="CollisionPolygon2D" parent="."]
-polygon = PackedVector2Array(43, -452, 134, -152, 134, -26, 43, 106, -43, 106, -134, -26, -134, -152, -42, -452)
+polygon = PackedVector2Array(44, -456, 138, -153, 138, -25, 45, 111, -44, 111, -137, -24, -137, -158, -45, -456)
 
 [node name="CZone" type="CollisionPolygon2D" parent="."]
-polygon = PackedVector2Array(132, -485, 263, -152, 263, 76, 85, 286, -85, 286, -263, 76, -263, -152, -132, -485)
+polygon = PackedVector2Array(133, -483, 267, -153, 267, 76, 88, 291, -88, 291, -267, 76, -269, -152, -132, -485)
 
 [node name="DZone" type="CollisionPolygon2D" parent="."]
-polygon = PackedVector2Array(132, -485, 379, -164, 379, 162, 132, 471, -132, 471, -379, 162, -379, -164, -132, -485)
+polygon = PackedVector2Array(136, -491, 388, -160, 388, 166, 137, 483, -133, 483, -388, 166, -388, -165, -138, -489)
