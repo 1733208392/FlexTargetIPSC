@@ -9,6 +9,7 @@ var selected_drill_data: Dictionary = {}  # Store selected drill data for replay
 var latest_performance_data: Dictionary = {}  # Store latest performance data for fallback
 var netlink_status: Dictionary = {}  # Store last known netlink status from server
 var ble_ready_content: Dictionary = {}  # Store BLE ready command content for passing between scenes
+var game_mode: String = "ipsc"  # Store current game mode (ipsc, idpa, cqb)
 var sub_menu_config: Dictionary = {
 	"title": "Stage Options",
 	"items": [

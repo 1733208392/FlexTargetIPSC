@@ -392,6 +392,11 @@ func _on_ble_ready_command(content: Dictionary) -> void:
 	var gd = get_node_or_null("/root/GlobalData")
 	if gd:
 		gd.ble_ready_content = content
+		# Save game mode separately for global access
+		if content.has("mode"):
+			gd.game_mode = content["mode"]
+			if not DEBUG_DISABLED:
+				print("[Menu] Saved game_mode in GlobalData: ", content["mode"])
 		if not DEBUG_DISABLED:
 			print("[Menu] Stored ble_ready_content in GlobalData: ", content)
 	else:

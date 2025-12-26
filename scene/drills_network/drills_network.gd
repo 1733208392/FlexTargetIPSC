@@ -1,6 +1,6 @@
 extends Control
 
-const DEBUG_ENABLED = false  # Set to false for production release
+const DEBUG_ENABLED = true  # Set to false for production release
 const QR_CODE_GENERATOR = preload("res://script/qrcode.gd")
 
 # Single target for network drills
@@ -15,8 +15,41 @@ var target_type_to_scene = {
 	"rotation": "res://scene/ipsc_mini_rotate.tscn",
 	"paddle": "res://scene/targets/3paddles.tscn",
 	"popper": "res://scene/targets/2poppers_simple.tscn",
-	"final": "res://scene/targets/final.tscn"
+	"final": "res://scene/targets/final.tscn",
+	"idpa": "res://scene/targets/idpa.tscn",
+	"idpa_black_1": "res://scene/targets/idpa_hard_cover_1.tscn",
+	"idpa_black_2": "res://scene/targets/idpa_hard_cover_2.tscn",
+	"idpa_ns": "res://scene/targets/idpa_ns.tscn"
 }
+
+# Valid target types for each game mode
+var valid_targets_by_mode = {
+	"ipsc": ["ipsc", "special_1", "special_2", "hostage", "rotation", "paddle", "popper", "final"],
+	"idpa": ["idpa", "idpa_black_1", "idpa_black_2", "idpa_ns", "hostage", "paddle", "popper", "final"],
+	"cqb": ["ipsc", "special_1", "special_2", "idpa", "idpa_black_1", "idpa_black_2", "idpa_ns", "hostage", "rotation", "paddle", "popper", "final"]
+}
+
+# Valid game modes
+var valid_game_modes = ["ipsc", "idpa", "cqb"]
+
+func normalize_game_mode(mode: String) -> String:
+	"""Normalize game mode to lowercase for case-insensitive comparison"""
+	return mode.to_lower()
+
+func validate_game_mode_and_target(mode: String, target_type: String) -> bool:
+	"""Validate that the game_mode and target_type combination is valid"""
+	var normalized_mode = normalize_game_mode(mode)
+	if not valid_game_modes.has(normalized_mode):
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] ERROR: Invalid game_mode '", mode, "', valid modes: ", valid_game_modes)
+		return false
+	
+	if not valid_targets_by_mode[normalized_mode].has(target_type):
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] ERROR: Invalid target_type '", target_type, "' for game_mode '", mode, "', valid targets: ", valid_targets_by_mode[normalized_mode])
+		return false
+	
+	return true
 
 # Node references
 @onready var center_container = $CenterContainer
@@ -53,10 +86,17 @@ var saved_ble_ready_content: Dictionary = {}
 # Current repeat tracking
 var current_repeat: int = 0
 
+# Game mode (ipsc, idpa, cqb)
+var game_mode: String = "ipsc"  # Default to ipsc mode (normalized)
+
 # Shot tracking for last target
 var shots_on_last_target: int = 0
 var final_target_spawned: bool = false
 var final_target_instance: Node = null
+
+# Animation configuration for targets
+var current_animation_action: Dictionary = {}  # Dictionary holding single animation action (for future sequence support)
+var animation_lib: Node = null  # Reference to TargetAnimationLibrary
 
 # Performance tracking
 signal drills_finished
@@ -77,6 +117,15 @@ func _ready():
 	
 	# Get global data reference
 	global_data = get_node_or_null("/root/GlobalData")
+	
+	# Get animation library reference
+	animation_lib = get_node_or_null("TargetAnimationLibrary")
+	if animation_lib:
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Found TargetAnimationLibrary")
+	else:
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] WARNING: TargetAnimationLibrary not found")
 	
 	# Add performance tracker to scene tree first
 	add_child(performance_tracker)
@@ -173,6 +222,15 @@ func _connect_to_websocket():
 		else:
 			if DEBUG_ENABLED:
 				print("[DrillsNetwork] ERROR: WebSocketListener does not have ble_end_command signal")
+		
+		# Connect to animation_config to receive animation configurations
+		if ws_listener.has_signal("animation_config"):
+			ws_listener.animation_config.connect(_on_animation_config)
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Connected to animation_config signal")
+		else:
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] ERROR: WebSocketListener does not have animation_config signal")
 	else:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] ERROR: WebSocketListener not found at /root/WebSocketListener")
@@ -200,44 +258,9 @@ func _check_and_process_saved_ready_state():
 		# Process it as if we received the ready command
 		_on_ble_ready_command(saved_ready_content)
 		
-		# Start auto-start fallback timer (drill will start if no 'start' command arrives)
-		_start_auto_start_fallback()
 	else:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] No saved ready state found in GlobalData")
-
-func _start_auto_start_fallback():
-	"""Start a fallback timer that will auto-start the drill in first target mode if no 'start' command arrives"""
-	if DEBUG_ENABLED:
-		print("[DrillsNetwork] Starting auto-start fallback timer (2 seconds)")
-	
-	await get_tree().create_timer(2.0).timeout
-	
-	# If drill has not been started yet (no BLE start command received), start it now
-	if not drill_completed and target_instance == null:
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Auto-start fallback triggered - no BLE start command received, starting drill")
-		
-		# Use is_first from saved ready content
-		is_first = saved_ble_ready_content.get("isFirst", true)
-		emit_signal("ui_mode_update", is_first)
-		
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Operating in ", "first target" if is_first else "subsequent target", " mode (based on saved isFirst: ", is_first, ")")
-		
-		# Use saved timeout or default
-		if saved_ble_ready_content.has("timeout"):
-			timeout_seconds = float(saved_ble_ready_content["timeout"])
-		else:
-			timeout_seconds = 40.0
-		
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Auto-starting drill with timeout: ", timeout_seconds)
-		
-		start_drill()
-	else:
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Auto-start fallback cancelled - drill already started or will be started by BLE command")
 			
 func _on_netlink_status_loaded():
 	"""Update device name when netlink status is loaded"""
@@ -356,10 +379,7 @@ func spawn_target():
 	# Connect performance tracker to our target_hit signal
 	target_hit.connect(performance_tracker._on_target_hit)
 	
-	# Start drill timer
-	start_drill_timer()
-
-	# Hide QR code now that the drill has started
+	# Hide QR code now that target is spawned
 	_refresh_master_qr_code()
 
 func start_drill():
@@ -367,6 +387,7 @@ func start_drill():
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting drill after delay")
 	spawn_target()
+	start_drill_timer()
 
 func spawn_final_target():
 	"""Spawn the final target after 2 shots on the last target"""
@@ -572,6 +593,10 @@ func start_drill_timer():
 	# Activate drill for target
 	if target_instance and target_instance.has_method("set"):
 		target_instance.set("drill_active", true)
+	
+	# Apply animation if configured
+	if animation_lib and current_animation_action.size() > 0:
+		animation_lib.apply_animation(target_instance, current_animation_action.get("name", ""), current_animation_action.get("duration", -1.0))
 
 func _process(_delta):
 	"""Update timer"""
@@ -716,6 +741,19 @@ func _on_ble_ready_command(content: Dictionary):
 	# Update current_target_type for informational purposes but do not instantiate or start anything
 	if saved_ble_ready_content.has("targetType"):
 		current_target_type = saved_ble_ready_content["targetType"]
+		
+		# Validate target type for the game mode
+		if not validate_game_mode_and_target(game_mode, current_target_type):
+			# Use default target for the game mode
+			if valid_targets_by_mode.has(game_mode) and valid_targets_by_mode[game_mode].size() > 0:
+				current_target_type = valid_targets_by_mode[game_mode][0]
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Using default target type '", current_target_type, "' for game_mode '", game_mode, "'")
+			else:
+				current_target_type = "ipsc"  # Ultimate fallback
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Using ultimate fallback target type 'ipsc'")
+		
 		if target_type_to_scene.has(current_target_type):
 			target_scene = load(target_type_to_scene[current_target_type])
 			if DEBUG_ENABLED:
@@ -727,6 +765,18 @@ func _on_ble_ready_command(content: Dictionary):
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] BLE ready parameters saved: ", saved_ble_ready_content)
 
+	# Set game mode from ready command
+	game_mode = normalize_game_mode(saved_ble_ready_content.get("mode", "ipsc"))
+	
+	# Validate game mode
+	if not valid_game_modes.has(game_mode):
+		game_mode = "ipsc"  # Default to ipsc if invalid
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Invalid game_mode, defaulting to 'ipsc'")
+	
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Game mode set to: ", game_mode)
+
 	# Acknowledge the ready command back to sender by forwarding a netlink message
 	# Format: {"type":"netlink","action":"forward","device":"A","content":"ready"}
 	var http_service = get_node_or_null("/root/HttpService")
@@ -736,9 +786,12 @@ func _on_ble_ready_command(content: Dictionary):
 			if result == HTTPRequest.RESULT_SUCCESS and response_code == 200:
 				if DEBUG_ENABLED:
 					print("[DrillsNetwork] Sent ready ack successfully")
-				# Spawn the target after acknowledging ready
-				if target_instance == null:
+				# Spawn the target after acknowledging ready (unless CQB mode)
+				if normalize_game_mode(game_mode) != "cqb":
 					spawn_target()
+				else:
+					if DEBUG_ENABLED:
+						print("[DrillsNetwork] CQB mode: delaying target spawn until start command")
 			else:
 				if DEBUG_ENABLED:
 					print("[DrillsNetwork] Failed to send ready ack: ", result, response_code)
@@ -748,8 +801,7 @@ func _on_ble_ready_command(content: Dictionary):
 			print("[DrillsNetwork] HttpService not available; cannot send ready ack")
 
 	# If drill is completed, reset to fresh start
-	if drill_completed:
-		reset_drill_state()
+	reset_drill_state()
 
 func _on_ble_start_command(content: Dictionary) -> void:
 	"""Handle BLE start command: merge saved ready params with start payload and begin delay/start sequence."""
@@ -787,6 +839,19 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	# Apply merged parameters similar to original ready behavior
 	if merged.has("targetType"):
 		var target_type = merged["targetType"]
+		
+		# Validate target type for the game mode
+		if not validate_game_mode_and_target(game_mode, target_type):
+			# Use default target for the game mode
+			if valid_targets_by_mode.has(game_mode) and valid_targets_by_mode[game_mode].size() > 0:
+				target_type = valid_targets_by_mode[game_mode][0]
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Using default target type '", target_type, "' for game_mode '", game_mode, "'")
+			else:
+				target_type = "ipsc"  # Ultimate fallback
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Using ultimate fallback target type 'ipsc'")
+		
 		current_target_type = target_type
 		if target_type_to_scene.has(target_type):
 			target_scene = load(target_type_to_scene[target_type])
@@ -826,7 +891,13 @@ func _on_ble_start_command(content: Dictionary) -> void:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] HttpService not available; cannot call start_game")
 	
-	# Start the drill timer immediately (target already spawned on ready)
+	# For CQB mode, spawn target now (on start command)
+	if normalize_game_mode(game_mode) == "cqb":
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] CQB mode: spawning target on start command")
+		spawn_target()
+	
+	# Start the drill timer immediately (target already spawned on ready, or just spawned for CQB)
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting drill timer immediately")
 	start_drill_timer()
@@ -838,3 +909,13 @@ func _on_ble_end_command(content: Dictionary) -> void:
 	
 	# Complete the drill
 	complete_drill()
+
+func _on_animation_config(action: String, duration: float) -> void:
+	"""Handle animation configuration from mobile app"""
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Received animation config for action: ", action, ", duration: ", duration)
+	
+	# Store the animation action for application when drill starts
+	current_animation_action = {"name": action, "duration": duration}
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Stored animation action: ", action, " with duration: ", duration, " (will apply when drill starts)")

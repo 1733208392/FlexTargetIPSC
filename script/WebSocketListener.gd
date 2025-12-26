@@ -10,6 +10,7 @@ signal menu_control(directive: String)
 signal ble_ready_command(content: Dictionary)
 signal ble_start_command(content: Dictionary)
 signal ble_end_command(content: Dictionary)
+signal animation_config(action: String, duration: float)
 
 var socket: WebSocketPeer
 var bullet_spawning_enabled: bool = true
@@ -278,9 +279,42 @@ func _handle_ble_forwarded_command(parsed):
 		"end":
 			if not DEBUG_DISABLED: print("[WebSocket] Emitting ble_end_command signal with content: ", content)
 			ble_end_command.emit(content)
+		"animation_config":
+			if not DEBUG_DISABLED: print("[WebSocket] Handling animation_config command with content: ", content)
+			_handle_animation_config(content)
 		_:
 			if not DEBUG_DISABLED:
 				print("[WebSocket] BLE forwarded command unknown or unsupported command: ", command)
+
+func _handle_animation_config(parsed):
+	"""Handle animation configuration commands from mobile app"""
+	var sb = get_node_or_null("/root/SignalBus")
+	
+	# Extract action and duration from the parsed message
+	var action = parsed.get("action", "")
+	var duration = parsed.get("duration", 3.0)
+	
+	if not DEBUG_DISABLED:
+		print("[WebSocket] Animation config received - action: ", action, ", duration: ", duration)
+	
+	# Validate the data
+	if action == "":
+		if not DEBUG_DISABLED:
+			print("[WebSocket] Animation config missing action")
+		return
+	
+	# Emit onboard debug info for animation config commands
+	var content_str = JSON.stringify({"action": action, "duration": duration})
+	if sb:
+		sb.emit_onboard_debug_info(2, "Animation config: " + content_str, "Mobile App")
+	else:
+		if not DEBUG_DISABLED:
+			print("[WebSocket] Animation config debug: ", content_str)
+	
+	# Emit the animation config signal
+	if not DEBUG_DISABLED:
+		print("[WebSocket] Emitting animation_config signal - action: ", action, ", duration: ", duration)
+	animation_config.emit(action, duration)
 
 func clear_queued_signals():
 	"""Clear all queued WebSocket packets and pending bullet hit signals"""

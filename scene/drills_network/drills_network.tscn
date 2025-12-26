@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://113obd774o70"]
+[gd_scene load_steps=8 format=3 uid="uid://113obd774o70"]
 
 [ext_resource type="PackedScene" uid="uid://cx4ygwpmsuiyn" path="res://scene/drills_network/drill_network_ui.tscn" id="2_1dbv7"]
 [ext_resource type="Texture2D" uid="uid://gpyjow0hb5mh" path="res://asset/drills_back.jpg" id="2_6482l"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://dko04tcrpugrp" path="res://scene/drills_network/drill_network_complete_overlay.tscn" id="4_da2b7"]
 [ext_resource type="Script" uid="uid://bm8y60bv6nltv" path="res://scene/drills_network/drill_network_complete_overlay.gd" id="5_0a8g6"]
 [ext_resource type="FontFile" uid="uid://bwcp7rt88uq1h" path="res://font/Inter/static/Inter_28pt-Black.ttf" id="6_aakvq"]
+[ext_resource type="Script" uid="uid://bg4woh0hd0pho" path="res://script/TargetAnimationLibrary.gd" id="7_r3y4i"]
 
 [node name="drills_network" type="Control"]
 layout_mode = 3
@@ -80,3 +81,6 @@ offset_right = 200.0
 offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="TargetAnimationLibrary" type="Node" parent="."]
+script = ExtResource("7_r3y4i")

@@ -54,7 +54,7 @@ tracks/0/keys = {
 
 [sub_resource type="Animation" id="RotateAnimation"]
 resource_name = "rotate_left_right"
-length = 2.0
+length = 2.5
 step = 1.0
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -83,7 +83,7 @@ tracks/1/keys = {
 
 [sub_resource type="Animation" id="Animation_6qps3"]
 resource_name = "Popup"
-length = 2.0
+length = 2.5
 step = 1.0
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -92,7 +92,7 @@ tracks/0/path = NodePath("IPSCMini:position")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 1, 2),
+"times": PackedFloat32Array(0, 1.25, 2.5),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
 "values": [Vector2(0, 0), Vector2(0, -200), Vector2(0, 0)]

@@ -1,0 +1,272 @@
+extends Node
+
+# Target Animation Library
+# Provides predefined animation sequences for targets
+# Each animation is defined by a set of actions and duration
+
+class_name TargetAnimationLibrary
+
+# Configurable default durations for animations (in seconds)
+@export var flash_duration: float = 3.0
+@export var run_through_duration: float = 2.0
+@export var swing_left_duration: float = 2.0
+@export var swing_right_duration: float = 2.0
+@export var up_duration: float = 1.5
+@export var down_duration: float = 1.5
+
+# Animation action definitions
+enum AnimationAction {
+	FLASH,           # Show target for duration then disappear
+	RUN_THROUGH,     # Move target from left to right
+	RUN_THROUGH_REVERSE, # Move target from right to left
+	SWING_LEFT,      # Appear rotated from left, disappear after duration
+	SWING_RIGHT,     # Appear rotated from right, disappear after duration
+	UP,              # Show target from bottom, stop at 1/3 visible
+	DOWN,            # Show target from top, stop at 1/3 visible
+}
+
+# Animation configuration structure
+class AnimationConfig:
+	var action: AnimationAction
+	var duration: float
+	var start_delay: float = 0.0
+	var easing: Tween.EaseType = Tween.EASE_IN_OUT
+	var transition: Tween.TransitionType = Tween.TRANS_SINE
+	var amplitude: float = 1.0  # Multiplier for movement/rotation amplitude
+	var direction: int = 1      # 1 for normal, -1 for reverse direction
+
+	func _init(p_action: AnimationAction, p_duration: float, p_start_delay: float = 0.0):
+		action = p_action
+		duration = p_duration
+		start_delay = p_start_delay
+
+# Predefined animation templates (dynamically generated)
+func _get_animation_templates() -> Dictionary:
+	return {
+		"flash": {
+			"action": AnimationAction.FLASH,
+			"default_duration": flash_duration,
+			"description": "Display target for duration then disappear"
+		},
+		"run_through": {
+			"action": AnimationAction.RUN_THROUGH,
+			"default_duration": run_through_duration,
+			"description": "Target moves from left to right"
+		},
+		"run_through_reverse": {
+			"action": AnimationAction.RUN_THROUGH_REVERSE,
+			"default_duration": run_through_duration,
+			"description": "Target moves from right to left"
+		},
+		"swing_left": {
+			"action": AnimationAction.SWING_LEFT,
+			"default_duration": swing_left_duration,
+			"description": "Appear rotated from left, disappear after duration"
+		},
+		"swing_right": {
+			"action": AnimationAction.SWING_RIGHT,
+			"default_duration": swing_right_duration,
+			"description": "Appear rotated from right, disappear after duration"
+		},
+		"up": {
+			"action": AnimationAction.UP,
+			"default_duration": up_duration,
+			"description": "Show target from bottom, stop at 1/3 visible"
+		},
+		"down": {
+			"action": AnimationAction.DOWN,
+			"default_duration": down_duration,
+			"description": "Show target from top, stop at 1/3 visible"
+		}
+	}
+
+# Apply a predefined animation to a target
+# target: The target node (should have AnimationPlayer)
+# animation_name: Name of the predefined animation (e.g., "flash", "run_through")
+# custom_duration: Override the default duration (optional)
+# start_delay: Delay before animation starts (optional)
+# Returns: AnimationPlayer animation name that was created
+func apply_animation(target: Node, animation_name: String, custom_duration: float = -1.0, start_delay: float = 0.0) -> String:
+	if not target:
+		push_error("TargetAnimationLibrary: Target is null")
+		return ""
+
+	var templates = _get_animation_templates()
+	if not animation_name in templates:
+		push_error("TargetAnimationLibrary: Unknown animation '" + animation_name + "'")
+		return ""
+
+	var template = templates[animation_name]
+	var duration = custom_duration if custom_duration > 0 else template.default_duration
+
+	var config = AnimationConfig.new(template.action, duration, start_delay)
+	return _apply_animation_config(target, config, animation_name)
+
+# Internal method to apply animation configuration
+func _apply_animation_config(target: Node, config: AnimationConfig, animation_name: String) -> String:
+	var animation_player = target.get_node_or_null("AnimationPlayer")
+	if not animation_player:
+		push_error("TargetAnimationLibrary: Target does not have AnimationPlayer")
+		return ""
+
+	# Create unique animation name
+	var unique_name = animation_name + "_" + str(Time.get_ticks_msec())
+
+	# Create new animation
+	var animation = Animation.new()
+	animation.resource_name = unique_name
+	animation.length = config.duration + config.start_delay
+
+	# Add tracks based on animation action
+	match config.action:
+		AnimationAction.FLASH:
+			_create_flash_animation(animation, config)
+			animation.length += 0.1  # Extra time for fade out
+		AnimationAction.RUN_THROUGH:
+			_create_run_through_animation(animation, config, 1)
+		AnimationAction.RUN_THROUGH_REVERSE:
+			_create_run_through_animation(animation, config, -1)
+		AnimationAction.SWING_LEFT:
+			_create_swing_animation(animation, config, -1)
+		AnimationAction.SWING_RIGHT:
+			_create_swing_animation(animation, config, 1)
+		AnimationAction.UP:
+			_create_up_animation(animation, config)
+		AnimationAction.DOWN:
+			_create_down_animation(animation, config)
+
+	# Add animation to library
+	var library = animation_player.get_animation_library("")
+	if not library:
+		library = AnimationLibrary.new()
+		animation_player.add_animation_library("", library)
+
+	library.add_animation(unique_name, animation)
+
+	# Play the animation
+	if config.start_delay > 0:
+		# Use a timer for delayed start
+		var timer = Timer.new()
+		timer.wait_time = config.start_delay
+		timer.one_shot = true
+		target.add_child(timer)
+		timer.timeout.connect(func():
+			animation_player.play(unique_name)
+			timer.queue_free()
+		)
+		timer.start()
+	else:
+		animation_player.play(unique_name)
+
+	return unique_name
+
+# Create flash animation (show then disappear)
+func _create_flash_animation(animation: Animation, config: AnimationConfig):
+	# Modulate track for visibility
+	var modulate_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(modulate_track, ".:modulate")
+	animation.track_insert_key(modulate_track, config.start_delay, Color(1, 1, 1, 0))
+	animation.track_insert_key(modulate_track, config.start_delay + 0.1, Color(1, 1, 1, 1))
+	animation.track_insert_key(modulate_track, config.duration + config.start_delay, Color(1, 1, 1, 1))
+	animation.track_insert_key(modulate_track, config.duration + config.start_delay + 0.1, Color(1, 1, 1, 0))
+
+# Create run through animation (left to right movement)
+func _create_run_through_animation(animation: Animation, config: AnimationConfig, direction: int = 1):
+	var screen_size = Vector2(720, 1280)  # Game viewport size
+	var start_x = -200 * direction
+	var end_x = screen_size.x + 200 * direction
+
+	# Position track
+	var position_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(position_track, ".:position")
+	animation.track_insert_key(position_track, config.start_delay, Vector2(start_x, 0))
+	animation.track_insert_key(position_track, config.duration + config.start_delay, Vector2(end_x, 0))
+
+	# Modulate track for fade in/out
+	var modulate_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(modulate_track, ".:modulate")
+	animation.track_insert_key(modulate_track, config.start_delay, Color(1, 1, 1, 0))
+	animation.track_insert_key(modulate_track, config.start_delay + 0.2, Color(1, 1, 1, 1))
+	animation.track_insert_key(modulate_track, config.duration + config.start_delay - 0.2, Color(1, 1, 1, 1))
+	animation.track_insert_key(modulate_track, config.duration + config.start_delay, Color(1, 1, 1, 0))
+
+# Create swing animation (appear rotated, disappear)
+func _create_swing_animation(animation: Animation, config: AnimationConfig, direction: int):
+	var max_rotation = PI/6 * config.amplitude * direction  # 30 degrees max
+
+	# Position track (fixed position)
+	var pos_start = Vector2(-650, 0) if direction == 1 else Vector2(650, 0)
+	var pos_end = Vector2(-325, 0) if direction == 1 else Vector2(325, 0)
+	var position_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(position_track, ".:position")
+	animation.track_insert_key(position_track, config.start_delay, pos_start)
+	animation.track_insert_key(position_track, (config.duration + config.start_delay)/2, pos_end)
+	animation.track_insert_key(position_track, config.duration + config.start_delay, pos_start)
+
+	# Rotation track
+	var rotation_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(rotation_track, ".:rotation")
+	animation.track_insert_key(rotation_track, config.start_delay, 0)
+	animation.track_insert_key(rotation_track, (config.start_delay + config.duration)/2, max_rotation)
+	animation.track_insert_key(rotation_track, config.duration + config.start_delay, 0)
+
+# Create up animation (show from bottom, stop at 1/3 visible)
+func _create_up_animation(animation: Animation, config: AnimationConfig):
+	var screen_size = Vector2(720, 1280)  # Game viewport size
+	# Assuming target height is roughly 200-300 pixels, 1/3 visible means 2/3 covered
+	# Start position: target mostly below screen (y positive is down in Godot)
+	var start_y = screen_size.y + 200 * config.amplitude
+	# End position: 1/3 of target visible at bottom (target top at screen bottom - 1/3 target height)
+	var end_y = screen_size.y - 100 * config.amplitude  # Adjust based on typical target size
+
+	# Position Y track for moving up
+	var position_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(position_track, ".:position:y")
+	animation.track_insert_key(position_track, config.start_delay, start_y)
+	animation.track_insert_key(position_track, config.duration + config.start_delay, end_y)
+
+	# Modulate track for fade in
+	var modulate_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(modulate_track, ".:modulate")
+	animation.track_insert_key(modulate_track, config.start_delay, Color(1, 1, 1, 0))
+	animation.track_insert_key(modulate_track, config.start_delay + 0.2, Color(1, 1, 1, 1))
+	animation.track_insert_key(modulate_track, config.duration + config.start_delay, Color(1, 1, 1, 1))
+
+# Create down animation (show from top, stop at 1/3 visible)
+func _create_down_animation(animation: Animation, config: AnimationConfig):
+	var screen_size = Vector2(720, 1280)  # Game viewport size
+	# Start position: target mostly above screen (y negative is up in Godot)
+	var start_y = -200 * config.amplitude
+	# End position: 1/3 of target visible at top (target bottom at screen top + 1/3 target height)
+	var end_y = 100 * config.amplitude  # Adjust based on typical target size
+
+	# Position Y track for moving down
+	var position_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(position_track, ".:position:y")
+	animation.track_insert_key(position_track, config.start_delay, start_y)
+	animation.track_insert_key(position_track, config.duration + config.start_delay, end_y)
+
+	# Modulate track for fade in
+	var modulate_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(modulate_track, ".:modulate")
+	animation.track_insert_key(modulate_track, config.start_delay, Color(1, 1, 1, 0))
+	animation.track_insert_key(modulate_track, config.start_delay + 0.2, Color(1, 1, 1, 1))
+	animation.track_insert_key(modulate_track, config.duration + config.start_delay, Color(1, 1, 1, 1))
+
+# Get list of available animation names
+func get_available_animations() -> Array[String]:
+	return _get_animation_templates().keys()
+
+# Get animation description
+func get_animation_description(animation_name: String) -> String:
+	var templates = _get_animation_templates()
+	if animation_name in templates:
+		return templates[animation_name].description
+	return ""
+
+# Get default duration for animation
+func get_default_duration(animation_name: String) -> float:
+	var templates = _get_animation_templates()
+	if animation_name in templates:
+		return templates[animation_name].default_duration
+	return 1.0

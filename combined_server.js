@@ -50,6 +50,26 @@ let mobileAppBLEClient = null;
 let godotWSClient = null;
 const connectedGodotClients = new Set();
 
+// Drill timing
+let drillStartTime = null; // Timestamp when drill started (for bullet t values)
+let gameStartTime = null; // Timestamp when game started (for bullet t values)
+
+// Function to get current drill time in milliseconds
+function getCurrentDrillTime() {
+  if (drillStartTime === null) {
+    return 0; // Default if no drill started
+  }
+  return Date.now() - drillStartTime;
+}
+
+// Function to get current game time in milliseconds
+function getCurrentGameTime() {
+  if (gameStartTime === null) {
+    return 0; // Default if no game started
+  }
+  return Date.now() - gameStartTime;
+}
+
 console.log('[CombinedServer] Starting Combined HTTP/WebSocket/BLE Proxy Simulation...');
 console.log('[CombinedServer] HTTP server on port 80, WebSocket on path /websocket, BLE advertising service UUID:', SERVICE_UUID);
 
@@ -169,6 +189,92 @@ const httpServer = http.createServer((req, res) => {
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ code: 1, msg: "Invalid JSON" }));
+      }
+    });
+  } else if (pathname === '/game/start' && req.method === 'POST') {
+    // 开始游戏 - Start game
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const { mode, count, duration } = data;
+
+        // Validate required mode parameter
+        if (!mode) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Missing required parameter: mode" }));
+          return;
+        }
+
+        // Validate mode values
+        const validModes = ['free', 'counter', 'timer'];
+        if (!validModes.includes(mode)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Invalid mode. Must be one of: free, counter, timer" }));
+          return;
+        }
+
+        // Validate count parameter for counter mode
+        if (mode === 'counter') {
+          if (count === undefined || count === null) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ code: 1, msg: "Missing required parameter: count (required for counter mode)" }));
+            return;
+          }
+          if (!Number.isInteger(count) || count <= 0) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ code: 1, msg: "count must be a positive integer" }));
+            return;
+          }
+        }
+
+        // Validate duration parameter for timer mode
+        if (mode === 'timer') {
+          if (duration === undefined || duration === null) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ code: 1, msg: "Missing required parameter: duration (required for timer mode)" }));
+            return;
+          }
+          if (!Number.isInteger(duration) || duration <= 0) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ code: 1, msg: "duration must be a positive integer (seconds)" }));
+            return;
+          }
+        }
+
+        // Log the game start
+        console.log(`[HttpServer] Game started with mode: ${mode}`);
+        if (mode === 'counter') {
+          console.log(`[HttpServer] Target shot count: ${count}`);
+        } else if (mode === 'timer') {
+          console.log(`[HttpServer] Game duration: ${duration} seconds`);
+        }
+
+        // Set game start time for bullet timing
+        gameStartTime = Date.now();
+
+        // TODO: Store game state and implement game logic
+        // For now, just acknowledge the game start
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          code: 0, 
+          msg: "Game started successfully",
+          data: {
+            mode: mode,
+            count: mode === 'counter' ? count : null,
+            duration: mode === 'timer' ? duration : null,
+            start_time: new Date().toISOString()
+          }
+        }));
+
+      } catch (error) {
+        console.log(`[HttpServer] /game/start - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
       }
     });
   } else if (pathname === '/netlink/wifi/scan' && req.method === 'POST') {
@@ -585,6 +691,9 @@ const httpServer = http.createServer((req, res) => {
   //   Server forwards: { type: 'netlink', data: content } to Godot
   //
   // Usage:
+  //   curl -X POST http://localhost/test/ble/animation_config -H "Content-Type: application/json" \
+  //     -d '{"action":"netlink_forward","content":{"command":"animation_config","target_id":"ipsc_mini","action":"run_through","duration":5},"dest":"A"}'
+  //
   //   curl -X POST http://localhost/test/ble/ready -H "Content-Type: application/json" \
   //     -d '{"action":"netlink_forward","content":{"command":"ready","isFirst":false,"isLast":true,"targetType":"ipsc","timeout":30,"delay":5},"dest":"A"}'
   //
@@ -661,6 +770,9 @@ const httpServer = http.createServer((req, res) => {
         if (parsedData.action === 'netlink_forward' && parsedData.content) {
           console.log(`[TestEndpoint] Simulating BLE start command:`, parsedData.content);
           
+          // Set drill start time for bullet timing
+          drillStartTime = Date.now();
+          
           // Send { type: 'netlink', data: content } to Godot
           const message = {
             type: 'netlink',
@@ -707,6 +819,12 @@ const httpServer = http.createServer((req, res) => {
         if (parsedData.action === 'netlink_forward' && parsedData.content) {
           console.log(`[TestEndpoint] Simulating BLE end command:`, parsedData.content);
           
+          // Check for end command to reset drill timing
+          if (parsedData.content.command === 'end') {
+            console.log('[TestEndpoint] End command received, resetting drill start time');
+            drillStartTime = null;
+          }
+          
           // Send { type: 'netlink', data: content } to Godot
           const message = {
             type: 'netlink',
@@ -736,6 +854,175 @@ const httpServer = http.createServer((req, res) => {
         }
       } catch (error) {
         console.log(`[TestEndpoint] /test/ble/end - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
+      }
+    });
+
+  } else if (pathname === '/test/ble/animation_config' && req.method === 'POST') {
+    // Simulate BLE animation_config command from mobile app
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const parsedData = JSON.parse(body);
+        
+        // Copy BLE forwarding logic: check for netlink_forward and content
+        if (parsedData.action === 'netlink_forward' && parsedData.content) {
+          console.log(`[TestEndpoint] Simulating BLE animation_config command:`, parsedData.content);
+          
+          // Send { type: 'netlink', data: content } to Godot
+          const message = {
+            type: 'netlink',
+            data: parsedData.content
+          };
+          
+          // Broadcast to all connected Godot WebSocket clients
+          let sentCount = 0;
+          connectedGodotClients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(message));
+              sentCount++;
+            }
+          });
+          
+          console.log(`[TestEndpoint] Netlink animation_config sent to ${sentCount} Godot client(s)`);
+          
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ 
+            code: 0, 
+            msg: `BLE animation_config command sent to ${sentCount} client(s)`,
+            sent: message
+          }));
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ code: 1, msg: "Invalid message format: expected action='netlink_forward' and content" }));
+        }
+      } catch (error) {
+        console.log(`[TestEndpoint] /test/ble/animation_config - JSON parse error: ${error.message}`);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
+      }
+    });
+
+  } else if (pathname === '/test/ble/sequence' && req.method === 'POST') {
+    // Simulate BLE sequence: ready -> animation_config -> start
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const parsedData = body ? JSON.parse(body) : {};
+        
+        // Default animation config if not provided
+        const animationConfig = parsedData.animation_config || {
+          command: 'animation_config',
+          action: 'swing_left',
+          duration: 5};
+        
+        console.log(`[TestEndpoint] Starting BLE sequence: animation_config -> ready -> start -> end`);
+        
+        // Send animation_config after 1 second
+        setTimeout(() => {
+          const animationMessage = {
+            type: 'netlink',
+            data: animationConfig
+          };
+          
+          let sentCount = 0;
+          connectedGodotClients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(animationMessage));
+              sentCount++;
+            }
+          });
+          
+          console.log(`[TestEndpoint] Sequence step 1: Animation config sent to ${sentCount} Godot client(s):`, animationMessage);
+        }, 1000);
+        
+        // Send ready command after 2 seconds
+        setTimeout(() => {
+          const readyMessage = {
+            type: 'netlink',
+            action: 'netlink_forward',
+            dest: '01',
+            data: {
+              command: 'ready',
+              isFirst: true,
+              isLast: true,
+              targetType: 'ipsc',
+              timeout: 30,
+              delay: 5,
+              mode: 'CQB'
+            }
+          };
+          
+          let sentCount = 0;
+          connectedGodotClients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(readyMessage));
+              sentCount++;
+            }
+          });
+          
+          console.log(`[TestEndpoint] Sequence step 2: Ready sent to ${sentCount} Godot client(s)`);
+        }, 5000);
+        
+        // Send start command after 10 seconds
+        setTimeout(() => {
+          // Set drill start time for bullet timing
+          drillStartTime = Date.now();
+          
+          const startMessage = {
+            type: 'netlink',
+            data: {
+              command: 'start',
+              repeat: 1
+            }
+          };
+          
+          let sentCount = 0;
+          connectedGodotClients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(startMessage));
+              sentCount++;
+            }
+          });
+          
+          console.log(`[TestEndpoint] Sequence step 3: Start sent to ${sentCount} Godot client(s)`);
+        }, 10000);
+        
+        // Send end command after 4 seconds
+        setTimeout(() => {
+          // Reset drill start time for end command
+          drillStartTime = null;
+          
+          const endMessage = {
+            type: 'netlink',
+            data: {
+              command: 'end'
+            }
+          };
+          
+          let sentCount = 0;
+          connectedGodotClients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(endMessage));
+              sentCount++;
+            }
+          });
+          
+          console.log(`[TestEndpoint] Sequence step 4: End sent to ${sentCount} Godot client(s)`);
+        }, 20000);
+        
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          code: 0, 
+          msg: 'BLE sequence started: animation_config (1s) -> ready (2s) -> start (10s) -> end (20s)',
+          sequence: ['animation_config', 'ready', 'start', 'end'],
+          animation_config: animationConfig
+        }));
+      } catch (error) {
+        console.log(`[TestEndpoint] /test/ble/sequence - JSON parse error: ${error.message}`);
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ code: 1, msg: "Invalid JSON format" }));
       }
@@ -1032,7 +1319,7 @@ if (process.stdin.isTTY) {
         // since origin is bottom-left, pick y between minY..maxY
         const y = Math.round(minY + Math.random() * (maxY - minY));
 
-        const baseBullet = { t: 630, x: x, y: y, a: 1069 };
+        const baseBullet = { t: getCurrentGameTime(), x: x, y: y, a: 1069 };
         bullets.push(addBulletVariance(baseBullet));
       }
 
@@ -1043,7 +1330,7 @@ if (process.stdin.isTTY) {
     return;
   } else if (keyStr === 'C' || keyStr === 'c') { // C - Send center screen bullet
     if (connectedGodotClients.size > 0) {
-      const centerBullet = { t: 630, x: 134, y: 238.2, a: 1069 };
+      const centerBullet = { t: getCurrentGameTime(), x: 134, y: 238.2, a: 1069 };
       const bulletMessage = {
         type: 'data',
         data: [centerBullet]
@@ -1066,8 +1353,10 @@ if (process.stdin.isTTY) {
       burstMode = true;
       burstInterval = setInterval(() => {
         if (connectedGodotClients.size > 0) {
+          // Generate random bullet with dynamic timing
           const randomData = randomDataOptions[Math.floor(Math.random() * randomDataOptions.length)];
-          const variedData = addBulletVariance(randomData);
+          const dynamicBullet = { ...randomData, t: getCurrentGameTime() };
+          const variedData = addBulletVariance(dynamicBullet);
           const randomDataPayload = {
             type: 'data',
             data: [variedData]
@@ -1213,6 +1502,13 @@ class WriteCharacteristic extends bleno.Characteristic {
         // Handle netlink forward messages from Mobile App to Godot
         if (parsedData.action === 'netlink_forward' && parsedData.content) {
           console.log('[CombinedServer] Forwarding netlink message from Mobile App to Godot');
+          
+          // Check for end command to reset drill timing
+          if (parsedData.content.command === 'end') {
+            console.log('[CombinedServer] End command received, resetting drill start time');
+            drillStartTime = null;
+          }
+          
           sendToGodot({ type: 'netlink', data: parsedData.content });
         }
         
@@ -1450,3 +1746,20 @@ console.log('[CombinedServer]     - Sends ack:ready for each of 8 targets');
 console.log('[CombinedServer]   /test/multi-target/shots - Send shots only to 8 targets');
 console.log('[CombinedServer]     Usage: POST (no body required)');
 console.log('[CombinedServer]     - Sends 2 shots (AZone + BZone) for each of 8 targets');
+console.log('[CombinedServer]   /test/ble/animation_config - Send animation_config command');
+console.log('[CombinedServer]     Usage: POST with {"action":"netlink_forward","content":{"command":"animation_config","target_id":"ipsc_mini","action":"run_through","duration":5}}');
+console.log('[CombinedServer]     - Sends animation configuration to Godot');
+console.log('[CombinedServer]   /test/ble/ready - Send ready command');
+console.log('[CombinedServer]     Usage: POST with {"action":"netlink_forward","content":{"command":"ready","isFirst":true,"isLast":true,"targetType":"ipsc","timeout":30,"delay":5}}');
+console.log('[CombinedServer]     - Sends ready command to prepare targets');
+console.log('[CombinedServer]   /test/ble/start - Send start command');
+console.log('[CombinedServer]     Usage: POST with {"action":"netlink_forward","content":{"command":"start","repeat":1}}');
+console.log('[CombinedServer]     - Sends start command to begin drill and sets timing reference');
+console.log('[CombinedServer]   /test/ble/end - Send end command');
+console.log('[CombinedServer]     Usage: POST with {"action":"netlink_forward","content":{"command":"end"}}');
+console.log('[CombinedServer]     - Sends end command to stop drill and resets timing');
+console.log('[CombinedServer]   /test/ble/sequence - Send ready -> animation_config -> start sequence');
+console.log('[CombinedServer]     Usage: POST (optional body with animation_config)');
+console.log('[CombinedServer]     - Sends ready command after 1s');
+console.log('[CombinedServer]     - Sends animation_config after 2s (default: run_through for ipsc_mini)');
+console.log('[CombinedServer]     - Sends start command after 3s');
