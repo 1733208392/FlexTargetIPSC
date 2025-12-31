@@ -1519,14 +1519,7 @@ class WriteCharacteristic extends bleno.Characteristic {
             type: 'netlink',
             action: 'device_list',
             data: [
-              { mode: 'master', name: '01' },
-              { mode: 'slave', name: '02' },
-              { mode: 'slave', name: '03' },
-              { mode: 'slave', name: '04' },
-              { mode: 'slave', name: '05' },
-              { mode: 'slave', name: '06' },
-              { mode: 'slave', name: '07' },
-              { mode: 'slave', name: '08' }
+              { mode: 'master', name: '01' }
             ]
           };
           

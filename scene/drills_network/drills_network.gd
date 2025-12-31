@@ -19,14 +19,17 @@ var target_type_to_scene = {
 	"idpa": "res://scene/targets/idpa.tscn",
 	"idpa_black_1": "res://scene/targets/idpa_hard_cover_1.tscn",
 	"idpa_black_2": "res://scene/targets/idpa_hard_cover_2.tscn",
-	"idpa_ns": "res://scene/targets/idpa_ns.tscn"
+	"idpa_ns": "res://scene/targets/idpa_ns.tscn",
+	"cqb_front": "res://scene/targets/cqb_front.tscn",
+	"cqb_move": "res://scene/targets/cqb_moving.tscn",
+	"cqb_swing": "res://scene/targets/cqb_swing.tscn"
 }
 
 # Valid target types for each game mode
 var valid_targets_by_mode = {
 	"ipsc": ["ipsc", "special_1", "special_2", "hostage", "rotation", "paddle", "popper", "final"],
 	"idpa": ["idpa", "idpa_black_1", "idpa_black_2", "idpa_ns", "hostage", "paddle", "popper", "final"],
-	"cqb": ["ipsc", "special_1", "special_2", "idpa", "idpa_black_1", "idpa_black_2", "idpa_ns", "hostage", "rotation", "paddle", "popper", "final"]
+	"cqb": ["cqb_front", "cqb_move", "cqb_swing"]
 }
 
 # Valid game modes
@@ -358,6 +361,10 @@ func spawn_target():
 	# Instance the target
 	target_instance = target_scene.instantiate()
 	center_container.add_child(target_instance)
+
+	# CQB swing: apply the animation start pose immediately to avoid a visible snap
+	if normalize_game_mode(game_mode) == "cqb" and animation_lib and current_animation_action.size() > 0:
+		animation_lib.apply_start_pose(target_instance, current_animation_action.get("name", ""))
 	
 	# Offset rotation target by -200, 200 from center
 	if current_target_type == "rotation":
@@ -596,6 +603,8 @@ func start_drill_timer():
 	
 	# Apply animation if configured
 	if animation_lib and current_animation_action.size() > 0:
+		# Prime the start pose first to prevent an initial jump when the animation begins
+		animation_lib.apply_start_pose(target_instance, current_animation_action.get("name", ""))
 		animation_lib.apply_animation(target_instance, current_animation_action.get("name", ""), current_animation_action.get("duration", -1.0))
 
 func _process(_delta):
@@ -648,6 +657,7 @@ func reset_drill_state():
 	drill_start_time = 0.0
 	shots_on_last_target = 0
 	final_target_spawned = false
+	current_animation_action.clear()
 	
 	# Stop and clean up timeout timer
 	if timeout_timer:
@@ -738,6 +748,15 @@ func _on_ble_ready_command(content: Dictionary):
 	for k in content.keys():
 		saved_ble_ready_content[k] = content[k]
 
+	# Set game mode from ready command FIRST (so targetType validation uses the correct mode)
+	game_mode = normalize_game_mode(saved_ble_ready_content.get("mode", "ipsc"))
+	if not valid_game_modes.has(game_mode):
+		game_mode = "ipsc"  # Default to ipsc if invalid
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Invalid game_mode, defaulting to 'ipsc'")
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] Game mode set to: ", game_mode)
+
 	# Update current_target_type for informational purposes but do not instantiate or start anything
 	if saved_ble_ready_content.has("targetType"):
 		current_target_type = saved_ble_ready_content["targetType"]
@@ -761,21 +780,17 @@ func _on_ble_ready_command(content: Dictionary):
 		else:
 			if DEBUG_ENABLED:
 				print("[DrillsNetwork] Unknown targetType: ", current_target_type, ", using default")
+	else:
+		# No targetType provided: pick a default for the current game mode
+		if valid_targets_by_mode.has(game_mode) and valid_targets_by_mode[game_mode].size() > 0:
+			current_target_type = valid_targets_by_mode[game_mode][0]
+			if target_type_to_scene.has(current_target_type):
+				target_scene = load(target_type_to_scene[current_target_type])
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] No targetType provided; defaulting to '", current_target_type, "' for game_mode '", game_mode, "'")
 
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] BLE ready parameters saved: ", saved_ble_ready_content)
-
-	# Set game mode from ready command
-	game_mode = normalize_game_mode(saved_ble_ready_content.get("mode", "ipsc"))
-	
-	# Validate game mode
-	if not valid_game_modes.has(game_mode):
-		game_mode = "ipsc"  # Default to ipsc if invalid
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Invalid game_mode, defaulting to 'ipsc'")
-	
-	if DEBUG_ENABLED:
-		print("[DrillsNetwork] Game mode set to: ", game_mode)
 
 	# Acknowledge the ready command back to sender by forwarding a netlink message
 	# Format: {"type":"netlink","action":"forward","device":"A","content":"ready"}
@@ -814,6 +829,13 @@ func _on_ble_start_command(content: Dictionary) -> void:
 		merged[k] = saved_ble_ready_content[k]
 	for k in content.keys():
 		merged[k] = content[k]
+
+	# Ensure game_mode reflects the merged payload before validating targetType
+	game_mode = normalize_game_mode(merged.get("mode", game_mode))
+	if not valid_game_modes.has(game_mode):
+		game_mode = "ipsc"
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Invalid game_mode in start payload, defaulting to 'ipsc'")
 
 	# Determine isFirst from ready command
 	is_first = merged.get("isFirst", false)

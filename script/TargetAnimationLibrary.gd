@@ -102,6 +102,31 @@ func apply_animation(target: Node, animation_name: String, custom_duration: floa
 	var config = AnimationConfig.new(template.action, duration, start_delay)
 	return _apply_animation_config(target, config, animation_name)
 
+
+# Apply the first-frame pose of a predefined animation to a target.
+# This is useful to prevent an initial "jump" (e.g. target spawns centered, then instantly snaps
+# to the animation's start position when the animation begins).
+func apply_start_pose(target: Node, animation_name: String) -> void:
+	if not target:
+		return
+	if not (target is Node2D):
+		return
+
+	var templates = _get_animation_templates()
+	if not animation_name in templates:
+		return
+
+	var template = templates[animation_name]
+	match template.action:
+		AnimationAction.SWING_LEFT:
+			# Keep in sync with _create_swing_animation(direction = -1)
+			(target as Node2D).position = Vector2(360, 0)
+		AnimationAction.SWING_RIGHT:
+			# Keep in sync with _create_swing_animation(direction = 1)
+			(target as Node2D).position = Vector2(-440, 0)
+		_:
+			pass
+
 # Internal method to apply animation configuration
 func _apply_animation_config(target: Node, config: AnimationConfig, animation_name: String) -> String:
 	var animation_player = target.get_node_or_null("AnimationPlayer")
@@ -192,11 +217,11 @@ func _create_run_through_animation(animation: Animation, config: AnimationConfig
 
 # Create swing animation (appear rotated, disappear)
 func _create_swing_animation(animation: Animation, config: AnimationConfig, direction: int):
-	var max_rotation = PI/6 * config.amplitude * direction  # 30 degrees max
+	# var max_rotation = PI/12 * config.amplitude * direction  # 15 degrees max
 
 	# Position track (fixed position)
-	var pos_start = Vector2(-650, 0) if direction == 1 else Vector2(650, 0)
-	var pos_end = Vector2(-325, 0) if direction == 1 else Vector2(325, 0)
+	var pos_start = Vector2(-440, 0) if direction == 1 else Vector2(360, 0)
+	var pos_end = Vector2(-80, 0) if direction == 1 else Vector2(0, 0)
 	var position_track = animation.add_track(Animation.TYPE_VALUE)
 	animation.track_set_path(position_track, ".:position")
 	animation.track_insert_key(position_track, config.start_delay, pos_start)
@@ -204,20 +229,20 @@ func _create_swing_animation(animation: Animation, config: AnimationConfig, dire
 	animation.track_insert_key(position_track, config.duration + config.start_delay, pos_start)
 
 	# Rotation track
-	var rotation_track = animation.add_track(Animation.TYPE_VALUE)
-	animation.track_set_path(rotation_track, ".:rotation")
-	animation.track_insert_key(rotation_track, config.start_delay, 0)
-	animation.track_insert_key(rotation_track, (config.start_delay + config.duration)/2, max_rotation)
-	animation.track_insert_key(rotation_track, config.duration + config.start_delay, 0)
+	# var rotation_track = animation.add_track(Animation.TYPE_VALUE)
+	# animation.track_set_path(rotation_track, ".:rotation")
+	# animation.track_insert_key(rotation_track, config.start_delay, 0)
+	# animation.track_insert_key(rotation_track, (config.start_delay + config.duration)/2, max_rotation)
+	# animation.track_insert_key(rotation_track, config.duration + config.start_delay, 0)
 
 # Create up animation (show from bottom, stop at 1/3 visible)
 func _create_up_animation(animation: Animation, config: AnimationConfig):
-	var screen_size = Vector2(720, 1280)  # Game viewport size
+	var _screen_size = Vector2(720, 1280)  # Game viewport size
 	# Assuming target height is roughly 200-300 pixels, 1/3 visible means 2/3 covered
 	# Start position: target mostly below screen (y positive is down in Godot)
-	var start_y = screen_size.y + 200 * config.amplitude
+	var start_y = 1280 + 200 * config.amplitude
 	# End position: 1/3 of target visible at bottom (target top at screen bottom - 1/3 target height)
-	var end_y = screen_size.y - 100 * config.amplitude  # Adjust based on typical target size
+	var end_y = 1280 - 100 * config.amplitude  # Adjust based on typical target size
 
 	# Position Y track for moving up
 	var position_track = animation.add_track(Animation.TYPE_VALUE)
@@ -234,7 +259,7 @@ func _create_up_animation(animation: Animation, config: AnimationConfig):
 
 # Create down animation (show from top, stop at 1/3 visible)
 func _create_down_animation(animation: Animation, config: AnimationConfig):
-	var screen_size = Vector2(720, 1280)  # Game viewport size
+	var _screen_size = Vector2(720, 1280)  # Game viewport size
 	# Start position: target mostly above screen (y negative is up in Godot)
 	var start_y = -200 * config.amplitude
 	# End position: 1/3 of target visible at top (target bottom at screen top + 1/3 target height)

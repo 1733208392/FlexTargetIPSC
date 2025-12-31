@@ -1,13 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://um1c6ifqwor4"]
+[gd_scene load_steps=2 format=3 uid="uid://um1c6ifqwor4"]
 
-[ext_resource type="PackedScene" uid="uid://6nm0fwntnbky" path="res://scene/ipsc_mini_rotate.tscn" id="1_1tiho"]
-[ext_resource type="PackedScene" uid="uid://donwma5fr4pur" path="res://scene/targets/idpa_rotation.tscn" id="1_32nkg"]
+[ext_resource type="PackedScene" uid="uid://cr8ffj6ipdayt" path="res://scene/targets/cqb_swing.tscn" id="1_1tiho"]
 
 [node name="Node2D" type="Node2D"]
 
-[node name="IDPA" parent="." instance=ExtResource("1_32nkg")]
-position = Vector2(-82, 710)
-
-[node name="IPSCMiniRotate" parent="." instance=ExtResource("1_1tiho")]
-visible = false
-position = Vector2(216, 710)
+[node name="CQB" parent="." instance=ExtResource("1_1tiho")]
+position = Vector2(360, 640)
