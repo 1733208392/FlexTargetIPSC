@@ -383,6 +383,10 @@ func spawn_target():
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] WARNING: Target does not have target_hit signal")
 	
+	# Connect to animation library's target_swapped signal for flash_sequence animations
+	if animation_lib and not animation_lib.target_swapped.is_connected(_on_animation_target_swapped):
+		animation_lib.target_swapped.connect(_on_animation_target_swapped)
+	
 	# Connect performance tracker to our target_hit signal
 	target_hit.connect(performance_tracker._on_target_hit)
 	
@@ -474,6 +478,32 @@ func _on_final_target_hit(hit_position: Vector2):
 	else:
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] HttpService not available; cannot send end ack")
+
+func _on_animation_target_swapped(old_target: Node, new_target: Node):
+	"""Handle target swap during flash_sequence animation.
+	
+	Disconnects hit signal from old target and connects to new target.
+	"""
+	if DEBUG_ENABLED:
+		var old_name = str(old_target.name) if old_target else "null"
+		var new_name = str(new_target.name) if new_target else "null"
+		print("[DrillsNetwork] Animation target swapped: old=", old_name, ", new=", new_name)
+	
+	# Update target_instance reference to point to new target
+	if old_target == target_instance:
+		target_instance = new_target
+	
+	# Disconnect signal from old target
+	if old_target and old_target.has_signal("target_hit"):
+		if old_target.target_hit.is_connected(_on_target_hit):
+			old_target.target_hit.disconnect(_on_target_hit)
+	
+	# Connect signal to new target
+	if new_target and new_target.has_signal("target_hit"):
+		if not new_target.target_hit.is_connected(_on_target_hit):
+			new_target.target_hit.connect(_on_target_hit)
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Connected to new target_hit signal")
 
 func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or_hit_pos = null, target_rot = null, t: int = 0):
 	"""Handle target hit - supports different target signal signatures.
@@ -605,7 +635,13 @@ func start_drill_timer():
 	if animation_lib and current_animation_action.size() > 0:
 		# Prime the start pose first to prevent an initial jump when the animation begins
 		animation_lib.apply_start_pose(target_instance, current_animation_action.get("name", ""))
-		animation_lib.apply_animation(target_instance, current_animation_action.get("name", ""), current_animation_action.get("duration", -1.0))
+		
+		# For flash_sequence animations, pass parent container for scene swapping
+		var animation_name = current_animation_action.get("name", "")
+		if animation_name == "disguised_enemy_flash":
+			animation_lib.apply_animation(target_instance, animation_name, current_animation_action.get("duration", -1.0), 0.0, center_container)
+		else:
+			animation_lib.apply_animation(target_instance, animation_name, current_animation_action.get("duration", -1.0))
 
 func _process(_delta):
 	"""Update timer"""

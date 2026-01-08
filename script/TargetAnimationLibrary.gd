@@ -6,6 +6,12 @@ extends Node
 
 class_name TargetAnimationLibrary
 
+# Signal emitted when a scene is swapped during flash_sequence animation
+signal target_swapped(old_target: Node, new_target: Node)
+
+# Parent container reference for scene swapping (set when needed)
+var animation_parent: Node = null
+
 # Configurable default durations for animations (in seconds)
 @export var flash_duration: float = 3.0
 @export var run_through_duration: float = 2.0
@@ -23,6 +29,7 @@ enum AnimationAction {
 	SWING_RIGHT,     # Appear rotated from right, disappear after duration
 	UP,              # Show target from bottom, stop at 1/3 visible
 	DOWN,            # Show target from top, stop at 1/3 visible
+	FLASH_SEQUENCE,  # Sequence of scene swaps with specified durations
 }
 
 # Animation configuration structure
@@ -39,6 +46,13 @@ class AnimationConfig:
 		action = p_action
 		duration = p_duration
 		start_delay = p_start_delay
+
+# Flash sequence configuration
+class FlashSequenceConfig extends AnimationConfig:
+	var sequence_steps: Array = []  # [{\"scene\": \"path/to/scene.tscn\", \"duration\": 3.0}, ...]
+
+	func _init(p_duration: float = 0.0, p_start_delay: float = 0.0):
+		super(AnimationAction.FLASH_SEQUENCE, p_duration, p_start_delay)
 
 # Predefined animation templates (dynamically generated)
 func _get_animation_templates() -> Dictionary:
@@ -77,6 +91,15 @@ func _get_animation_templates() -> Dictionary:
 			"action": AnimationAction.DOWN,
 			"default_duration": down_duration,
 			"description": "Show target from top, stop at 1/3 visible"
+		},
+		"disguised_enemy_flash": {
+			"action": AnimationAction.FLASH_SEQUENCE,
+			"default_duration": 0.0,  # Duration is sum of sequence steps
+			"description": "Flash sequence: disguised_enemy_surrender (3s) → disguised_enemy (3s)",
+			"sequence_steps": [
+				{"scene": "res://scene/targets/disguised_enemy_surrender.tscn", "duration": 3.0},
+				{"scene": "res://scene/targets/disguised_enemy.tscn", "duration": 3.0}
+			]
 		}
 	}
 
@@ -85,8 +108,9 @@ func _get_animation_templates() -> Dictionary:
 # animation_name: Name of the predefined animation (e.g., "flash", "run_through")
 # custom_duration: Override the default duration (optional)
 # start_delay: Delay before animation starts (optional)
+# parent_container: Parent container for scene swapping in flash_sequence (optional, required for flash_sequence)
 # Returns: AnimationPlayer animation name that was created
-func apply_animation(target: Node, animation_name: String, custom_duration: float = -1.0, start_delay: float = 0.0) -> String:
+func apply_animation(target: Node, animation_name: String, custom_duration: float = -1.0, start_delay: float = 0.0, parent_container: Node = null) -> String:
 	if not target:
 		push_error("TargetAnimationLibrary: Target is null")
 		return ""
@@ -97,6 +121,23 @@ func apply_animation(target: Node, animation_name: String, custom_duration: floa
 		return ""
 
 	var template = templates[animation_name]
+	
+	# Handle flash_sequence specifically
+	if template.action == AnimationAction.FLASH_SEQUENCE:
+		if not parent_container:
+			push_error("TargetAnimationLibrary: flash_sequence requires parent_container parameter")
+			return ""
+		
+		animation_parent = parent_container
+		
+		var flash_config = FlashSequenceConfig.new(0.0, start_delay)
+		if "sequence_steps" in template:
+			flash_config.sequence_steps = template.sequence_steps
+			# Calculate total duration from sequence steps
+			for step in flash_config.sequence_steps:
+				flash_config.duration += step.duration
+		return _apply_animation_config(target, flash_config, animation_name)
+	
 	var duration = custom_duration if custom_duration > 0 else template.default_duration
 
 	var config = AnimationConfig.new(template.action, duration, start_delay)
@@ -129,6 +170,10 @@ func apply_start_pose(target: Node, animation_name: String) -> void:
 
 # Internal method to apply animation configuration
 func _apply_animation_config(target: Node, config: AnimationConfig, animation_name: String) -> String:
+	# Special handling for FLASH_SEQUENCE - use Tween-based approach
+	if config.action == AnimationAction.FLASH_SEQUENCE:
+		return _apply_flash_sequence(target, config as FlashSequenceConfig)
+	
 	var animation_player = target.get_node_or_null("AnimationPlayer")
 	if not animation_player:
 		push_error("TargetAnimationLibrary: Target does not have AnimationPlayer")
@@ -183,6 +228,51 @@ func _apply_animation_config(target: Node, config: AnimationConfig, animation_na
 	else:
 		animation_player.play(unique_name)
 
+	return unique_name
+
+# Apply flash sequence animation using Tween for scene swaps
+func _apply_flash_sequence(target: Node, config: FlashSequenceConfig) -> String:
+	if config.sequence_steps.is_empty():
+		push_error("TargetAnimationLibrary: Flash sequence has no steps")
+		return ""
+	
+	if not target is Node2D:
+		push_error("TargetAnimationLibrary: Target must be Node2D for flash_sequence")
+		return ""
+	
+	var target_position = (target as Node2D).position
+	var target_ref = {"current": target}  # Use dict to store mutable reference
+	var unique_name = "flash_sequence_" + str(Time.get_ticks_msec())
+	
+	# Create a tween to handle scene swaps
+	var tween = create_tween()
+	if config.start_delay > 0:
+		tween.tween_callback(func(): pass).set_delay(config.start_delay)
+	
+	# First step: show the initial scene
+	if config.sequence_steps.size() > 0:
+		var first_step = config.sequence_steps[0]
+		tween.tween_callback(func(): 
+			# Swap to first scene if it's different from current
+			if first_step.scene != "":
+				target_ref["current"] = _swap_target_scene(target_ref["current"], first_step.scene, target_position)
+		)
+		
+		# Wait for the first step duration
+		tween.tween_callback(func(): pass).set_delay(first_step.duration)
+	
+	# Subsequent steps
+	for i in range(1, config.sequence_steps.size()):
+		var step = config.sequence_steps[i]
+		tween.tween_callback(func():
+			if step.scene != "":
+				target_ref["current"] = _swap_target_scene(target_ref["current"], step.scene, target_position)
+		)
+		
+		# Wait for this step duration (except the last one doesn't need explicit wait)
+		if i < config.sequence_steps.size() - 1:
+			tween.tween_callback(func(): pass).set_delay(step.duration)
+	
 	return unique_name
 
 # Create flash animation (show then disappear)
@@ -277,6 +367,55 @@ func _create_down_animation(animation: Animation, config: AnimationConfig):
 	animation.track_insert_key(modulate_track, config.start_delay, Color(1, 1, 1, 0))
 	animation.track_insert_key(modulate_track, config.start_delay + 0.2, Color(1, 1, 1, 1))
 	animation.track_insert_key(modulate_track, config.duration + config.start_delay, Color(1, 1, 1, 1))
+
+# Create flash sequence animation (swap scenes at specified times)
+func _create_flash_sequence_animation(animation: Animation, config: FlashSequenceConfig):
+	# For flash_sequence, we don't use animation tracks
+	# Instead, we create a simple placeholder animation and handle scene swaps via Tween
+	# Add a dummy modulate track so the animation has some content
+	var modulate_track = animation.add_track(Animation.TYPE_VALUE)
+	animation.track_set_path(modulate_track, ".:modulate")
+	animation.track_insert_key(modulate_track, config.start_delay, Color(1, 1, 1, 1))
+	animation.track_insert_key(modulate_track, config.duration + config.start_delay, Color(1, 1, 1, 1))
+
+# Helper method called by animation tracks to swap scenes
+func _on_flash_sequence_swap(_scene_path: String, _swap_time: float):
+	# This will be called during animation playback
+	# The actual swap needs to happen on the target node that triggered the animation
+	pass
+
+# Swap target scene in the parent container
+func _swap_target_scene(old_target: Node, scene_path: String, position: Vector2) -> Node:
+	if not animation_parent:
+		push_error("TargetAnimationLibrary: animation_parent not set for scene swap")
+		return null
+	
+	# Load the new scene
+	var scene = load(scene_path)
+	if not scene:
+		push_error("TargetAnimationLibrary: Failed to load scene at " + scene_path)
+		return null
+	
+	# Instantiate the new target
+	var new_target = scene.instantiate()
+	if not new_target:
+		push_error("TargetAnimationLibrary: Failed to instantiate scene " + scene_path)
+		return null
+	
+	# Position the new target at the same location as the old one
+	if new_target is Node2D:
+		(new_target as Node2D).position = position
+	
+	# Add new target to parent container
+	animation_parent.add_child(new_target)
+	
+	# Queue the old target for deletion
+	old_target.queue_free()
+	
+	# Emit signal to notify caller about the swap
+	target_swapped.emit(old_target, new_target)
+	
+	return new_target
 
 # Get list of available animation names
 func get_available_animations() -> Array[String]:
