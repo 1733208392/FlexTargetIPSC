@@ -1,13 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://dl7hsl4ovohf2"]
+[gd_scene load_steps=2 format=3 uid="uid://dl7hsl4ovohf2"]
 
-[ext_resource type="PackedScene" uid="uid://cxd2xq70pq0ln" path="res://scene/targets/mozambique.tscn" id="1_qky4i"]
-[ext_resource type="PackedScene" uid="uid://bjwl4ygsr211v" path="res://scene/targets/3paddles_simple.tscn" id="2_x62mf"]
+[ext_resource type="PackedScene" uid="uid://wywxnhgy0f04" path="res://scene/targets/disguised_enemy_surrender.tscn" id="3_7g8re"]
 
 [node name="Node2D" type="Node2D"]
 
-[node name="Mosambique" parent="." instance=ExtResource("1_qky4i")]
-visible = false
-position = Vector2(364, 621)
-
-[node name="3Paddles" parent="." instance=ExtResource("2_x62mf")]
-position = Vector2(362, 653)
+[node name="Figure" parent="." instance=ExtResource("3_7g8re")]
+position = Vector2(386, 766)

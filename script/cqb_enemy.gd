@@ -51,11 +51,10 @@ var activity_cooldown_timer: float = 0.0
 var activity_cooldown_duration: float = 1.0  # Resume after 1 second of low activity
 var animation_paused: bool = false
 
-# Scoring system
-var total_score: int = 0
-@export var drill_active: bool = false  # Flag to ignore shots before drill starts
+# Scoring system removed - scoring is now handled by the mobile app
+@export var drill_active: bool = true  # Flag to ignore shots before drill starts
 const ScoreUtils = preload("res://script/score_utils.gd")
-signal target_hit(zone: String, points: int, hit_position: Vector2)
+signal cqb_target_hit(zone: String, hit_position: Vector2, t: int)
 signal target_disappeared
 
 func _ready():
@@ -71,18 +70,21 @@ func _ready():
 		ws_listener.bullet_hit.connect(_on_websocket_bullet_hit)
 
 func _on_websocket_bullet_hit(pos: Vector2, _a: int = 0, _t: int = 0) -> void:
+	print("[CQB_Enemy] _on_websocket_bullet_hit called with pos=", pos, " drill_active=", drill_active, " t=", _t)
 	# Ignore shots if drill is not active yet
 	if not drill_active:
+		print("[CQB_Enemy] drill_active is false - ignoring shot")
 		return
 
 	# Check if bullet spawning is enabled
 	var ws_listener = get_node_or_null("/root/WebSocketListener")
 	if ws_listener and not ws_listener.bullet_spawning_enabled:
+		print("[CQB_Enemy] bullet_spawning_enabled is false - ignoring shot")
 		return
 
 	# CQB front targets do not support rotating-parent scenes.
 	# Always use the fast path.
-	handle_websocket_bullet_hit_fast(pos)
+	handle_websocket_bullet_hit_fast(pos, _t)
 
 func _input(event: InputEvent):
 	"""Handle mouse clicks to simulate websocket bullet hits for testing"""
@@ -115,11 +117,6 @@ func _on_input_event(_viewport, event, _shape_idx):
 			return
 
 
-func _get_points_for_zone(zone_hit: String) -> int:
-	# CQB front scoring: head/body are both worth 1 point.
-	return 1 if zone_hit == "head" or zone_hit == "body" else 0
-
-
 func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 	# Find the collision shape by name
 	var zone_node = get_node(zone_name)
@@ -138,16 +135,19 @@ func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 			var rect = shape.get_rect()
 			rect.position -= shape.size / 2  # Center the rect
 			return rect.has_point(local_point)
+		elif shape is CapsuleShape2D:
+			# For capsule shapes, check if point is within the capsule bounds
+			var half_height = shape.height / 2.0
+			var radius = shape.radius
+			# Check if point is within the capsule's bounding box first (quick rejection)
+			if abs(local_point.x) > radius or abs(local_point.y) > half_height:
+				return false
+			# For points within the box, check against the rounded capsule edges
+			var closest_y = clamp(local_point.y, -half_height, half_height)
+			var distance_to_axis = local_point.distance_to(Vector2(0, closest_y))
+			return distance_to_axis <= radius
 		# Add other shape types if needed
 	return false
-
-func get_total_score() -> int:
-	"""Get the current total score for this target"""
-	return total_score
-
-func reset_score():
-	"""Reset the score to zero"""
-	total_score = 0
 
 func play_disappearing_animation():
 	"""Start the disappearing animation and disable collision detection"""
@@ -191,9 +191,6 @@ func reset_target():
 	modulate = Color.WHITE
 	rotation = 0.0
 	scale = Vector2.ONE
-
-	# Reset score
-	reset_score()
 
 	# Reset bullet hole pool - hide all active holes
 	reset_bullet_hole_pool()
@@ -351,19 +348,22 @@ func spawn_bullet_hole(local_position: Vector2):
 	multimesh.visible_instance_count = current_count + 1
 	active_instances[texture_index] = current_count + 1
 
-func handle_websocket_bullet_hit_fast(world_pos: Vector2):
+func handle_websocket_bullet_hit_fast(world_pos: Vector2, t: int = 0):
 	"""Fast path for WebSocket bullet hits - check zones first, then spawn appropriate effects"""
+
+	print("[CQB_Enemy] handle_websocket_bullet_hit_fast called with world_pos=", world_pos)
 
 	# Don't process if target is disappearing
 	if is_disappearing:
+		print("[CQB_Enemy] Target is disappearing - ignoring hit")
 		return
 
 	# Convert world position to local coordinates
 	var local_pos = to_local(world_pos)
+	print("[CQB_Enemy] Converted to local_pos=", local_pos)
 
-	# 1. FIRST: Determine hit zone and scoring
+	# 1. FIRST: Determine hit zone
 	var zone_hit = ""
-	var points = 0
 	var is_target_hit = false
 
 	# Check which zone was hit (highest priority first)
@@ -377,19 +377,15 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2):
 		zone_hit = "miss"
 		is_target_hit = false
 
-	points = _get_points_for_zone(zone_hit)
-
 	# 2. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if is_target_hit:
 		spawn_bullet_hole(local_pos)
-		play_impact_sound_at_position_throttled(world_pos, Time.get_ticks_msec() / 1000.0)	
 	# 3. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
-	else:
-		spawn_bullet_effects_at_position(world_pos, is_target_hit)
+	spawn_bullet_effects_at_position(world_pos, is_target_hit)
 
-	# 4. Update score and emit signal
-	total_score += points
-	target_hit.emit(zone_hit, points, world_pos)
+	# 4. Emit signal with hit zone and position
+	print("[CQB_Enemy] Emitting cqb_target_hit signal: zone=", zone_hit, " world_pos=", world_pos, " t=", t)
+	cqb_target_hit.emit(zone_hit, world_pos, t)
 
 	# 5. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:
@@ -508,7 +504,7 @@ func get_cached_rotation_angle() -> float:
 
 	return 0.0
 
-func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
+func handle_websocket_bullet_hit_rotating(world_pos: Vector2, t: int = 0) -> void:
 	"""Optimized hit processing for rotating targets without bullet spawning"""
 
 	# Don't process if target is disappearing
@@ -522,9 +518,8 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 	# Convert world position to local coordinates (this handles rotation automatically)
 	var local_pos = to_local(world_pos)
 
-	# Determine hit zone and scoring
+	# Determine hit zone
 	var zone_hit = ""
-	var points = 0
 	var is_target_hit = false
 
 	# CQB front does not support rotating-parent scenes; keep logic consistent anyway.
@@ -538,17 +533,14 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2) -> void:
 		zone_hit = "miss"
 		is_target_hit = false
 
-	points = _get_points_for_zone(zone_hit)
-
 	# 3. CONDITIONAL: Only spawn bullet hole if target was actually hit
 	if is_target_hit:
 		spawn_bullet_hole(local_pos)
 	# 4. ALWAYS: Spawn bullet effects (impact/sound) but skip smoke for misses
 	spawn_bullet_effects_at_position(world_pos, is_target_hit)
 
-	# 5. Update score and emit signal
-	total_score += points
-	target_hit.emit(zone_hit, points, world_pos)
+	# 5. Emit signal with hit zone and position
+	cqb_target_hit.emit(zone_hit, world_pos, t)
 
 	# 6. Increment shot count and check for disappearing animation (only for valid target hits)
 	if is_target_hit:

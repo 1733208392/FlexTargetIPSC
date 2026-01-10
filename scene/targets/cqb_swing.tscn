@@ -46,7 +46,7 @@ height = 491.73663
 collision_layer = 7
 collision_mask = 0
 script = ExtResource("1_v85u7")
-drill_active = true
+metadata/target_type = "cqb_swing"
 
 [node name="TargetSprite" type="Sprite2D" parent="."]
 scale = Vector2(1.5, 1.5)

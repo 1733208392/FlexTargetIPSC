@@ -22,14 +22,15 @@ var target_type_to_scene = {
 	"idpa_ns": "res://scene/targets/idpa_ns.tscn",
 	"cqb_front": "res://scene/targets/cqb_front.tscn",
 	"cqb_move": "res://scene/targets/cqb_moving.tscn",
-	"cqb_swing": "res://scene/targets/cqb_swing.tscn"
+	"cqb_swing": "res://scene/targets/cqb_swing.tscn",
+	"disguised_enemy": "res://scene/targets/disguised_enemy.tscn"
 }
 
 # Valid target types for each game mode
 var valid_targets_by_mode = {
 	"ipsc": ["ipsc", "special_1", "special_2", "hostage", "rotation", "paddle", "popper", "final"],
 	"idpa": ["idpa", "idpa_black_1", "idpa_black_2", "idpa_ns", "hostage", "paddle", "popper", "final"],
-	"cqb": ["cqb_front", "cqb_move", "cqb_swing"]
+	"cqb": ["cqb_front", "cqb_move", "cqb_swing", "disguised_enemy"]
 }
 
 # Valid game modes
@@ -103,7 +104,7 @@ var animation_lib: Node = null  # Reference to TargetAnimationLibrary
 
 # Performance tracking
 signal drills_finished
-signal target_hit(target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int, target_position: Vector2, t: int)
+signal target_hit(target_instance: Node, target_type: String, hit_position: Vector2, hit_area: String, rotation_angle: float, repeat: int, target_position: Vector2, t: int)
 
 # UI update signals
 signal ui_timer_update(elapsed_seconds: float)
@@ -362,6 +363,9 @@ func spawn_target():
 	target_instance = target_scene.instantiate()
 	center_container.add_child(target_instance)
 
+	# Store target type as metadata for later retrieval by performance tracker
+	target_instance.set_meta("target_type", current_target_type)
+
 	# CQB swing: apply the animation start pose immediately to avoid a visible snap
 	if normalize_game_mode(game_mode) == "cqb" and animation_lib and current_animation_action.size() > 0:
 		animation_lib.apply_start_pose(target_instance, current_animation_action.get("name", ""))
@@ -374,14 +378,30 @@ func spawn_target():
 	if target_instance.has_method("set"):
 		target_instance.set("drill_active", false)
 	
-	# Connect to target hit signal if it exists
-	if target_instance.has_signal("target_hit"):
-		target_instance.target_hit.connect(_on_target_hit)
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Connected to target_hit signal")
+	# Connect to appropriate signal based on target type
+	if normalize_game_mode(game_mode) == "cqb" and target_instance.has_signal("cqb_target_hit"):
+		# CQB targets use the cqb_target_hit signal (2 params: zone, hit_position)
+		print("[DrillsNetwork] spawn_target: CQB target detected, connecting to cqb_target_hit signal")
+		var err = target_instance.cqb_target_hit.connect(_on_cqb_target_hit)
+		if err == OK:
+			print("[DrillsNetwork] spawn_target: ✓ Successfully connected cqb_target_hit signal!")
+		else:
+			print("[DrillsNetwork] spawn_target: ✗ FAILED to connect - Error code: ", err)
+	elif target_instance.has_signal("target_hit"):
+		# Non-CQB targets use the standard target_hit signal
+		print("[DrillsNetwork] spawn_target: Standard target detected, connecting to target_hit signal")
+		var err = target_instance.target_hit.connect(_on_target_hit)
+		if err == OK:
+			print("[DrillsNetwork] spawn_target: ✓ Successfully connected target_hit signal!")
+		else:
+			print("[DrillsNetwork] spawn_target: ✗ FAILED to connect - Error code: ", err)
 	else:
+		print("[DrillsNetwork] spawn_target: Target does NOT have target_hit or cqb_target_hit signal!")
+		print("[DrillsNetwork] spawn_target: Available signals on target:")
+		for sig in target_instance.get_signal_list():
+			print("  - ", sig.name, "(", sig.args, ")")
 		if DEBUG_ENABLED:
-			print("[DrillsNetwork] WARNING: Target does not have target_hit signal")
+			print("[DrillsNetwork] WARNING: Target does not have expected signal")
 	
 	# Connect to animation library's target_swapped signal for flash_sequence animations
 	if animation_lib and not animation_lib.target_swapped.is_connected(_on_animation_target_swapped):
@@ -395,6 +415,7 @@ func spawn_target():
 
 func start_drill():
 	"""Start the drill after delay"""
+	print("[DrillsNetwork] start_drill called!")
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting drill after delay")
 	spawn_target()
@@ -482,37 +503,59 @@ func _on_final_target_hit(hit_position: Vector2):
 func _on_animation_target_swapped(old_target: Node, new_target: Node):
 	"""Handle target swap during flash_sequence animation.
 	
-	Disconnects hit signal from old target and connects to new target.
+	For flash_sequence animations like disguised_enemy_flash, the visual representation changes
+	but the actual gameplay target (that receives shots) remains the same. However, the animation
+	library might be recreating nodes, so we need to ensure the signal stays connected to
+	the target that's actually receiving shots.
 	"""
 	if DEBUG_ENABLED:
 		var old_name = str(old_target.name) if old_target else "null"
 		var new_name = str(new_target.name) if new_target else "null"
 		print("[DrillsNetwork] Animation target swapped: old=", old_name, ", new=", new_name)
 	
-	# Update target_instance reference to point to new target
-	if old_target == target_instance:
-		target_instance = new_target
+	# The old_target is likely a visual placeholder (Figure, etc)
+	# The new_target might be the actual CQB gameplay target
+	# We need to ensure the signal is connected to whichever target can receive shots
 	
-	# Disconnect signal from old target
-	if old_target and old_target.has_signal("target_hit"):
-		if old_target.target_hit.is_connected(_on_target_hit):
+	# Check if old_target has target_hit or cqb_target_hit signal and disconnect if needed
+	if old_target:
+		if old_target.has_signal("cqb_target_hit") and old_target.cqb_target_hit.is_connected(_on_cqb_target_hit):
+			print("[DrillsNetwork] Disconnecting cqb_target_hit signal from old_target: ", old_target.name)
+			old_target.cqb_target_hit.disconnect(_on_cqb_target_hit)
+		elif old_target.has_signal("target_hit") and old_target.target_hit.is_connected(_on_target_hit):
+			print("[DrillsNetwork] Disconnecting target_hit signal from old_target: ", old_target.name)
 			old_target.target_hit.disconnect(_on_target_hit)
 	
-	# Connect signal to new target
-	if new_target and new_target.has_signal("target_hit"):
+	# Check if new_target has cqb_target_hit signal and connect if needed
+	if new_target and new_target.has_signal("cqb_target_hit"):
+		if not new_target.cqb_target_hit.is_connected(_on_cqb_target_hit):
+			print("[DrillsNetwork] Connecting cqb_target_hit signal to new_target: ", new_target.name)
+			new_target.cqb_target_hit.connect(_on_cqb_target_hit)
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Connected to cqb_target_hit signal on new target")
+	elif new_target and new_target.has_signal("target_hit"):
 		if not new_target.target_hit.is_connected(_on_target_hit):
+			print("[DrillsNetwork] Connecting target_hit signal to new_target: ", new_target.name)
 			new_target.target_hit.connect(_on_target_hit)
-		if DEBUG_ENABLED:
-			print("[DrillsNetwork] Connected to new target_hit signal")
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] Connected to target_hit signal on new target")
+	
+	# Update target_instance to point to the node that can actually receive shots
+	if new_target and (new_target.has_signal("cqb_target_hit") or new_target.has_signal("target_hit")):
+		print("[DrillsNetwork] Updating target_instance to new_target: ", new_target.name)
+		target_instance = new_target
 
 func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or_hit_pos = null, target_rot = null, t: int = 0):
 	"""Handle target hit - supports different target signal signatures.
 	
 	Target signal signatures:
+	- CQB targets (new): (zone, hit_position) - points determined by app
 	- Simple targets (ipsc_mini, black variants, hostage, popper): (zone, points, hit_position, t)
 	- Container targets (paddle, 2poppers_simple): (id, zone, points, hit_position, t)
 	- Rotation target (ipsc_mini_rotate): (zone, points, hit_position, target_position, target_rotation, t)
 	"""
+	print("[DrillsNetwork] _on_target_hit CALLED with params: zone_or_id=", zone_or_id, " points_or_zone=", points_or_zone, " hit_pos_or_points=", hit_pos_or_points)
+	
 	# Ignore any shots after the drill has completed
 	if drill_completed:
 		if DEBUG_ENABLED:
@@ -532,7 +575,16 @@ func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or
 	var target_position: Vector2 = target_instance.global_position if target_instance else Vector2.ZERO
 	
 	# Determine target type and extract parameters accordingly
-	if target_pos_or_hit_pos is int:
+	if points_or_zone is Vector2 and hit_pos_or_points == null:
+		# CQB target style (new): (zone, hit_position)
+		# Only 2 parameters: zone is a string, points_or_zone is the hit_position Vector2
+		zone = zone_or_id as String
+		hit_position = points_or_zone as Vector2
+		points = 1 if zone != "miss" else 0  # Award 1 point for valid hits, 0 for misses
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] _on_target_hit: CQB target detected - zone=", zone, ", points=", points, ", hit_pos=", hit_position)
+		
+	elif target_pos_or_hit_pos is int:
 		# Simple target style: (zone, points, hit_position, t)
 		# The t value came as 4th parameter because signals pass all params in order
 		zone = zone_or_id as String
@@ -605,8 +657,70 @@ func _on_target_hit(zone_or_id, points_or_zone, hit_pos_or_points, target_pos_or
 	
 	# Emit for performance tracking
 	if DEBUG_ENABLED:
-		print("[DrillsNetwork] Emitting target_hit signal to performance tracker with t=", t)
-	emit_signal("target_hit", current_target_type, hit_position, zone, rotation_angle, current_repeat, target_position, t)
+		print("[DrillsNetwork] _on_target_hit: Emitting target_hit signal - target_type=", current_target_type, ", hit_area=", zone, ", hit_pos=", hit_position, ", t=", t)
+	emit_signal("target_hit", target_instance, current_target_type, hit_position, zone, rotation_angle, current_repeat, target_position, t)
+
+func _on_cqb_target_hit(zone: String, hit_position: Vector2, t: int = 0):
+	"""Handle CQB target hit - simplified handler for CQB targets.
+	
+	CQB targets emit cqb_target_hit(zone: String, hit_position: Vector2, t: int) with 3 parameters.
+	Points are determined by the mobile app based on target zones.
+"""
+	print("[DrillsNetwork] _on_cqb_target_hit CALLED with zone=", zone, " hit_position=", hit_position, " t=", t)
+	
+	# Ignore any shots after the drill has completed
+	if drill_completed:
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Ignoring CQB target hit because drill is completed")
+		return
+	
+	# Ignore shots that arrive before the timeout timer actually starts
+	if timeout_timer and timeout_timer.is_stopped():
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Ignoring CQB target hit because timeout timer has not started yet")
+		return
+	
+	# For CQB targets, points are 1 for valid hits, 0 for misses (determined by app)
+	var points = 1 if zone != "miss" else 0
+	total_score += points
+	
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] CQB target hit processed: zone=", zone, ", points=", points, ", hit_pos=", hit_position)
+	
+	# Track shots on the last target to trigger final spawn
+	if is_last and not final_target_spawned:
+		shots_on_last_target += 1
+		if DEBUG_ENABLED:
+			print("[DrillsNetwork] Last target hit! Shot count: ", shots_on_last_target, "/2")
+		
+		# Check if ending target is enabled in settings
+		var has_ending_target = false
+		if global_data and global_data.settings_dict.has("has_ending_target"):
+			has_ending_target = global_data.settings_dict.get("has_ending_target", false)
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] has_ending_target setting: ", has_ending_target)
+		else:
+			if DEBUG_ENABLED:
+				print("[DrillsNetwork] has_ending_target setting not found in GlobalData, using default: false")
+		
+		# Spawn final target after 2 shots on last target only if ending target is enabled
+		if shots_on_last_target >= 2:
+			if has_ending_target:
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Spawning final target after 2 shots on last target")
+				spawn_final_target()
+			else:
+				if DEBUG_ENABLED:
+					print("[DrillsNetwork] Ending target disabled in settings, waiting for mobile app to end the drill")
+				# Mark final_target_spawned to prevent re-entry, but don't complete the drill yet
+				final_target_spawned = true
+	
+	# Emit for performance tracking
+	# For CQB targets, hit_position serves as both hit_position and target_position
+	var target_position = target_instance.global_position if target_instance else Vector2.ZERO
+	if DEBUG_ENABLED:
+		print("[DrillsNetwork] _on_cqb_target_hit: Emitting target_hit signal - target_type=", current_target_type, ", hit_area=", zone, ", hit_pos=", hit_position, ", t=", t)
+	emit_signal("target_hit", target_instance, current_target_type, hit_position, zone, 0.0, current_repeat, target_position, t)
 
 func start_drill_timer():
 	"""Start the drill timer"""
@@ -633,15 +747,20 @@ func start_drill_timer():
 	
 	# Apply animation if configured
 	if animation_lib and current_animation_action.size() > 0:
+		print("[DrillsNetwork] start_drill_timer: Animation configured - applying animation: ", current_animation_action.get("name", ""))
 		# Prime the start pose first to prevent an initial jump when the animation begins
 		animation_lib.apply_start_pose(target_instance, current_animation_action.get("name", ""))
 		
 		# For flash_sequence animations, pass parent container for scene swapping
 		var animation_name = current_animation_action.get("name", "")
 		if animation_name == "disguised_enemy_flash":
+			print("[DrillsNetwork] start_drill_timer: Applying disguised_enemy_flash animation with container")
 			animation_lib.apply_animation(target_instance, animation_name, current_animation_action.get("duration", -1.0), 0.0, center_container)
 		else:
+			print("[DrillsNetwork] start_drill_timer: Applying animation without container")
 			animation_lib.apply_animation(target_instance, animation_name, current_animation_action.get("duration", -1.0))
+	else:
+		print("[DrillsNetwork] start_drill_timer: No animation configured (animation_lib=" + str(animation_lib != null) + ", action.size=" + str(current_animation_action.size()) + ")")
 
 func _process(_delta):
 	"""Update timer"""
@@ -951,11 +1070,15 @@ func _on_ble_start_command(content: Dictionary) -> void:
 	
 	# For CQB mode, spawn target now (on start command)
 	if normalize_game_mode(game_mode) == "cqb":
+		print("[DrillsNetwork] CQB mode detected - calling spawn_target()")
 		if DEBUG_ENABLED:
 			print("[DrillsNetwork] CQB mode: spawning target on start command")
 		spawn_target()
+	else:
+		print("[DrillsNetwork] NOT CQB mode (game_mode=" + game_mode + ") - skipping spawn_target() call in start command")
 	
 	# Start the drill timer immediately (target already spawned on ready, or just spawned for CQB)
+	print("[DrillsNetwork] Calling start_drill_timer()...")
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] Starting drill timer immediately")
 	start_drill_timer()

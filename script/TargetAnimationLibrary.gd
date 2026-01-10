@@ -249,29 +249,22 @@ func _apply_flash_sequence(target: Node, config: FlashSequenceConfig) -> String:
 	if config.start_delay > 0:
 		tween.tween_callback(func(): pass).set_delay(config.start_delay)
 	
-	# First step: show the initial scene
-	if config.sequence_steps.size() > 0:
-		var first_step = config.sequence_steps[0]
-		tween.tween_callback(func(): 
-			# Swap to first scene if it's different from current
-			if first_step.scene != "":
-				target_ref["current"] = _swap_target_scene(target_ref["current"], first_step.scene, target_position)
-		)
+	# Process all steps
+	for i in range(config.sequence_steps.size()):
+		# Capture step data by value to avoid closure reference issues
+		var step_scene = config.sequence_steps[i]["scene"]
+		var step_duration = config.sequence_steps[i]["duration"]
 		
-		# Wait for the first step duration
-		tween.tween_callback(func(): pass).set_delay(first_step.duration)
-	
-	# Subsequent steps
-	for i in range(1, config.sequence_steps.size()):
-		var step = config.sequence_steps[i]
+		# Swap to this scene
 		tween.tween_callback(func():
-			if step.scene != "":
-				target_ref["current"] = _swap_target_scene(target_ref["current"], step.scene, target_position)
+			# Verify the current target is still valid before swapping
+			if is_instance_valid(target_ref["current"]) and step_scene != "":
+				target_ref["current"] = _swap_target_scene(target_ref["current"], step_scene, target_position)
 		)
 		
-		# Wait for this step duration (except the last one doesn't need explicit wait)
+		# Wait for this step's duration (except after the last step)
 		if i < config.sequence_steps.size() - 1:
-			tween.tween_callback(func(): pass).set_delay(step.duration)
+			tween.tween_callback(func(): pass).set_delay(step_duration)
 	
 	return unique_name
 

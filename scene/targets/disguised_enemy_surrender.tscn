@@ -42,11 +42,11 @@ radius = 111.54372
 radius = 166.0
 height = 652.0
 
-[node name="CQB" type="Area2D"]
+[node name="Figure" type="Area2D"]
 collision_layer = 7
 collision_mask = 0
 script = ExtResource("1_fnai8")
-drill_active = true
+metadata/target_type = "disguised_enemy_surrender"
 
 [node name="TargetSprite" type="Sprite2D" parent="."]
 scale = Vector2(1.5, 1.5)
@@ -60,6 +60,7 @@ libraries = {
 [node name="head" type="CollisionShape2D" parent="."]
 position = Vector2(0, -317)
 shape = SubResource("CircleShape2D_qgphj")
+metadata/target_type = "disguised_enemy_surrender"
 
 [node name="body" type="CollisionShape2D" parent="."]
 position = Vector2(-5, 149)
