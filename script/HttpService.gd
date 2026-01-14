@@ -3,9 +3,11 @@ extends Node
 # Add this script as an autoload (singleton) in Project Settings > Autoload
 
 const DEBUG_DISABLED = true
+const OTA_USERAPP_DIR = "/srv/www/userapp"  # Directory for OTA downloads and files
+#const OTA_USERAPP_DIR = "/Users/kai/otatest"  # Directory for OTA downloads and files
 
 var base_url: String = "http://127.0.0.1"
-#var base_url: String = "http://192.168.0.109"
+#var base_url: String = "http://192.168.0.119"
 
 var sb = null  # Signal bus reference
 
@@ -19,10 +21,6 @@ func get_request(url: String, callback: Callable):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "GET " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -34,10 +32,6 @@ func start_game(callback: Callable, mode: String = "free", waiting: int = 0):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -51,10 +45,6 @@ func stop_game(callback: Callable):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -66,10 +56,6 @@ func shutdown(callback: Callable, mode: String = "free"):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -82,10 +68,6 @@ func volume_up(callback: Callable, mode: String = "free"):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -98,10 +80,6 @@ func volume_down(callback: Callable, mode: String = "free"):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -114,10 +92,6 @@ func post(url: String, data: Dictionary, callback: Callable):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -142,10 +116,6 @@ func save_game(callback: Callable, data_id: String, content: Variant, ns: String
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -163,10 +133,6 @@ func load_game(callback: Callable, data_id: String, ns: String = "default"):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -182,10 +148,6 @@ func wifi_scan(callback: Callable):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -202,10 +164,6 @@ func wifi_connect(callback: Callable, ssid: String, password: String):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -225,10 +183,6 @@ func netlink_config(callback: Callable, channel: int, target_name: String, workm
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -242,10 +196,6 @@ func netlink_start(callback: Callable):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -258,10 +208,6 @@ func netlink_stop(callback: Callable):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -274,16 +220,6 @@ func netlink_status(callback: Callable):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			if not DEBUG_DISABLED:
-				print("[HttpService] Emitting debug info for netlink_status:", debug_msg)
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
-		else:
-			if not DEBUG_DISABLED:
-				print("[HttpService] SignalBus not found, cannot emit debug info")
-		# Forward raw response to caller
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -298,10 +234,6 @@ func netlink_forward_data(callback: Callable, data: Dictionary):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var _body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Data: " + str(data)
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -314,10 +246,6 @@ func upgrade_engine(callback: Callable):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -333,7 +261,6 @@ func embedded_status(callback: Callable):
 		if sb:
 			var body_str = body.get_string_from_utf8()
 			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
 	)
@@ -355,10 +282,6 @@ func embedded_set_threshold(callback: Callable, value: int):
 	var http = HTTPRequest.new()
 	add_child(http)
 	http.request_completed.connect(func(result, response_code, headers, body):
-		if sb:
-			var body_str = body.get_string_from_utf8()
-			var debug_msg = "POST " + url + " - Result: " + str(result) + ", Code: " + str(response_code) + ", Body: " + body_str
-			sb.emit_onboard_debug_info(2, debug_msg, "HttpService")
 		# Only call callback if it's valid (not null/empty)
 		if callback and callback.is_valid():
 			callback.call(result, response_code, headers, body)
@@ -506,3 +429,253 @@ func _send_captured_image_bytes_internal(jpg_bytes: PackedByteArray, chunk_size_
 	
 	, start_data)
 	
+
+func download_and_verify(address: String, expected_checksum: String, version: String, callback: Callable):
+	"""Download file from address, save to OTA_USERAPP_DIR, verify SHA1 checksum.
+	Streams data directly to disk and defers callback until all resources are released.
+	
+	Args:
+		address: URL to download from (supports HTTP and HTTPS)
+		expected_checksum: SHA1 checksum to verify against
+		version: Version string to pass to callback
+		callback: Callable with signature (success: bool, version: String)
+	"""
+	var url = address
+	if not DEBUG_DISABLED:
+		print("[HttpService] Downloading from ", url, " for version: ", version)
+	
+	# Parse URL
+	var url_parts = url.split("://")
+	if url_parts.size() < 2:
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	var protocol = url_parts[0].to_lower()
+	var host_and_path = url_parts[1].split("/", false, 1)
+	var host = host_and_path[0]
+	var path = "/" + (host_and_path[1] if host_and_path.size() > 1 else "")
+	var port = 80
+	
+	# Determine port based on protocol
+	if protocol == "https":
+		port = 443
+	elif protocol != "http":
+		if not DEBUG_DISABLED:
+			print("[HttpService] Unsupported protocol: ", protocol)
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	# Emit initial progress
+	if sb:
+		sb.emit_download_progress(0.0)
+	
+	var http_client = HTTPClient.new()
+	var err = OK
+	if protocol == "https":
+		err = http_client.connect_to_host(host, port, TLSOptions.client())
+	else:
+		err = http_client.connect_to_host(host, port)
+	
+	if err != OK:
+		if not DEBUG_DISABLED:
+			print("[HttpService] Failed to connect to host: ", host, ":", port, " Error: ", err)
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	# Wait for connection
+	while http_client.get_status() == HTTPClient.STATUS_CONNECTING or http_client.get_status() == HTTPClient.STATUS_RESOLVING:
+		http_client.poll()
+		await get_tree().create_timer(0.01).timeout
+	
+	if http_client.get_status() != HTTPClient.STATUS_CONNECTED:
+		if not DEBUG_DISABLED:
+			print("[HttpService] Failed to establish connection. Status: ", http_client.get_status())
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	if not DEBUG_DISABLED:
+		print("[HttpService] Connected successfully, making request for: ", path)
+	
+	# Make request
+	err = http_client.request(HTTPClient.METHOD_GET, path, [])
+	if err != OK:
+		if not DEBUG_DISABLED:
+			print("[HttpService] Failed to send request. Error: ", err)
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	var total_size = 0
+	
+	while http_client.get_status() == HTTPClient.STATUS_REQUESTING:
+		http_client.poll()
+		await get_tree().create_timer(0.01).timeout
+	
+	if http_client.get_status() != HTTPClient.STATUS_BODY:
+		if not DEBUG_DISABLED:
+			print("[HttpService] Failed to receive response body. Status: ", http_client.get_status(), ", Response code: ", http_client.get_response_code())
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	# Get headers to find Content-Length
+	var headers = http_client.get_response_headers()
+	for header in headers:
+		if header.begins_with("Content-Length:"):
+			total_size = int(header.split(":")[1].strip_edges())
+			break
+	
+	if total_size == 0:
+		total_size = 1  # Avoid division by zero
+	
+	# Open file for streaming download
+	var file_path = OTA_USERAPP_DIR + "/downloaded_file.zip"
+	var file = FileAccess.open(file_path, FileAccess.WRITE)
+	if not file:
+		if not DEBUG_DISABLED:
+			print("[HttpService] Failed to open file for writing: ", file_path, " Error: ", FileAccess.get_open_error())
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	# Initialize checksum calculation
+	var hashing = HashingContext.new()
+	hashing.start(HashingContext.HASH_SHA1)
+	
+	var bytes_written = 0
+	var last_emitted_progress = 0.0
+	
+	# Stream chunks directly to disk
+	while http_client.get_status() == HTTPClient.STATUS_BODY:
+		http_client.poll()
+		var chunk = http_client.read_response_body_chunk()
+		if chunk.size() > 0:
+			file.store_buffer(chunk)
+			hashing.update(chunk)
+			bytes_written += chunk.size()
+			
+			var progress = float(bytes_written) / float(total_size) * 100.0
+			if sb and progress - last_emitted_progress >= 2.0:
+				sb.emit_download_progress(progress)
+				last_emitted_progress = progress
+			
+			if not DEBUG_DISABLED and bytes_written % (5 * 1024 * 1024) == 0:  # Log every 5MB
+				print("[HttpService] Downloaded %.1f MB / %.1f MB" % [bytes_written / (1024.0 * 1024.0), total_size / (1024.0 * 1024.0)])
+		
+		await get_tree().create_timer(0.01).timeout
+	
+	# Emit 100% at end
+	if sb:
+		sb.emit_download_progress(100.0)
+	
+	# Close file handle
+	file.close()
+	file = null
+	
+	if bytes_written == 0:
+		if not DEBUG_DISABLED:
+			print("[HttpService] Downloaded body is empty")
+		DirAccess.remove_absolute(file_path)
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	if not DEBUG_DISABLED:
+		print("[HttpService] Download complete. Total size: ", bytes_written, " bytes")
+	
+	# Verify checksum
+	var computed_checksum = hashing.finish().hex_encode()
+	
+	if not DEBUG_DISABLED:
+		print("[HttpService] Checksum verification:")
+		print("[HttpService]   Expected: ", expected_checksum)
+		print("[HttpService]   Computed: ", computed_checksum)
+	
+	if computed_checksum != expected_checksum:
+		if not DEBUG_DISABLED:
+			print("[HttpService] Checksum mismatch - download corrupted or tampered")
+		DirAccess.remove_absolute(file_path)
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	if not DEBUG_DISABLED:
+		print("[HttpService] Checksum verified successfully")
+	
+	# Unzip the file (run blocking so we get a proper exit code)
+	var dest_dir = OTA_USERAPP_DIR
+	var unzip_output = []
+	var unzip_result = OS.execute("/usr/bin/unzip", ["-o", file_path, "-d", dest_dir], unzip_output, true)
+	if unzip_result != 0:
+		if not DEBUG_DISABLED:
+			print("[HttpService] Failed to unzip file, exit code:", unzip_result)
+			for line in unzip_output:
+				print("[HttpService] unzip:", line)
+		DirAccess.remove_absolute(file_path)
+		if callback and callback.is_valid():
+			callback.call(false, version)
+		return
+	
+	# Copy specific files
+	var source_dir = dest_dir + "/GameDisk"
+	var files_to_copy = ["GODotTetris.arm64", "metadata.json", "start.sh"]
+	var copy_success = true
+	
+	for file_name in files_to_copy:
+		var src_path = source_dir + "/" + file_name
+		var dst_path = OTA_USERAPP_DIR + "/" + file_name
+
+		# Use system cp for atomic overwrite; capture output for diagnostics
+		var cp_output = []
+		var cp_result = OS.execute("/bin/cp", ["-f", src_path, dst_path], cp_output, true)
+		if cp_result == 0:
+			if not DEBUG_DISABLED:
+				print("[HttpService] Copied ", file_name, " to ", dst_path)
+		else:
+			if not DEBUG_DISABLED:
+				print("[HttpService] Failed to copy ", src_path, " -> ", dst_path, " exit:", cp_result)
+				for line in cp_output:
+					print("[HttpService] cp:", line)
+			copy_success = false
+	
+	# Clean up - remove temporary directory and zip file
+	if not DEBUG_DISABLED:
+		print("[HttpService] Cleaning up temporary files...")
+	
+	# Ensure all file handles are closed before cleanup
+	var rm_output = []
+	OS.execute("/bin/rm", ["-rf", source_dir], rm_output, true)
+	DirAccess.remove_absolute(file_path)
+	
+	# Force garbage collection to ensure file handles are released
+	# This helps prevent "disk busy" errors when other processes try to unmount
+	if not DEBUG_DISABLED:
+		print("[HttpService] Releasing resources...")
+	
+	# Give the system a moment to ensure all file handles are fully released
+	await get_tree().create_timer(0.1).timeout
+	
+	# Now that all cleanup is complete and resources are released, call the callback
+	if callback and callback.is_valid():
+		callback.call(copy_success, version)
+	
+	if not DEBUG_DISABLED:
+		print("[HttpService] Download and verification process complete. Resources released.")
+
+func forward_data_to_app(callback: Callable, content: Dictionary):
+	var url = base_url + "/app/forward-data"
+	var data = {"content": content}
+	if not DEBUG_DISABLED:
+		print("[HttpService] Sending forward data to app request to ", url, " with content: ", content)
+	var http = HTTPRequest.new()
+	add_child(http)
+	http.request_completed.connect(func(result, response_code, headers, body):
+		if callback and callback.is_valid():
+			callback.call(result, response_code, headers, body)
+	)
+	var json_data = JSON.stringify(data)
+	http.request(url, ["Content-Type: application/json"], HTTPClient.METHOD_POST, json_data)

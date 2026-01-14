@@ -636,17 +636,6 @@ func _on_menu_control(directive: String):
 			else:
 				if not GlobalDebug.DEBUG_DISABLED:
 					print("[Option] Warning: Node not in tree, cannot change scene")
-		"compose":
-			if not GlobalDebug.DEBUG_DISABLED:
-				print("[Option] compose directive received - navigating to onboard_debug")
-			var menu_controller = get_node("/root/MenuController")
-			if menu_controller:
-				menu_controller.play_cursor_sound()
-			if is_inside_tree():
-				get_tree().change_scene_to_file("res://scene/onboard_debug.tscn")
-			else:
-				if not GlobalDebug.DEBUG_DISABLED:
-					print("[Option] Warning: Node not in tree, cannot change scene to onboard_debug")
 		"volume_up":
 			if not GlobalDebug.DEBUG_DISABLED:
 				print("[Option] Volume up")
@@ -884,14 +873,16 @@ func switch_tab(direction: String):
 	print("[Option] Switched to tab: ", tab_container.get_tab_title(current))
 
 func _on_upgrade_pressed():
-	var http_service = get_node("/root/HttpService")
-	if http_service:
-		if not GlobalDebug.DEBUG_DISABLED:
-			print("[Option] Sending upgrade engine HTTP request...")
-		http_service.upgrade_engine(_on_upgrade_response)
+	var global_data = get_node_or_null("/root/GlobalData")
+	
+	# Navigate to software upgrade scene (only works in OTA mode)
+	if not GlobalDebug.DEBUG_DISABLED:
+		print("[Option] Navigating to software upgrade scene")
+	if is_inside_tree():
+		get_tree().change_scene_to_file("res://scene/option/software_upgrade.tscn")
 	else:
 		if not GlobalDebug.DEBUG_DISABLED:
-			print("[Option] HttpService not found!")
+			print("[Option] Warning: Node not in tree, cannot change scene")
 
 func _on_upgrade_response(result, response_code, _headers, body):
 	var body_str = body.get_string_from_utf8()

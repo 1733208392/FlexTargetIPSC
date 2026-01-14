@@ -1,6 +1,9 @@
 extends Node
 
-const DEBUG_DISABLED = false  # Set to true to disable debug prints for production
+const DEBUG_DISABLED = true  # Set to true to disable debug prints for production
+const VERSION = "1.0.1"  # Software version for BLE query response
+const OTA_USERAPP_DIR = "/srv/www/userapp"  # Directory for OTA mode and file downloads
+#const OTA_USERAPP_DIR = "/Users/kai/otatest"  # Directory for OTA mode and file downloads
 
 # Global data storage for sharing information between scenes
 var upper_level_scene: String = "res://scene/drills.tscn"
@@ -42,13 +45,35 @@ var last_focused_networking_button: Node = null
 var netlink_timer: Timer = null
 const NETLINK_UPDATE_INTERVAL = 60.0  # Request every 60 seconds
 
+# OTA mode tracking
+var ota_mode: bool = false  # True if system is in OTA mode (can write to /srv/www/userapp)
+var current_upgrade_version: String = ""  # Version being downloaded during OTA upgrade
+
 # Signal emitted when settings are successfully loaded
 signal settings_loaded
 signal netlink_status_loaded
 
 func _ready():
 	# print("GlobalData singleton initialized")
+	_detect_ota_mode()
 	load_settings_from_http()
+
+func _detect_ota_mode():
+	"""Check if system is in OTA mode by testing if OTA_USERAPP_DIR is writable"""
+	var test_file_path = OTA_USERAPP_DIR + "/.ota_test"
+	var test_file = FileAccess.open(test_file_path, FileAccess.WRITE)
+	if test_file:
+		# Successfully opened for writing, system is in OTA mode
+		ota_mode = true
+		test_file.close()
+		# Clean up test file
+		DirAccess.remove_absolute(test_file_path)
+		if not DEBUG_DISABLED:
+			print("[GlobalData] OTA mode detected: system is writable")
+	else:
+		ota_mode = false
+		if not DEBUG_DISABLED:
+			print("[GlobalData] OTA mode not detected: system is read-only")
 
 func _setup_netlink_timer():
 	"""Setup periodic netlink status updates (called after first successful response)"""

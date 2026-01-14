@@ -588,14 +588,14 @@ func resume_rotation_animation():
 
 
 func load_bullet_hole_textures():
-	"""Load all bullet hole textures"""
+	"""Load all bullet hole textures - using blood splatter for CQB targets"""
 	bullet_hole_textures = [
-		load("res://asset/bullet_hole1.png"),
-		load("res://asset/bullet_hole2.png"),
-		load("res://asset/bullet_hole3.png"),
-		load("res://asset/bullet_hole4.png"),
-		load("res://asset/bullet_hole5.png"),
-		load("res://asset/bullet_hole6.png")
+		load("res://asset/blood-splatter.png"),
+		load("res://asset/blood-splatter.png"),
+		load("res://asset/blood-splatter.png"),
+		load("res://asset/blood-splatter.png"),
+		load("res://asset/blood-splatter.png"),
+		load("res://asset/blood-splatter.png")
 	]
 
 	# Verify all textures loaded

@@ -216,7 +216,7 @@
     },
     "targetType": {
       "description": "Target scene type",
-      "values": ["ipsc", "idpa", "cqb_front", "cqb_moving", "cqb_swing", "disguised_enemy", "hostage"],
+      "values": ["ipsc", "idpa", "cqb_front", "cqb_moving", "cqb_swing", "cqb_hostage", "disguised_enemy", "hostage"],
       "default": "ipsc",
       "notes": "Must be valid for the selected mode"
     },

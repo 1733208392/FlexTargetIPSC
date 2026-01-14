@@ -1,8 +1,8 @@
 extends Node
 
-const DEBUG_DISABLED = true
+const DEBUG_DISABLED = false
 const WEBSOCKET_URL = "ws://127.0.0.1/websocket"
-#const WEBSOCKET_URL = "ws://192.168.0.109/websocket"
+#const WEBSOCKET_URL = "ws://192.168.0.119/websocket"
 
 signal data_received(data)
 signal bullet_hit(pos: Vector2, a: int, t: int)
@@ -19,8 +19,8 @@ var global_data: Node
 
 # Message rate limiting for performance optimization
 var last_message_time: float = 0.0
-var message_cooldown: float = 0.050  # Increased to 50ms minimum between messages (was 32ms)
-var max_messages_per_frame: int = 2  # Reduced from 3 to 2 for better spacing
+var message_cooldown: float = 0.010  # Reduced to 10ms for better responsiveness
+var max_messages_per_frame: int = 20  # Increased from 2 to 20 to handle backlogs and prevent lag
 var processed_this_frame: int = 0
 
 # Enhanced timing tracking for better shot spacing
@@ -72,15 +72,11 @@ func _process(_delta):
 
 	# Detect state transitions and only announce real OPEN events
 	if state != prev_socket_state:
-		# When transitioning to OPEN, emit onboard debug and reset reconnect backoff/timers
+		# When transitioning to OPEN, reset reconnect backoff/timers
 		if state == WebSocketPeer.STATE_OPEN:
 			var open_msg = "WebSocket connection opened"
-			var sb = get_node_or_null("/root/SignalBus")
-			if sb:
-				sb.emit_onboard_debug_info(1, open_msg, "Godot Game")
-			else:
-				if not DEBUG_DISABLED:
-					print(open_msg)
+			if not DEBUG_DISABLED:
+				print(open_msg)
 
 			# Reset timing trackers and reconnect timer backoff on real open
 			last_message_time = Time.get_ticks_msec() / 1000.0
@@ -103,12 +99,6 @@ func _process(_delta):
 		while socket.get_available_packet_count() and processed_this_frame < max_messages_per_frame:
 			var time_stamp = Time.get_ticks_msec() / 1000.0  # Convert to seconds
 			
-			# Rate limiting check
-			if (time_stamp - last_message_time) < message_cooldown:
-				if not DEBUG_DISABLED:
-					print("[WebSocket] Message rate limited (too fast - ", time_stamp - last_message_time, "s since last)")
-				break
-			
 			var packet = socket.get_packet()
 			var message = packet.get_string_from_utf8()
 			data_received.emit(message)
@@ -127,17 +117,9 @@ func _process(_delta):
 	elif state == WebSocketPeer.STATE_CLOSED:
 		var code = socket.get_close_code()
 		var reason = socket.get_close_reason()
-		# Emit onboard debug info about the closure
 		var close_msg = "WebSocket closed with code: %d, reason %s. Clean: %s" % [code, reason, code != -1]
 		if not DEBUG_DISABLED:
 			print(close_msg)
-
-		var sb = get_node_or_null("/root/SignalBus")
-		if sb:
-			sb.emit_onboard_debug_info(3, close_msg, "Websocket Listener")
-		else:
-			if not DEBUG_DISABLED:
-				print("[WebSocket] SignalBus not available - close debug: ", close_msg)
 
 		# Attempt immediate reconnect and schedule retries
 		_attempt_reconnect()
@@ -158,12 +140,8 @@ func _process_websocket_json(json_string):
 	if parsed and parsed.has("type") and parsed["type"] == "telemetry" and parsed.has("data"):
 		var telemetry = parsed["data"]
 		var telemetry_str = JSON.stringify(telemetry)
-		var msg = "WebSocket telemetry received: " + telemetry_str
-		var sb = get_node_or_null("/root/SignalBus")
-		if sb:
-			sb.emit_onboard_debug_info(2, msg, "WebSocket Listener")
-		else:
-			print(msg)
+		if not DEBUG_DISABLED:
+			print("[WebSocket] Telemetry received: ", telemetry_str)
 		return
 	
 	# print("[WebSocket] Parsed data: ", parsed)
@@ -187,10 +165,12 @@ func _process_websocket_json(json_string):
 		menu_control.emit(directive)
 		return
 	
-	# Handle BLE forwarded commands
-	if parsed and parsed.has("type") and parsed["type"] == "netlink" and parsed.has("data"):
-		_handle_ble_forwarded_command(parsed.data)
-		return
+	# Handle BLE forwarded / netlink commands
+	if parsed and (parsed.get("type") in ["netlink", "forward"] or parsed.get("action") == "forward"):
+		var data_key = "data" if parsed.get("type") == "netlink" else "content"
+		if parsed.has(data_key):
+			_handle_ble_forwarded_command(parsed[data_key])
+			return
 	
 	# Handle bullet hit data
 	if parsed and parsed.has("data"):
@@ -238,20 +218,37 @@ func _process_websocket_json(json_string):
 
 func _handle_ble_forwarded_command(parsed):
 	"""Handle BLE forwarded commands"""
-	var sb = get_node_or_null("/root/SignalBus")
+	var _sb = get_node_or_null("/root/SignalBus")
+	var gd = get_node_or_null("/root/GlobalData")
 	
 	# The new format has data directly as the command content, no dest/content wrapper
 	var content = parsed
 	if not DEBUG_DISABLED:
 		print("[WebSocket] BLE forwarded command content: ", content)
 
-	# Emit onboard debug info for forwarded BLE commands (sender: Mobile App)
+	# Handle start_game_upgrade action - forward to software_upgrade scene
+	if content.get("action") == "start_game_upgrade":
+		# Check if OTA mode is enabled
+		if gd and gd.ota_mode:
+			var address = content.get("address", "")
+			var checksum = content.get("checksum", "")
+			var version = content.get("version", "unknown")
+			if address and checksum:
+				if not DEBUG_DISABLED:
+					print("[WebSocket] OTA upgrade initiated for version: ", version)
+				# Transition to software upgrade scene and set parameters
+				_trigger_software_upgrade(address, checksum, version)
+			else:
+				if not DEBUG_DISABLED:
+					print("[WebSocket] OTA upgrade missing address or checksum")
+		else:
+			if not DEBUG_DISABLED:
+				print("[WebSocket] OTA upgrade attempted but OTA mode is not enabled")
+		return
+
 	var content_str = JSON.stringify(content)
-	if sb:
-		sb.emit_onboard_debug_info(2, "BLE forwarded: " + content_str, "Mobile App")
-	else:
-		if not DEBUG_DISABLED:
-			print("[WebSocket] SignalBus not available - BLE forwarded debug: ", content_str)
+	if not DEBUG_DISABLED:
+		print("[WebSocket] BLE forwarded: ", content_str)
 
 	#     let content: [String: Any] = [
 	#     "command": "ready"/"start",
@@ -282,13 +279,16 @@ func _handle_ble_forwarded_command(parsed):
 		"animation_config":
 			if not DEBUG_DISABLED: print("[WebSocket] Handling animation_config command with content: ", content)
 			_handle_animation_config(content)
+		"query_version":
+			if not DEBUG_DISABLED: print("[WebSocket] Handling query_version command")
+			_handle_query_version()
 		_:
 			if not DEBUG_DISABLED:
 				print("[WebSocket] BLE forwarded command unknown or unsupported command: ", command)
 
 func _handle_animation_config(parsed):
 	"""Handle animation configuration commands from mobile app"""
-	var sb = get_node_or_null("/root/SignalBus")
+	var _sb = get_node_or_null("/root/SignalBus")
 	
 	# Extract action and duration from the parsed message
 	var action = parsed.get("action", "")
@@ -303,19 +303,39 @@ func _handle_animation_config(parsed):
 			print("[WebSocket] Animation config missing action")
 		return
 	
-	# Emit onboard debug info for animation config commands
 	var content_str = JSON.stringify({"action": action, "duration": duration})
-	if sb:
-		sb.emit_onboard_debug_info(2, "Animation config: " + content_str, "Mobile App")
-	else:
-		if not DEBUG_DISABLED:
-			print("[WebSocket] Animation config debug: ", content_str)
+	if not DEBUG_DISABLED:
+		print("[WebSocket] Animation config: ", content_str)
 	
 	# Emit the animation config signal
 	if not DEBUG_DISABLED:
 		print("[WebSocket] Emitting animation_config signal - action: ", action, ", duration: ", duration)
 	animation_config.emit(action, duration)
 
+func _handle_query_version():
+	"""Handle query_version command - return the VERSION constant from GlobalData"""
+	var gd = get_node_or_null("/root/GlobalData")
+	if not gd:
+		if not DEBUG_DISABLED:
+			print("[WebSocket] GlobalData not found for query_version")
+		return
+	
+	var version = gd.VERSION
+	var response_content = {"version": version}
+	
+	if not DEBUG_DISABLED:
+		print("[WebSocket] Responding to query_version with version: ", version)
+	
+	# Forward the response to the app using HttpService
+	var http_service = get_node_or_null("/root/HttpService")
+	if http_service:
+		http_service.forward_data_to_app(func(_result, _response_code, _headers, _body):
+			if not DEBUG_DISABLED:
+				print("[WebSocket] Version query response sent to mobile app")
+		, response_content)
+	else:
+		if not DEBUG_DISABLED:
+			print("[WebSocket] HttpService not found for query_version response")
 func clear_queued_signals():
 	"""Clear all queued WebSocket packets and pending bullet hit signals"""
 	if not DEBUG_DISABLED:
@@ -362,14 +382,6 @@ func send_netlink_forward(device: String, content_val: Dictionary) -> int:
 			return err
 		if not DEBUG_DISABLED:
 			print("[WebSocket] send_netlink_forward sent: ", json_string)
-
-		# Emit onboard debug info for outgoing netlink forwards (sender: Godot Game)
-		var sb = get_node_or_null("/root/SignalBus")
-		if sb:
-			sb.emit_onboard_debug_info(1, "Netlink forward sent to device: " + str(device) + ", content: " + json_string, "Godot Game")
-		else:
-			if not DEBUG_DISABLED:
-				print("[WebSocket] SignalBus not available - netlink forward debug: ", json_string)
 		return OK
 	else:
 		if not DEBUG_DISABLED:
@@ -391,7 +403,6 @@ func set_bullet_spawning_enabled(enabled: bool):
 func get_bullet_spawning_enabled() -> bool:
 	"""Get current bullet spawning enabled state"""
 	return bullet_spawning_enabled
-
 
 func _attempt_reconnect() -> void:
 	"""Try to reopen the websocket connection immediately. If it fails, schedule the reconnect timer."""
@@ -450,11 +461,21 @@ func _on_connect_watchdog_timeout() -> void:
 			print("[WebSocket] Connect watchdog timeout - scheduling retry in ", timer.wait_time, "s")
 		timer.start()
 
-	# Emit onboard debug info about the connect timeout
+func _trigger_software_upgrade(address: String, checksum: String, version: String) -> void:
+	"""Trigger the software upgrade scene and pass download parameters"""
+	if not DEBUG_DISABLED:
+		print("[WebSocket] Triggering software upgrade signal with version: ", version)
+	
+	# Emit signal via SignalBus for current or future software_upgrade node
 	var sb = get_node_or_null("/root/SignalBus")
-	var msg = "WebSocket connect watchdog timeout: connection did not reach OPEN"
 	if sb:
-		sb.emit_onboard_debug_info(3, msg, "Websocket Listener")
+		sb.emit_ota_upgrade_requested(address, checksum, version)
 	else:
 		if not DEBUG_DISABLED:
-			print("[WebSocket] SignalBus not available - watchdog timeout: ", msg)
+			print("[WebSocket] SignalBus not found to emit ota_upgrade_requested")
+
+
+func _on_download_complete(_success: bool, _version: String):
+	"""DEPRECATED: OTA download logic moved to software_upgrade scene"""
+	if not DEBUG_DISABLED:
+		print("[WebSocket] _on_download_complete is deprecated - OTA logic moved to software_upgrade scene")

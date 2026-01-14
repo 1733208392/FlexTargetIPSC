@@ -2,15 +2,15 @@
 
 [ext_resource type="Script" uid="uid://dthf7l17t1uuo" path="res://scene/main_menu/main_menu.gd" id="1_vny3a"]
 [ext_resource type="Texture2D" uid="uid://d3jnypy7bx42r" path="res://asset/largeCntnrs.png" id="2_1vqx8"]
-[ext_resource type="Shader" uid="uid://6l8jsn5gi47q" path="res://scene/main_menu/main_menu.gdshader" id="3_3k2ij"]
+[ext_resource type="Shader" path="res://scene/main_menu/main_menu.gdshader" id="3_3k2ij"]
 [ext_resource type="Texture2D" uid="uid://jkn5ynck2gk5" path="res://asset/start_button_back.png" id="3_rq7sb"]
 [ext_resource type="Texture2D" uid="uid://drg84u8r8rf4q" path="res://asset/start_button_back_hover.png" id="4_3k2ij"]
 [ext_resource type="Texture2D" uid="uid://ct7bcimjuqusa" path="res://asset/mini_map.png" id="5_bj3ug"]
 [ext_resource type="Texture2D" uid="uid://d34m0mqmlp1qq" path="res://asset/crosshair.png" id="6_eo5a4"]
 [ext_resource type="FontFile" uid="uid://bt41csp00hdy7" path="res://font/Inter/Inter-VariableFont_opsz,wght.ttf" id="7_lt21p"]
-[ext_resource type="Shader" uid="uid://bewl1vtxmkuvj" path="res://scene/main_menu/main_menu_blip_ring.gdshader" id="8_3k2ij"]
+[ext_resource type="Shader" path="res://scene/main_menu/main_menu_blip_ring.gdshader" id="8_3k2ij"]
 [ext_resource type="PackedScene" uid="uid://bgnvqj8xi6u7e" path="res://scene/volumn.tscn" id="8_kvq8n"]
-[ext_resource type="Shader" uid="uid://bytkulv0uf318" path="res://scene/main_menu/redot.gdshader" id="10_bj3ug"]
+[ext_resource type="Shader" path="res://scene/main_menu/redot.gdshader" id="10_bj3ug"]
 [ext_resource type="AudioStream" uid="uid://ci4xowhem06dc" path="res://audio/radar-beeping.mp3" id="12_bj3ug"]
 
 [sub_resource type="SystemFont" id="SystemFont_2atga"]

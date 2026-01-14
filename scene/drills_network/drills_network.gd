@@ -23,6 +23,7 @@ var target_type_to_scene = {
 	"cqb_front": "res://scene/targets/cqb_front.tscn",
 	"cqb_move": "res://scene/targets/cqb_moving.tscn",
 	"cqb_swing": "res://scene/targets/cqb_swing.tscn",
+	"cqb_hostage": "res://scene/targets/cqb_hostage.tscn",
 	"disguised_enemy": "res://scene/targets/disguised_enemy.tscn"
 }
 
@@ -30,7 +31,7 @@ var target_type_to_scene = {
 var valid_targets_by_mode = {
 	"ipsc": ["ipsc", "special_1", "special_2", "hostage", "rotation", "paddle", "popper", "final"],
 	"idpa": ["idpa", "idpa_black_1", "idpa_black_2", "idpa_ns", "hostage", "paddle", "popper", "final"],
-	"cqb": ["cqb_front", "cqb_move", "cqb_swing", "disguised_enemy"]
+	"cqb": ["cqb_front", "cqb_move", "cqb_swing", "cqb_hostage", "disguised_enemy"]
 }
 
 # Valid game modes

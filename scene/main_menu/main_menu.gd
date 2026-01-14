@@ -16,6 +16,7 @@ var wave_material: ShaderMaterial
 
 var focused_index
 var buttons = []
+var upgrade_in_progress = false
 
 func load_language_setting():
 	# Load language setting from GlobalData.settings_dict
@@ -57,6 +58,11 @@ func update_ui_texts():
 	games_button.text = tr("games")
 	option_button.text = tr("options")
 	copyright_label.text = tr("copyright")
+	
+	# Append version info
+	var global_data = get_node_or_null("/root/GlobalData")
+	if global_data:
+		copyright_label.text += " v" + global_data.VERSION
 	
 	if not DEBUG_DISABLED:
 		print("[Menu] UI texts updated")
@@ -169,14 +175,58 @@ func _ready():
 	else:
 		if not DEBUG_DISABLED:
 			print("[Menu] GlobalData not found!")
-
+	
+	# Connect to SignalBus signals
 	stage_button.pressed.connect(on_stage_pressed)
 	drills_button.pressed.connect(_on_drills_pressed)
 	bootcamp_button.pressed.connect(_on_bootcamp_pressed)
 	games_button.pressed.connect(_on_games_pressed)
 	option_button.pressed.connect(_on_option_pressed)
 
+	# Check OTA mode and auto-jump to software upgrade scene if in OTA mode
+	var gd = get_node_or_null("/root/GlobalData")
+	if gd and gd.ota_mode:
+		if not DEBUG_DISABLED:
+			print("[Menu] OTA mode detected, automatically jumping to software upgrade scene")
+		if is_inside_tree():
+			call_deferred("_jump_to_upgrade_scene")
+		return
+	
+	# Send version info only in normal mode (not OTA mode) via HttpService.forward_data_to_app
+	# This allows mobile app to verify upgrade success
+	if gd:
+		var http_service = get_node_or_null("/root/HttpService")
+		if http_service:
+			var version_message = {
+				"type": "forward",
+				"content": {
+					"version": gd.VERSION
+				}
+			}
+			http_service.forward_data_to_app(func(_result, _response_code, _headers, _body):
+				if not DEBUG_DISABLED:
+					print("[Menu] Sent version info to mobile app via forward_data_to_app")
+			, version_message["content"])
+			if not DEBUG_DISABLED:
+				print("[Menu] Sending version info on main menu load: ", version_message)
+		else:
+			if not DEBUG_DISABLED:
+				print("[Menu] HttpService not found for sending version info")
+	else:
+		if not DEBUG_DISABLED:
+			print("[Menu] GlobalData not found for OTA mode check")
+
+func _jump_to_upgrade_scene():
+	"""Jump to software upgrade scene (deferred call)"""
+	if is_inside_tree():
+		get_tree().change_scene_to_file("res://scene/option/software_upgrade.tscn")
+	else:
+		if not DEBUG_DISABLED:
+			print("[Menu] Warning: Node not in tree, cannot change scene")
+
 func on_stage_pressed():
+	if upgrade_in_progress:
+		return
 	# Set up sub menu configuration for Stage options
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
@@ -221,6 +271,8 @@ func on_stage_pressed():
 			print("[Menu] Warning: Node not in tree, cannot change scene")
 
 func _on_drills_pressed():
+	if upgrade_in_progress:
+		return
 	# Load the drills scene
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
@@ -238,6 +290,8 @@ func _on_drills_pressed():
 			print("[Menu] Warning: Node not in tree, cannot change scene")
 
 func _on_bootcamp_pressed():
+	if upgrade_in_progress:
+		return
 	# Call the HTTP service to start the game
 	var http_service = get_node("/root/HttpService")
 	if http_service:
@@ -276,6 +330,8 @@ func _on_bootcamp_response(result, response_code, _headers, body):
 			print("[Menu] Start bootcamp failed or invalid response.")
 
 func _on_games_pressed():
+	if upgrade_in_progress:
+		return
 	# Load the games scene
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
@@ -287,6 +343,8 @@ func _on_games_pressed():
 			print("[Menu] Warning: Node not in tree, cannot change scene")
 
 func _on_option_pressed():
+	if upgrade_in_progress:
+		return
 	# Load the options scene
 	var global_data = get_node_or_null("/root/GlobalData")
 	if global_data:
