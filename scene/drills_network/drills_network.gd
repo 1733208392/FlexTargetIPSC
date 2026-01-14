@@ -367,6 +367,11 @@ func spawn_target():
 	# Store target type as metadata for later retrieval by performance tracker
 	target_instance.set_meta("target_type", current_target_type)
 
+	# Pass animation duration to CQB targets for continuous/timed mode support
+	if normalize_game_mode(game_mode) == "cqb":
+		target_instance.action_duration = current_animation_action.get("duration", -1.0)
+		print("[DrillsNetwork] spawn_target: Set CQB target action_duration to ", target_instance.action_duration)
+
 	# CQB swing: apply the animation start pose immediately to avoid a visible snap
 	if normalize_game_mode(game_mode) == "cqb" and animation_lib and current_animation_action.size() > 0:
 		animation_lib.apply_start_pose(target_instance, current_animation_action.get("name", ""))
@@ -687,6 +692,21 @@ func _on_cqb_target_hit(zone: String, hit_position: Vector2, t: int = 0):
 	
 	if DEBUG_ENABLED:
 		print("[DrillsNetwork] CQB target hit processed: zone=", zone, ", points=", points, ", hit_pos=", hit_position)
+
+	# If the target is a no-shoot and it was hit (not a miss), stop the flash sequence
+	if zone != "miss" and target_instance and target_instance.get("is_no_shoot"):
+		print("[DrillsNetwork] No-shoot target hit! Stopping flash sequence.")
+		
+		# 1. Stop the target's AnimationPlayer (freezes movement if any)
+		var ap = target_instance.get_node_or_null("AnimationPlayer")
+		if ap and ap is AnimationPlayer:
+			ap.stop()
+		
+		# 2. Stop the flash sequence (tween) by calling animation_lib.stop_all_sequences()
+		# This stops the scene-swapping logic in TargetAnimationLibrary
+		if animation_lib and animation_lib.has_method("stop_all_sequences"):
+			animation_lib.stop_all_sequences()
+			print("[DrillsNetwork] Called animation_lib.stop_all_sequences()")
 	
 	# Track shots on the last target to trigger final spawn
 	if is_last and not final_target_spawned:
@@ -748,18 +768,33 @@ func start_drill_timer():
 	
 	# Apply animation if configured
 	if animation_lib and current_animation_action.size() > 0:
-		print("[DrillsNetwork] start_drill_timer: Animation configured - applying animation: ", current_animation_action.get("name", ""))
-		# Prime the start pose first to prevent an initial jump when the animation begins
-		animation_lib.apply_start_pose(target_instance, current_animation_action.get("name", ""))
-		
-		# For flash_sequence animations, pass parent container for scene swapping
+		var duration = current_animation_action.get("duration", -1.0)
 		var animation_name = current_animation_action.get("name", "")
-		if animation_name == "disguised_enemy_flash":
-			print("[DrillsNetwork] start_drill_timer: Applying disguised_enemy_flash animation with container")
-			animation_lib.apply_animation(target_instance, animation_name, current_animation_action.get("duration", -1.0), 0.0, center_container)
+		
+		# For CQB swing targets in continuous mode, apply start pose only (no animation)
+		if normalize_game_mode(game_mode) == "cqb" and current_target_type == "cqb_swing" and duration == -1.0:
+			print("[DrillsNetwork] start_drill_timer: CQB swing continuous mode - applying start pose only")
+			animation_lib.apply_start_pose(target_instance, animation_name)
+		# For disguised_enemy, always apply animation (flash_sequence scene switching)
+		elif normalize_game_mode(game_mode) == "cqb" and current_target_type == "disguised_enemy":
+			print("[DrillsNetwork] start_drill_timer: Disguised enemy target - applying flash_sequence animation")
+			animation_lib.apply_start_pose(target_instance, animation_name)
+			animation_lib.apply_animation(target_instance, animation_name, duration, 0.0, center_container)
+		# Skip animation for other CQB targets in continuous mode
+		elif normalize_game_mode(game_mode) == "cqb" and duration == -1.0:
+			print("[DrillsNetwork] start_drill_timer: CQB continuous mode detected (duration=-1) - skipping animation")
 		else:
-			print("[DrillsNetwork] start_drill_timer: Applying animation without container")
-			animation_lib.apply_animation(target_instance, animation_name, current_animation_action.get("duration", -1.0))
+			print("[DrillsNetwork] start_drill_timer: Animation configured - applying animation: ", animation_name)
+			# Prime the start pose first to prevent an initial jump when the animation begins
+			animation_lib.apply_start_pose(target_instance, animation_name)
+			
+			# For flash_sequence animations, pass parent container for scene swapping
+			if animation_name == "disguised_enemy_flash":
+				print("[DrillsNetwork] start_drill_timer: Applying disguised_enemy_flash animation with container")
+				animation_lib.apply_animation(target_instance, animation_name, duration, 0.0, center_container)
+			else:
+				print("[DrillsNetwork] start_drill_timer: Applying animation without container")
+				animation_lib.apply_animation(target_instance, animation_name, duration)
 	else:
 		print("[DrillsNetwork] start_drill_timer: No animation configured (animation_lib=" + str(animation_lib != null) + ", action.size=" + str(current_animation_action.size()) + ")")
 

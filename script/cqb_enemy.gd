@@ -4,10 +4,12 @@ var last_click_frame = -1
 
 # Animation state tracking
 var is_disappearing: bool = false
+var action_duration: float = -1.0  # Animation duration; -1 = continuous
 
 # Shot tracking for disappearing animation - only valid target hits count
 var shot_count: int = 0
 @export var max_shots: int = 2  # Exported so scenes can override in the editor; default 2
+@export var is_no_shoot: bool = false  # If true, this target should not be shot
 
 # Bullet system
 const BulletScene = preload("res://scene/bullet.tscn")
@@ -150,34 +152,27 @@ func is_point_in_zone(zone_name: String, point: Vector2) -> bool:
 	return false
 
 func play_disappearing_animation():
-	"""Start the disappearing animation and disable collision detection"""
+	"""Freeze the target in place instead of playing disappear animation"""
 	is_disappearing = true
 
-	# Get the AnimationPlayer
-	var animation_player = get_node("AnimationPlayer")
-	if animation_player:
-		# Connect to the animation finished signal if not already connected
-		if not animation_player.animation_finished.is_connected(_on_animation_finished):
-			animation_player.animation_finished.connect(_on_animation_finished)
-
-		# Play the disappear animation
-		animation_player.play("disappear")
-func _on_animation_finished(animation_name: String):
-	"""Called when any animation finishes"""
-	if animation_name == "disappear":
-		_on_disappear_animation_finished()
-
-func _on_disappear_animation_finished():
-	"""Called when the disappearing animation completes"""
-
-	# Disable collision detection completely
-	# NOTE: Collision detection was already obsolete due to WebSocket fast path
-
-	# Emit signal to notify the drills system that the target has disappeared
+	# Stop the AnimationPlayer to prevent the disappear animation from playing
+	var animation_player = get_node_or_null("AnimationPlayer")
+	if animation_player and animation_player is AnimationPlayer:
+		animation_player.stop()
+		print("[CQB_Enemy] play_disappearing_animation: Stopped AnimationPlayer")
+	else:
+		print("[CQB_Enemy] play_disappearing_animation: No AnimationPlayer found, or not playing")
+	
+	# Immediately emit the target_disappeared signal
+	# This notifies the drills system that the target is no longer active
+	print("[CQB_Enemy] play_disappearing_animation: Emitting target_disappeared signal")
 	target_disappeared.emit()
 
-	# Keep the disappearing state active to prevent any further interactions
-	# is_disappearing remains true
+func is_connected_to_animation_finished() -> bool:
+	"""Check if we need to emit target_disappeared on animation finish"""
+	# This is a helper to track if we've already emitted the signal
+	# In the new implementation, we emit immediately in play_disappearing_animation()
+	return false
 
 func reset_target():
 	"""Reset the target to its original state (useful for restarting)"""
@@ -186,6 +181,14 @@ func reset_target():
 
 	# Reset shot count
 	shot_count = 0
+
+	# Resume AnimationPlayer animation if it was stopped
+	var animation_player = get_node_or_null("AnimationPlayer")
+	if animation_player and animation_player is AnimationPlayer:
+		if animation_player.is_stopped():
+			# Start playing the idle animation if there is one, otherwise just play any animation
+			animation_player.play()
+			print("[CQB_Enemy] reset_target: Resumed AnimationPlayer")
 
 	# Reset visual properties
 	modulate = Color.WHITE
@@ -387,13 +390,21 @@ func handle_websocket_bullet_hit_fast(world_pos: Vector2, t: int = 0):
 	print("[CQB_Enemy] Emitting cqb_target_hit signal: zone=", zone_hit, " world_pos=", world_pos, " t=", t)
 	cqb_target_hit.emit(zone_hit, world_pos, t)
 
-	# 5. Increment shot count and check for disappearing animation (only for valid target hits)
+	# 5. Increment shot count and check for freezing (only for valid target hits)
 	if is_target_hit:
 		shot_count += 1
 
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
-			play_disappearing_animation()
+			# Always freeze the target in place after 2 valid hits
+			print("[CQB_Enemy] handle_websocket_bullet_hit_fast: shot_count=", shot_count, " - freezing target")
+			is_disappearing = true
+			var animation_player = get_node_or_null("AnimationPlayer")
+			if animation_player and animation_player is AnimationPlayer:
+				animation_player.stop()
+				print("[CQB_Enemy] handle_websocket_bullet_hit_fast: Stopped AnimationPlayer")
+			else:
+				print("[CQB_Enemy] handle_websocket_bullet_hit_fast: No AnimationPlayer found")
 
 func spawn_bullet_effects_at_position(world_pos: Vector2, _is_target_hit: bool = true):
 	"""Spawn bullet smoke and impact effects with throttling for performance"""
@@ -542,13 +553,21 @@ func handle_websocket_bullet_hit_rotating(world_pos: Vector2, t: int = 0) -> voi
 	# 5. Emit signal with hit zone and position
 	cqb_target_hit.emit(zone_hit, world_pos, t)
 
-	# 6. Increment shot count and check for disappearing animation (only for valid target hits)
+	# 6. Increment shot count and check for freezing (only for valid target hits)
 	if is_target_hit:
 		shot_count += 1
 
 		# Check if we've reached the maximum valid target hits
 		if shot_count >= max_shots:
-			play_disappearing_animation()
+			# Always freeze the target in place after 2 valid hits
+			print("[CQB_Enemy] handle_websocket_bullet_hit_rotating: shot_count=", shot_count, " - freezing target")
+			is_disappearing = true
+			var animation_player = get_node_or_null("AnimationPlayer")
+			if animation_player and animation_player is AnimationPlayer:
+				animation_player.stop()
+				print("[CQB_Enemy] handle_websocket_bullet_hit_rotating: Stopped AnimationPlayer")
+			else:
+				print("[CQB_Enemy] handle_websocket_bullet_hit_rotating: No AnimationPlayer found")
 
 func monitor_bullet_activity():
 	"""Monitor bullet activity and pause/resume animation accordingly"""
