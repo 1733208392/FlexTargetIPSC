@@ -4,7 +4,7 @@ extends Node2D
 const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","texas_start_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "idpa", "idpa_ns", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique", "custom_target"]
+var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","texas_start_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "uspsa", "idpa", "idpa_ns", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique", "custom_target"]
 var current_target_index: int = 0
 var current_target_instance = null
 
@@ -25,6 +25,7 @@ var zoom_excluded_targets = ["ipsc_mini_rotate"]
 @onready var ipsc_mini_rotate_scene: PackedScene = preload("res://scene/ipsc_mini_rotate.tscn")
 
 @onready var idpa_scene: PackedScene = preload("res://scene/targets/idpa.tscn")
+@onready var uspsa_scene: PackedScene = preload("res://scene/targets/uspsa.tscn")
 @onready var idpa_ns_scene: PackedScene = preload("res://scene/targets/idpa_ns.tscn")
 #@onready var idpa_rotate_scene: PackedScene = preload("res://scene/idpa_mini_rotation.tscn")
 @onready var idpa_hard_cover_1_scene: PackedScene = preload("res://scene/targets/idpa_hard_cover_1.tscn")
@@ -358,7 +359,7 @@ func _on_clear_pressed():
 				print("Removed ", target_type, " for respawning")
 		# Respawn the target
 		spawn_target_by_type(target_type)
-	elif target_type in ["ipsc_mini","ipsc_mini_rotate", "ipsc_mini_black_1","ipsc_mini_black_2", "hostage","idpa", "idpa_ns", "idpa_hard_cover_1", "idpa_hard_cover_2", "bullseye", "custom_target"]:
+	elif target_type in ["ipsc_mini","ipsc_mini_rotate", "ipsc_mini_black_1","ipsc_mini_black_2", "hostage","uspsa", "idpa", "idpa_ns", "idpa_hard_cover_1", "idpa_hard_cover_2", "bullseye", "custom_target"]:
 		# For bullseye, just reset the target state if needed
 		if current_target_instance and is_instance_valid(current_target_instance):
 			# Call clear_all_bullet_holes if available on the target itself
@@ -421,7 +422,7 @@ func _normalize_zone_for_stats(zone: String, target_type: String) -> String:
 	return zone
 
 func _is_idpa_stats_target(target_type: String) -> bool:
-	var idpa_targets = ["idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2"]
+	var idpa_targets = ["idpa", "idpa_ns", "idpa_rotate", "idpa_hard_cover_1", "idpa_hard_cover_2", "uspsa"]
 	return target_type in idpa_targets
 
 func _is_ipsc_stats_target(target_type: String) -> bool:
@@ -778,6 +779,10 @@ func spawn_target_by_type(target_type: String):
 			canvas_layer.visible = true  # Show shot intervals for idpa
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Shown CanvasLayers and stats for idpa target")
+		elif target_type == "uspsa":
+			canvas_layer.visible = true  # Show shot intervals for uspsa
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Shown CanvasLayers and stats for uspsa target")
 		elif target_type == "idpa_ns":
 			canvas_layer.visible = true  # Show shot intervals for idpa NS
 			if not DEBUG_DISABLED:
@@ -839,6 +844,8 @@ func spawn_target_by_type(target_type: String):
 			target_scene = ipsc_mini_black_2_scene
 		"idpa":
 			target_scene = idpa_scene
+		"uspsa":
+			target_scene = uspsa_scene
 		"idpa_ns":
 			target_scene = idpa_ns_scene
 		# "idpa_rotate":
