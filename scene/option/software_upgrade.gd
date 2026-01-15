@@ -2,7 +2,7 @@ extends Control
 
 const DEBUG_DISABLED = false
 
-@onready var title_label = $VBoxContainer/TitleLabel
+@onready var title_label = $TitleLabel
 @onready var status_label = $VBoxContainer/StatusLabel
 @onready var version_label = $VBoxContainer/VersionLabel
 @onready var progress_bar = $VBoxContainer/ProgressBar
@@ -38,7 +38,7 @@ func _ready():
 		print("[SoftwareUpgrade] Scene initialized")
 	
 	# Set up UI
-	title_label.text = "Software Upgrade"
+	title_label.text = tr("software_upgrade")
 	
 	# Connect button signals
 	retry_button.pressed.connect(_on_retry_pressed)
@@ -82,7 +82,7 @@ func _ready():
 		_update_wifi_status()
 	
 	# Show initial status
-	status_label.text = "Waiting for upgrade command from mobile app..."
+	status_label.text = tr("waiting_upgrade_command")
 	retry_button.visible = false
 	progress_bar.visible = false
 	version_label.text = ""
@@ -143,10 +143,10 @@ func _update_wifi_status():
 				is_wifi_connected = false
 	
 	if is_wifi_connected and wifi_ip != "":
-		wifi_status_label.text = "✓ WiFi Connected (" + wifi_ip + ")"
+		wifi_status_label.text = tr("wifi_connected") % wifi_ip
 		wifi_status_label.add_theme_color_override("font_color", Color.GREEN)
 	else:
-		wifi_status_label.text = "✗ WiFi Not Connected"
+		wifi_status_label.text = tr("wifi_not_connected")
 		wifi_status_label.add_theme_color_override("font_color", Color.RED)
 	
 	if not DEBUG_DISABLED:
@@ -214,13 +214,13 @@ func _on_retry_pressed():
 	
 	if global_data and global_data.netlink_status.has("wifi_status"):
 		if not global_data.netlink_status["wifi_status"]:
-			status_label.text = "WiFi not connected. Please connect to WiFi and try again."
+			status_label.text = tr("wifi_not_connected_error")
 			status_label.add_theme_color_override("font_color", Color.RED)
 			return
 	
 	# Reset UI
 	upgrade_failed = false
-	status_label.text = "Waiting for upgrade command from mobile app..."
+	status_label.text = tr("waiting_upgrade_command")
 	status_label.add_theme_color_override("font_color", Color.WHITE)
 	retry_button.visible = false
 	version_label.text = ""
@@ -232,7 +232,7 @@ func _on_back_pressed():
 	
 	if downloading:
 		# Show warning if download is in progress
-		status_label.text = "Download in progress. Please wait..."
+		status_label.text = tr("download_in_progress")
 		return
 	
 	if is_inside_tree():
@@ -338,8 +338,8 @@ func start_upgrade(address: String, checksum: String, version: String):
 	# Stop sending ready notifications since download is starting
 	_stop_ready_notification_timer()
 	
-	status_label.text = "Downloading Software..."
-	version_label.text = "Version: " + version
+	status_label.text = tr("downloading_software")
+	version_label.text = tr("version") + version
 	progress_bar.visible = true
 	progress_bar.value = 0
 	retry_button.visible = false
@@ -377,7 +377,7 @@ func _on_download_complete(success: bool, version: String):
 			if not DEBUG_DISABLED:
 				print("[SoftwareUpgrade] Sent download_complete notification with version: ", version)
 			
-			status_label.text = "Upgrade completed successfully!\n\nPlease restart the application via the mobile app."
+			status_label.text = tr("upgrade_success")
 			status_label.add_theme_color_override("font_color", Color.GREEN)
 			progress_bar.value = 100
 		else:
@@ -430,7 +430,7 @@ func _send_download_failure():
 		if not DEBUG_DISABLED:
 			print("[SoftwareUpgrade] HttpService not available to send failure notification")
 	
-	status_label.text = "Upgrade failed. Please check your WiFi connection and try again."
+	status_label.text = tr("upgrade_failed")
 	status_label.add_theme_color_override("font_color", Color.RED)
 	progress_bar.visible = false
 	retry_button.visible = true
