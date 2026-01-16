@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://clfaksioumf4c" path="res://script/shot_timer.gd" id="1_shot_timer_script"]
 [ext_resource type="AudioStream" uid="uid://b7v3qngslfsqw" path="res://audio/synthetic-shot-timer.wav" id="2_timer_beep"]
 [ext_resource type="AudioStream" uid="uid://don0vj400vxgd" path="res://audio/standby.mp3" id="3_cetwe"]
+[ext_resource type="AudioStream" uid="uid://ck6m5j4f2s7i4" path="res://audio/ready.mp3" id="4_ready"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_standby"]
 font_size = 120
@@ -86,4 +87,8 @@ one_shot = true
 
 [node name="StandbyPlayer" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("3_cetwe")
+volume_db = 5.0
+
+[node name="ReadyPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_ready")
 volume_db = 5.0

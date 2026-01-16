@@ -13,6 +13,7 @@ enum TimerState {
 # Node references
 @onready var standby_label = $CenterContainer/StandbyLabel
 @onready var standby_player = $StandbyPlayer
+@onready var ready_player = $ReadyPlayer
 @onready var beep_player = $BeepPlayer
 @onready var animation_player = $AnimationPlayer
 @onready var timer_delay = $TimerDelay
@@ -116,8 +117,11 @@ func start_timer_sequence():
 	if not DEBUG_DISABLED:
 		print("=== STARTING SHOT TIMER SEQUENCE ===")
 	
-	# Hide instructions (not needed)
-	#instructions.visible = false
+	# Play dynamic "Ready?" audio first if available
+	if ready_player:
+		ready_player.play()
+		# Wait for "Ready?" audio to finish or a fixed comfortable delay
+		await get_tree().create_timer(2).timeout
 	
 	# Set state to standby
 	current_state = TimerState.STANDBY

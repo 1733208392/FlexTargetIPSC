@@ -708,3 +708,7 @@ retry,Retry,重试,再試行,重試
 back_to_options,Back to Options,返回选项,オプションに戻る,返回選項
 wifi_not_connected_error,"WiFi not connected. Please connect to WiFi and try again.","WiFi 未连接。请连接到 WiFi 并重试。","WiFi が接続されていません。WiFi に接続して、もう一度お試しください。","WiFi 未連線。請連線到 WiFi 並重試。"
 download_in_progress,"Download in progress. Please wait...","正在下载，请稍候...","ダウンロード中です。お待ちください...","正在下載，請稍候..."
+shot_1,Shot 1,第一发,ショット 1,第一發
+shot_2,Shot 2,第二发,ショット 2,第二發
+total,Total,合计,合計,合計
+split,Split,分段,スプリット,分段

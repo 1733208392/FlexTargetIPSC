@@ -4,7 +4,7 @@ extends Node2D
 const DEBUG_DISABLED = false  # Set to true for verbose debugging
 
 # Target sequence for bootcamp cycling
-var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","texas_start_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "uspsa", "idpa", "idpa_ns", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique", "custom_target"]
+var target_sequence: Array[String] = ["bullseye","dueling_tree_composite","texas_start_composite","ipsc_mini","ipsc_mini_black_1", "ipsc_mini_black_2", "hostage", "2poppers", "3paddles", "ipsc_mini_rotate", "uspsa", "idpa", "idpa_ns", "idpa_hard_cover_1", "idpa_hard_cover_2", "mozambique", "double_tap", "custom_target"]
 var current_target_index: int = 0
 var current_target_instance = null
 
@@ -34,6 +34,7 @@ var zoom_excluded_targets = ["ipsc_mini_rotate"]
 @onready var two_poppers_scene: PackedScene = preload("res://scene/targets/2poppers_simple.tscn")
 @onready var three_paddles_scene: PackedScene = preload("res://scene/targets/3paddles_simple.tscn")
 @onready var mozambique_scene: PackedScene = preload("res://scene/targets/mozambique.tscn")
+@onready var double_tap_scene: PackedScene = preload("res://scene/targets/double_tap.tscn")
 @onready var dueling_tree_scene: PackedScene = preload("res://scene/test_dueling_tree_composite.tscn")
 @onready var texas_start_composite_scene: PackedScene = preload("res://scene/targets/texas_start_composite.tscn")
 
@@ -351,8 +352,8 @@ func _on_clear_pressed():
 	
 	# Check if current target is a popper or paddle (composition targets without bullet holes)
 	var target_type = target_sequence[current_target_index]
-	if target_type in ["2poppers", "3paddles"]:
-		# For poppers and paddles, remove and respawn them
+	if target_type in ["2poppers", "3paddles", "mozambique", "double_tap"]:
+		# For poppers, paddles, and specific drills, remove and respawn them
 		if current_target_instance and is_instance_valid(current_target_instance):
 			current_target_instance.queue_free()
 			if not DEBUG_DISABLED:
@@ -414,11 +415,21 @@ func _normalize_zone_for_stats(zone: String, target_type: String) -> String:
 				return "miss"
 			_: 
 				return zone
-	if _is_idpa_stats_target(target_type) and (zone.begins_with("ns") or zone.begins_with("hard-cover")):
-		return "NS"
-	if _is_ipsc_ns_stats_target(target_type):
-		if zone.begins_with("WhiteZone") or zone.begins_with("BlackZone"):
+	
+	# IDPA specific normalization
+	if _is_idpa_stats_target(target_type):
+		if zone.begins_with("ns"):
 			return "NS"
+		if zone.begins_with("hard-cover"):
+			return "miss"
+	
+	# IPSC specific normalization
+	if _is_ipsc_ns_stats_target(target_type):
+		if zone.begins_with("WhiteZone"):
+			return "NS"
+		if zone.begins_with("BlackZone"):
+			return "miss"
+	
 	return zone
 
 func _is_idpa_stats_target(target_type: String) -> bool:
@@ -803,6 +814,10 @@ func spawn_target_by_type(target_type: String):
 			canvas_layer.visible = false  # Hide shot intervals for mozambique
 			if not DEBUG_DISABLED:
 				print("[Bootcamp] Hidden CanvasLayers for mozambique (uses its own drill logic)")
+		elif target_type == "double_tap":
+			canvas_layer.visible = false  # Hide shot intervals for Double Tap
+			if not DEBUG_DISABLED:
+				print("[Bootcamp] Hidden CanvasLayers for Double Tap (uses its own drill logic)")
 		elif target_type == "dueling_tree_composite" or target_type == "texas_start_composite":
 			canvas_layer.visible = false  # Hide shot intervals for dueling tree composite (and Texas composite)
 			if not DEBUG_DISABLED:
@@ -814,10 +829,10 @@ func spawn_target_by_type(target_type: String):
 	
 	# Hide/show clear area based on target type
 	if clear_area:
-		if target_type == "mozambique":
-			clear_area.visible = false  # Hide clear area for mozambique
+		if target_type == "mozambique" or target_type == "double_tap":
+			clear_area.visible = false  # Hide clear area for mozambique and double tap
 			if not DEBUG_DISABLED:
-				print("[Bootcamp] Hidden clear area for mozambique")
+				print("[Bootcamp] Hidden clear area for ", target_type)
 		elif target_type == "dueling_tree_composite" or target_type == "texas_start_composite":
 			clear_area.visible = false  # Hide clear area for dueling tree composite (and Texas composite)
 			if not DEBUG_DISABLED:
@@ -866,6 +881,8 @@ func spawn_target_by_type(target_type: String):
 			target_scene = custom_target_scene
 		"mozambique":
 			target_scene = mozambique_scene
+		"double_tap":
+			target_scene = double_tap_scene
 		"dueling_tree_composite":
 			target_scene = dueling_tree_scene
 		"texas_start_composite":
